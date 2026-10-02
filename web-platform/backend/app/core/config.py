@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     upload_dir: str = "./storage/uploads"
     max_upload_size_bytes: int = 52428800
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:8000/api/v1/drive/google/callback"
+    oauth_encryption_key: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

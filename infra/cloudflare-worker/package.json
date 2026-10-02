@@ -1,0 +1,13 @@
+{
+  "name": "narrativ-forge-edge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0",
+    "@cloudflare/workers-types": "^4.20260920.0"
+  }
+}

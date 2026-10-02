@@ -634,3 +634,34 @@ def test_full_production_integration_flow(tmp_path):
         assert client.get("/api/v1/analytics").status_code == 200
     finally:
         client.close()
+
+
+def test_approval_and_export_create_audit_events(tmp_path):
+    from app.core.config import settings
+    settings.upload_dir = str(tmp_path)
+    client = auth_client()
+    try:
+        series = client.post("/api/v1/series", json={"title": "Audit series"}).json()
+        episode = client.post("/api/v1/episodes", json={"series_id": series["id"], "episode_number": 1, "title": "Audit episode"}).json()
+        assert client.post(
+            f"/api/v1/episodes/{episode['id']}/assets/upload",
+            files={"file": ("source.mp4", b"video-fixture", "video/mp4")},
+            data={"asset_type": "video", "copyright_status": "licensed"},
+        ).status_code == 201
+        assert client.post("/api/v1/jobs/mock", json={"episode_id": episode["id"]}).status_code == 201
+        subtitle = client.post(f"/api/v1/episodes/{episode['id']}/subtitles/generate", json={"preset": "burmese_default"}).json()
+        assert client.patch(f"/api/v1/subtitles/{subtitle['id']}", json={"cues": [{"start": 0, "end": 2, "text": "မြန်မာစာ"}]}).status_code == 200
+        assert client.post(f"/api/v1/episodes/{episode['id']}/subtitles/approve").status_code == 200
+        assert client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "needs_approval"}).status_code == 200
+        assert client.post(f"/api/v1/episodes/{episode['id']}/review/approve", json={
+            "video_watched": True, "audio_checked": True,
+            "subtitle_timing_checked": True, "thumbnail_present": True,
+        }).status_code == 200
+        assert client.post(f"/api/v1/episodes/{episode['id']}/export/mock-drive").status_code == 200
+        events = client.get("/api/v1/audit?limit=10")
+        assert events.status_code == 200
+        actions = {event["action"] for event in events.json()}
+        assert "episode.approved" in actions
+        assert "episode.exported" in actions
+    finally:
+        client.close()

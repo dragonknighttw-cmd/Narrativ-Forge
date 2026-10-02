@@ -6,10 +6,16 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.db import Base, get_db
+from app.models import User
+from app.services.passwords import hash_password
 
 engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
 TestingSession = sessionmaker(bind=engine)
 Base.metadata.create_all(bind=engine)
+with TestingSession() as _seed_db:
+    if not _seed_db.query(User).filter(User.email == "admin@narrativ.local").first():
+        _seed_db.add(User(email="admin@narrativ.local", role="owner", password_hash=hash_password("change-me-123456"), is_active=True))
+        _seed_db.commit()
 
 def override_db():
     db = TestingSession()
@@ -22,7 +28,7 @@ app.dependency_overrides[get_db] = override_db
 
 def auth_client():
     client = TestClient(app)
-    response = client.post("/api/v1/auth/login", json={"email": "admin@narrativ.local", "password": "change-me"})
+    response = client.post("/api/v1/auth/login", json={"email": "admin@narrativ.local", "password": "change-me-123456"})
     assert response.status_code == 200
     return client
 

@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: narrativ-forge-api
+    runtime: docker
+    rootDir: web-platform/backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: APP_ENV
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: CORS_ORIGINS
+        sync: false
+      - key: TRUSTED_HOSTS
+        sync: false
+      - key: UPLOAD_DIR
+        value: /var/lib/narrativ-forge/uploads
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: OAUTH_ENCRYPTION_KEY
+        sync: false
+
+  - type: worker
+    name: narrativ-forge-worker
+    runtime: docker
+    rootDir: web-platform/backend
+    dockerfilePath: ./Dockerfile.worker
+    envVars:
+      - key: APP_ENV
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: UPLOAD_DIR
+        value: /var/lib/narrativ-forge/uploads
+      - key: FFMPEG_BINARY
+        value: ffmpeg
+      - key: WHISPER_COMMAND
+        value: whisper
+      - key: WHISPER_MODEL
+        value: small
+      - key: PROCESSING_TIMEOUT_SECONDS
+        value: "3600"

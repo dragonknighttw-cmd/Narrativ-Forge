@@ -23,6 +23,10 @@ if storage_provider == "b2":
     require("B2_APPLICATION_KEY", os.environ.get("B2_APPLICATION_KEY"))
     require("B2_BUCKET_NAME", os.environ.get("B2_BUCKET_NAME"))
     require("B2_REGION", os.environ.get("B2_REGION"))
+    try:
+        require("B2_SIGNED_URL_EXPIRY_SECONDS", int(os.environ.get("B2_SIGNED_URL_EXPIRY_SECONDS", "0")) > 0)
+    except ValueError:
+        failures.append("B2_SIGNED_URL_EXPIRY_SECONDS")
 
 try:
     subprocess.run([sys.executable, "-m", "alembic", "current"], check=True, timeout=30)

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from ...core.config import settings
 from ...db import get_db
 from ...models import Asset, Episode, ExportRecord, Subtitle
+from ...services.audit import record_event
 from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/episodes", tags=["export"])
@@ -74,7 +75,7 @@ def export_history(episode_id: str, _: dict = Depends(get_current_user), db: Ses
 
 
 @router.post("/{episode_id}/export/mock-drive")
-def mock_drive_export(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def mock_drive_export(episode_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
     episode = _episode(db, episode_id)
     record = _record(db, episode_id, "mock_drive")
     if record and record.status == "completed":
@@ -123,6 +124,7 @@ def mock_drive_export(episode_id: str, _: dict = Depends(get_current_user), db: 
     record.completed_at = datetime.now(timezone.utc)
     episode.status = "exported"
     episode.current_step = "output"
+    record_event(db, actor_email=user["email"], action="episode.exported", resource_type="episode", resource_id=episode.id, metadata={"provider": "mock_drive", "export_id": record.id, "video_asset_id": final_asset.id})
     db.commit()
     return {"status": "completed", "id": record.id, "manifest": manifest, "mock_path": str(destination)}
 
@@ -264,6 +266,7 @@ async def google_drive_export(episode_id: str, user=Depends(get_current_user), d
         record.completed_at = datetime.now(timezone.utc)
         episode.status = "exported"
         episode.current_step = "output"
+        record_event(db, actor_email=user["email"], action="episode.exported", resource_type="episode", resource_id=episode.id, metadata={"provider": "google_drive", "export_id": record.id, "video_file_id": video_id, "folder_id": folder_id})
         db.commit()
         return {"status": "completed", "id": record.id, "manifest": manifest}
     except httpx.HTTPError as exc:

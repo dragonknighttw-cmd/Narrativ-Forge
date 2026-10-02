@@ -143,8 +143,34 @@ def list_production_logs(_: dict = Depends(get_current_user), db: Session = Depe
 
 
 
+class ProductionLogUpdate(BaseModel):
+    episode_id: str | None = None
+    topic: str | None = None
+    category: str | None = None
+    hook: str | None = None
+    hook_type: str | None = None
+    script_length: int | None = Field(default=None, ge=0)
+    duration_seconds: int | None = Field(default=None, ge=0)
+    scene_count: int | None = Field(default=None, ge=0)
+    voice_tool: str | None = None
+    image_tool: str | None = None
+    video_tool: str | None = None
+    subtitle_style: str | None = None
+    production_time_seconds: int | None = Field(default=None, ge=0)
+    manual_errors: str | None = None
+    quality_score: float | None = Field(default=None, ge=0)
+    published: bool | None = None
+    platform: str | None = None
+    views: int | None = Field(default=None, ge=0)
+    watch_time_seconds: int | None = Field(default=None, ge=0)
+    completion_rate: float | None = Field(default=None, ge=0)
+    shares: int | None = Field(default=None, ge=0)
+    saves: int | None = Field(default=None, ge=0)
+    notes: str | None = None
+
+
 @router.patch("/manual-production-logs/{log_id}")
-def update_production_log(log_id: str, payload: ProductionLogCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def update_production_log(log_id: str, payload: ProductionLogUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(ManualProductionLog, log_id)
     if not item:
         raise HTTPException(status_code=404, detail="Production log not found")
@@ -152,7 +178,7 @@ def update_production_log(log_id: str, payload: ProductionLogCreate, _: dict = D
         raise HTTPException(status_code=404, detail="Episode not found")
     if payload.hook_type and payload.hook_type not in HOOK_TYPES:
         raise HTTPException(status_code=422, detail="Unsupported hook type")
-    for key, value in payload.model_dump().items():
+    for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(item, key, value)
     db.commit()
     db.refresh(item)

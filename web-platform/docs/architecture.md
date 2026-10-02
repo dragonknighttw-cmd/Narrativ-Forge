@@ -59,3 +59,15 @@ Episode structure enforces the source requirements: an episode must reference an
 Phase 1 establishes the application boundary, development auth/session pattern, database/API foundation, protected workspace shell, configuration examples, and verification scaffolding.
 
 Phase 2 begins the real content workflow: Ideas → Series → Seasons → Episodes CRUD end-to-end.
+
+
+## Phase 3 domain slice
+
+The script/scene/asset slice follows the master data model:
+
+- scripts: version records per episode with one current version.
+- scenes: ordered per episode, optionally linked to an episode script.
+- assets: local upload records with version, MIME type, size, copyright state, and optional scene mapping.
+- Processing remains adapter-ready: Phase 2's mock job closes the Month 2 exit gate; real FFmpeg/Whisper workers remain later integration work.
+
+Upload safety is enforced server-side with MIME + extension allow-lists, a configurable size limit, sanitized filenames, and episode/scene ownership checks. Original files are stored separately from future processing outputs.

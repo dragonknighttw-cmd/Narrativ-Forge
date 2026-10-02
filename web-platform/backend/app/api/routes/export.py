@@ -28,7 +28,9 @@ def get_export(episode_id: str, _: dict = Depends(get_current_user), db: Session
 @router.post("/{episode_id}/export/mock-drive")
 def mock_drive_export(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     episode = _episode(db, episode_id)
-    if episode.status != "approved":
+    record = db.query(ExportRecord).filter(ExportRecord.episode_id == episode_id, ExportRecord.provider == "google_drive").first()
+    retrying_failed_export = bool(record and record.status == "failed" and episode.status == "failed")
+    if episode.status != "approved" and not retrying_failed_export:
         raise HTTPException(status_code=409, detail="Episode must be approved before Drive export")
     subtitle = db.query(Subtitle).filter(Subtitle.episode_id == episode_id, Subtitle.is_current.is_(True), Subtitle.status == "approved").first()
     final_asset = db.query(Asset).filter(Asset.episode_id == episode_id, Asset.is_final.is_(True)).order_by(Asset.version.desc()).first()
@@ -81,7 +83,6 @@ async def google_drive_export(episode_id: str, user=Depends(get_current_user), d
         raise HTTPException(status_code=422, detail="Approved final video asset is missing")
     if not subtitle:
         raise HTTPException(status_code=422, detail="Approved subtitle is missing")
-    record = db.query(ExportRecord).filter(ExportRecord.episode_id == episode_id, ExportRecord.provider == "google_drive").first()
     if record and record.status == "completed":
         return {"status": "completed", "id": record.id, "manifest": json.loads(record.manifest_json)}
     token = await access_token_for(user["email"], db)

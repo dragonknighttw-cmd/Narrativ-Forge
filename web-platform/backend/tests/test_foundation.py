@@ -802,3 +802,31 @@ def test_b2_storage_integration_roundtrip_when_configured(tmp_path):
     finally:
         provider.delete(key)
         assert not provider.exists(key)
+
+
+def test_viewer_is_read_only_for_production_mutations():
+    client = auth_client()
+    try:
+        invited = client.post("/api/v1/auth/invite", json={
+            "email": "viewer@example.com",
+            "password": "strong-viewer-password",
+            "role": "viewer",
+        })
+        assert invited.status_code == 200
+
+        client.post("/api/v1/auth/logout")
+        login = client.post("/api/v1/auth/login", json={
+            "email": "viewer@example.com",
+            "password": "strong-viewer-password",
+        })
+        assert login.status_code == 200
+        assert login.json()["user"]["role"] == "viewer"
+
+        assert client.post("/api/v1/ideas", json={"title": "blocked"}).status_code == 403
+        assert client.post("/api/v1/series", json={"title": "blocked"}).status_code == 403
+        assert client.post("/api/v1/jobs/mock", json={"episode_id": "missing"}).status_code == 403
+        assert client.post("/api/v1/hooks", json={
+            "hook_text": "blocked", "hook_type": "question"
+        }).status_code == 403
+    finally:
+        client.close()

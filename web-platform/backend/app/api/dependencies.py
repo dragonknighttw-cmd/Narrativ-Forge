@@ -4,6 +4,10 @@ import hmac
 import time
 
 from fastapi import Cookie, Depends, Header, HTTPException
+from sqlalchemy.orm import Session
+
+from ..db import get_db
+from ..models import User
 
 from ..core.config import settings
 
@@ -40,13 +44,18 @@ def issue_session(email: str, role: str = "owner") -> str:
 def get_current_user(
     session_cookie: str | None = Cookie(default=None, alias=settings.session_cookie_name),
     authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
 ):
     value = session_cookie
     if not value and authorization and authorization.startswith("Bearer "):
         value = authorization.removeprefix("Bearer ").strip()
     if not value:
         raise HTTPException(status_code=401, detail="Authentication required")
-    return verify_session(value)
+    session_user = verify_session(value)
+    db_user = db.query(User).filter(User.email == session_user["email"], User.is_active.is_(True)).first()
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return {"id": db_user.id, "email": db_user.email, "role": db_user.role}
 
 
 def require_roles(*roles: str):

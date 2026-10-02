@@ -1,5 +1,6 @@
 import json
 import shutil
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from ...core.config import settings
 from ...db import get_db
 from ...models import Asset, Episode, ExportRecord, Subtitle
 from ...services.audit import record_event
+from ...services.storage import StorageError, materialize_asset
 from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/episodes", tags=["export"])
@@ -92,20 +94,27 @@ def mock_drive_export(episode_id: str, user=Depends(get_current_user), db: Sessi
         Asset.episode_id == episode_id,
         Asset.is_final.is_(True),
     ).order_by(Asset.version.desc()).first()
-    if not final_asset or not final_asset.local_path or not Path(final_asset.local_path).exists():
+    if not final_asset:
         raise HTTPException(status_code=422, detail="Approved final video asset is missing")
     if not subtitle:
         raise HTTPException(status_code=422, detail="Approved subtitle is missing")
 
-    export_root = Path(settings.upload_dir) / "mock_drive" / episode.public_id
-    export_root.mkdir(parents=True, exist_ok=True)
-    destination = export_root / Path(final_asset.original_filename).name
-    shutil.copy2(final_asset.local_path, destination)
+    try:
+        with tempfile.TemporaryDirectory(prefix="nf-export-") as work:
+            source = materialize_asset(final_asset, Path(work))
+            export_root = Path(settings.upload_dir) / "mock_drive" / episode.public_id
+            export_root.mkdir(parents=True, exist_ok=True)
+            destination = export_root / Path(final_asset.original_filename).name
+            shutil.copy2(source, destination)
+    except StorageError as exc:
+        raise HTTPException(status_code=502, detail="Approved final video could not be read from storage") from exc
     manifest = {
         "episode_public_id": episode.public_id,
         "episode_id": episode.id,
         "provider": "mock_drive",
         "video_asset_id": final_asset.id,
+        "video_object_key": final_asset.object_key,
+        "video_checksum_sha256": final_asset.checksum_sha256,
         "subtitle_id": subtitle.id,
         "subtitle_version": subtitle.version,
         "video_filename": destination.name,
@@ -156,7 +165,9 @@ async def google_drive_export(episode_id: str, user=Depends(get_current_user), d
     if not subtitle:
         raise HTTPException(status_code=422, detail="Approved subtitle is missing")
 
+    export_temp = tempfile.TemporaryDirectory(prefix="nf-drive-export-")
     try:
+        local_final = materialize_asset(final_asset, Path(export_temp.name))
         token = await access_token_for(user["email"], db)
         episode.status = "exporting"
         if not record:
@@ -220,7 +231,7 @@ async def google_drive_export(episode_id: str, user=Depends(get_current_user), d
             video_id = await upload_bytes(
                 video_name,
                 final_asset.mime_type,
-                Path(final_asset.local_path).read_bytes(),
+                local_final.read_bytes(),
                 record.drive_file_id,
             )
             record.drive_file_id = video_id
@@ -269,6 +280,15 @@ async def google_drive_export(episode_id: str, user=Depends(get_current_user), d
         record_event(db, actor_email=user["email"], action="episode.exported", resource_type="episode", resource_id=episode.id, metadata={"provider": "google_drive", "export_id": record.id, "video_file_id": video_id, "folder_id": folder_id})
         db.commit()
         return {"status": "completed", "id": record.id, "manifest": manifest}
+    except StorageError as exc:
+        if record:
+            record.status = "failed"
+            record.error_code = "DRIVE_STORAGE_ERROR"
+            record.error_message = "Google Drive export could not read the approved storage object."
+            episode.status = "failed"
+            episode.current_step = "processing"
+            db.commit()
+        raise HTTPException(status_code=502, detail="Drive export could not read the approved storage object; retry is safe.") from exc
     except httpx.HTTPError as exc:
         if record:
             record.status = "failed"
@@ -287,3 +307,5 @@ async def google_drive_export(episode_id: str, user=Depends(get_current_user), d
             episode.current_step = "processing"
             db.commit()
         raise HTTPException(status_code=500, detail="Drive export could not read the local output; retry is safe.") from exc
+    finally:
+        export_temp.cleanup()

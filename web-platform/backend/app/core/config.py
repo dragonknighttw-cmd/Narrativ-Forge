@@ -4,6 +4,8 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./narrativ_forge.db"
     dev_auth_email: str = "admin@narrativ.local"
     dev_auth_password: str = "change-me"
+    session_cookie_name: str = "nf_session"
+    session_cookie_secure: bool = False
     cors_origins: str = "http://localhost:3000"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

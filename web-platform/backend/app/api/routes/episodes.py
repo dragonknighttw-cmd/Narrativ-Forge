@@ -14,7 +14,14 @@ VALID_STATUSES = {
     "processing","subtitle_review","needs_approval","approved","exporting","exported",
     "archived","rejected","failed"
 }
-STEP_BY_STATUS = {\n    "idea": "idea", "planned": "structure", "script_draft": "script", "script_review": "script",\n    "assets_needed": "assets", "in_production": "production", "processing": "processing",\n    "subtitle_review": "subtitle", "needs_approval": "review", "approved": "review",\n    "exporting": "output", "exported": "output", "archived": "output", "rejected": "review", "failed": "processing",\n}\n\nSTATUS_TRANSITIONS = {
+STEP_BY_STATUS = {
+    "idea": "idea", "planned": "structure", "script_draft": "script", "script_review": "script",
+    "assets_needed": "assets", "in_production": "production", "processing": "processing",
+    "subtitle_review": "subtitle", "needs_approval": "review", "approved": "review",
+    "exporting": "output", "exported": "output", "archived": "output", "rejected": "review", "failed": "processing",
+}
+
+STATUS_TRANSITIONS = {
     "idea": {"planned"},
     "planned": {"script_draft"},
     "script_draft": {"script_review"},

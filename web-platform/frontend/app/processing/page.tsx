@@ -20,12 +20,12 @@ export default function ProcessingQueuePage() {
 
   async function create() {
     if (!episodeId) return; setBusy(true); setError("");
-    try { await api.createMockJob(episodeId); await load(); } catch (e) { setError(e instanceof Error ? e.message : "Failed to create processing job"); } finally { setBusy(false); }
+    try { await api.createRealJob(episodeId); await load(); } catch (e) { setError(e instanceof Error ? e.message : "Failed to create processing job"); } finally { setBusy(false); }
   }
 
   return <AppShell title="Processing Queue">
-    <section className="card"><div className="eyebrow">MOCK WORKER</div><h2>Verify processing workflow before real FFmpeg/Whisper</h2>{error && <ErrorState message={error} retry={load} />}
-      <div className="inline-form"><select value={episodeId} onChange={e => setEpisodeId(e.target.value)} aria-label="Episode">{episodes.map(e => <option key={e.id} value={e.id}>{e.public_id} · {e.title}</option>)}</select><button className="primary" disabled={!episodeId || busy} onClick={create}>Run mock processing</button></div>
+    <section className="card"><div className="eyebrow">PROCESSING WORKER</div><h2>Run real FFmpeg + Whisper or the deterministic mock worker</h2>{error && <ErrorState message={error} retry={load} />}
+      <div className="inline-form"><select value={episodeId} onChange={e => setEpisodeId(e.target.value)} aria-label="Episode">{episodes.map(e => <option key={e.id} value={e.id}>{e.public_id} · {e.title}</option>)}</select><button className="primary" disabled={!episodeId || busy} onClick={create}>Run real processing</button></div>
     </section>
     <section className="card">{jobs.length === 0 ? <div className="empty-state">No processing jobs yet.</div> : <div className="list">{jobs.map(job => <article className="list-card" key={job.id}><div><strong>{job.job_type}</strong><p className="muted">{job.status} · {job.progress}% · retries {job.retry_count}</p></div>{job.status === "failed" && <button className="text-button" onClick={async () => { await api.retryJob(job.id); await load(); }}>Retry</button>}</article>)}</div>}</section>
   </AppShell>;

@@ -22,6 +22,7 @@ export type Script = { id: string; episode_id: string; version: number; title?: 
 export type Scene = { id: string; episode_id: string; script_id?: string | null; scene_number: number; purpose: string; description?: string | null; dialogue?: string | null; duration_seconds?: number | null; created_at: string; updated_at: string };
 export type Asset = { id: string; episode_id: string; scene_id?: string | null; asset_type: string; original_filename: string; storage_provider: string; local_path?: string | null; mime_type: string; file_size_bytes: number; version: number; copyright_status: string; is_final: boolean; status: string; created_at: string };
 export type CreateSceneInput = { scene_number: number; script_id?: string; purpose: string; description?: string; dialogue?: string; duration_seconds?: number };
+export type ProcessingJob = { id: string; episode_id: string; job_type: string; status: string; progress: number; retry_count: number; input_asset_id?: string | null; output_asset_id?: string | null; error_code?: string | null; error_message?: string | null; created_at: string; completed_at?: string | null };
 
 export const api = {
   health: () => request<{ status: string; service: string }>("/health"),
@@ -51,6 +52,9 @@ export const api = {
   reorderScenes: (episodeId: string, sceneIds: string[]) => request<Scene[]>(`/episodes/${episodeId}/scenes/reorder`, { method: "POST", body: JSON.stringify(sceneIds) }),
   listAssets: (episodeId: string) => request<Asset[]>(`/episodes/${episodeId}/assets`),
   updateAsset: (assetId: string, data: Partial<Asset>) => request<Asset>(`/assets/${assetId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  listJobs: () => request<ProcessingJob[]>(`/jobs`),
+  createMockJob: (episodeId: string) => request<ProcessingJob>(`/jobs/mock`, { method: "POST", body: JSON.stringify({ episode_id: episodeId }) }),
+  retryJob: (jobId: string) => request<ProcessingJob>(`/jobs/${jobId}/retry`, { method: "POST" }),
   uploadAsset: async (episodeId: string, file: File, assetType: string, sceneId?: string) => {
     const form = new FormData();
     form.append("file", file); form.append("asset_type", assetType);

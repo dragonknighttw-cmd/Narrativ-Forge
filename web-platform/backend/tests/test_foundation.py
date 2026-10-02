@@ -832,3 +832,33 @@ def test_viewer_is_read_only_for_production_mutations():
         }).status_code == 403
     finally:
         client.close()
+
+
+def test_subtitle_quality_gate_enforces_source_requirements():
+    from app.services.subtitles import validate_cues
+
+    errors = validate_cues([
+        {"start": 0, "end": 0.5, "text": "မြန်မာ"},
+        {"start": 0.4, "end": 8, "text": "English only"},
+    ])
+    codes = {error["code"] for error in errors}
+    assert "DISPLAY_TIME" in codes
+    assert "CUE_OVERLAP" in codes
+    assert "BURMESE_TEXT_REQUIRED" in codes
+
+
+def test_publication_metadata_validation():
+    from app.api.routes.production_intelligence import validate_publication_payload
+
+    assert validate_publication_payload("tiktok", "caption", ["#မြန်မာ"]) == []
+    assert "Unsupported platform" in validate_publication_payload("unknown", "caption", [])
+    assert "Caption is required" in validate_publication_payload("tiktok", "", [])
+
+
+def test_auto_mode_adapter_produces_deterministic_plan():
+    from app.services.ai_adapter import MockAIAdapter
+
+    plan = MockAIAdapter().create_content_plan(idea="စမ်းသပ်အကြောင်းအရာ")
+    assert plan.hook
+    assert plan.script
+    assert len(plan.scenes) >= 1

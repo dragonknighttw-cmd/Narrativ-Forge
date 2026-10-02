@@ -89,7 +89,7 @@ class Script(Base):
 
 class Scene(Base):
     __tablename__ = "scenes"
-    __table_args__ = (UniqueConstraint("episode_id", "scene_number", name="uq_scene_number_per_episode"),)
+    __table_args__ = (UniqueConstraint("script_id", "scene_number", name="uq_scene_number_per_script"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.id"), index=True)
     script_id: Mapped[str | None] = mapped_column(ForeignKey("scripts.id"), nullable=True)

@@ -7,8 +7,8 @@ import { ErrorState } from "../../../../components/domain-forms";
 
 const CHECKS = ["video_watched", "audio_checked", "subtitle_timing_checked", "thumbnail_present"] as const;
 
-export default function ReviewCenterPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+export default function ReviewCenterPage() {
+  const { id } = useParams<{ id: string }>();
   const [review, setReview] = useState<any>(null);
   const [checks, setChecks] = useState<Record<string, boolean>>({
     video_watched: false, audio_checked: false, subtitle_timing_checked: false, thumbnail_present: false

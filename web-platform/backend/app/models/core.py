@@ -159,7 +159,7 @@ class Subtitle(Base):
 
 class ExportRecord(Base):
     __tablename__ = "export_records"
-    __table_args__ = (UniqueConstraint("episode_id", name="uq_export_episode"),)
+    __table_args__ = (UniqueConstraint("episode_id", "provider", name="uq_export_episode_provider"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.id"), index=True)
     provider: Mapped[str] = mapped_column(String(40), default="mock_drive")

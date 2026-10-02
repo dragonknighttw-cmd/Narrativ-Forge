@@ -446,6 +446,8 @@ def test_real_processing_pipeline_creates_render_and_whisper_assets(monkeypatch,
     db.commit()
 
     def fake_run(command, *, timeout):
+        if "ffprobe" in command[0]:
+            return type("Result", (), {"stdout": '{"streams":[{"codec_type":"video","width":1080,"height":1920},{"codec_type":"audio"}],"format":{"duration":"2.0"}}', "stderr": ""})()
         output = Path(command[-1])
         if "ffmpeg" in command[0]:
             output.parent.mkdir(parents=True, exist_ok=True)

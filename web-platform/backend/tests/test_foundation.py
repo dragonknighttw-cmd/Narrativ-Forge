@@ -463,3 +463,23 @@ def test_real_processing_pipeline_creates_render_and_whisper_assets(monkeypatch,
     assert Path(output.local_path).read_bytes() == b"rendered"
     transcript = db.query(Asset).filter(Asset.episode_id == episode.id, Asset.asset_type == "transcript").one()
     assert "မြန်မာ" in Path(transcript.local_path).read_text(encoding="utf-8")
+
+
+def test_session_cookie_is_signed_and_tampering_is_rejected():
+    from app.api.dependencies import issue_session
+    with TestClient(app) as client:
+        token = issue_session("admin@narrativ.local")
+        assert token != "dev-session"
+        client.cookies.set("nf_session", token)
+        assert client.get("/api/v1/auth/me").status_code == 200
+        client.cookies.set("nf_session", token[:-1] + ("A" if token[-1] != "A" else "B"))
+        assert client.get("/api/v1/auth/me").status_code == 401
+
+
+def test_security_headers_are_present():
+    with TestClient(app) as client:
+        response = client.get("/api/v1/health")
+        assert response.headers["x-content-type-options"] == "nosniff"
+        assert response.headers["x-frame-options"] == "DENY"
+        assert response.headers["referrer-policy"] == "same-origin"
+        assert "permissions-policy" in response.headers

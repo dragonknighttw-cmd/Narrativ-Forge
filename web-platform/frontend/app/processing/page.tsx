@@ -16,7 +16,7 @@ export default function ProcessingQueuePage() {
     try { setError(""); const [jobItems, episodeItems] = await Promise.all([api.listJobs(), api.listEpisodes()]); setJobs(jobItems); setEpisodes(episodeItems); if (!episodeId && episodeItems[0]) setEpisodeId(episodeItems[0].id); }
     catch (e) { setError(e instanceof Error ? e.message : "Failed to load processing queue"); }
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {\n    load();\n    const timer = window.setInterval(() => { load(); }, 3000);\n    return () => window.clearInterval(timer);\n  }, []);
 
   async function createReal() {
     if (!episodeId) return; setBusy(true); setError("");

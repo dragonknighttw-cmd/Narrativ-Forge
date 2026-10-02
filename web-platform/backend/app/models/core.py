@@ -130,6 +130,8 @@ class Asset(Base):
     original_filename: Mapped[str] = mapped_column(String(255))
     storage_provider: Mapped[str] = mapped_column(String(40), default="local")
     local_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    object_key: Mapped[str | None] = mapped_column(String(1024), nullable=True, index=True)
+    checksum_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     drive_file_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     mime_type: Mapped[str] = mapped_column(String(100))
     file_size_bytes: Mapped[int] = mapped_column(Integer)

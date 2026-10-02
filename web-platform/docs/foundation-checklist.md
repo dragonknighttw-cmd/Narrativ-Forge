@@ -118,3 +118,20 @@ Next: build Ideas → Series → Seasons → Episodes as a complete vertical sli
 - [x] Episode Detail → Subtitle Studio workspace link
 - [x] Backend subtitle lifecycle/export tests
 - [x] CI remains the verification gate for backend tests and frontend typecheck/build
+
+
+## Phase 6 — Review / Approval / Drive Export
+
+- [x] Review Center with approval checklist
+- [x] Critical issue blocking
+- [x] Request revision returns episode to production
+- [x] Final approval requires checklist completion and approved subtitle
+- [x] Approved processed video is marked final without overwriting the source asset
+- [x] Mock Drive export with manifest
+- [x] Mock Drive export is idempotent
+- [x] Google OAuth start/status/callback boundary
+- [x] OAuth tokens stored server-side with application-level encryption
+- [x] Narrow Google Drive drive.file scope
+- [x] Real Google Drive export uploads video, SRT, and export manifest
+- [x] Drive failures are preserved and reported as retryable failures
+- [x] Review/export integration tests

@@ -78,3 +78,12 @@ Upload safety is enforced server-side with MIME + extension allow-lists, a confi
 Week 8 closes the processing boundary with a local mock worker before real FFmpeg/Whisper integration. A processing job is persisted independently from the API request, moves through queued/running/completed or failed, and preserves error codes/messages for retry. The worker copies the source into a separate processing output asset and emits a mock Burmese transcript JSON asset. The source asset is never overwritten.
 
 The API exposes job creation, listing, detail, and retry. The frontend Processing Queue surfaces progress, failure, and retry states. Real FFmpeg/Whisper adapters remain a later integration step, consistent with the source plan's mock-first approach.
+
+
+## Phase 5 — Subtitle Studio
+
+Week 9/10 closes the subtitle boundary around the transcript produced by the processing layer. The current transcript asset is converted into a versioned subtitle record with editable cues, Burmese language metadata, and a selected preset.
+
+Subtitle validation checks missing cue text, invalid or overlapping timing, the default 1–7 second display window, Burmese text presence, line count, and preset character limits. Draft subtitles may contain validation issues for editing, but approval is blocked until the current version passes the quality gate. Approved versions cannot be edited in place.
+
+SRT and VTT are generated from the same cue data so exports remain deterministic. The Subtitle Studio exposes generation, cue editing, save, validation, approval, and SRT/VTT export actions. Real Whisper transcription remains behind the existing processing integration boundary; Phase 5 consumes the transcript asset without replacing the mock-first worker prematurely.

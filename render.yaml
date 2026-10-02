@@ -74,6 +74,9 @@ services:
         value: "900"
       - key: FFMPEG_BINARY
         value: ffmpeg
+      - key: FFPROBE_BINARY
+        value: ffprobe
+        value: ffmpeg
       - key: WHISPER_COMMAND
         value: whisper
       - key: WHISPER_MODEL

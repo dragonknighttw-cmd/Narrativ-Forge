@@ -1,0 +1,15 @@
+"use client";
+import { useEffect,useState } from "react";
+import { AppShell } from "../../components/app-shell";
+import { ErrorState } from "../../components/domain-forms";
+import { api, Episode } from "../../lib/api";
+
+const PLATFORMS=["tiktok","youtube_shorts","facebook_reels"];
+export default function PublishingPreparationPage(){
+ const [episodes,setEpisodes]=useState<Episode[]>([]); const [episodeId,setEpisodeId]=useState(""); const [platform,setPlatform]=useState("tiktok"); const [caption,setCaption]=useState(""); const [hashtags,setHashtags]=useState(""); const [items,setItems]=useState<any[]>([]); const [error,setError]=useState("");
+ async function loadEpisodes(){try{const e=await api.listEpisodes();setEpisodes(e);if(!episodeId&&e[0])setEpisodeId(e[0].id)}catch(e){setError(e instanceof Error?e.message:"Failed to load episodes")}}
+ async function load(){if(!episodeId)return;try{const r=await fetch("/api/v1/episodes/"+episodeId+"/social-prep",{credentials:"include"});const b=await r.json();if(!r.ok)throw new Error(b.detail??"Failed to load publishing preparation");setItems(b)}catch(e){setError(e instanceof Error?e.message:"Failed to load publishing preparation")}}
+ useEffect(()=>{loadEpisodes()},[]); useEffect(()=>{load()},[episodeId]);
+ async function save(){try{const r=await fetch("/api/v1/social-prep",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({episode_id:episodeId,platform,caption,hashtags:hashtags.split(/[ ,]+/).filter(Boolean),platform_format_valid:true})});const b=await r.json();if(!r.ok)throw new Error(b.detail??"Failed to save");setCaption("");setHashtags("");await load()}catch(e){setError(e instanceof Error?e.message:"Failed to save")}}
+ return <AppShell title="Publishing Preparation"><section className="card"><div className="eyebrow">MANUAL PUBLISHING PREP</div><p className="muted">Prepare captions, hashtags and schedule metadata. Actual platform publishing remains manual.</p>{error&&<ErrorState message={error} retry={load}/>}<div className="inline-form"><select value={episodeId} onChange={e=>setEpisodeId(e.target.value)}>{episodes.map(e=><option value={e.id} key={e.id}>{e.public_id} · {e.title}</option>)}</select><select value={platform} onChange={e=>setPlatform(e.target.value)}>{PLATFORMS.map(x=><option key={x}>{x}</option>)}</select></div><label>Caption<textarea value={caption} onChange={e=>setCaption(e.target.value)} rows={4}/></label><label>Hashtags<input value={hashtags} onChange={e=>setHashtags(e.target.value)} placeholder="#burmese #story"/></label><button className="primary" disabled={!episodeId} onClick={save}>Save preparation</button></section><section className="card"><div className="list">{items.map(x=><div className="list-card" key={x.id}><div><strong>{x.platform}</strong><p className="muted">{x.state} · {x.caption}</p></div></div>)}</div>{!items.length&&<div className="empty-state">No publishing preparation yet.</div>}</section></AppShell>
+}

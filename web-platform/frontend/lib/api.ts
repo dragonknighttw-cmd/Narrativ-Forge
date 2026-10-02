@@ -55,6 +55,12 @@ export const api = {
   listJobs: () => request<ProcessingJob[]>(`/jobs`),
   createMockJob: (episodeId: string) => request<ProcessingJob>(`/jobs/mock`, { method: "POST", body: JSON.stringify({ episode_id: episodeId }) }),
   retryJob: (jobId: string) => request<ProcessingJob>(`/jobs/${jobId}/retry`, { method: "POST" }),
+  listSubtitles: (episodeId: string) => request<Subtitle[]>(`/episodes/${episodeId}/subtitles`),
+  generateSubtitle: (episodeId: string, preset = "burmese_default") => request<Subtitle>(`/episodes/${episodeId}/subtitles/generate`, { method: "POST", body: JSON.stringify({ preset }) }),
+  updateSubtitle: (subtitleId: string, data: { cues?: SubtitleCue[]; preset?: string; format?: string }) => request<Subtitle>(`/subtitles/${subtitleId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  validateSubtitle: (episodeId: string) => request<{ valid: boolean; errors: Subtitle["validation_errors"]; subtitle_id: string }>(`/episodes/${episodeId}/subtitles/validate`, { method: "POST" }),
+  approveSubtitle: (episodeId: string) => request<Subtitle>(`/episodes/${episodeId}/subtitles/approve`, { method: "POST" }),
+  exportSubtitle: (subtitleId: string, format: "srt" | "vtt") => `${base}/subtitles/${subtitleId}/export?format=${format}`,
   uploadAsset: async (episodeId: string, file: File, assetType: string, sceneId?: string) => {
     const form = new FormData();
     form.append("file", file); form.append("asset_type", assetType);
@@ -64,3 +70,6 @@ export const api = {
     return response.json() as Promise<Asset>;
   },
 };
+
+export type SubtitleCue = { id?: number; start: number; end: number; text: string };
+export type Subtitle = { id: string; episode_id: string; version: number; language: string; format: string; preset: string; cues: SubtitleCue[]; status: string; is_current: boolean; validation_errors: { code: string; cue?: number; message: string }[]; created_at: string; updated_at: string };

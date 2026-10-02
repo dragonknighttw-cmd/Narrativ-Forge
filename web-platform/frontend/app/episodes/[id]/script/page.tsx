@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { AppShell } from "../../../../../components/app-shell";
-import { ErrorState } from "../../../../../components/domain-forms";
-import { api, Script } from "../../../../../lib/api";
+import { AppShell } from "../../../../components/app-shell";
+import { ErrorState } from "../../../../components/domain-forms";
+import { api, Script } from "../../../../lib/api";
 
 export default function ScriptStudioPage() {
   const { id } = useParams<{ id: string }>();

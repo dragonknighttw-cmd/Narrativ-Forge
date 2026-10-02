@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AppShell } from "../../../components/app-shell";
-import { ErrorState } from "../../../components/domain-forms";
+import { AppShell } from "../../../../components/app-shell";
+import { ErrorState } from "../../../../components/domain-forms";
 
 const CHECKS = ["video_watched", "audio_checked", "subtitle_timing_checked", "thumbnail_present"] as const;
 

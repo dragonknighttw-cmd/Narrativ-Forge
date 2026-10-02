@@ -47,7 +47,7 @@ def test_story_structure_and_episode_status_workflow():
     try:
         idea = client.post("/api/v1/ideas", json={"title": "Test idea"}).json()
         assert idea["status"] == "idea"
-        patched = client.patch(f"/api/v1/ideas/{idea['id']}", json={"hook": "A test hook", "status": "planned"})
+        patched = client.patch(f"/api/v1/ideas/{idea['id']}", json={"concept": "A concise test concept", "category": "life", "hook": "A test hook", "status": "planned"})
         assert patched.status_code == 200
         assert patched.json()["hook"] == "A test hook"
 

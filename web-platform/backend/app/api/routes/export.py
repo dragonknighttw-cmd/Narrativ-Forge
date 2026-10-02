@@ -28,6 +28,9 @@ def get_export(episode_id: str, _: dict = Depends(get_current_user), db: Session
 @router.post("/{episode_id}/export/mock-drive")
 def mock_drive_export(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     episode = _episode(db, episode_id)
+    record = db.query(ExportRecord).filter(ExportRecord.episode_id == episode_id, ExportRecord.provider == "mock_drive").first()
+    if record and record.status == "completed":
+        return {"status": "completed", "id": record.id, "manifest": json.loads(record.manifest_json)}
     if episode.status != "approved":
         raise HTTPException(status_code=409, detail="Episode must be approved before Drive export")
     subtitle = db.query(Subtitle).filter(Subtitle.episode_id == episode_id, Subtitle.is_current.is_(True), Subtitle.status == "approved").first()
@@ -36,9 +39,6 @@ def mock_drive_export(episode_id: str, _: dict = Depends(get_current_user), db: 
         raise HTTPException(status_code=422, detail="Approved final video asset is missing")
     if not subtitle:
         raise HTTPException(status_code=422, detail="Approved subtitle is missing")
-    record = db.query(ExportRecord).filter(ExportRecord.episode_id == episode_id).first()
-    if record and record.status == "completed":
-        return {"status": "completed", "id": record.id, "manifest": json.loads(record.manifest_json)}
     export_root = Path(settings.upload_dir) / "mock_drive" / episode.public_id
     export_root.mkdir(parents=True, exist_ok=True)
     destination = export_root / Path(final_asset.original_filename).name

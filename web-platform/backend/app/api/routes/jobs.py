@@ -42,7 +42,7 @@ def create_real_job(payload: RealJobCreate, _: dict = Depends(get_current_user),
     episode = db.get(Episode, payload.episode_id)
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
-    return run_real_job(_create_job(episode, payload.job_type, db).id, db)
+    job = _create_job(episode, payload.job_type, db)\n    return job
 
 
 @router.get("")
@@ -72,4 +72,4 @@ def retry_job(job_id: str, _: dict = Depends(get_current_user), db: Session = De
     job.error_message = None
     job.completed_at = None
     db.commit()
-    return run_real_job(job.id, db) if job.job_type == "real_processing" else run_mock_job(job.id, db)
+    if job.job_type == "real_processing":\n        return job\n    return run_mock_job(job.id, db)

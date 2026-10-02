@@ -26,9 +26,17 @@ class LoginRequest(BaseModel):
 
 
 class InviteRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
     role: str = "viewer"
+
+    @field_validator("email")
+    @classmethod
+    def valid_email(cls, value: str) -> str:
+        value = value.strip().lower()
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", value):
+            raise ValueError("Invalid email")
+        return value
 
 
 @router.post("/login")

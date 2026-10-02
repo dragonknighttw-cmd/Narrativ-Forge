@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AppShell } from "../../../components/app-shell";
-import { ErrorState } from "../../../components/domain-forms";
-import { api, Episode, ProcessingJob } from "../../../lib/api";
+import { AppShell } from "../../components/app-shell";
+import { ErrorState } from "../../components/domain-forms";
+import { api, Episode, ProcessingJob } from "../../lib/api";
 
 export default function ProcessingQueuePage() {
   const [jobs, setJobs] = useState<ProcessingJob[]>([]);

@@ -73,11 +73,43 @@ def generate_subtitle(episode_id: str, payload: GenerateSubtitle, _: dict = Depe
     db.refresh(item)
     return _serialize(item)
 
+@subtitle_router.post("/{subtitle_id}/versions", status_code=201)
+def create_subtitle_version(subtitle_id: str, payload: SubtitleUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    source = db.get(Subtitle, subtitle_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Subtitle not found")
+    values = payload.model_dump(exclude_unset=True)
+    cues = values.pop("cues", None)
+    preset = values.get("preset", source.preset)
+    if preset not in ("burmese_default", "burmese_compact"):
+        raise HTTPException(status_code=422, detail="Unsupported subtitle preset")
+    cue_data = cues if cues is not None else json.loads(source.cues_json or "[]")
+    errors = validate_cues(cue_data, preset)
+    version = (db.query(func.max(Subtitle.version)).filter(Subtitle.episode_id == source.episode_id).scalar() or 0) + 1
+    db.query(Subtitle).filter(Subtitle.episode_id == source.episode_id, Subtitle.is_current.is_(True)).update({Subtitle.is_current: False})
+    item = Subtitle(
+        episode_id=source.episode_id,
+        version=version,
+        language=source.language,
+        format=values.get("format", source.format),
+        preset=preset,
+        cues_json=json.dumps(cue_data, ensure_ascii=False),
+        status="draft",
+        is_current=True,
+        validation_errors_json=json.dumps(errors, ensure_ascii=False),
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return _serialize(item)
+
 @subtitle_router.patch("/{subtitle_id}")
 def update_subtitle(subtitle_id: str, payload: SubtitleUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     item = db.get(Subtitle, subtitle_id)
     if not item:
         raise HTTPException(status_code=404, detail="Subtitle not found")
+    if item.status == "approved":
+        raise HTTPException(status_code=409, detail="Approved subtitle is immutable; create a new version to edit")
     values = payload.model_dump(exclude_unset=True)
     cues = values.pop("cues", None)
     preset = values.get("preset", item.preset)
@@ -85,15 +117,13 @@ def update_subtitle(subtitle_id: str, payload: SubtitleUpdate, _: dict = Depends
         raise HTTPException(status_code=422, detail="Unsupported subtitle preset")
     if cues is not None:
         cue_data = [cue if isinstance(cue, dict) else cue.model_dump() for cue in cues]
-        item.cues_json = json.dumps(cue_data, ensure_ascii=False)
     else:
         cue_data = json.loads(item.cues_json or "[]")
     errors = validate_cues(cue_data, preset)
+    item.cues_json = json.dumps(cue_data, ensure_ascii=False)
     item.validation_errors_json = json.dumps(errors, ensure_ascii=False)
     for key, value in values.items():
         setattr(item, key, value)
-    if item.status == "approved":
-        raise HTTPException(status_code=409, detail="Approved subtitle is immutable; create a new version to edit")
     item.status = "draft"
     db.commit()
     db.refresh(item)

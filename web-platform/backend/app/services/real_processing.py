@@ -27,7 +27,7 @@ def _fail(job: ProcessingJob, code: str, message: str, db: Session) -> Processin
     job.error_message = message
     job.completed_at = now()
     episode = db.get(Episode, job.episode_id)
-    if episode and episode.status == "processing":
+    if episode and episode.status in {"processing", "subtitle_review"}:
         episode.status = "failed"
         episode.current_step = "processing"
     db.commit()

@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     google_redirect_uri: str = "http://localhost:8000/api/v1/drive/google/callback"
     oauth_encryption_key: str = ""
     ffmpeg_binary: str = "ffmpeg"
+    ffprobe_binary: str = "ffprobe"
     whisper_command: str = "whisper"
     whisper_model: str = "small"
     processing_timeout_seconds: int = 3600

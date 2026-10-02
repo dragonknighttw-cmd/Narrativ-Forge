@@ -32,6 +32,22 @@ def test_health():
         assert response.status_code == 200
         assert response.json()["status"] == "ok"
 
+def test_cors_preflight_allows_configured_origin_and_restricts_headers():
+    with TestClient(app) as client:
+        response = client.options(
+            "/api/v1/health",
+            headers={
+                "Origin": "http://localhost:3000",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        assert response.status_code == 200
+        assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+        assert "content-type" in response.headers["access-control-allow-headers"].lower()
+        assert "x-secret-header" not in response.headers["access-control-allow-headers"].lower()
+
+
 def test_login_sets_http_only_cookie():
     with TestClient(app) as client:
         response = client.post("/api/v1/auth/login", json={"email": "admin@narrativ.local", "password": "change-me"})

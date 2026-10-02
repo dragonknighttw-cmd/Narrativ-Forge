@@ -26,7 +26,7 @@ app.add_middleware(
 
 _rate_windows: dict[str, list[float]] = defaultdict(list)
 _RATE_LIMITS = {
-    "login": (10, 60),
+    "login": (30, 60),
     "upload": (30, 60),
     "default": (300, 60),
 }

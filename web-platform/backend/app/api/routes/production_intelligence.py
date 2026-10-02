@@ -13,6 +13,24 @@ router = APIRouter(tags=["production-intelligence"])
 HOOK_TYPES = {"question", "shock", "mystery", "warning", "personal_story", "contrarian", "cliffhanger"}
 PUBLICATION_STATES = {"not_ready", "prepared", "scheduled_metadata_ready", "manually_published", "published_recorded"}
 
+PLATFORMS = {"youtube_shorts", "tiktok", "instagram_reels", "facebook_reels"}
+MAX_HASHTAGS = 30
+
+def validate_publication_payload(platform: str, caption: str, hashtags: list[str]) -> list[str]:
+    errors = []
+    if platform not in PLATFORMS:
+        errors.append("Unsupported platform")
+    if not caption.strip():
+        errors.append("Caption is required")
+    if len(caption) > 2200:
+        errors.append("Caption exceeds 2200 characters")
+    if len(hashtags) > MAX_HASHTAGS:
+        errors.append("Too many hashtags")
+    if any(not tag.strip() or len(tag.strip()) > 100 for tag in hashtags):
+        errors.append("Hashtags must be non-empty and <= 100 characters")
+    return errors
+
+
 
 def serialize_hook(item: HookLibrary):
     return {
@@ -160,6 +178,9 @@ def list_social_prep(episode_id: str, _: dict = Depends(get_current_user), db: S
 def create_social_prep(payload: PublicationCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     if not db.get(Episode, payload.episode_id):
         raise HTTPException(status_code=404, detail="Episode not found")
+    errors = validate_publication_payload(payload.platform, payload.caption, payload.hashtags)
+    if errors:
+        raise HTTPException(status_code=422, detail={"message": "Publishing preparation validation failed", "errors": errors})
     item = SocialPublication(
         episode_id=payload.episode_id, platform=payload.platform, caption=payload.caption,
         hashtags_json=json.dumps(payload.hashtags, ensure_ascii=False),
@@ -179,6 +200,9 @@ def update_social_prep(publication_id: str, payload: PublicationUpdate, _: dict 
         raise HTTPException(status_code=404, detail="Social preparation not found")
     if payload.state not in PUBLICATION_STATES:
         raise HTTPException(status_code=422, detail="Invalid publishing state")
+    errors = validate_publication_payload(payload.platform, payload.caption, payload.hashtags)
+    if errors:
+        raise HTTPException(status_code=422, detail={"message": "Publishing preparation validation failed", "errors": errors})
     if payload.state in {"manually_published", "published_recorded"} and not payload.publish_url:
         raise HTTPException(status_code=409, detail="Publish URL is required for a published record")
     item.platform = payload.platform

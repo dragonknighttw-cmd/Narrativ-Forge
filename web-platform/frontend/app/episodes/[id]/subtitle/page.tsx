@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AppShell } from "../../../components/app-shell";
-import { ErrorState } from "../../../components/domain-forms";
-import { api, Episode, Subtitle, SubtitleCue } from "../../../lib/api";
+import { AppShell } from "../../../../components/app-shell";
+import { ErrorState } from "../../../../components/domain-forms";
+import { api, Episode, Subtitle, SubtitleCue } from "../../../../lib/api";
 
 export default function SubtitleStudioPage({ params }: { params: { id: string } }) {
   const episodeId = params.id;
@@ -18,7 +18,7 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
       setError("");
       const [episodeItem, subtitles] = await Promise.all([api.getEpisode(episodeId), api.listSubtitles(episodeId)]);
       setEpisode(episodeItem);
-      const current = subtitles.find(item => item.is_current) ?? subtitles[0] ?? null;
+      const current = subtitles.find((item: Subtitle) => item.is_current) ?? subtitles[0] ?? null;
       setSubtitle(current);
       if (current) setPreset(current.preset);
     } catch (e) { setError(e instanceof Error ? e.message : "Failed to load subtitle studio"); }
@@ -36,7 +36,7 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
 
   function updateCue(index: number, patch: Partial<SubtitleCue>) {
     if (!subtitle) return;
-    setSubtitle({ ...subtitle, cues: subtitle.cues.map((cue, i) => i === index ? { ...cue, ...patch } : cue) });
+    setSubtitle({ ...subtitle, cues: subtitle.cues.map((cue: SubtitleCue, i: number) => i === index ? { ...cue, ...patch } : cue) });
   }
 
   async function save() {
@@ -94,10 +94,10 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
             </div>
           </div>
         </section>
-        {errors.length > 0 && <section className="card"><div className="eyebrow">TIMING WARNINGS / QUALITY GATE</div><div className="list">{errors.map((item, i) => <div className="list-card" key={i}><strong>{item.code}</strong><span className="muted">Cue {item.cue ?? "—"} · {item.message}</span></div>)}</div></section>}
+        {errors.length > 0 && <section className="card"><div className="eyebrow">TIMING WARNINGS / QUALITY GATE</div><div className="list">{errors.map((item: Subtitle["validation_errors"][number], i: number) => <div className="list-card" key={i}><strong>{item.code}</strong><span className="muted">Cue {item.cue ?? "—"} · {item.message}</span></div>)}</div></section>}
         <section className="card">
           <div className="eyebrow">CUES</div>
-          <div className="subtitle-cues">{subtitle.cues.map((cue, index) =>
+          <div className="subtitle-cues">{subtitle.cues.map((cue: SubtitleCue, index: number) =>
             <article className="subtitle-cue" key={cue.id ?? index}>
               <div className="cue-number">{index + 1}</div>
               <div className="cue-fields">

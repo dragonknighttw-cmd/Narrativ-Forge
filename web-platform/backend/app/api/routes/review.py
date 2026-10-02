@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ...db import get_db
-from ...models import Asset, Episode, Subtitle
+from ...models import Asset, Episode, ReviewRecord, Subtitle
 from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/episodes", tags=["review"])
@@ -71,6 +71,16 @@ def save_review(episode_id: str, payload: ReviewUpdate, _: dict = Depends(get_cu
     if not payload.thumbnail_present: blockers.append("Thumbnail is required.")
     if payload.critical_issues: blockers.append("Critical issues must be resolved.")
     if not subtitle or json.loads(subtitle.validation_errors_json or "[]"): blockers.append("Subtitle validation must pass.")
+    record = db.query(ReviewRecord).filter(ReviewRecord.episode_id == episode_id).first()
+    if not record:
+        record = ReviewRecord(episode_id=episode_id)
+        db.add(record)
+    record.checklist_json = json.dumps({key: getattr(payload, key) for key in CHECK_KEYS})
+    record.critical_issues_json = json.dumps(payload.critical_issues, ensure_ascii=False)
+    record.notes = payload.notes
+    record.decision = "pending" if blockers else "ready"
+    record.updated_at = datetime.now(timezone.utc)
+    db.commit()
     return {"saved": True, "blocking_reasons": blockers, "ready": not blockers, "review": payload.model_dump()}
 
 @router.post("/{episode_id}/review/request-revision")
@@ -78,6 +88,11 @@ def request_revision(episode_id: str, payload: RevisionRequest, _: dict = Depend
     episode = _episode(db, episode_id)
     if episode.status not in {"subtitle_review", "needs_approval", "rejected"}:
         raise HTTPException(status_code=409, detail="Episode is not in review workflow")
+    record = db.query(ReviewRecord).filter(ReviewRecord.episode_id == episode_id).first()
+    if record:
+        record.decision = "revision_requested"
+        record.revision_reason = payload.reason
+        record.reviewed_at = datetime.now(timezone.utc)
     episode.status = "in_production"
     episode.current_step = "production"
     db.commit()
@@ -94,6 +109,15 @@ def approve_review(episode_id: str, payload: ReviewUpdate, _: dict = Depends(get
     subtitle = _current_subtitle(db, episode_id)
     if not subtitle or subtitle.status != "approved": blockers.append("Approved subtitle is required.")
     if blockers: raise HTTPException(status_code=409, detail={"message": "Approval blocked", "blocking_reasons": blockers})
+    record = db.query(ReviewRecord).filter(ReviewRecord.episode_id == episode_id).first()
+    if not record:
+        record = ReviewRecord(episode_id=episode_id)
+        db.add(record)
+    record.checklist_json = json.dumps({key: getattr(payload, key) for key in CHECK_KEYS})
+    record.critical_issues_json = json.dumps(payload.critical_issues, ensure_ascii=False)
+    record.notes = payload.notes
+    record.decision = "approved"
+    record.reviewed_at = datetime.now(timezone.utc)
     episode.status = "approved"
     episode.current_step = "review"
     final_asset = db.query(Asset).filter(Asset.episode_id == episode_id, Asset.asset_type == "processed_video").order_by(Asset.version.desc()).first()

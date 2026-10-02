@@ -71,3 +71,10 @@ The script/scene/asset slice follows the master data model:
 - Processing remains adapter-ready: Phase 2's mock job closes the Month 2 exit gate; real FFmpeg/Whisper workers remain later integration work.
 
 Upload safety is enforced server-side with MIME + extension allow-lists, a configurable size limit, sanitized filenames, and episode/scene ownership checks. Original files are stored separately from future processing outputs.
+
+
+## Phase 4 — Processing Engine
+
+Week 8 closes the processing boundary with a local mock worker before real FFmpeg/Whisper integration. A processing job is persisted independently from the API request, moves through queued/running/completed or failed, and preserves error codes/messages for retry. The worker copies the source into a separate processing output asset and emits a mock Burmese transcript JSON asset. The source asset is never overwritten.
+
+The API exposes job creation, listing, detail, and retry. The frontend Processing Queue surfaces progress, failure, and retry states. Real FFmpeg/Whisper adapters remain a later integration step, consistent with the source plan's mock-first approach.

@@ -29,6 +29,7 @@ class StorageProvider(Protocol):
     def download_file(self, object_key: str, destination: Path) -> StoredObject: ...
     def delete(self, object_key: str) -> None: ...
     def exists(self, object_key: str) -> bool: ...
+    def download_url(self, object_key: str) -> str | None: ...
 
 
 def sha256_file(path: Path) -> str:
@@ -90,6 +91,9 @@ class LocalStorageProvider:
 
     def exists(self, object_key: str) -> bool:
         return self._path(object_key).is_file()
+
+    def download_url(self, object_key: str) -> str | None:
+        return None
 
 
 class B2StorageProvider:
@@ -177,6 +181,17 @@ class B2StorageProvider:
             return True
         except Exception:
             return False
+
+    def download_url(self, object_key: str) -> str:
+        key = _safe_object_key(object_key)
+        try:
+            return self.client.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": self.bucket, "Key": key},
+                ExpiresIn=settings.b2_signed_url_expiry_seconds,
+            )
+        except Exception as exc:
+            raise StorageError("B2 download URL generation failed") from exc
 
 
 def get_storage(provider: str | None = None) -> StorageProvider:

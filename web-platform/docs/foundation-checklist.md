@@ -68,3 +68,18 @@ Do not add real media, AI, Google Drive, or production storage integrations yet.
 Next: build Ideas → Series → Seasons → Episodes as a complete vertical slice:
 
 `DB → API → UI → validation → empty/loading/error states → tests`
+
+
+## Phase 2/3 audit closure
+
+- [x] Script CRUD + explicit version creation
+- [x] Scene CRUD + reorder validation
+- [x] Asset upload + MIME/extension allow-list
+- [x] Upload size limit + filename sanitization
+- [x] Asset versioning; originals are never overwritten
+- [x] Scene/episode/script ownership validation
+- [x] Mock processing job + retry endpoint and queue UI
+- [x] Production workspace links from Episode Detail
+- [x] Backend vertical-slice tests for script, scene, asset upload
+- [x] Frontend typecheck/build CI workflow added
+- [ ] Real local test/build execution from a connected runtime — pending environment access

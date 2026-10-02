@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:8000/api/v1/drive/google/callback"
     oauth_encryption_key: str = ""
+    ffmpeg_binary: str = "ffmpeg"
+    whisper_command: str = "whisper"
+    whisper_model: str = "small"
+    processing_timeout_seconds: int = 3600
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

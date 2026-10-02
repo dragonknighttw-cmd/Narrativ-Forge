@@ -59,10 +59,6 @@ def validate_cues(cues, preset="burmese_default"):
             errors.append({"code": "LINE_LENGTH", "cue": index, "message": f"Text exceeds {config['max_chars']} characters for {preset}."})
         if text and not MYANMAR_RE.search(text):
             errors.append({"code": "BURMESE_TEXT_REQUIRED", "cue": index, "message": "Cue must contain Burmese text."})
-        if text and duration > 0:
-            reading_speed = len(re.sub(r"\s+", "", text)) / duration
-            if reading_speed > 15:
-                errors.append({"code": "READING_SPEED", "cue": index, "message": "Cue is too dense to read comfortably."})
         if text.count("\n") + 1 > config["max_lines"]:
             errors.append({"code": "LINE_COUNT", "cue": index, "message": f"Cue must use at most {config['max_lines']} lines."})
         if index > 1:

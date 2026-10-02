@@ -324,3 +324,13 @@ def test_phase7_hook_log_social_and_analytics_flow():
     assert summary.json()["views"] == 1000
     assert summary.json()["social_records"] == 1
     client.close()
+
+
+def test_upload_safety_rejects_mime_extension_mismatch_and_sanitizes_filename():
+    from app.api.routes.assets import safe_filename, validate_upload
+    assert safe_filename("../../secret.mp4") == "secret.mp4"
+    assert safe_filename("bad name?.mp4") == "bad_name_.mp4"
+    with pytest.raises(Exception):
+        validate_upload("clip.exe", "video/mp4", "video")
+    with pytest.raises(Exception):
+        validate_upload("clip.mp4", "image/png", "video")

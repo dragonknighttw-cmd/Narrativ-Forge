@@ -95,10 +95,30 @@ async def google_drive_export(episode_id: str, user=Depends(get_current_user), d
         db.commit()
         async with httpx.AsyncClient(timeout=60) as client:
             headers = {"Authorization": f"Bearer {token}"}
-            folder_response = await client.post("https://www.googleapis.com/drive/v3/files", headers=headers, json={"name": episode.public_id, "mimeType": "application/vnd.google-apps.folder"})
-            folder_response.raise_for_status()
-            folder_id = folder_response.json()["id"]
-            async def upload_bytes(name, mime, data):
+            existing_manifest = json.loads(record.manifest_json or "{}")
+            folder_id = record.drive_folder_id or existing_manifest.get("folder_id")
+            if not folder_id:
+                folder_response = await client.post("https://www.googleapis.com/drive/v3/files", headers=headers, json={"name": episode.public_id, "mimeType": "application/vnd.google-apps.folder"})
+                folder_response.raise_for_status()
+                folder_id = folder_response.json()["id"]
+                record.drive_folder_id = folder_id
+                record.manifest_json = json.dumps({"folder_id": folder_id}, ensure_ascii=False)
+                db.commit()
+
+            async def find_child(name):
+                safe_name = name.replace("'", "\\'")
+                query = "name = '" + safe_name + "' and '" + folder_id + "' in parents and trashed = false"
+                response = await client.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query, "pageSize": 1, "fields": "files(id,name)"})
+                response.raise_for_status()
+                files = response.json().get("files", [])
+                return files[0]["id"] if files else None
+
+            async def upload_bytes(name, mime, data, existing_id=None):
+                if existing_id:
+                    return existing_id
+                found_id = await find_child(name)
+                if found_id:
+                    return found_id
                 boundary = "narrativforgeboundary"
                 metadata = json.dumps({"name": name, "parents": [folder_id]})
                 body = (f"--{boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n{metadata}\r\n"
@@ -106,7 +126,11 @@ async def google_drive_export(episode_id: str, user=Depends(get_current_user), d
                 response = await client.post("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", headers={**headers, "Content-Type": f"multipart/related; boundary={boundary}"}, content=body)
                 response.raise_for_status()
                 return response.json()["id"]
-            video_id = await upload_bytes(Path(final_asset.original_filename).name, final_asset.mime_type, Path(final_asset.local_path).read_bytes())
+            video_name = Path(final_asset.original_filename).name
+            video_id = await upload_bytes(video_name, final_asset.mime_type, Path(final_asset.local_path).read_bytes(), record.drive_file_id)
+            record.drive_file_id = video_id
+            record.manifest_json = json.dumps({"folder_id": folder_id, "video_file_id": video_id}, ensure_ascii=False)
+            db.commit()
             srt_id = await upload_bytes(f"{episode.public_id}.srt", "application/x-subrip", render_srt(json.loads(subtitle.cues_json or "[]")).encode("utf-8"))
             manifest = {"episode_public_id": episode.public_id, "episode_id": episode.id, "provider": "google_drive", "folder_id": folder_id, "video_file_id": video_id, "subtitle_file_id": srt_id, "subtitle_version": subtitle.version, "exported_at": datetime.now(timezone.utc).isoformat()}
             manifest_id = await upload_bytes(f"{episode.public_id}-export-manifest.json", "application/json", json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8"))

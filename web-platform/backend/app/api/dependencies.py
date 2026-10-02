@@ -1,15 +1,53 @@
+import base64
+import hashlib
+import hmac
+import time
+
 from fastapi import Cookie, Depends, Header, HTTPException
+
 from ..core.config import settings
+
+
+def _sign_session(email: str, role: str = "owner") -> str:
+    expires_at = int(time.time()) + settings.session_ttl_seconds
+    payload = f"v1|{email}|{role}|{expires_at}"
+    signature = hmac.new(settings.session_secret.encode(), payload.encode(), hashlib.sha256).digest()
+    return base64.urlsafe_b64encode(f"{payload}|{signature.hex()}".encode()).decode().rstrip("=")
+
+
+def verify_session(value: str) -> dict:
+    try:
+        padded = value + "=" * (-len(value) % 4)
+        raw = base64.urlsafe_b64decode(padded.encode()).decode()
+        version, email, role, expires_at, signature = raw.split("|", 4)
+        if version != "v1" or not email or role not in {"owner", "editor", "viewer"}:
+            raise ValueError("invalid session")
+        if int(expires_at) < int(time.time()):
+            raise ValueError("expired session")
+        payload = f"{version}|{email}|{role}|{expires_at}"
+        expected = hmac.new(settings.session_secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(signature, expected):
+            raise ValueError("invalid signature")
+        return {"id": email, "email": email, "role": role}
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Authentication required") from exc
+
+
+def issue_session(email: str, role: str = "owner") -> str:
+    return _sign_session(email, role)
+
 
 def get_current_user(
     session_cookie: str | None = Cookie(default=None, alias=settings.session_cookie_name),
     authorization: str | None = Header(default=None),
 ):
-    valid_session = session_cookie == "dev-session"
-    valid_bearer = authorization == "Bearer dev-session"
-    if not (valid_session or valid_bearer):
+    value = session_cookie
+    if not value and authorization and authorization.startswith("Bearer "):
+        value = authorization.removeprefix("Bearer ").strip()
+    if not value:
         raise HTTPException(status_code=401, detail="Authentication required")
-    return {"id": "dev-user", "email": settings.dev_auth_email, "role": "owner"}
+    return verify_session(value)
+
 
 def require_roles(*roles: str):
     def dependency(user=Depends(get_current_user)):

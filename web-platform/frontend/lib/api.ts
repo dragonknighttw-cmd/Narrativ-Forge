@@ -18,6 +18,10 @@ export type Idea = { id: string; title: string; concept?: string | null; categor
 export type Series = { id: string; title: string; description?: string | null; status: string; created_at: string };
 export type Season = { id: string; series_id: string; season_number: number; title?: string | null; created_at: string };
 export type Episode = { id: string; public_id: string; series_id: string; season_id?: string | null; episode_number: number; title: string; category?: string | null; synopsis?: string | null; target_duration_seconds: number; actual_duration_seconds?: number | null; status: string; current_step: string; created_at: string; updated_at: string };
+export type Script = { id: string; episode_id: string; version: number; title?: string | null; content: string; status: string; is_current: boolean; created_at: string; updated_at: string };
+export type Scene = { id: string; episode_id: string; script_id?: string | null; scene_number: number; purpose: string; description?: string | null; dialogue?: string | null; duration_seconds?: number | null; created_at: string; updated_at: string };
+export type Asset = { id: string; episode_id: string; scene_id?: string | null; asset_type: string; original_filename: string; storage_provider: string; local_path?: string | null; mime_type: string; file_size_bytes: number; version: number; copyright_status: string; is_final: boolean; status: string; created_at: string };
+export type CreateSceneInput = { scene_number: number; script_id?: string; purpose: string; description?: string; dialogue?: string; duration_seconds?: number };
 
 export const api = {
   health: () => request<{ status: string; service: string }>("/health"),
@@ -37,4 +41,22 @@ export const api = {
   createEpisode: (data: { series_id: string; season_id?: string; episode_number: number; title: string; category?: string; synopsis?: string; target_duration_seconds?: number }) => request<Episode>("/episodes", { method: "POST", body: JSON.stringify(data) }),
   getEpisode: (id: string) => request<Episode>(`/episodes/${id}`),
   updateEpisode: (id: string, data: Partial<Episode>) => request<Episode>(`/episodes/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  listScripts: (episodeId: string) => request<Script[]>(`/episodes/${episodeId}/scripts`),
+  createScript: (episodeId: string, data: { title?: string; content: string }) => request<Script>(`/episodes/${episodeId}/scripts`, { method: "POST", body: JSON.stringify(data) }),
+  updateScript: (episodeId: string, scriptId: string, data: Partial<Script>) => request<Script>(`/episodes/${episodeId}/scripts/${scriptId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  createScriptVersion: (episodeId: string, data: { title?: string; content: string }) => request<Script>(`/episodes/${episodeId}/scripts/versions`, { method: "POST", body: JSON.stringify(data) }),
+  listScenes: (episodeId: string) => request<Scene[]>(`/episodes/${episodeId}/scenes`),
+  createScene: (episodeId: string, data: CreateSceneInput) => request<Scene>(`/episodes/${episodeId}/scenes`, { method: "POST", body: JSON.stringify(data) }),
+  updateScene: (episodeId: string, sceneId: string, data: Partial<Scene>) => request<Scene>(`/episodes/${episodeId}/scenes/${sceneId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  reorderScenes: (episodeId: string, sceneIds: string[]) => request<Scene[]>(`/episodes/${episodeId}/scenes/reorder`, { method: "POST", body: JSON.stringify(sceneIds) }),
+  listAssets: (episodeId: string) => request<Asset[]>(`/episodes/${episodeId}/assets`),
+  updateAsset: (assetId: string, data: Partial<Asset>) => request<Asset>(`/assets/${assetId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  uploadAsset: async (episodeId: string, file: File, assetType: string, sceneId?: string) => {
+    const form = new FormData();
+    form.append("file", file); form.append("asset_type", assetType);
+    if (sceneId) form.append("scene_id", sceneId);
+    const response = await fetch(base + `/episodes/${episodeId}/assets/upload`, { method: "POST", credentials: "include", body: form });
+    if (!response.ok) { let message = "Upload failed"; try { const body = await response.json(); message = body.detail ?? message; } catch {} throw new Error(message); }
+    return response.json() as Promise<Asset>;
+  },
 };

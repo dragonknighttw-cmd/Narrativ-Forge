@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ...db import get_db
-from ...models import Episode
+from ...models import Asset, Episode, ProcessingJob
 from ...services.auto_mode import create_auto_plan
 from ..dependencies import require_roles
 
@@ -41,5 +41,47 @@ def auto_plan(episode_id: str, payload: AutoPlanRequest, _: dict = Depends(requi
             for scene in scenes
         ],
         "next_step": episode.current_step,
+        "requires_human_review": True,
+    }
+
+
+@router.post("/episodes/{episode_id}/run")
+def run_auto_mode(episode_id: str, payload: AutoPlanRequest, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    episode = db.get(Episode, episode_id)
+    if not episode:
+        raise HTTPException(status_code=404, detail="Episode not found")
+    active = db.query(ProcessingJob).filter(
+        ProcessingJob.episode_id == episode_id,
+        ProcessingJob.status.in_(["queued", "running"]),
+    ).first()
+    if active:
+        raise HTTPException(status_code=409, detail="Episode already has an active processing job")
+    source = db.query(Asset).filter(
+        Asset.episode_id == episode_id,
+        Asset.asset_type == "video",
+        Asset.status == "uploaded",
+    ).order_by(Asset.version.desc()).first()
+    if not source:
+        raise HTTPException(status_code=409, detail="Upload a source video before starting Auto Mode")
+    script, scenes = create_auto_plan(db, episode, payload.idea, payload.category)
+    job = ProcessingJob(
+        episode_id=episode_id,
+        job_type="real_processing",
+        status="queued",
+        progress=0,
+        input_asset_id=source.id,
+    )
+    db.add(job)
+    episode.current_step = "processing"
+    episode.status = "in_production"
+    db.commit()
+    db.refresh(job)
+    return {
+        "episode_id": episode_id,
+        "script_id": script.id,
+        "scene_count": len(scenes),
+        "job_id": job.id,
+        "status": job.status,
+        "next_steps": ["processing", "subtitle", "review"],
         "requires_human_review": True,
     }

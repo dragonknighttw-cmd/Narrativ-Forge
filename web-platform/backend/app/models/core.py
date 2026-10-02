@@ -184,3 +184,18 @@ class GoogleDriveConnection(Base):
     scope: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class ReviewRecord(Base):
+    __tablename__ = "review_records"
+    __table_args__ = (UniqueConstraint("episode_id", name="uq_review_episode"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.id"), index=True)
+    checklist_json: Mapped[str] = mapped_column(Text, default="{}")
+    critical_issues_json: Mapped[str] = mapped_column(Text, default="[]")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    decision: Mapped[str] = mapped_column(String(40), default="pending")
+    revision_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)

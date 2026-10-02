@@ -12,7 +12,7 @@ from ...db import get_db
 from ...models import Asset, Episode, Subtitle
 from ...services.storage import StorageError, materialize_asset
 from ...services.subtitles import load_transcript, preset_config, render_srt, render_vtt, validate_cues
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["subtitles"])
 subtitle_router = APIRouter(prefix="/subtitles", tags=["subtitles"])

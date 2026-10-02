@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { AppShell } from "../../../../components/app-shell";
 import { ErrorState } from "../../../../components/domain-forms";
 
+const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+
 export default function DriveExportPage() {
   const { id } = useParams<{ id: string }>();
   const [result, setResult] = useState<any>(null);
@@ -13,12 +15,12 @@ export default function DriveExportPage() {
   const [connected, setConnected] = useState(false);
 
   async function checkDrive() {
-    const r = await fetch("/api/v1/drive/google/status", { credentials: "include" });
+    const r = await fetch(base + "/drive/google/status", { credentials: "include" });
     if (r.ok) setConnected((await r.json()).connected);
   }
 
   async function connectDrive() {
-    const r = await fetch("/api/v1/drive/google/start", { credentials: "include" });
+    const r = await fetch(base + "/drive/google/start", { credentials: "include" });
     const body = await r.json();
     if (!r.ok) throw new Error(body.detail ?? "Drive connection failed");
     window.location.href = body.authorization_url;
@@ -28,7 +30,7 @@ export default function DriveExportPage() {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/v1/episodes/" + id + "/export/" + provider, { method: "POST", credentials: "include" });
+      const response = await fetch(base + "/episodes/" + id + "/export/" + provider, { method: "POST", credentials: "include" });
       const body = await response.json();
       if (!response.ok) throw new Error(body.detail ?? "Drive export failed");
       setResult(body);

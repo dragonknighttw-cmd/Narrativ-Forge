@@ -1,5 +1,5 @@
 import json
-from ...models import AuditEvent
+from ..models import AuditEvent
 
 
 def record_event(db, *, actor_email: str, action: str, resource_type: str, resource_id: str, metadata: dict | None = None) -> AuditEvent:

@@ -24,6 +24,10 @@ def _fail(job: ProcessingJob, code: str, message: str, db: Session) -> Processin
     job.error_code = code
     job.error_message = message
     job.completed_at = now()
+    episode = db.get(Episode, job.episode_id)
+    if episode and episode.status == "processing":
+        episode.status = "failed"
+        episode.current_step = "processing"
     db.commit()
     db.refresh(job)
     return job
@@ -60,6 +64,9 @@ def run_mock_job(job_id: str, db: Session) -> ProcessingJob:
     job.input_asset_id = input_asset.id
     job.status = "running"
     job.progress = 10
+    if episode.status == "in_production":
+        episode.status = "processing"
+        episode.current_step = "processing"
     job.started_at = now()
     job.error_code = None
     job.error_message = None
@@ -129,6 +136,9 @@ def run_mock_job(job_id: str, db: Session) -> ProcessingJob:
         job.progress = 100
         job.duration_seconds = episode.target_duration_seconds
         job.completed_at = now()
+        if episode.status == "processing":
+            episode.status = "subtitle_review"
+            episode.current_step = "subtitle"
         db.commit()
         db.refresh(job)
         return job

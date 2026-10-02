@@ -288,3 +288,39 @@ def test_mock_drive_export_is_idempotent_after_approval(tmp_path):
     assert exported_again.status_code == 200
     assert exported_again.json()["status"] == "completed"
     client.close()
+
+
+def test_phase7_hook_log_social_and_analytics_flow():
+    client = auth_client()
+    series = client.post("/api/v1/series", json={"title": "Phase7 series"}).json()
+    episode = client.post("/api/v1/episodes", json={"series_id": series["id"], "episode_number": 1, "title": "Phase7 episode"}).json()
+
+    hook = client.post("/api/v1/hooks", json={"hook_text": "မင်း ဒီအချက်ကို သိလား?", "hook_type": "question", "topic": "psychology"})
+    assert hook.status_code == 201
+    assert hook.json()["hook_type"] == "question"
+
+    log = client.post("/api/v1/manual-production-logs", json={
+        "episode_id": episode["id"], "topic": "Phase7 topic", "hook_type": "question",
+        "production_time_seconds": 120, "published": True, "platform": "tiktok"
+    })
+    assert log.status_code == 201
+
+    prep = client.post("/api/v1/social-prep", json={
+        "episode_id": episode["id"], "platform": "tiktok",
+        "caption": "Phase7 caption", "hashtags": ["#burmese", "#story"],
+        "platform_format_valid": True
+    })
+    assert prep.status_code == 201
+    publication_id = prep.json()["id"]
+
+    analytics = client.post(f"/api/v1/social-prep/{publication_id}/analytics", json={
+        "views": 1000, "watch_time_seconds": 5000, "completion_rate": 62.5,
+        "shares": 20, "saves": 15, "comments": 7
+    })
+    assert analytics.status_code == 201
+
+    summary = client.get("/api/v1/analytics")
+    assert summary.status_code == 200
+    assert summary.json()["views"] == 1000
+    assert summary.json()["social_records"] == 1
+    client.close()

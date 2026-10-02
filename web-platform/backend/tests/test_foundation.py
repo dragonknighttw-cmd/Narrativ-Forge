@@ -189,3 +189,55 @@ def test_processing_missing_input_is_failed_and_retryable(tmp_path):
         assert retry.json()["retry_count"] == 1
     finally:
         client.close()
+
+
+def test_subtitle_generation_validation_and_export(tmp_path):
+    from app.core.config import settings
+    settings.upload_dir = str(tmp_path)
+    client = auth_client()
+    try:
+        series = client.post("/api/v1/series", json={"title": "Subtitle series"}).json()
+        episode = client.post("/api/v1/episodes", json={"series_id": series["id"], "episode_number": 1, "title": "Subtitle episode"}).json()
+        upload = client.post(
+            f"/api/v1/episodes/{episode['id']}/assets/upload",
+            files={"file": ("source.mp4", b"video-fixture", "video/mp4")},
+            data={"asset_type": "video", "copyright_status": "licensed"},
+        )
+        assert upload.status_code == 201
+        job = client.post("/api/v1/jobs/mock", json={"episode_id": episode["id"]})
+        assert job.status_code == 201
+
+        generated = client.post(f"/api/v1/episodes/{episode['id']}/subtitles/generate", json={"preset": "burmese_default"})
+        assert generated.status_code == 201
+        subtitle = generated.json()
+        assert subtitle["language"] == "my"
+        assert subtitle["version"] == 1
+        assert subtitle["cues"]
+
+        invalid = client.patch(f"/api/v1/subtitles/{subtitle['id']}", json={
+            "cues": [{"start": 0, "end": 8.5, "text": "မြန်မာစာ"}]
+        })
+        assert invalid.status_code == 200
+        assert any(error["code"] == "DISPLAY_TIME" for error in invalid.json()["validation_errors"])
+
+        blocked = client.post(f"/api/v1/episodes/{episode['id']}/subtitles/approve")
+        assert blocked.status_code == 409
+
+        valid = client.patch(f"/api/v1/subtitles/{subtitle['id']}", json={
+            "cues": [{"start": 0, "end": 2.0, "text": "မြန်မာစာ"}]
+        })
+        assert valid.status_code == 200
+        approved = client.post(f"/api/v1/episodes/{episode['id']}/subtitles/approve")
+        assert approved.status_code == 200
+        assert approved.json()["status"] == "approved"
+
+        srt = client.get(f"/api/v1/subtitles/{subtitle['id']}/export?format=srt")
+        assert srt.status_code == 200
+        assert "00:00:00,000 --> 00:00:02,000" in srt.text
+        assert "မြန်မာစာ" in srt.text
+
+        vtt = client.get(f"/api/v1/subtitles/{subtitle['id']}/export?format=vtt")
+        assert vtt.status_code == 200
+        assert vtt.text.startswith("WEBVTT")
+    finally:
+        client.close()

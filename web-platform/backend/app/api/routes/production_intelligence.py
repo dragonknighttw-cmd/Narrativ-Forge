@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from ...db import get_db
 from ...models import Episode, HookLibrary, ManualProductionLog, SocialAnalyticsRecord, SocialPublication
@@ -65,7 +66,7 @@ def list_hooks(_: dict = Depends(get_current_user), db: Session = Depends(get_db
 
 
 @router.post("/hooks", status_code=201)
-def create_hook(payload: HookCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_hook(payload: HookCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     if payload.hook_type not in HOOK_TYPES:
         raise HTTPException(status_code=422, detail="Unsupported hook type")
     if payload.is_default:
@@ -78,7 +79,7 @@ def create_hook(payload: HookCreate, _: dict = Depends(get_current_user), db: Se
 
 
 @router.patch("/hooks/{hook_id}")
-def update_hook(hook_id: str, payload: HookUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_hook(hook_id: str, payload: HookUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(HookLibrary, hook_id)
     if not item:
         raise HTTPException(status_code=404, detail="Hook not found")
@@ -123,13 +124,53 @@ class ProductionLogCreate(BaseModel):
     notes: str | None = None
 
 
+
+@router.delete("/hooks/{hook_id}", status_code=204)
+def delete_hook(hook_id: str, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    item = db.get(HookLibrary, hook_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Hook not found")
+    if item.is_default:
+        raise HTTPException(status_code=409, detail="Default hook cannot be deleted")
+    db.delete(item)
+    db.commit()
+    return None
+
+
 @router.get("/manual-production-logs")
 def list_production_logs(_: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     return [serialize_log(x) for x in db.query(ManualProductionLog).order_by(ManualProductionLog.created_at.desc()).all()]
 
 
+
+@router.patch("/manual-production-logs/{log_id}")
+def update_production_log(log_id: str, payload: ProductionLogCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    item = db.get(ManualProductionLog, log_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Production log not found")
+    if payload.episode_id and not db.get(Episode, payload.episode_id):
+        raise HTTPException(status_code=404, detail="Episode not found")
+    if payload.hook_type and payload.hook_type not in HOOK_TYPES:
+        raise HTTPException(status_code=422, detail="Unsupported hook type")
+    for key, value in payload.model_dump().items():
+        setattr(item, key, value)
+    db.commit()
+    db.refresh(item)
+    return serialize_log(item)
+
+
+@router.delete("/manual-production-logs/{log_id}", status_code=204)
+def delete_production_log(log_id: str, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    item = db.get(ManualProductionLog, log_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Production log not found")
+    db.delete(item)
+    db.commit()
+    return None
+
+
 @router.post("/manual-production-logs", status_code=201)
-def create_production_log(payload: ProductionLogCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_production_log(payload: ProductionLogCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     if payload.episode_id and not db.get(Episode, payload.episode_id):
         raise HTTPException(status_code=404, detail="Episode not found")
     if payload.hook_type and payload.hook_type not in HOOK_TYPES:
@@ -175,7 +216,7 @@ def list_social_prep(episode_id: str, _: dict = Depends(get_current_user), db: S
 
 
 @router.post("/social-prep", status_code=201)
-def create_social_prep(payload: PublicationCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_social_prep(payload: PublicationCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     if not db.get(Episode, payload.episode_id):
         raise HTTPException(status_code=404, detail="Episode not found")
     errors = validate_publication_payload(payload.platform, payload.caption, payload.hashtags)
@@ -194,7 +235,7 @@ def create_social_prep(payload: PublicationCreate, _: dict = Depends(get_current
 
 
 @router.patch("/social-prep/{publication_id}")
-def update_social_prep(publication_id: str, payload: PublicationUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_social_prep(publication_id: str, payload: PublicationUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(SocialPublication, publication_id)
     if not item:
         raise HTTPException(status_code=404, detail="Social preparation not found")
@@ -237,7 +278,7 @@ def list_analytics(publication_id: str, _: dict = Depends(get_current_user), db:
 
 
 @router.post("/social-prep/{publication_id}/analytics", status_code=201)
-def create_analytics(publication_id: str, payload: AnalyticsCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_analytics(publication_id: str, payload: AnalyticsCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     publication = db.get(SocialPublication, publication_id)
     if not publication:
         raise HTTPException(status_code=404, detail="Social preparation not found")
@@ -254,6 +295,28 @@ def create_analytics(publication_id: str, payload: AnalyticsCreate, _: dict = De
 def analytics_summary(_: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     logs = db.query(ManualProductionLog).all()
     analytics = db.query(SocialAnalyticsRecord).all()
+    platform_rows = (
+        db.query(
+            SocialPublication.platform,
+            func.count(SocialAnalyticsRecord.id),
+            func.coalesce(func.sum(SocialAnalyticsRecord.views), 0),
+            func.coalesce(func.sum(SocialAnalyticsRecord.shares), 0),
+            func.coalesce(func.sum(SocialAnalyticsRecord.saves), 0),
+        )
+        .join(SocialAnalyticsRecord, SocialAnalyticsRecord.publication_id == SocialPublication.id)
+        .group_by(SocialPublication.platform)
+        .all()
+    )
+    hook_rows = (
+        db.query(
+            ManualProductionLog.hook_type,
+            func.count(ManualProductionLog.id),
+            func.coalesce(func.sum(ManualProductionLog.views), 0),
+        )
+        .filter(ManualProductionLog.hook_type.isnot(None))
+        .group_by(ManualProductionLog.hook_type)
+        .all()
+    )
     return {
         "manual_logs": len(logs),
         "published_logs": sum(1 for x in logs if x.published),
@@ -264,4 +327,12 @@ def analytics_summary(_: dict = Depends(get_current_user), db: Session = Depends
         "saves": sum(x.saves for x in analytics),
         "comments": sum(x.comments for x in analytics),
         "average_completion_rate": (sum(x.completion_rate for x in analytics) / len(analytics)) if analytics else 0,
+        "by_platform": [
+            {"platform": row[0], "records": row[1], "views": row[2], "shares": row[3], "saves": row[4]}
+            for row in platform_rows
+        ],
+        "by_hook_type": [
+            {"hook_type": row[0], "logs": row[1], "views": row[2]}
+            for row in hook_rows
+        ],
     }

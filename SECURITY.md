@@ -1,21 +1,22 @@
 # Security Policy
 
-## Supported Versions
+Narrativ Forge is a private, invite-only production workspace. Security-sensitive behavior is treated as a first-class implementation concern.
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+## Current foundation
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+- Authentication is currently a development-only session skeleton.
+- Workspace sessions use an httpOnly cookie; client-side localStorage is not used for auth tokens.
+- Backend authorization has a reusable role guard.
+- CORS is configured through an explicit allowlist.
+- Secrets and environment-specific credentials belong in `.env`, not Git.
+- Google OAuth, production session management, upload hardening, audit logging, and Drive export security are deferred to their respective integration/hardening phases.
 
-## Reporting a Vulnerability
+## Reporting
 
-Use this section to tell people how to report a vulnerability.
+For a security issue in a deployed instance, report it privately to the project maintainer rather than opening a public issue with exploit details.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Do not include passwords, OAuth tokens, private media, or other credentials in reports.
+
+## Scope note
+
+The current Phase 1 development authentication is not production-ready. Production deployment must not rely on the default development credentials or development session behavior.

@@ -25,5 +25,11 @@ def upgrade() -> None:
     op.execute(sa.text("UPDATE users SET password_hash = :hash WHERE password_hash IS NULL").bindparams(hash="disabled$bootstrap-required"))
     op.execute(sa.text("UPDATE users SET is_active = 1 WHERE is_active IS NULL"))
 
+    asset_columns = {column["name"] for column in inspector.get_columns("assets")}
+    if "object_key" not in asset_columns:
+        op.add_column("assets", sa.Column("object_key", sa.String(length=1024), nullable=True))
+    if "checksum_sha256" not in asset_columns:
+        op.add_column("assets", sa.Column("checksum_sha256", sa.String(length=64), nullable=True))
+
 def downgrade() -> None:
     raise RuntimeError("Refusing destructive downgrade of the production baseline")

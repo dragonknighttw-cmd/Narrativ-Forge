@@ -55,6 +55,8 @@ class Settings(BaseSettings):
             raise RuntimeError("CORS_ORIGINS must contain at least one allowed origin in production")
         if not self.trusted_host_list:
             raise RuntimeError("TRUSTED_HOSTS must contain at least one allowed host in production")
+        if self.storage_provider.lower() != "b2":
+            raise RuntimeError("STORAGE_PROVIDER must be b2 in production")
         if self.storage_provider.lower() == "b2":
             required = {
                 "B2_APPLICATION_KEY_ID": self.b2_application_key_id,

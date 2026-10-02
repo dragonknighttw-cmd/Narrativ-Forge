@@ -109,3 +109,18 @@ Social analytics are recorded separately from publishing preparation so imported
 Upload validation remains server-side with MIME/extension checks, bounded streaming writes, filename sanitization, and path-safe storage names. Frontend controls expose keyboard focus states and responsive analytics cards.
 
 Google Drive export now persists remote folder/video IDs before subsequent uploads and checks for existing files inside the episode folder by deterministic names. A retry can therefore resume previously completed remote steps instead of blindly creating another folder/file set. Production deployment, real OAuth E2E, database backup/restore, and real media-worker verification remain environment-dependent gates and are not represented as completed locally.
+
+
+## Real processing boundary
+
+The application keeps mock processing and real processing as separate execution paths.
+
+- POST /api/v1/jobs/mock runs the deterministic mock worker for tests and local workflow verification.
+- POST /api/v1/jobs/real creates a queued real-processing job.
+- python -m app.workers.real_worker consumes queued real-processing jobs.
+- FFmpeg normalizes the source into a separate 1080x1920 MP4 with H.264/AAC.
+- Local Whisper produces Burmese transcript JSON with timestamps.
+- Original uploaded assets are never overwritten.
+- Missing FFmpeg/Whisper binaries, command failures, timeouts, and invalid transcript output are persisted as failed jobs with retry support.
+
+The real worker runtime is documented in backend/Dockerfile.worker. Whisper is intentionally an optional runtime dependency so the normal CI/test environment does not need to install the large ML runtime.

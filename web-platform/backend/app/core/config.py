@@ -42,8 +42,6 @@ class Settings(BaseSettings):
             return
         if self.session_secret == "development-only-change-this-secret" or len(self.session_secret) < 32:
             raise RuntimeError("SESSION_SECRET must be a strong secret (32+ characters) in production")
-        if self.dev_auth_password == "change-me":
-            raise RuntimeError("DEV_AUTH_PASSWORD must be changed before production")
         if not self.session_cookie_secure:
             raise RuntimeError("SESSION_COOKIE_SECURE must be true in production")
         if not self.cors_origin_list:

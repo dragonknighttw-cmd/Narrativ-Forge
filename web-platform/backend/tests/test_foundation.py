@@ -696,3 +696,72 @@ def test_production_rbac_invite_and_role_authority():
         assert forbidden.status_code == 403
     finally:
         client.close()
+
+
+def test_storage_abstraction_upload_download_delete_and_asset_metadata(tmp_path, monkeypatch):
+    from app.services.storage import LocalStorageProvider, build_object_key, sha256_file
+
+    provider = LocalStorageProvider(str(tmp_path / "storage"))
+    source = tmp_path / "source.bin"
+    source.write_bytes(b"storage-fixture")
+    key = build_object_key("episode-1", 3, "source.mp4", "video")
+    stored = provider.upload_file(source, key, "video/mp4")
+
+    assert stored.provider == "local"
+    assert stored.object_key == key
+    assert stored.size_bytes == source.stat().st_size
+    assert stored.checksum_sha256 == sha256_file(source)
+    assert provider.exists(key)
+
+    destination = tmp_path / "downloaded.bin"
+    downloaded = provider.download_file(key, destination)
+    assert destination.read_bytes() == source.read_bytes()
+    assert downloaded.checksum_sha256 == stored.checksum_sha256
+
+    provider.delete(key)
+    assert not provider.exists(key)
+
+
+def test_upload_persists_storage_object_metadata(tmp_path):
+    from app.core.config import settings
+
+    settings.upload_dir = str(tmp_path)
+    client = auth_client()
+    try:
+        series = client.post("/api/v1/series", json={"title": "Storage metadata"}).json()
+        episode = client.post("/api/v1/episodes", json={
+            "series_id": series["id"], "episode_number": 1, "title": "Storage episode"
+        }).json()
+        response = client.post(
+            f"/api/v1/episodes/{episode['id']}/assets/upload",
+            files={"file": ("source.mp4", b"storage-video", "video/mp4")},
+            data={"asset_type": "video", "copyright_status": "licensed"},
+        )
+        assert response.status_code == 201
+        asset = response.json()
+        assert asset["storage_provider"] == "local"
+        assert asset["object_key"].startswith(f"episodes/{episode['id']}/assets/v1/video/")
+        assert len(asset["checksum_sha256"]) == 64
+        assert asset["file_size_bytes"] == len(b"storage-video")
+    finally:
+        client.close()
+
+
+def test_production_storage_gate_requires_b2_configuration(monkeypatch):
+    from app.core.config import Settings
+
+    settings_obj = Settings(
+        app_env="production",
+        database_url="sqlite:///./gate.db",
+        session_secret="x" * 40,
+        session_cookie_secure=True,
+        cors_origins="https://app.example.com",
+        trusted_hosts="api.example.com",
+        oauth_encryption_key="y" * 32,
+        storage_provider="b2",
+    )
+    try:
+        settings_obj.validate_runtime()
+        assert False, "expected missing B2 configuration to be rejected"
+    except RuntimeError as exc:
+        assert "B2 storage configuration missing" in str(exc)

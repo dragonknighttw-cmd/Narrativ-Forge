@@ -1,4 +1,4 @@
-from fastapi import Cookie, Header, HTTPException
+from fastapi import Cookie, Depends, Header, HTTPException
 from ...core.config import settings
 
 def get_current_user(
@@ -12,7 +12,7 @@ def get_current_user(
     return {"id": "dev-user", "email": settings.dev_auth_email, "role": "owner"}
 
 def require_roles(*roles: str):
-    def dependency(user=__import__("fastapi").Depends(get_current_user)):
+    def dependency(user=Depends(get_current_user)):
         if user["role"] not in roles:
             raise HTTPException(status_code=403, detail="Permission denied")
         return user

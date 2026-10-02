@@ -744,6 +744,9 @@ def test_upload_persists_storage_object_metadata(tmp_path):
         assert asset["object_key"].startswith(f"episodes/{episode['id']}/assets/v1/video/")
         assert len(asset["checksum_sha256"]) == 64
         assert asset["file_size_bytes"] == len(b"storage-video")
+        download = client.get(f"/api/v1/assets/{asset['id']}/download")
+        assert download.status_code == 200
+        assert download.content == b"storage-video"
     finally:
         client.close()
 

@@ -155,3 +155,19 @@ class Subtitle(Base):
     validation_errors_json: Mapped[str] = mapped_column(Text, default="[]")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class ExportRecord(Base):
+    __tablename__ = "export_records"
+    __table_args__ = (UniqueConstraint("episode_id", name="uq_export_episode"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.id"), index=True)
+    provider: Mapped[str] = mapped_column(String(40), default="mock_drive")
+    status: Mapped[str] = mapped_column(String(40), default="queued")
+    manifest_json: Mapped[str] = mapped_column(Text, default="{}")
+    drive_folder_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    drive_file_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    error_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -96,3 +96,16 @@ The Review Center is the human quality gate between subtitle review and final ou
 Drive export has two providers. Mock Drive is the deterministic local integration used for development and tests; it writes to isolated mock storage and records an export manifest. Google Drive is a real provider boundary using OAuth with the narrow drive.file scope. Refresh/access tokens are stored server-side in encrypted form and are never returned to the frontend. Real export creates an episode folder and uploads the final video, SRT subtitle, and JSON export manifest. Existing completed exports are returned without duplicating files.
 
 Google credentials and the OAuth encryption key are environment-only settings. If they are not configured, the UI exposes the Drive connection as disconnected rather than pretending export is available.
+
+
+## Phase 7 — Production Intelligence
+
+Hook Library, Manual Production Log, Publishing Preparation, and Social Analytics are first-class application data. The Hook Library records reusable hook text/type and observed performance fields. Manual logs preserve the manual workflow as structured learning data. Publishing preparation stores captions, hashtags, schedule metadata, platform-format status, and explicit publishing states; the application never claims a platform publication without a user-provided publication record.
+
+Social analytics are recorded separately from publishing preparation so imported/manual metrics remain attributable to a publication. App Analytics summarizes production and social records without automatically changing hook defaults. This keeps the feedback loop human-controlled as required by the source plan.
+
+## Phase 8 — Hardening Boundary
+
+Upload validation remains server-side with MIME/extension checks, bounded streaming writes, filename sanitization, and path-safe storage names. Frontend controls expose keyboard focus states and responsive analytics cards.
+
+Google Drive export now persists remote folder/video IDs before subsequent uploads and checks for existing files inside the episode folder by deterministic names. A retry can therefore resume previously completed remote steps instead of blindly creating another folder/file set. Production deployment, real OAuth E2E, database backup/restore, and real media-worker verification remain environment-dependent gates and are not represented as completed locally.

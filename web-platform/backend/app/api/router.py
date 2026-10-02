@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from .routes import assets, auth, episodes, health, ideas, jobs, scenes, scripts, series
+from .routes import assets, auth, episodes, health, ideas, jobs, scenes, scripts, series, subtitles
 
 api_router = APIRouter()
 api_router.include_router(health.router)
@@ -15,3 +15,4 @@ api_router.include_router(scenes.scene_router)
 api_router.include_router(assets.router)
 api_router.include_router(assets.asset_router)
 api_router.include_router(jobs.router)
+api_router.include_router(subtitles.router)

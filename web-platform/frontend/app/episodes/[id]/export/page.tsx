@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AppShell } from "../../components/app-shell";
-import { ErrorState } from "../../components/domain-forms";
+import { AppShell } from "../../../components/app-shell";
+import { ErrorState } from "../../../components/domain-forms";
 
 export default function DriveExportPage({ params }: { params: { id: string } }) {
   const id = params.id;

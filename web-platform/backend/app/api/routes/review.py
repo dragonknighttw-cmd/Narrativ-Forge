@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from ...db import get_db
 from ...models import Asset, Episode, ReviewRecord, Subtitle
+from ...services.audit import record_event
 from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/episodes", tags=["review"])
@@ -99,7 +100,7 @@ def request_revision(episode_id: str, payload: RevisionRequest, _: dict = Depend
     return {"status": "rejected", "reason": payload.reason, "episode_id": episode.id}
 
 @router.post("/{episode_id}/review/approve")
-def approve_review(episode_id: str, payload: ReviewUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def approve_review(episode_id: str, payload: ReviewUpdate, user=Depends(get_current_user), db: Session = Depends(get_db)):
     episode = _episode(db, episode_id)
     if episode.status != "needs_approval":
         raise HTTPException(status_code=409, detail="Episode must be in needs_approval before final approval")
@@ -124,5 +125,7 @@ def approve_review(episode_id: str, payload: ReviewUpdate, _: dict = Depends(get
     if final_asset:
         final_asset.is_final = True
         final_asset.status = "final"
+    approved_at = datetime.now(timezone.utc)
+    record_event(db, actor_email=user["email"], action="episode.approved", resource_type="episode", resource_id=episode.id, metadata={"review_id": record.id, "final_asset_id": final_asset.id if final_asset else None})
     db.commit()
-    return {"approved": True, "episode_id": episode.id, "status": episode.status, "approved_at": datetime.now(timezone.utc).isoformat()}
+    return {"approved": True, "episode_id": episode.id, "status": episode.status, "approved_at": approved_at.isoformat()}

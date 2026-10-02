@@ -241,3 +241,50 @@ def test_subtitle_generation_validation_and_export(tmp_path):
         assert vtt.text.startswith("WEBVTT")
     finally:
         client.close()
+
+
+def test_review_blocks_until_checklist_and_approves_final_asset():
+    client = auth_client()
+    series = client.post("/api/v1/series", json={"title": "Review series"}).json()
+    episode = client.post("/api/v1/episodes", json={"series_id": series["id"], "episode_number": 1, "title": "Review episode"}).json()
+    # Move the episode through the existing lifecycle to review.
+    for status in ["planned", "script_draft", "script_review", "assets_needed", "in_production", "processing"]:
+        response = client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": status})
+        assert response.status_code == 200
+    client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "subtitle_review"})
+    review = client.post(f"/api/v1/episodes/{episode['id']}/review/approve", json={
+        "video_watched": True, "audio_checked": True, "subtitle_timing_checked": True, "thumbnail_present": True
+    })
+    assert review.status_code == 409
+    client.close()
+
+
+def test_mock_drive_export_is_idempotent_after_approval(tmp_path):
+    from app.core.config import settings
+    settings.upload_dir = str(tmp_path)
+    client = auth_client()
+    series = client.post("/api/v1/series", json={"title": "Export series"}).json()
+    episode = client.post("/api/v1/episodes", json={"series_id": series["id"], "episode_number": 1, "title": "Export episode"}).json()
+    upload = client.post(f"/api/v1/episodes/{episode['id']}/assets/upload", files={"file": ("source.mp4", b"video-fixture", "video/mp4")}, data={"asset_type": "video", "copyright_status": "licensed"})
+    assert upload.status_code == 201
+    job = client.post("/api/v1/jobs/mock", json={"episode_id": episode["id"]})
+    assert job.status_code == 201
+    generated = client.post(f"/api/v1/episodes/{episode['id']}/subtitles/generate", json={"preset": "burmese_default"})
+    assert generated.status_code == 201
+    subtitle = generated.json()
+    approved_subtitle = client.post(f"/api/v1/episodes/{episode['id']}/subtitles/approve")
+    assert approved_subtitle.status_code == 200
+
+    # Move processing -> subtitle_review -> needs_approval.
+    assert client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "needs_approval"}).status_code == 200
+    approved = client.post(f"/api/v1/episodes/{episode['id']}/review/approve", json={
+        "video_watched": True, "audio_checked": True, "subtitle_timing_checked": True, "thumbnail_present": True
+    })
+    assert approved.status_code == 200
+    exported = client.post(f"/api/v1/episodes/{episode['id']}/export/mock-drive")
+    assert exported.status_code == 200
+    assert exported.json()["status"] == "completed"
+    exported_again = client.post(f"/api/v1/episodes/{episode['id']}/export/mock-drive")
+    assert exported_again.status_code == 200
+    assert exported_again.json()["status"] == "completed"
+    client.close()

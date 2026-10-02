@@ -671,3 +671,28 @@ def test_approval_and_export_create_audit_events(tmp_path):
         assert "episode.exported" in actions
     finally:
         client.close()
+
+
+def test_production_rbac_invite_and_role_authority():
+    client = auth_client()
+    try:
+        invited = client.post("/api/v1/auth/invite", json={
+            "email": "editor@example.com",
+            "password": "strong-editor-password",
+            "role": "editor",
+        })
+        assert invited.status_code == 200
+        assert invited.json()["role"] == "editor"
+
+        client.post("/api/v1/auth/logout")
+        login = client.post("/api/v1/auth/login", json={
+            "email": "editor@example.com",
+            "password": "strong-editor-password",
+        })
+        assert login.status_code == 200
+        assert login.json()["user"]["role"] == "editor"
+
+        forbidden = client.get("/api/v1/audit")
+        assert forbidden.status_code == 403
+    finally:
+        client.close()

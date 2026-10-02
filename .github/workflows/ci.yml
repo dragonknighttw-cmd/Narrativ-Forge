@@ -34,3 +34,34 @@ jobs:
       - run: npm install
       - run: npm run typecheck
       - run: npm run build
+
+
+  e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: pip install -r ../backend/requirements.txt
+      - name: Start backend
+        working-directory: web-platform/backend
+        run: |
+          mkdir -p storage/uploads
+          PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &
+          python -c "import time, urllib.request; [urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health') or time.sleep(1) for _ in range(30)]"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Start frontend
+        run: |
+          NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run start > /tmp/narrativ-frontend.log 2>&1 &
+          node -e "const http=require('http'); let n=0; const f=()=>http.get('http://127.0.0.1:3000/login',r=>{if(r.statusCode===200)process.exit(0);setTimeout(f,1000)}).on('error',()=>{if(++n>30)process.exit(1);setTimeout(f,1000)});f()"
+      - run: npm run e2e

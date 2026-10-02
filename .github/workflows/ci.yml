@@ -22,6 +22,11 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
+      - name: Verify Alembic baseline
+        run: |
+          rm -f /tmp/narrativ-ci.db
+          DATABASE_URL=sqlite:////tmp/narrativ-ci.db PYTHONPATH=. python -m alembic upgrade head
+          DATABASE_URL=sqlite:////tmp/narrativ-ci.db PYTHONPATH=. python -m alembic current
       - run: PYTHONPATH=. pytest -q
 
   frontend:

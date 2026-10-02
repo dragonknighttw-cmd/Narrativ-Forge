@@ -14,7 +14,7 @@ VALID_STATUSES = {
     "processing","subtitle_review","needs_approval","approved","exporting","exported",
     "archived","rejected","failed"
 }
-STATUS_TRANSITIONS = {
+STEP_BY_STATUS = {\n    "idea": "idea", "planned": "structure", "script_draft": "script", "script_review": "script",\n    "assets_needed": "assets", "in_production": "production", "processing": "processing",\n    "subtitle_review": "subtitle", "needs_approval": "review", "approved": "review",\n    "exporting": "output", "exported": "output", "archived": "output", "rejected": "review", "failed": "processing",\n}\n\nSTATUS_TRANSITIONS = {
     "idea": {"planned", "rejected"},
     "planned": {"script_draft", "rejected"},
     "script_draft": {"script_review", "rejected"},
@@ -111,6 +111,8 @@ def update_episode(episode_id: str, payload: EpisodeUpdate, _: dict = Depends(ge
         raise HTTPException(status_code=409, detail="Episode number already exists in this season")
     for key, value in data.items():
         setattr(item, key, value)
+    if "status" in data:
+        item.current_step = STEP_BY_STATUS[data["status"]]
     db.commit()
     db.refresh(item)
     return item

@@ -57,7 +57,7 @@ def test_cors_preflight_allows_configured_origin_and_restricts_headers():
 
 def test_login_sets_http_only_cookie():
     with TestClient(app) as client:
-        response = client.post("/api/v1/auth/login", json={"email": "admin@narrativ.local", "password": "change-me"})
+        response = client.post("/api/v1/auth/login", json={"email": "admin@narrativ.local", "password": "change-me-123456"})
         assert response.status_code == 200
         assert "nf_session" in response.cookies
         assert "httponly" in response.headers["set-cookie"].lower()

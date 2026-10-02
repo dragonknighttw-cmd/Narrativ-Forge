@@ -1,5 +1,7 @@
 import json
 import re
+import json
+import tempfile
 from pathlib import Path
 
 MYANMAR_RE = re.compile(r"[\u1000-\u109F]")
@@ -75,3 +77,39 @@ def load_transcript(path: str):
         for index, segment in enumerate(segments, 1)
         if "start" in segment and "end" in segment
     ]
+
+
+def generate_subtitle_for_episode(db, episode_id: str, preset: str = "burmese_default"):
+    from sqlalchemy import func
+    from ..models import Asset, Subtitle
+    from .storage import StorageError, materialize_asset
+
+    if preset not in PRESETS:
+        raise ValueError("Unsupported subtitle preset")
+    transcript = db.query(Asset).filter(
+        Asset.episode_id == episode_id, Asset.asset_type == "transcript"
+    ).order_by(Asset.version.desc()).first()
+    if not transcript:
+        raise ValueError("Transcript asset not found")
+    try:
+        with tempfile.TemporaryDirectory(prefix="nf-subtitle-") as work:
+            transcript_path = materialize_asset(transcript, Path(work))
+            cues = load_transcript(str(transcript_path))
+    except StorageError as exc:
+        raise ValueError("Transcript asset could not be read from storage") from exc
+    version = (db.query(func.max(Subtitle.version)).filter(Subtitle.episode_id == episode_id).scalar() or 0) + 1
+    db.query(Subtitle).filter(
+        Subtitle.episode_id == episode_id, Subtitle.is_current.is_(True)
+    ).update({Subtitle.is_current: False})
+    errors = validate_cues(cues, preset)
+    item = Subtitle(
+        episode_id=episode_id,
+        version=version,
+        preset=preset,
+        cues_json=json.dumps(cues, ensure_ascii=False),
+        validation_errors_json=json.dumps(errors, ensure_ascii=False),
+        status="draft",
+        is_current=True,
+    )
+    db.add(item)
+    return item

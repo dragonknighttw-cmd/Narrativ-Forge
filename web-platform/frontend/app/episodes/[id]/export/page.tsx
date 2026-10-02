@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { AppShell } from "../../../../components/app-shell";
 import { ErrorState } from "../../../../components/domain-forms";
 
-export default function DriveExportPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+export default function DriveExportPage() {
+  const { id } = useParams<{ id: string }>();
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);

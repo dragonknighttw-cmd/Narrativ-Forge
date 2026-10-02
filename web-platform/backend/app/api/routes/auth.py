@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from ..dependencies import get_current_user
 
@@ -17,5 +17,5 @@ def login(payload: LoginRequest):
     return {"access_token": "dev-session", "token_type": "bearer"}
 
 @router.get("/me")
-def me(user=__import__("fastapi").Depends(get_current_user)):
+def me(user=Depends(get_current_user)):
     return user

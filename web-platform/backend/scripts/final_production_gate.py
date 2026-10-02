@@ -16,6 +16,13 @@ require("SESSION_COOKIE_SECURE=true", os.environ.get("SESSION_COOKIE_SECURE", ""
 require("CORS_ORIGINS", os.environ.get("CORS_ORIGINS"))
 require("TRUSTED_HOSTS", os.environ.get("TRUSTED_HOSTS"))
 require("OAUTH_ENCRYPTION_KEY", os.environ.get("OAUTH_ENCRYPTION_KEY"))
+storage_provider = os.environ.get("STORAGE_PROVIDER", "").lower()
+require("STORAGE_PROVIDER", storage_provider in {"b2", "local"})
+if storage_provider == "b2":
+    require("B2_APPLICATION_KEY_ID", os.environ.get("B2_APPLICATION_KEY_ID"))
+    require("B2_APPLICATION_KEY", os.environ.get("B2_APPLICATION_KEY"))
+    require("B2_BUCKET_NAME", os.environ.get("B2_BUCKET_NAME"))
+    require("B2_REGION", os.environ.get("B2_REGION"))
 
 try:
     subprocess.run([sys.executable, "-m", "alembic", "current"], check=True, timeout=30)

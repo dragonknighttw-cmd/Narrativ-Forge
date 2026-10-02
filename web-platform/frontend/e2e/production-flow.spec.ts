@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 
 test("authenticated production flow reaches approved mock export", async ({ page }) => {
   await page.goto("/login");
-  await page.getByLabel("Email").fill("admin@narrativ.local");
-  await page.getByLabel("Password").fill("change-me");
+  await page.getByLabel("Email").fill("undefined");
+  await page.getByLabel("Password").fill("change-me-123456");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/dashboard/);
 

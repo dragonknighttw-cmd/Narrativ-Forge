@@ -137,3 +137,8 @@ Asset objects follow:
 PostgreSQL remains the workflow source of truth for the storage provider, object key, SHA-256 checksum, and byte size. Source assets are never overwritten by processing; processed video and transcript outputs receive separate versions and object keys.
 
 B2 production credentials are environment-only. The bucket should remain private, and the S3-compatible application key should be scoped to the bucket with the object permissions required by the API/worker.
+
+
+## Edge boundary
+
+Cloudflare Worker lives under `infra/cloudflare-worker` as a lightweight proxy in front of Render API. It forwards authentication headers/body without media processing, adds no-store/security headers, and exposes no application secrets in source. Cloudflare WAF and rate limiting remain edge configuration; the Worker does not use an unreliable in-memory rate counter.

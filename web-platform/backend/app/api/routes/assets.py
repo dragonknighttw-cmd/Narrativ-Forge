@@ -13,7 +13,7 @@ from ...core.config import settings
 from ...db import get_db
 from ...models import Asset, Episode, Scene
 from ...services.storage import StorageError, build_object_key, get_storage
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["assets"])
 asset_router = APIRouter(prefix="/assets", tags=["assets"])

@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     trusted_hosts: str = "localhost,127.0.0.1"
     upload_dir: str = "./storage/uploads"
     max_upload_size_bytes: int = 52428800
+    storage_provider: str = "local"
+    b2_application_key_id: str = ""
+    b2_application_key: str = ""
+    b2_bucket_name: str = ""
+    b2_region: str = ""
+    b2_endpoint_url: str = ""
+    b2_signed_url_expiry_seconds: int = 900
     google_client_id: str = ""
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:8000/api/v1/drive/google/callback"
@@ -48,3 +55,13 @@ class Settings(BaseSettings):
             raise RuntimeError("CORS_ORIGINS must contain at least one allowed origin in production")
         if not self.trusted_host_list:
             raise RuntimeError("TRUSTED_HOSTS must contain at least one allowed host in production")
+        if self.storage_provider.lower() == "b2":
+            required = {
+                "B2_APPLICATION_KEY_ID": self.b2_application_key_id,
+                "B2_APPLICATION_KEY": self.b2_application_key,
+                "B2_BUCKET_NAME": self.b2_bucket_name,
+                "B2_REGION": self.b2_region,
+            }
+            missing = [name for name, value in required.items() if not value]
+            if missing:
+                raise RuntimeError("B2 storage configuration missing: " + ", ".join(missing))

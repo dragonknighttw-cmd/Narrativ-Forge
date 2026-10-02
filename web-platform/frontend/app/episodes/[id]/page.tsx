@@ -102,6 +102,8 @@ export default function EpisodeDetailPage() {
               <a className="text-button" href={`/episodes/${id}/scenes`}>Scene Breakdown</a>
               <a className="text-button" href={`/episodes/${id}/assets`}>Asset Library</a>
               <a className="text-button" href={`/episodes/${id}/subtitle`}>Subtitle Studio</a>
+              <a className="text-button" href={`/episodes/${id}/review`}>Review Center</a>
+              <a className="text-button" href={`/episodes/${id}/export`}>Drive Export</a>
             </div>
           </section>
 

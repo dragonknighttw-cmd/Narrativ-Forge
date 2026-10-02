@@ -101,3 +101,20 @@ Next: build Ideas → Series → Seasons → Episodes as a complete vertical sli
 - [x] Backend processing lifecycle tests
 - [x] CI runs backend tests and frontend typecheck/build
 - [ ] Real FFmpeg/Whisper integration — intentionally deferred to the integration phase after mock-first validation
+
+
+## Phase 5 — Subtitle
+
+- [x] Versioned subtitle model with current-version tracking
+- [x] Transcript asset → subtitle cue generation
+- [x] Burmese subtitle editing API and Studio UI
+- [x] Subtitle presets: default and compact
+- [x] Timing validation: missing text, overlap, invalid timing, 1–7 second default display window
+- [x] Burmese text and preset line-length validation
+- [x] SRT generation
+- [x] VTT generation
+- [x] Human quality gate blocks subtitle approval when validation errors remain
+- [x] Approved subtitle version becomes immutable through the edit API
+- [x] Episode Detail → Subtitle Studio workspace link
+- [x] Backend subtitle lifecycle/export tests
+- [x] CI remains the verification gate for backend tests and frontend typecheck/build

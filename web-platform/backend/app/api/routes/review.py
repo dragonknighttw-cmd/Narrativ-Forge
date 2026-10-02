@@ -96,5 +96,9 @@ def approve_review(episode_id: str, payload: ReviewUpdate, _: dict = Depends(get
     if blockers: raise HTTPException(status_code=409, detail={"message": "Approval blocked", "blocking_reasons": blockers})
     episode.status = "approved"
     episode.current_step = "review"
+    final_asset = db.query(Asset).filter(Asset.episode_id == episode_id, Asset.asset_type == "processed_video").order_by(Asset.version.desc()).first()
+    if final_asset:
+        final_asset.is_final = True
+        final_asset.status = "final"
     db.commit()
     return {"approved": True, "episode_id": episode.id, "status": episode.status, "approved_at": datetime.now(timezone.utc).isoformat()}

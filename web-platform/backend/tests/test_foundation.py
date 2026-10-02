@@ -862,3 +862,51 @@ def test_auto_mode_adapter_produces_deterministic_plan():
     assert plan.hook
     assert plan.script
     assert len(plan.scenes) >= 1
+
+
+def test_production_intelligence_crud_and_analytics():
+    client = auth_client()
+    try:
+        hook = client.post("/api/v1/hooks", json={"hook_text": "မေးခွန်း hook", "hook_type": "question"})
+        assert hook.status_code == 201
+        hook_id = hook.json()["id"]
+        assert client.patch(f"/api/v1/hooks/{hook_id}", json={"hook_text": "ပြင်ထားသော hook", "hook_type": "question"}).status_code == 200
+
+        log = client.post("/api/v1/manual-production-logs", json={
+            "topic": "Test topic", "hook_type": "question", "duration_seconds": 30,
+            "published": True, "views": 100,
+        })
+        assert log.status_code == 201
+        log_id = log.json()["id"]
+        assert client.patch(f"/api/v1/manual-production-logs/{log_id}", json={
+            "topic": "Updated topic", "hook_type": "question", "views": 150,
+        }).status_code == 200
+
+        summary = client.get("/api/v1/analytics")
+        assert summary.status_code == 200
+        assert "by_hook_type" in summary.json()
+    finally:
+        client.close()
+
+
+def test_auto_mode_creates_script_versions_and_requires_source_video():
+    client = auth_client()
+    try:
+        series = client.post("/api/v1/series", json={"title": "Auto series"}).json()
+        episode = client.post("/api/v1/episodes", json={
+            "series_id": series["id"], "episode_number": 1, "title": "Auto episode"
+        }).json()
+        episode_id = episode["id"]
+
+        first = client.post(f"/api/v1/auto/episodes/{episode_id}/plan", json={"idea": "ပထမအကြောင်းအရာ"})
+        assert first.status_code == 200
+        assert len(first.json()["scenes"]) == 2
+
+        second = client.post(f"/api/v1/auto/episodes/{episode_id}/plan", json={"idea": "ဒုတိယအကြောင်းအရာ"})
+        assert second.status_code == 200
+        assert second.json()["script"]["version"] == 2
+
+        blocked = client.post(f"/api/v1/auto/episodes/{episode_id}/run", json={"idea": "Run"})
+        assert blocked.status_code == 409
+    finally:
+        client.close()

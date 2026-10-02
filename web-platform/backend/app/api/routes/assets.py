@@ -12,7 +12,8 @@ from ...db import get_db
 from ...models import Asset, Episode, Scene
 from ..dependencies import get_current_user
 
-router = APIRouter(prefix="/episodes", tags=["assets"])\nasset_router = APIRouter(prefix="/assets", tags=["assets"])
+router = APIRouter(prefix="/episodes", tags=["assets"])
+asset_router = APIRouter(prefix="/assets", tags=["assets"])
 
 ALLOWED_TYPES = {
     "video": {"video/mp4", "video/webm", "video/quicktime"},

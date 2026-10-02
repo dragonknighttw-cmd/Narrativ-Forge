@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from ..core.config import settings
 from ..models import Asset, Episode, ProcessingJob
 from .storage import StorageError, build_object_key, get_storage, materialize_asset
+from .subtitles import generate_subtitle_for_episode
 
 
 def now() -> datetime:
@@ -194,6 +195,10 @@ def run_real_job(job_id: str, db: Session) -> ProcessingJob:
             job.completed_at = now()
             episode.status = "subtitle_review"
             episode.current_step = "subtitle"
+            try:
+                generate_subtitle_for_episode(db, episode.id, "burmese_default")
+            except ValueError as exc:
+                return _fail(job, "SUBTITLE_GENERATION_FAILED", str(exc), db)
             db.commit()
             db.refresh(job)
             return job

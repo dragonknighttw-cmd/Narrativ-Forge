@@ -135,3 +135,26 @@ Next: build Ideas → Series → Seasons → Episodes as a complete vertical sli
 - [x] Real Google Drive export uploads video, SRT, and export manifest
 - [x] Drive failures are preserved and reported as retryable failures
 - [x] Review/export integration tests
+
+
+## Phase 7 — Hook / Manual Log / Analytics / Social Preparation
+
+- [x] Hook Library model and CRUD API
+- [x] Supported hook types: question, shock, mystery, warning, personal_story, contrarian, cliffhanger
+- [x] Manual Production Log model and create/list API
+- [x] Publishing Preparation with caption, hashtags, schedule metadata, and manual publishing states
+- [x] Social analytics manual record/import boundary
+- [x] App analytics summary API and screen
+- [x] Production intelligence integration test
+- [x] Human-controlled hook default flag; performance data does not automatically change defaults
+
+## Phase 8 — Hardening / Production Readiness
+
+- [x] Upload filename sanitization and MIME/extension validation regression tests
+- [x] Upload size limit remains enforced server-side
+- [x] Keyboard-visible focus states and responsive analytics UI
+- [x] Google Drive retry persists remote IDs and reuses existing child files by deterministic name
+- [ ] Real production deployment credentials and infrastructure verification — environment-dependent
+- [ ] Backup/restore against a production PostgreSQL instance — environment-dependent
+- [ ] Full live Google Drive E2E test — requires configured OAuth credentials
+- [ ] Real FFmpeg/Whisper worker integration — intentionally deferred from mock-first foundation

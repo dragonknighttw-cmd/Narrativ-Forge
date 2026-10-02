@@ -28,14 +28,28 @@ mobile/         # reserved mobile workspace
 - Heavy work: worker boundary reserved; not executed inside frontend/API
 - Storage: local filesystem adapter comes later
 - AI/transcription/media/Drive: mock-first integration points before real providers
-- Authentication: development-only session skeleton; production auth/RBAC is a hardening phase
+- Authentication: invite-only development session using an httpOnly cookie
+- Authorization: backend dependency includes a reusable role guard; production roles and invite management are hardening work
+- CORS: explicit origin allowlist with credentials enabled for the development frontend
+- Client token storage: not used
 
 ## Current API
 
 - GET /api/v1/health
 - POST /api/v1/auth/login
+- POST /api/v1/auth/logout
 - GET /api/v1/auth/me
 - GET/POST /api/v1/ideas
 - GET/POST /api/v1/episodes
 
-The API surface will expand in the phase order from the master plan.
+## Verification
+
+Backend foundation tests live in `backend/tests/test_foundation.py` and cover health, login cookie behavior, authentication rejection, and authenticated identity.
+
+Frontend has an explicit `typecheck` script. Runtime installation/build verification still needs to be run in a real developer/CI environment with Node and Python dependencies installed.
+
+## Phase boundary
+
+Phase 1 establishes the application boundary, development auth/session pattern, database/API foundation, protected workspace shell, configuration examples, and verification scaffolding.
+
+Phase 2 begins the real content workflow: Ideas → Series → Seasons → Episodes CRUD end-to-end.

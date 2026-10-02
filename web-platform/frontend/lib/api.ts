@@ -14,7 +14,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.status === 204 ? (undefined as T) : response.json();
 }
 
-export type Idea = { id: string; title: string; concept?: string | null; category?: string | null; hook?: string | null; status: string; created_at: string };
+export type Idea = { id: string; title: string; concept?: string | null; category?: string | null; hook?: string | null; content_warning?: string | null; status: string; created_at: string };
 export type Series = { id: string; title: string; description?: string | null; status: string; created_at: string };
 export type Season = { id: string; series_id: string; season_number: number; title?: string | null; created_at: string };
 export type Episode = { id: string; public_id: string; series_id: string; season_id?: string | null; episode_number: number; title: string; category?: string | null; synopsis?: string | null; target_duration_seconds: number; actual_duration_seconds?: number | null; status: string; current_step: string; created_at: string; updated_at: string };
@@ -30,7 +30,7 @@ export const api = {
   logout: () => request<{ authenticated: boolean }>("/auth/logout", { method: "POST" }),
   me: () => request<{ id: string; email: string; role: string }>("/auth/me"),
   listIdeas: () => request<Idea[]>("/ideas"),
-  createIdea: (data: { title: string; concept?: string; category?: string; hook?: string }) => request<Idea>("/ideas", { method: "POST", body: JSON.stringify(data) }),
+  createIdea: (data: { title: string; concept?: string; category?: string; hook?: string; content_warning?: string }) => request<Idea>("/ideas", { method: "POST", body: JSON.stringify(data) }),
   updateIdea: (id: string, data: Partial<Idea>) => request<Idea>(`/ideas/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   listSeries: () => request<Series[]>("/series"),
   createSeries: (data: { title: string; description?: string }) => request<Series>("/series", { method: "POST", body: JSON.stringify(data) }),

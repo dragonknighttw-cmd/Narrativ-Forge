@@ -196,8 +196,8 @@ class PublicationCreate(BaseModel):
     episode_id: str
     platform: str
     caption: str = ""
-    hashtags: list[str] = []
-    schedule_metadata: dict = {}
+    hashtags: list[str] = Field(default_factory=list)
+    schedule_metadata: dict = Field(default_factory=dict)
     platform_format_valid: bool = False
     notes: str | None = None
 

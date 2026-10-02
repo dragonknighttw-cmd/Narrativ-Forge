@@ -4,11 +4,12 @@
 
 - Set `APP_ENV=production`.
 - Set a random `SESSION_SECRET` of at least 32 characters.
-- Set a non-default `DEV_AUTH_PASSWORD` and treat it as an environment secret.
 - Set `SESSION_COOKIE_SECURE=true`.
 - Set exact `CORS_ORIGINS` and `TRUSTED_HOSTS`; do not use wildcards.
 - Configure `OAUTH_ENCRYPTION_KEY` with a generated Fernet key and keep it outside Git.
 - Configure Google OAuth redirect URI to the deployed HTTPS callback.
+- Deploy the Next.js frontend on Netlify and set `NEXT_PUBLIC_API_BASE_URL` to the Render API origin.
+- Deploy the FastAPI API and real-processing worker on Render with the same application revision.
 - Use PostgreSQL for production rather than the SQLite development default.
 - Store uploaded media on durable storage or a mounted persistent volume; never depend on ephemeral container storage for source assets.
 - Put a real edge/proxy rate limiter in front of the API. The application has a small in-process baseline limiter, but it is not shared across multiple workers/instances.
@@ -66,4 +67,4 @@ Run a restore drill before launch and periodically afterward. Keep backups outsi
 - Production authentication is now database-backed with PBKDF2 password hashes, signed expiring sessions, owner/editor/viewer roles, and owner-only invites. The first owner is created explicitly with `scripts/bootstrap_admin.py`; remove bootstrap secrets after provisioning.
 - Alembic is now the production schema migration mechanism. The first baseline is `0001_bootstrap`; every subsequent schema change must ship as a reviewed Alembic revision.
 - Real Google Drive OAuth/export and real FFmpeg/Whisper require environment-level credentials/binaries and have not been proven by CI.
-- Durable object/media storage and deployment provider configuration still need to be selected.
+- Render + Netlify are now the target deployment providers. Durable/shared media storage still needs a concrete production provider because Render service filesystems are not shared between the API and worker.

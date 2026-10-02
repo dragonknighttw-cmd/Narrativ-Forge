@@ -199,3 +199,80 @@ class ReviewRecord(Base):
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class HookLibrary(Base):
+    __tablename__ = "hook_library"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    hook_text: Mapped[str] = mapped_column(Text)
+    hook_type: Mapped[str] = mapped_column(String(40))
+    topic: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    emotion: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    used_count: Mapped[int] = mapped_column(Integer, default=0)
+    views_average: Mapped[float | None] = mapped_column(default=None)
+    completion_average: Mapped[float | None] = mapped_column(default=None)
+    shares_average: Mapped[float | None] = mapped_column(default=None)
+    performance_score: Mapped[float | None] = mapped_column(default=None)
+    is_default: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class ManualProductionLog(Base):
+    __tablename__ = "manual_production_logs"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    episode_id: Mapped[str | None] = mapped_column(ForeignKey("episodes.id"), nullable=True, index=True)
+    topic: Mapped[str] = mapped_column(String(255))
+    category: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    hook: Mapped[str | None] = mapped_column(Text, nullable=True)
+    hook_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    script_length: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    scene_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    voice_tool: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    image_tool: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    video_tool: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    subtitle_style: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    production_time_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    manual_errors: Mapped[str | None] = mapped_column(Text, nullable=True)
+    quality_score: Mapped[float | None] = mapped_column(default=None)
+    published: Mapped[bool] = mapped_column(default=False)
+    platform: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    views: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    watch_time_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    completion_rate: Mapped[float | None] = mapped_column(default=None)
+    shares: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    saves: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class SocialPublication(Base):
+    __tablename__ = "social_publications"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.id"), index=True)
+    platform: Mapped[str] = mapped_column(String(40))
+    state: Mapped[str] = mapped_column(String(40), default="not_ready")
+    caption: Mapped[str] = mapped_column(Text, default="")
+    hashtags_json: Mapped[str] = mapped_column(Text, default="[]")
+    schedule_metadata_json: Mapped[str] = mapped_column(Text, default="{}")
+    platform_format_valid: Mapped[bool] = mapped_column(default=False)
+    publish_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class SocialAnalyticsRecord(Base):
+    __tablename__ = "social_analytics_records"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    publication_id: Mapped[str] = mapped_column(ForeignKey("social_publications.id"), index=True)
+    views: Mapped[int] = mapped_column(Integer, default=0)
+    watch_time_seconds: Mapped[int] = mapped_column(Integer, default=0)
+    completion_rate: Mapped[float] = mapped_column(default=0)
+    shares: Mapped[int] = mapped_column(Integer, default=0)
+    saves: Mapped[int] = mapped_column(Integer, default=0)
+    comments: Mapped[int] = mapped_column(Integer, default=0)
+    source: Mapped[str] = mapped_column(String(40), default="manual")
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

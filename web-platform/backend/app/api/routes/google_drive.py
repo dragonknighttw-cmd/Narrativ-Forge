@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from ...core.config import settings
 from ...db import get_db
 from ...models import GoogleDriveConnection
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, require_roles
 
 GOOGLE_SCOPE = "https://www.googleapis.com/auth/drive.file"
 router = APIRouter(prefix="/drive/google", tags=["google-drive"])
@@ -48,7 +48,7 @@ def _verify_state(value: str):
         raise HTTPException(status_code=400, detail="Invalid or expired OAuth state") from exc
 
 @router.get("/status")
-def google_status(user=Depends(get_current_user), db: Session = Depends(get_db)):
+def google_status(user=Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.query(GoogleDriveConnection).filter(GoogleDriveConnection.user_email == user["email"]).first()
     return {"connected": bool(item), "provider": "google_drive", "scope": item.scope if item else None}
 

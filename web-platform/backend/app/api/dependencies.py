@@ -1,5 +1,5 @@
 from fastapi import Cookie, Depends, Header, HTTPException
-from ...core.config import settings
+from ..core.config import settings
 
 def get_current_user(
     session_cookie: str | None = Cookie(default=None, alias=settings.session_cookie_name),

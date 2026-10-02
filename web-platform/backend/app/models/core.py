@@ -138,3 +138,20 @@ class Asset(Base):
     is_final: Mapped[bool] = mapped_column(default=False)
     status: Mapped[str] = mapped_column(String(40), default="uploaded")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class Subtitle(Base):
+    __tablename__ = "subtitles"
+    __table_args__ = (UniqueConstraint("episode_id", "version", name="uq_subtitle_version_per_episode"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.id"), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    language: Mapped[str] = mapped_column(String(10), default="my")
+    format: Mapped[str] = mapped_column(String(10), default="srt")
+    preset: Mapped[str] = mapped_column(String(40), default="burmese_default")
+    cues_json: Mapped[str] = mapped_column(Text, default="[]")
+    status: Mapped[str] = mapped_column(String(40), default="draft")
+    is_current: Mapped[bool] = mapped_column(default=True)
+    validation_errors_json: Mapped[str] = mapped_column(Text, default="[]")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)

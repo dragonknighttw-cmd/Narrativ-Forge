@@ -12,7 +12,7 @@ from ...db import get_db
 from ...models import Asset, Episode, Scene
 from ..dependencies import get_current_user
 
-router = APIRouter(prefix="/episodes", tags=["assets"])
+router = APIRouter(prefix="/episodes", tags=["assets"])\nasset_router = APIRouter(prefix="/assets", tags=["assets"])
 
 ALLOWED_TYPES = {
     "video": {"video/mp4", "video/webm", "video/quicktime"},
@@ -121,7 +121,7 @@ async def upload_asset(
     return item
 
 
-@router.patch("/../assets/{asset_id}")
+@asset_router.patch("/{asset_id}")
 def update_asset(asset_id: str, payload: AssetUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     item = db.get(Asset, asset_id)
     if not item:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -12,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from ..core.config import settings
 from ..models import Asset, Episode, ProcessingJob
+from .storage import StorageError, build_object_key, get_storage, materialize_asset
 
 
 def now() -> datetime:
@@ -61,18 +63,8 @@ def run_real_job(job_id: str, db: Session) -> ProcessingJob:
         return _fail(job, "EPISODE_NOT_FOUND", "Episode no longer exists", db)
 
     input_asset = _source_asset(db, episode, job)
-    if not input_asset or not input_asset.local_path:
+    if not input_asset:
         return _fail(job, "INPUT_ASSET_MISSING", "Upload a source video before processing", db)
-
-    source = Path(input_asset.local_path)
-    if not source.is_file():
-        return _fail(job, "INPUT_FILE_MISSING", "The source file is not available", db)
-
-    output_dir = Path(settings.upload_dir) / episode.id / "processing"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    render_path = output_dir / f"{uuid4().hex}_final.mp4"
-    transcript_dir = output_dir / f"{uuid4().hex}_whisper"
-    transcript_dir.mkdir(parents=True, exist_ok=True)
 
     job.input_asset_id = input_asset.id
     job.status = "running"
@@ -86,67 +78,100 @@ def run_real_job(job_id: str, db: Session) -> ProcessingJob:
     db.commit()
 
     try:
-        _run(
-            [
-                settings.ffmpeg_binary, "-y", "-i", str(source),
-                "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1",
-                "-r", "30", "-c:v", "libx264", "-preset", "medium", "-crf", "23",
-                "-c:a", "aac", "-ar", "48000", "-movflags", "+faststart", str(render_path),
-            ],
-            timeout=settings.processing_timeout_seconds,
-        )
-        job.progress = 55
-        db.commit()
+        with tempfile.TemporaryDirectory(prefix="nf-real-") as work:
+            work_dir = Path(work)
+            source = materialize_asset(input_asset, work_dir / "input")
+            render_path = work_dir / f"{uuid4().hex}_final.mp4"
+            transcript_dir = work_dir / "whisper"
+            transcript_dir.mkdir(parents=True, exist_ok=True)
 
-        _run(
-            [
-                settings.whisper_command, str(source), "--language", "my", "--task", "transcribe",
-                "--output_format", "json", "--output_dir", str(transcript_dir), "--model", settings.whisper_model,
-            ],
-            timeout=settings.processing_timeout_seconds,
-        )
-        whisper_json = transcript_dir / f"{source.stem}.json"
-        if not whisper_json.is_file():
-            candidates = sorted(transcript_dir.glob("*.json"))
-            if not candidates:
-                return _fail(job, "WHISPER_OUTPUT_MISSING", "Whisper completed without a JSON transcript", db)
-            whisper_json = candidates[0]
+            _run(
+                [
+                    settings.ffmpeg_binary, "-y", "-i", str(source),
+                    "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1",
+                    "-r", "30", "-c:v", "libx264", "-preset", "medium", "-crf", "23",
+                    "-c:a", "aac", "-ar", "48000", "-movflags", "+faststart", str(render_path),
+                ],
+                timeout=settings.processing_timeout_seconds,
+            )
+            job.progress = 55
+            db.commit()
 
-        transcript = json.loads(whisper_json.read_text(encoding="utf-8"))
-        transcript["source"] = "whisper"
-        transcript["language"] = transcript.get("language", "my")
-        transcript_path = output_dir / f"{uuid4().hex}_transcript.json"
-        transcript_path.write_text(json.dumps(transcript, ensure_ascii=False, indent=2), encoding="utf-8")
+            _run(
+                [
+                    settings.whisper_command, str(source), "--language", "my", "--task", "transcribe",
+                    "--output_format", "json", "--output_dir", str(transcript_dir), "--model", settings.whisper_model,
+                ],
+                timeout=settings.processing_timeout_seconds,
+            )
+            whisper_json = transcript_dir / f"{source.stem}.json"
+            if not whisper_json.is_file():
+                candidates = sorted(transcript_dir.glob("*.json"))
+                if not candidates:
+                    return _fail(job, "WHISPER_OUTPUT_MISSING", "Whisper completed without a JSON transcript", db)
+                whisper_json = candidates[0]
 
-        version = (db.query(func.max(Asset.version)).filter(Asset.episode_id == episode.id).scalar() or 0) + 1
-        output_asset = Asset(
-            episode_id=episode.id, asset_type="processed_video", original_filename=render_path.name,
-            storage_provider="local", local_path=str(render_path), mime_type="video/mp4",
-            file_size_bytes=render_path.stat().st_size, version=version,
-            copyright_status=input_asset.copyright_status, status="processed", is_final=False,
-        )
-        db.add(output_asset)
-        db.flush()
+            transcript = json.loads(whisper_json.read_text(encoding="utf-8"))
+            transcript["source"] = "whisper"
+            transcript["language"] = transcript.get("language", "my")
+            transcript_path = work_dir / f"{uuid4().hex}_transcript.json"
+            transcript_path.write_text(json.dumps(transcript, ensure_ascii=False, indent=2), encoding="utf-8")
 
-        transcript_asset = Asset(
-            episode_id=episode.id, asset_type="transcript", original_filename=transcript_path.name,
-            storage_provider="local", local_path=str(transcript_path), mime_type="application/json",
-            file_size_bytes=transcript_path.stat().st_size, version=version + 1,
-            copyright_status="generated", status="completed", is_final=False,
-        )
-        db.add(transcript_asset)
-        db.flush()
+            version = (db.query(func.max(Asset.version)).filter(Asset.episode_id == episode.id).scalar() or 0) + 1
+            output_key = build_object_key(episode.id, version, render_path.name, "processed_video")
+            transcript_key = build_object_key(episode.id, version + 1, transcript_path.name, "transcript")
+            storage = get_storage()
+            stored_output = storage.upload_file(render_path, output_key, "video/mp4")
+            stored_transcript = storage.upload_file(transcript_path, transcript_key, "application/json")
 
-        job.output_asset_id = output_asset.id
-        job.status = "completed"
-        job.progress = 100
-        job.duration_seconds = episode.target_duration_seconds
-        job.completed_at = now()
-        episode.status = "subtitle_review"
-        episode.current_step = "subtitle"
-        db.commit()
-        db.refresh(job)
-        return job
+            output_asset = Asset(
+                episode_id=episode.id,
+                asset_type="processed_video",
+                original_filename=render_path.name,
+                storage_provider=stored_output.provider,
+                local_path=stored_output.local_path,
+                object_key=stored_output.object_key,
+                checksum_sha256=stored_output.checksum_sha256,
+                mime_type="video/mp4",
+                file_size_bytes=stored_output.size_bytes,
+                version=version,
+                copyright_status=input_asset.copyright_status,
+                status="processed",
+                is_final=False,
+            )
+            db.add(output_asset)
+            db.flush()
+
+            transcript_asset = Asset(
+                episode_id=episode.id,
+                asset_type="transcript",
+                original_filename=transcript_path.name,
+                storage_provider=stored_transcript.provider,
+                local_path=stored_transcript.local_path,
+                object_key=stored_transcript.object_key,
+                checksum_sha256=stored_transcript.checksum_sha256,
+                mime_type="application/json",
+                file_size_bytes=stored_transcript.size_bytes,
+                version=version + 1,
+                copyright_status="generated",
+                status="completed",
+                is_final=False,
+            )
+            db.add(transcript_asset)
+            db.flush()
+
+            job.output_asset_id = output_asset.id
+            job.status = "completed"
+            job.progress = 100
+            job.duration_seconds = episode.target_duration_seconds
+            job.completed_at = now()
+            episode.status = "subtitle_review"
+            episode.current_step = "subtitle"
+            db.commit()
+            db.refresh(job)
+            return job
+    except StorageError as exc:
+        return _fail(job, "STORAGE_ERROR", str(exc), db)
     except subprocess.TimeoutExpired:
         return _fail(job, "PROCESSING_TIMEOUT", "Real media processing exceeded the configured timeout", db)
     except FileNotFoundError as exc:

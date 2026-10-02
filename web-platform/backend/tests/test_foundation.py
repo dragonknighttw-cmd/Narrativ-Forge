@@ -137,3 +137,55 @@ def test_script_scene_and_asset_vertical_slice(tmp_path, monkeypatch):
         assert bad_upload.status_code == 415
     finally:
         client.close()
+
+
+def test_processing_mock_worker_creates_output_and_transcript(tmp_path):
+    from app.core.config import settings
+    settings.upload_dir = str(tmp_path)
+    client = auth_client()
+    try:
+        series = client.post("/api/v1/series", json={"title": "Worker series"}).json()
+        episode = client.post("/api/v1/episodes", json={"series_id": series["id"], "episode_number": 1, "title": "Worker episode"}).json()
+        upload = client.post(
+            f"/api/v1/episodes/{episode['id']}/assets/upload",
+            files={"file": ("source.mp4", b"video-fixture", "video/mp4")},
+            data={"asset_type": "video", "copyright_status": "licensed"},
+        )
+        assert upload.status_code == 201
+
+        job = client.post("/api/v1/jobs/mock", json={"episode_id": episode["id"]})
+        assert job.status_code == 201
+        assert job.json()["status"] == "completed"
+        assert job.json()["progress"] == 100
+        assert job.json()["output_asset_id"]
+
+        assets = client.get(f"/api/v1/episodes/{episode['id']}/assets")
+        assert assets.status_code == 200
+        asset_types = {item["asset_type"] for item in assets.json()}
+        assert "video" in asset_types
+        assert "processed_video" in asset_types
+        assert "transcript" in asset_types
+        assert all(item["version"] > 0 for item in assets.json())
+    finally:
+        client.close()
+
+
+def test_processing_missing_input_is_failed_and_retryable(tmp_path):
+    from app.core.config import settings
+    settings.upload_dir = str(tmp_path)
+    client = auth_client()
+    try:
+        series = client.post("/api/v1/series", json={"title": "Failure series"}).json()
+        episode = client.post("/api/v1/episodes", json={"series_id": series["id"], "episode_number": 1, "title": "Failure episode"}).json()
+
+        job = client.post("/api/v1/jobs/mock", json={"episode_id": episode["id"]})
+        assert job.status_code == 201
+        assert job.json()["status"] == "failed"
+        assert job.json()["error_code"] == "INPUT_ASSET_MISSING"
+
+        retry = client.post(f"/api/v1/jobs/{job.json()['id']}/retry")
+        assert retry.status_code == 200
+        assert retry.json()["status"] == "failed"
+        assert retry.json()["retry_count"] == 1
+    finally:
+        client.close()

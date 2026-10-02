@@ -335,3 +335,68 @@ def test_upload_safety_rejects_mime_extension_mismatch_and_sanitizes_filename():
         validate_upload("clip.exe", "video/mp4", "video")
     with pytest.raises(Exception):
         validate_upload("clip.mp4", "image/png", "video")
+
+
+def test_real_processing_pipeline_creates_render_and_whisper_assets(monkeypatch, tmp_path):
+    from pathlib import Path
+    from app.models import Asset, Episode, ProcessingJob, Series
+    from app.services import real_processing
+
+    db = TestingSession()
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"fixture-video")
+    series = Series(title="Real processing test")
+    db.add(series)
+    db.flush()
+    episode = Episode(
+        public_id="NF-REAL-TEST",
+        series_id=series.id,
+        episode_number=1,
+        title="Real processing",
+        status="in_production",
+        current_step="processing",
+    )
+    db.add(episode)
+    db.flush()
+    asset = Asset(
+        episode_id=episode.id,
+        asset_type="video",
+        original_filename="source.mp4",
+        storage_provider="local",
+        local_path=str(source),
+        mime_type="video/mp4",
+        file_size_bytes=source.stat().st_size,
+        version=1,
+        status="uploaded",
+    )
+    db.add(asset)
+    db.flush()
+    job = ProcessingJob(episode_id=episode.id, job_type="real_processing", input_asset_id=asset.id)
+    db.add(job)
+    db.commit()
+
+    def fake_run(command, *, timeout):
+        output = Path(command[-1])
+        if "ffmpeg" in command[0]:
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_bytes(b"rendered")
+        else:
+            output_dir = Path(command[command.index("--output_dir") + 1])
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / "source.json").write_text(
+                '{"language":"my","segments":[{"start":0,"end":2,"text":"မြန်မာ"}]}',
+                encoding="utf-8",
+            )
+        return type("Result", (), {"stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(real_processing, "_run", fake_run)
+    real_processing.settings.upload_dir = str(tmp_path / "uploads")
+    result = real_processing.run_real_job(job.id, db)
+
+    assert result.status == "completed"
+    assert db.get(Episode, episode.id).status == "subtitle_review"
+    output = db.get(Asset, result.output_asset_id)
+    assert output.asset_type == "processed_video"
+    assert Path(output.local_path).read_bytes() == b"rendered"
+    transcript = db.query(Asset).filter(Asset.episode_id == episode.id, Asset.asset_type == "transcript").one()
+    assert "မြန်မာ" in Path(transcript.local_path).read_text(encoding="utf-8")

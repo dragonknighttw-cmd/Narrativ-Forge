@@ -48,6 +48,12 @@ Backend foundation tests live in `backend/tests/test_foundation.py` and cover he
 
 Frontend has an explicit `typecheck` script. Runtime installation/build verification still needs to be run in a real developer/CI environment with Node and Python dependencies installed.
 
+## Phase 2 — Content structure
+
+The second vertical slice now covers Ideas → Series → Seasons → Episodes. FastAPI owns validation and status transitions; Next.js owns forms, lists, detail views, and user-facing error/empty states.
+
+Episode structure enforces the source requirements: an episode must reference an existing series; an optional season must belong to that series; target duration is required; and episode numbers cannot duplicate within a season. Status transitions follow the documented workflow and revision transitions.
+
 ## Phase boundary
 
 Phase 1 establishes the application boundary, development auth/session pattern, database/API foundation, protected workspace shell, configuration examples, and verification scaffolding.

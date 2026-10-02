@@ -390,7 +390,7 @@ def test_real_processing_pipeline_creates_render_and_whisper_assets(monkeypatch,
         return type("Result", (), {"stdout": "", "stderr": ""})()
 
     monkeypatch.setattr(real_processing, "_run", fake_run)
-    real_processing.settings.upload_dir = str(tmp_path / "uploads")
+    monkeypatch.setattr(real_processing.settings, "upload_dir", str(tmp_path / "uploads"))
     result = real_processing.run_real_job(job.id, db)
 
     assert result.status == "completed"

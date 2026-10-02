@@ -1,4 +1,5 @@
 import json
+import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from ...db import get_db
 from ...models import Asset, Episode, Subtitle
+from ...services.storage import StorageError, materialize_asset
 from ...services.subtitles import load_transcript, preset_config, render_srt, render_vtt, validate_cues
 from ..dependencies import get_current_user
 
@@ -58,10 +60,14 @@ def generate_subtitle(episode_id: str, payload: GenerateSubtitle, _: dict = Depe
     transcript = db.query(Asset).filter(
         Asset.episode_id == episode_id, Asset.asset_type == "transcript"
     ).order_by(Asset.version.desc()).first()
-    if not transcript or not transcript.local_path or not Path(transcript.local_path).exists():
+    if not transcript:
         raise HTTPException(status_code=422, detail="Transcript asset not found")
     try:
-        cues = load_transcript(transcript.local_path)
+        with tempfile.TemporaryDirectory(prefix="nf-subtitle-") as work:
+            transcript_path = materialize_asset(transcript, Path(work))
+            cues = load_transcript(str(transcript_path))
+    except StorageError as exc:
+        raise HTTPException(status_code=422, detail="Transcript asset could not be read from storage") from exc
     except (OSError, ValueError, json.JSONDecodeError, KeyError) as exc:
         raise HTTPException(status_code=422, detail="Invalid transcript asset") from exc
     version = (db.query(func.max(Subtitle.version)).filter(Subtitle.episode_id == episode_id).scalar() or 0) + 1

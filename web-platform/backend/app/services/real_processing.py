@@ -51,6 +51,28 @@ def _source_asset(db: Session, episode: Episode, job: ProcessingJob) -> Asset | 
     )
 
 
+
+def _validate_rendered_media(path: Path) -> tuple[int, int, float]:
+    result = _run([
+        settings.ffprobe_binary, "-v", "error", "-show_streams", "-show_format",
+        "-of", "json", str(path),
+    ], timeout=settings.processing_timeout_seconds)
+    data = json.loads(result.stdout or "{}")
+    streams = data.get("streams", [])
+    video = next((item for item in streams if item.get("codec_type") == "video"), None)
+    audio = next((item for item in streams if item.get("codec_type") == "audio"), None)
+    if not video:
+        raise ValueError("Rendered output has no video stream")
+    if not audio:
+        raise ValueError("Rendered output has no audio stream")
+    width, height = int(video.get("width", 0)), int(video.get("height", 0))
+    if (width, height) != (1080, 1920):
+        raise ValueError(f"Rendered output must be 1080x1920, got {width}x{height}")
+    duration = float((data.get("format") or {}).get("duration") or 0)
+    if duration <= 0:
+        raise ValueError("Rendered output has invalid duration")
+    return width, height, duration
+
 def run_real_job(job_id: str, db: Session) -> ProcessingJob:
     job = db.get(ProcessingJob, job_id)
     if not job:
@@ -94,6 +116,7 @@ def run_real_job(job_id: str, db: Session) -> ProcessingJob:
                 ],
                 timeout=settings.processing_timeout_seconds,
             )
+            width, height, duration = _validate_rendered_media(render_path)
             job.progress = 55
             db.commit()
 
@@ -134,6 +157,9 @@ def run_real_job(job_id: str, db: Session) -> ProcessingJob:
                 checksum_sha256=stored_output.checksum_sha256,
                 mime_type="video/mp4",
                 file_size_bytes=stored_output.size_bytes,
+                width=width,
+                height=height,
+                duration_seconds=round(duration),
                 version=version,
                 copyright_status=input_asset.copyright_status,
                 status="processed",
@@ -163,7 +189,8 @@ def run_real_job(job_id: str, db: Session) -> ProcessingJob:
             job.output_asset_id = output_asset.id
             job.status = "completed"
             job.progress = 100
-            job.duration_seconds = episode.target_duration_seconds
+            job.duration_seconds = round(duration)
+            episode.actual_duration_seconds = round(duration)
             job.completed_at = now()
             episode.status = "subtitle_review"
             episode.current_step = "subtitle"

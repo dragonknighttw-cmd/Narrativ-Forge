@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+import tempfile
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -10,6 +11,7 @@ from sqlalchemy.orm import Session
 from ...core.config import settings
 from ...db import get_db
 from ...models import Asset, Episode, Scene
+from ...services.storage import StorageError, build_object_key, get_storage
 from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/episodes", tags=["assets"])
@@ -21,7 +23,6 @@ ALLOWED_TYPES = {
     "image": {"image/jpeg", "image/png", "image/webp"},
     "thumbnail": {"image/jpeg", "image/png", "image/webp"},
 }
-MAX_FILE_SIZE = settings.max_upload_size_bytes
 SAFE_NAME = re.compile(r"[^A-Za-z0-9._-]+")
 
 
@@ -83,35 +84,42 @@ async def upload_asset(
         scene = db.get(Scene, scene_id)
         if not scene or scene.episode_id != episode_id:
             raise HTTPException(status_code=422, detail="Scene does not belong to this episode")
-    upload_dir = Path(settings.upload_dir) / episode_id
-    upload_dir.mkdir(parents=True, exist_ok=True)
+
     version = (db.query(func.max(Asset.version)).filter(Asset.episode_id == episode_id).scalar() or 0) + 1
     safe_name = safe_filename(file.filename or "upload.bin")
-    stored_name = f"{uuid4().hex}_v{version}_{safe_name}"
-    destination = upload_dir / stored_name
-    size = 0
+    object_key = build_object_key(episode_id, version, f"{uuid4().hex}_{safe_name}", asset_type)
+
+    temp_path = None
     try:
-        with destination.open("wb") as output:
+        with tempfile.NamedTemporaryFile(prefix="nf-upload-", suffix=Path(safe_name).suffix, delete=False) as temp:
+            temp_path = Path(temp.name)
+            size = 0
             while chunk := await file.read(1024 * 1024):
                 size += len(chunk)
                 if size > settings.max_upload_size_bytes:
-                    destination.unlink(missing_ok=True)
                     raise HTTPException(status_code=413, detail="File exceeds upload size limit")
-                output.write(chunk)
+                temp.write(chunk)
+
+        stored = get_storage().upload_file(temp_path, object_key, file.content_type or "application/octet-stream")
     except HTTPException:
         raise
-    except OSError as exc:
-        destination.unlink(missing_ok=True)
-        raise HTTPException(status_code=500, detail="Unable to store upload") from exc
+    except StorageError as exc:
+        raise HTTPException(status_code=502, detail="Unable to store upload") from exc
+    finally:
+        if temp_path:
+            temp_path.unlink(missing_ok=True)
+
     item = Asset(
         episode_id=episode_id,
         scene_id=scene_id,
         asset_type=asset_type,
         original_filename=safe_name,
-        storage_provider="local",
-        local_path=str(destination),
+        storage_provider=stored.provider,
+        local_path=stored.local_path,
+        object_key=stored.object_key,
+        checksum_sha256=stored.checksum_sha256,
         mime_type=file.content_type or "application/octet-stream",
-        file_size_bytes=size,
+        file_size_bytes=stored.size_bytes,
         version=version,
         copyright_status=copyright_status,
         status="uploaded",
@@ -133,9 +141,25 @@ def update_asset(asset_id: str, payload: AssetUpdate, _: dict = Depends(get_curr
         if not scene or scene.episode_id != item.episode_id:
             raise HTTPException(status_code=422, detail="Scene does not belong to this episode")
     if values.get("is_final"):
-        db.query(Asset).filter(Asset.episode_id == item.episode_id, Asset.asset_type == item.asset_type, Asset.is_final.is_(True)).update({Asset.is_final: False})
+        db.query(Asset).filter(
+            Asset.episode_id == item.episode_id,
+            Asset.asset_type == item.asset_type,
+            Asset.is_final.is_(True),
+        ).update({Asset.is_final: False})
     for key, value in values.items():
         setattr(item, key, value)
     db.commit()
     db.refresh(item)
     return item
+
+
+@asset_router.delete("/{asset_id}")
+def soft_delete_asset(asset_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    item = db.get(Asset, asset_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    item.status = "deleted"
+    item.is_final = False
+    db.commit()
+    db.refresh(item)
+    return {"status": "deleted", "id": item.id, "object_key": item.object_key}

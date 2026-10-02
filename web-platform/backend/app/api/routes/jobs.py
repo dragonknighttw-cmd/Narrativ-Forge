@@ -37,7 +37,7 @@ def create_mock_job(payload: MockJobCreate, _: dict = Depends(require_roles("own
 
 
 @router.post("/real", status_code=201)
-def create_real_job(payload: RealJobCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_real_job(payload: RealJobCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     episode = db.get(Episode, payload.episode_id)
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
@@ -58,7 +58,7 @@ def get_job(job_id: str, _: dict = Depends(get_current_user), db: Session = Depe
 
 
 @router.post("/{job_id}/retry")
-def retry_job(job_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def retry_job(job_id: str, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     job = db.get(ProcessingJob, job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")

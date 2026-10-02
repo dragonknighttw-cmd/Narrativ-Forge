@@ -54,6 +54,7 @@ export const api = {
   updateAsset: (assetId: string, data: Partial<Asset>) => request<Asset>(`/assets/${assetId}`, { method: "PATCH", body: JSON.stringify(data) }),
   listJobs: () => request<ProcessingJob[]>(`/jobs`),
   createMockJob: (episodeId: string) => request<ProcessingJob>(`/jobs/mock`, { method: "POST", body: JSON.stringify({ episode_id: episodeId }) }),
+  createRealJob: (episodeId: string) => request<ProcessingJob>(`/jobs/real`, { method: "POST", body: JSON.stringify({ episode_id: episodeId }) }),
   retryJob: (jobId: string) => request<ProcessingJob>(`/jobs/${jobId}/retry`, { method: "POST" }),
   listSubtitles: (episodeId: string) => request<Subtitle[]>(`/episodes/${episodeId}/subtitles`),
   generateSubtitle: (episodeId: string, preset = "burmese_default") => request<Subtitle>(`/episodes/${episodeId}/subtitles/generate`, { method: "POST", body: JSON.stringify({ preset }) }),

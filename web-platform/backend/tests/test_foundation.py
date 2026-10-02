@@ -244,6 +244,53 @@ def test_subtitle_generation_validation_and_export(tmp_path):
         client.close()
 
 
+def test_subtitle_approved_version_is_immutable_and_revision_creates_new_version(tmp_path):
+    from app.core.config import settings
+    settings.upload_dir = str(tmp_path)
+    client = auth_client()
+    try:
+        series = client.post("/api/v1/series", json={"title": "Subtitle version series"}).json()
+        episode = client.post("/api/v1/episodes", json={"series_id": series["id"], "episode_number": 1, "title": "Version episode"}).json()
+        upload = client.post(
+            f"/api/v1/episodes/{episode['id']}/assets/upload",
+            files={"file": ("source.mp4", b"video-fixture", "video/mp4")},
+            data={"asset_type": "video", "copyright_status": "licensed"},
+        )
+        assert upload.status_code == 201
+        assert client.post("/api/v1/jobs/mock", json={"episode_id": episode["id"]}).status_code == 201
+        generated = client.post(f"/api/v1/episodes/{episode['id']}/subtitles/generate", json={"preset": "burmese_default"})
+        assert generated.status_code == 201
+        subtitle = generated.json()
+
+        assert client.patch(
+            f"/api/v1/subtitles/{subtitle['id']}",
+            json={"cues": [{"start": 0, "end": 2, "text": "မြန်မာစာ"}]},
+        ).status_code == 200
+        assert client.post(f"/api/v1/episodes/{episode['id']}/subtitles/approve").status_code == 200
+
+        rejected_edit = client.patch(
+            f"/api/v1/subtitles/{subtitle['id']}",
+            json={"cues": [{"start": 0, "end": 2, "text": "ပြောင်းထားသောစာ"}]},
+        )
+        assert rejected_edit.status_code == 409
+
+        unchanged = client.get(f"/api/v1/episodes/{episode['id']}/subtitles").json()[0]
+        assert unchanged["status"] == "approved"
+        assert unchanged["cues"][0]["text"] == "မြန်မာစာ"
+
+        revision = client.post(
+            f"/api/v1/subtitles/{subtitle['id']}/versions",
+            json={"cues": [{"start": 0, "end": 2, "text": "ပြင်ဆင်ထားသောစာ"}]},
+        )
+        assert revision.status_code == 201
+        assert revision.json()["version"] == 2
+        assert revision.json()["status"] == "draft"
+        assert revision.json()["is_current"] is True
+        assert revision.json()["cues"][0]["text"] == "ပြင်ဆင်ထားသောစာ"
+    finally:
+        client.close()
+
+
 def test_review_blocks_until_checklist_and_approves_final_asset():
     client = auth_client()
     series = client.post("/api/v1/series", json={"title": "Review series"}).json()

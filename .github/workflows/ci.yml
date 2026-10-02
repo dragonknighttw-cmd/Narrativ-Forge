@@ -53,7 +53,18 @@ jobs:
         run: |
           mkdir -p storage/uploads
           PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &
-          python -c "import time, urllib.request; [urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health') or time.sleep(1) for _ in range(30)]"
+          python - <<'PY'
+import time
+import urllib.request
+for _ in range(30):
+    try:
+        urllib.request.urlopen("http://127.0.0.1:8000/api/v1/health", timeout=2)
+        break
+    except Exception:
+        time.sleep(1)
+else:
+    raise SystemExit("backend did not become ready")
+PY
       - uses: actions/setup-node@v4
         with:
           node-version: "20"

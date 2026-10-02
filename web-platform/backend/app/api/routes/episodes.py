@@ -15,21 +15,21 @@ VALID_STATUSES = {
     "archived","rejected","failed"
 }
 STEP_BY_STATUS = {\n    "idea": "idea", "planned": "structure", "script_draft": "script", "script_review": "script",\n    "assets_needed": "assets", "in_production": "production", "processing": "processing",\n    "subtitle_review": "subtitle", "needs_approval": "review", "approved": "review",\n    "exporting": "output", "exported": "output", "archived": "output", "rejected": "review", "failed": "processing",\n}\n\nSTATUS_TRANSITIONS = {
-    "idea": {"planned", "rejected"},
-    "planned": {"script_draft", "rejected"},
-    "script_draft": {"script_review", "rejected"},
-    "script_review": {"assets_needed", "script_draft", "rejected"},
-    "assets_needed": {"in_production", "rejected"},
-    "in_production": {"processing", "rejected"},
-    "processing": {"subtitle_review", "failed"},
-    "subtitle_review": {"needs_approval", "script_draft", "rejected"},
-    "needs_approval": {"approved", "rejected"},
-    "approved": {"exporting", "rejected"},
+    "idea": {"planned"},
+    "planned": {"script_draft"},
+    "script_draft": {"script_review"},
+    "script_review": {"assets_needed", "script_draft"},
+    "assets_needed": {"in_production"},
+    "in_production": {"processing"},
+    "processing": {"subtitle_review"},
+    "subtitle_review": {"needs_approval", "in_production"},
+    "needs_approval": {"approved", "in_production"},
+    "approved": {"exporting"},
     "exporting": {"exported", "failed"},
     "exported": {"archived"},
     "archived": set(),
-    "rejected": {"planned", "archived"},
-    "failed": {"processing", "archived"},
+    "rejected": set(),
+    "failed": {"processing"},
 }
 
 class EpisodeCreate(BaseModel):

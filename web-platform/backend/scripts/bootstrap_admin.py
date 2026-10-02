@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.db import SessionLocal, init_db
+from app.db import SessionLocal
 from app.models import User
 from app.services.passwords import hash_password
 
@@ -14,7 +14,8 @@ password = os.environ.get("BOOTSTRAP_ADMIN_PASSWORD", "")
 if not email or not password:
     raise SystemExit("Set BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD")
 
-init_db()
+import subprocess
+subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], check=True)
 db = SessionLocal()
 try:
     user = db.query(User).filter(User.email == email).first()

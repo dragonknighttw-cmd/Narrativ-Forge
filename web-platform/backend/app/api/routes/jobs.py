@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from ...db import get_db
 from ...models import Episode, ProcessingJob
 from ...services.processing import run_mock_job
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, require_roles
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -29,7 +29,7 @@ def _create_job(episode: Episode, job_type: str, db: Session) -> ProcessingJob:
 
 
 @router.post("/mock", status_code=201)
-def create_mock_job(payload: MockJobCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_mock_job(payload: MockJobCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     episode = db.get(Episode, payload.episode_id)
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")

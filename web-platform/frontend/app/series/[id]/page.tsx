@@ -14,12 +14,16 @@ export default function SeriesDetailPage() {
   const [seasonTitle, setSeasonTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editing, setEditing] = useState(false);
 
   async function load() {
     try { setError(""); const [s, ss] = await Promise.all([api.getSeries(id), api.listSeasons(id)]); setSeries(s); setSeasons(ss); }
     catch (e) { setError(e instanceof Error ? e.message : "Failed to load series"); }
   }
   useEffect(() => { if (id) load(); }, [id]);
+  useEffect(() => { if (series) { setEditTitle(series.title); setEditDescription(series.description || ""); } }, [series]);
 
   async function addSeason(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setError("");
@@ -30,7 +34,7 @@ export default function SeriesDetailPage() {
   if (error && !series) return <AppShell title="Series"><ErrorState message={error} retry={load} /></AppShell>;
   return <AppShell title={series?.title || "Series detail"}>
     {error && <ErrorState message={error} retry={load} />}
-    <section className="card"><div className="eyebrow">SERIES</div><h2>{series?.title}</h2><p className="muted">{series?.description || "No description yet."}</p></section>
+    <section className="card"><div className="eyebrow">SERIES</div>{editing ? <div className="stack-form"><input value={editTitle} onChange={e => setEditTitle(e.target.value)} /><textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} /><div className="inline-form"><button className="primary" disabled={busy} onClick={async () => { setBusy(true); try { await api.updateSeries(id, { title: editTitle.trim(), description: editDescription.trim() || null }); setEditing(false); await load(); } catch (e) { setError(e instanceof Error ? e.message : "Failed to update series"); } finally { setBusy(false); } }}>Save</button><button className="text-button" onClick={() => setEditing(false)}>Cancel</button></div></div> : <><h2>{series?.title}</h2><p className="muted">{series?.description || "No description yet."}</p><button className="text-button" onClick={() => setEditing(true)}>Edit series</button></>}</section>
     <section className="card"><div className="eyebrow">SEASONS</div><h2>Season structure</h2>
       <form className="inline-form" onSubmit={addSeason}><input aria-label="Season number" type="number" min="1" value={seasonNumber} onChange={e => setSeasonNumber(e.target.value)} /><input aria-label="Season title" placeholder="Season title (optional)" value={seasonTitle} onChange={e => setSeasonTitle(e.target.value)} /><button className="primary" disabled={busy}>{busy ? "Saving…" : "Add season"}</button></form>
     </section>

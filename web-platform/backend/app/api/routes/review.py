@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from ...db import get_db
 from ...models import Asset, Episode, ReviewRecord, Subtitle
 from ...services.audit import record_event
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["review"])
 
@@ -100,7 +100,7 @@ def request_revision(episode_id: str, payload: RevisionRequest, _: dict = Depend
     return {"status": "rejected", "reason": payload.reason, "episode_id": episode.id}
 
 @router.post("/{episode_id}/review/approve")
-def approve_review(episode_id: str, payload: ReviewUpdate, user=Depends(get_current_user), db: Session = Depends(get_db)):
+def approve_review(episode_id: str, payload: ReviewUpdate, user=Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     episode = _episode(db, episode_id)
     if episode.status != "needs_approval":
         raise HTTPException(status_code=409, detail="Episode must be in needs_approval before final approval")

@@ -6,7 +6,8 @@ from ...db import get_db
 from ...models import Episode, Scene, Script
 from ..dependencies import get_current_user
 
-router = APIRouter(prefix="/episodes", tags=["scenes"])\nscene_router = APIRouter(prefix="/scenes", tags=["scenes"])
+router = APIRouter(prefix="/episodes", tags=["scenes"])
+scene_router = APIRouter(prefix="/scenes", tags=["scenes"])
 
 
 class SceneCreate(BaseModel):
@@ -61,11 +62,11 @@ def create_scene(episode_id: str, payload: SceneCreate, _: dict = Depends(get_cu
 
 
 @scene_router.patch("/{scene_id}")
-def update_scene(episode_id: str, scene_id: str, payload: SceneUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    _episode_or_404(db, episode_id)
+def update_scene(scene_id: str, payload: SceneUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     item = db.get(Scene, scene_id)
-    if not item or item.episode_id != episode_id:
+    if not item:
         raise HTTPException(status_code=404, detail="Scene not found")
+    episode_id = item.episode_id
     values = payload.model_dump(exclude_unset=True)
     _validate_script(db, episode_id, values.get("script_id"))
     if "scene_number" in values and values["scene_number"] != item.scene_number:

@@ -63,7 +63,7 @@ Run a restore drill before launch and periodically afterward. Keep backups outsi
 
 ## Current explicit pre-launch blockers
 
-- A production-grade persistent authentication/identity provider has not yet been selected; the current invite-only boundary is a single configured credential.
-- Database migration management still needs to be introduced for schema changes on an already-running production database.
+- Production authentication is now database-backed with PBKDF2 password hashes, signed expiring sessions, owner/editor/viewer roles, and owner-only invites. The first owner is created explicitly with `scripts/bootstrap_admin.py`; remove bootstrap secrets after provisioning.
+- Alembic is now the production schema migration mechanism. The first baseline is `0001_bootstrap`; every subsequent schema change must ship as a reviewed Alembic revision.
 - Real Google Drive OAuth/export and real FFmpeg/Whisper require environment-level credentials/binaries and have not been proven by CI.
 - Durable object/media storage and deployment provider configuration still need to be selected.

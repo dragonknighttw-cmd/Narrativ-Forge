@@ -4,8 +4,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_env: str = "development"
     database_url: str = "sqlite:///./narrativ_forge.db"
-    dev_auth_email: str = "admin@narrativ.local"
-    dev_auth_password: str = "change-me"
+    bootstrap_admin_email: str = ""
+    bootstrap_admin_password: str = ""
     session_secret: str = "development-only-change-this-secret"
     session_cookie_name: str = "nf_session"
     session_cookie_secure: bool = False

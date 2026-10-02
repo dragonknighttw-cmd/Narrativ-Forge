@@ -1,19 +1,24 @@
 import { AppShell } from "../../components/app-shell";
 
-const metrics = [
-  ["Ideas", "12", "Ready for planning"],
-  ["In production", "4", "Across active episodes"],
-  ["Needs review", "2", "Human approval required"],
-  ["Exported", "18", "Approved packages"],
+const foundationAreas = [
+  ["Frontend", "Next.js app shell + protected workspace routes"],
+  ["Backend", "FastAPI API + CORS + session authentication"],
+  ["Database", "SQLAlchemy foundation with SQLite development default"],
+  ["Workflow", "Core content model boundary reserved for Phase 2"],
 ];
 
 export default function DashboardPage() {
   return <AppShell title="Dashboard">
-    <div className="grid">
-      {metrics.map(([label, value, note]) => (
+    <section className="card">
+      <div className="eyebrow">PHASE 1 · FOUNDATION</div>
+      <h2>Core workspace foundation</h2>
+      <p className="muted">This screen intentionally avoids fake production metrics. Real Ideas → Series → Season → Episode data will arrive in Phase 2.</p>
+    </section>
+    <div className="grid foundation-grid">
+      {foundationAreas.map(([label, note]) => (
         <section className="card" key={label}>
           <div className="muted">{label}</div>
-          <div className="metric">{value}</div>
+          <div className="status">Ready</div>
           <div className="muted">{note}</div>
         </section>
       ))}
@@ -22,7 +27,7 @@ export default function DashboardPage() {
       <div>
         <div className="eyebrow">PRODUCTION WORKFLOW</div>
         <h2>Idea → Structure → Script → Assets → Processing → Subtitle → Review → Output</h2>
-        <p className="muted">Foundation is ready for mock-first workflow integration. Real processing adapters come after the core flow is verified.</p>
+        <p className="muted">The architecture keeps heavy integrations behind adapters so the workflow can be verified before real media, AI, storage, and Drive services are connected.</p>
       </div>
     </section>
   </AppShell>;

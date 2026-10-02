@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { AppShell } from "../../../../../components/app-shell";
-import { ErrorState } from "../../../../../components/domain-forms";
-import { api, Asset } from "../../../../../lib/api";
+import { AppShell } from "../../../../components/app-shell";
+import { ErrorState } from "../../../../components/domain-forms";
+import { api, Asset } from "../../../../lib/api";
 
 export default function AssetLibraryPage() {
   const { id } = useParams<{ id: string }>();

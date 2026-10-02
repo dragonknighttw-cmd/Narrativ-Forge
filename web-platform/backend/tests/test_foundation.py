@@ -765,3 +765,36 @@ def test_production_storage_gate_requires_b2_configuration(monkeypatch):
         assert False, "expected missing B2 configuration to be rejected"
     except RuntimeError as exc:
         assert "B2 storage configuration missing" in str(exc)
+
+
+def test_b2_storage_integration_roundtrip_when_configured(tmp_path):
+    import os
+    from app.services.storage import get_storage
+
+    required = [
+        os.getenv("B2_APPLICATION_KEY_ID"),
+        os.getenv("B2_APPLICATION_KEY"),
+        os.getenv("B2_BUCKET_NAME"),
+        os.getenv("B2_REGION"),
+    ]
+    if not all(required):
+        pytest.skip("B2 integration credentials are not configured")
+
+    provider = get_storage("b2")
+    source = tmp_path / "b2-fixture.bin"
+    source.write_bytes(b"narrativ-forge-b2-integration")
+    key = f"tests/{uuid4().hex}/fixture.bin"
+
+    try:
+        stored = provider.upload_file(source, key, "application/octet-stream")
+        assert stored.provider == "b2"
+        assert stored.size_bytes == source.stat().st_size
+        assert provider.exists(key)
+
+        destination = tmp_path / "downloaded.bin"
+        downloaded = provider.download_file(key, destination)
+        assert destination.read_bytes() == source.read_bytes()
+        assert downloaded.checksum_sha256 == stored.checksum_sha256
+    finally:
+        provider.delete(key)
+        assert not provider.exists(key)

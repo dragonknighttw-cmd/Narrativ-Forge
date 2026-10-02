@@ -43,6 +43,24 @@
 
 The last two items are environment/CI verification gates rather than code-completion blockers; this environment does not provide a connected local checkout/runtime for the repository.
 
+## Phase 2 implementation status
+
+- [x] Ideas list/create/update
+- [x] Series list/create/detail/update
+- [x] Season list/create under a series
+- [x] Episode list/create/detail/update
+- [x] Episode → series relationship validation
+- [x] Season → series relationship validation
+- [x] Duplicate season number protection per series
+- [x] Duplicate episode number protection per season
+- [x] Target duration validation
+- [x] Public episode ID generation
+- [x] Backend status-transition state machine
+- [x] Current workflow step follows episode status
+- [x] Empty/loading/error states in domain UI
+- [x] Episode status transition UI
+- [x] Phase 2 backend integration tests
+
 ## Phase 2 entry condition
 
 Do not add real media, AI, Google Drive, or production storage integrations yet.

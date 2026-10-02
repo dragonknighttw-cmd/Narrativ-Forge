@@ -160,7 +160,7 @@ async def google_drive_export(episode_id: str, user=Depends(get_current_user), d
         Asset.episode_id == episode_id,
         Asset.is_final.is_(True),
     ).order_by(Asset.version.desc()).first()
-    if not final_asset or not final_asset.local_path or not Path(final_asset.local_path).exists():
+    if not final_asset:
         raise HTTPException(status_code=422, detail="Approved final video asset is missing")
     if not subtitle:
         raise HTTPException(status_code=422, detail="Approved subtitle is missing")
@@ -242,6 +242,8 @@ async def google_drive_export(episode_id: str, user=Depends(get_current_user), d
                 "provider": "google_drive",
                 "folder_id": folder_id,
                 "video_file_id": video_id,
+                "video_object_key": final_asset.object_key,
+                "video_checksum_sha256": final_asset.checksum_sha256,
                 "subtitle_version": subtitle.version,
             })
             record.manifest_json = json.dumps(manifest, ensure_ascii=False)

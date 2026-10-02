@@ -91,7 +91,7 @@ def run_mock_job(job_id: str, db: Session) -> ProcessingJob:
                     "id": 1,
                     "start": 0.0,
                     "end": min(float(episode.target_duration_seconds), 3.0),
-                    "text": "နမူနာ မြန်မာ စာတန်းထိုး စာသား — နောက်အဆင့်တွင် Whisper transcript ဖြင့် အစားထိုးမည်။",
+                    "text": "နမူနာ မြန်မာ စာတန်းထိုး",
                 }
             ],
         }

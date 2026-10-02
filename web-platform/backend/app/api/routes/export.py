@@ -13,7 +13,7 @@ from ...db import get_db
 from ...models import Asset, Episode, ExportRecord, Subtitle
 from ...services.audit import record_event
 from ...services.storage import StorageError, materialize_asset
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["export"])
 
@@ -77,7 +77,7 @@ def export_history(episode_id: str, _: dict = Depends(get_current_user), db: Ses
 
 
 @router.post("/{episode_id}/export/mock-drive")
-def mock_drive_export(episode_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
+def mock_drive_export(episode_id: str, user=Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     episode = _episode(db, episode_id)
     record = _record(db, episode_id, "mock_drive")
     if record and record.status == "completed":

@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from ...db import get_db
 from ...models import Episode, ProcessingJob
 from ...services.processing import run_mock_job
-from ...services.real_processing import run_real_job
 from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -42,7 +41,7 @@ def create_real_job(payload: RealJobCreate, _: dict = Depends(get_current_user),
     episode = db.get(Episode, payload.episode_id)
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
-    job = _create_job(episode, payload.job_type, db)\n    return job
+    return _create_job(episode, payload.job_type, db)
 
 
 @router.get("")
@@ -72,4 +71,6 @@ def retry_job(job_id: str, _: dict = Depends(get_current_user), db: Session = De
     job.error_message = None
     job.completed_at = None
     db.commit()
-    if job.job_type == "real_processing":\n        return job\n    return run_mock_job(job.id, db)
+    if job.job_type == "real_processing":
+        return job
+    return run_mock_job(job.id, db)

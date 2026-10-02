@@ -52,6 +52,8 @@ jobs:
         working-directory: web-platform/backend
         run: |
           mkdir -p storage/uploads
+          CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000 DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python -m alembic upgrade head
+          BOOTSTRAP_ADMIN_EMAIL=admin@narrativ.local BOOTSTRAP_ADMIN_PASSWORD=change-me-123456 DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python scripts/bootstrap_admin.py
           CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000 PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &
           python - <<'PY'
 import time

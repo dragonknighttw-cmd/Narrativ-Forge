@@ -81,3 +81,53 @@ def test_story_structure_and_episode_status_workflow():
         assert invalid.status_code == 409
     finally:
         client.close()
+
+
+def test_script_scene_and_asset_vertical_slice(tmp_path, monkeypatch):
+    from app.core.config import settings
+    settings.upload_dir = str(tmp_path)
+    client = auth_client()
+    try:
+        series = client.post("/api/v1/series", json={"title": "Production series"}).json()
+        episode = client.post("/api/v1/episodes", json={
+            "series_id": series["id"], "episode_number": 1, "title": "Production episode"
+        }).json()
+
+        script = client.post(f"/api/v1/episodes/{episode['id']}/scripts", json={
+            "title": "Draft 1", "content": "ပထမဆုံး scene အတွက် draft"
+        })
+        assert script.status_code == 201
+        assert script.json()["version"] == 1
+        version = client.post(f"/api/v1/episodes/{episode['id']}/scripts/versions", json={
+            "title": "Draft 2", "content": "ပြင်ပြီးသော draft"
+        })
+        assert version.status_code == 201
+        assert version.json()["version"] == 2
+        assert version.json()["is_current"] is True
+
+        scene = client.post(f"/api/v1/episodes/{episode['id']}/scenes", json={
+            "scene_number": 1, "script_id": version.json()["id"], "purpose": "Hook", "dialogue": "ဒီနေ့အကြောင်းအရာက..."
+        })
+        assert scene.status_code == 201
+
+        duplicate_scene = client.post(f"/api/v1/episodes/{episode['id']}/scenes", json={
+            "scene_number": 1, "purpose": "Duplicate"
+        })
+        assert duplicate_scene.status_code == 409
+
+        upload = client.post(
+            f"/api/v1/episodes/{episode['id']}/assets/upload",
+            files={"file": ("voice.mp3", b"audio-fixture", "audio/mpeg")},
+            data={"asset_type": "audio", "copyright_status": "licensed"},
+        )
+        assert upload.status_code == 201
+        assert upload.json()["version"] == 1
+
+        bad_upload = client.post(
+            f"/api/v1/episodes/{episode['id']}/assets/upload",
+            files={"file": ("script.exe", b"bad", "application/octet-stream")},
+            data={"asset_type": "audio"},
+        )
+        assert bad_upload.status_code == 415
+    finally:
+        client.close()

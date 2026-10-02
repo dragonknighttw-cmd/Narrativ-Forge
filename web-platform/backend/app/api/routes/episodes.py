@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from ...db import get_db
 from ...models import Episode, Season, Series
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["episodes"])
 

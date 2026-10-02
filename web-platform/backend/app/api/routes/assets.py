@@ -4,6 +4,7 @@ import tempfile
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -128,6 +129,28 @@ async def upload_asset(
     db.commit()
     db.refresh(item)
     return item
+
+
+@asset_router.get("/{asset_id}/download")
+def download_asset(asset_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    item = db.get(Asset, asset_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    if item.status == "deleted":
+        raise HTTPException(status_code=410, detail="Asset has been deleted")
+    if item.storage_provider == "local":
+        if not item.local_path or not Path(item.local_path).is_file():
+            raise HTTPException(status_code=404, detail="Asset file is missing")
+        return FileResponse(item.local_path, media_type=item.mime_type, filename=item.original_filename)
+    if not item.object_key:
+        raise HTTPException(status_code=404, detail="Asset storage object is missing")
+    try:
+        url = get_storage(item.storage_provider).download_url(item.object_key)
+    except StorageError as exc:
+        raise HTTPException(status_code=502, detail="Unable to create a download URL") from exc
+    if not url:
+        raise HTTPException(status_code=502, detail="Storage provider does not support direct downloads")
+    return {"asset_id": item.id, "storage_provider": item.storage_provider, "url": url, "expires_in": settings.b2_signed_url_expiry_seconds}
 
 
 @asset_router.patch("/{asset_id}")

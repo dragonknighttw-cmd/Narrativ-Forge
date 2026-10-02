@@ -52,7 +52,7 @@ jobs:
         working-directory: web-platform/backend
         run: |
           mkdir -p storage/uploads
-          PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &
+          CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000 PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &
           python - <<'PY'
 import time
 import urllib.request

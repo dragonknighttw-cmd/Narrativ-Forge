@@ -104,14 +104,16 @@ def test_script_scene_and_asset_vertical_slice(tmp_path, monkeypatch):
         assert version.status_code == 201
         assert version.json()["version"] == 2
         assert version.json()["is_current"] is True
-        script_patch = client.patch(f"/api/v1/scripts/{version.json()[\"id\"]}", json={"status": "review"})
+        script_id = version.json()["id"]
+        script_patch = client.patch(f"/api/v1/scripts/{script_id}", json={"status": "review"})
         assert script_patch.status_code == 200
 
         scene = client.post(f"/api/v1/episodes/{episode['id']}/scenes", json={
             "scene_number": 1, "script_id": version.json()["id"], "purpose": "Hook", "dialogue": "ဒီနေ့အကြောင်းအရာက..."
         })
         assert scene.status_code == 201
-        scene_patch = client.patch(f"/api/v1/scenes/{scene.json()[\"id\"]}", json={"purpose": "Opening hook"})
+        scene_id = scene.json()["id"]
+        scene_patch = client.patch(f"/api/v1/scenes/{scene_id}", json={"purpose": "Opening hook"})
         assert scene_patch.status_code == 200
 
         duplicate_scene = client.post(f"/api/v1/episodes/{episode['id']}/scenes", json={

@@ -7,7 +7,7 @@ from ...db import get_db
 from ...models import Episode, Script
 from ..dependencies import get_current_user
 
-router = APIRouter(prefix="/episodes", tags=["scripts"])
+router = APIRouter(prefix="/episodes", tags=["scripts"])\nscript_router = APIRouter(prefix="/scripts", tags=["scripts"])
 
 
 class ScriptCreate(BaseModel):
@@ -51,7 +51,7 @@ def create_script(episode_id: str, payload: ScriptCreate, _: dict = Depends(get_
     return item
 
 
-@router.patch("/{episode_id}/scripts/{script_id}")
+@script_router.patch("/{script_id}")
 def update_script(episode_id: str, script_id: str, payload: ScriptUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
     item = db.get(Script, script_id)

@@ -483,3 +483,154 @@ def test_security_headers_are_present():
         assert response.headers["x-frame-options"] == "DENY"
         assert response.headers["referrer-policy"] == "same-origin"
         assert "permissions-policy" in response.headers
+
+
+def test_google_drive_export_failure_is_resumable(monkeypatch, tmp_path):
+    import httpx
+    from app.core.config import settings
+    from app.api.routes import google_drive
+
+    settings.upload_dir = str(tmp_path)
+    client = auth_client()
+    try:
+        series = client.post("/api/v1/series", json={"title": "Drive retry series"}).json()
+        episode = client.post("/api/v1/episodes", json={
+            "series_id": series["id"], "episode_number": 1, "title": "Drive retry episode"
+        }).json()
+        upload = client.post(
+            f"/api/v1/episodes/{episode['id']}/assets/upload",
+            files={"file": ("source.mp4", b"video-fixture", "video/mp4")},
+            data={"asset_type": "video", "copyright_status": "licensed"},
+        )
+        assert upload.status_code == 201
+        assert client.post("/api/v1/jobs/mock", json={"episode_id": episode["id"]}).status_code == 201
+        subtitle = client.post(
+            f"/api/v1/episodes/{episode['id']}/subtitles/generate",
+            json={"preset": "burmese_default"},
+        ).json()
+        assert client.patch(
+            f"/api/v1/subtitles/{subtitle['id']}",
+            json={"cues": [{"start": 0, "end": 2, "text": "မြန်မာစာ"}]},
+        ).status_code == 200
+        assert client.post(f"/api/v1/episodes/{episode['id']}/subtitles/approve").status_code == 200
+        assert client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "needs_approval"}).status_code == 200
+        approved = client.post(f"/api/v1/episodes/{episode['id']}/review/approve", json={
+            "video_watched": True, "audio_checked": True,
+            "subtitle_timing_checked": True, "thumbnail_present": True,
+        })
+        assert approved.status_code == 200
+
+        async def fake_access_token(email, db):
+            return "fake-token"
+
+        class FakeResponse:
+            def __init__(self, payload=None):
+                self._payload = payload or {}
+            def raise_for_status(self):
+                return None
+            def json(self):
+                return self._payload
+
+        class FakeClient:
+            failed_once = False
+            async def __aenter__(self):
+                return self
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+            async def post(self, url, **kwargs):
+                if not FakeClient.failed_once:
+                    FakeClient.failed_once = True
+                    raise httpx.ReadTimeout("forced export failure")
+                if "upload/drive" not in url:
+                    return FakeResponse({"id": "folder-1"})
+                name = "video-1"
+                body = kwargs.get("content", b"")
+                if b"application/json" in body and b"export-manifest" in body:
+                    name = "manifest-1"
+                elif b"application/x-subrip" in body:
+                    name = "subtitle-1"
+                return FakeResponse({"id": name})
+            async def get(self, url, **kwargs):
+                return FakeResponse({"files": []})
+
+        monkeypatch.setattr(google_drive, "access_token_for", fake_access_token)
+        monkeypatch.setattr(httpx, "AsyncClient", lambda *args, **kwargs: FakeClient())
+
+        first = client.post(f"/api/v1/episodes/{episode['id']}/export/google-drive")
+        assert first.status_code == 502
+        history = client.get(f"/api/v1/episodes/{episode['id']}/export/history")
+        assert history.status_code == 200
+        assert history.json()[0]["status"] == "failed"
+
+        second = client.post(f"/api/v1/episodes/{episode['id']}/export/google-drive")
+        assert second.status_code == 200
+        assert second.json()["status"] == "completed"
+        assert second.json()["manifest"]["folder_id"] == "folder-1"
+        assert second.json()["manifest"]["video_file_id"] == "video-1"
+    finally:
+        client.close()
+
+
+def test_full_production_integration_flow(tmp_path):
+    from app.core.config import settings
+    settings.upload_dir = str(tmp_path)
+    client = auth_client()
+    try:
+        series = client.post("/api/v1/series", json={"title": "Full flow series"}).json()
+        season = client.post(
+            f"/api/v1/series/{series['id']}/seasons",
+            json={"season_number": 1, "title": "Season 1"},
+        ).json()
+        episode = client.post("/api/v1/episodes", json={
+            "series_id": series["id"], "season_id": season["id"],
+            "episode_number": 1, "title": "Full flow episode",
+        }).json()
+
+        assert client.post(
+            f"/api/v1/episodes/{episode['id']}/scripts",
+            json={"title": "Draft", "content": "Hook\nBody\nClose"},
+        ).status_code == 201
+        assert client.post(
+            f"/api/v1/episodes/{episode['id']}/scenes",
+            json={"scene_number": 1, "purpose": "Hook", "dialogue": "မင်း ဒီအချက်ကို သိလား?"},
+        ).status_code == 201
+
+        upload = client.post(
+            f"/api/v1/episodes/{episode['id']}/assets/upload",
+            files={"file": ("source.mp4", b"video-fixture", "video/mp4")},
+            data={"asset_type": "video", "copyright_status": "licensed"},
+        )
+        assert upload.status_code == 201
+        assert client.post("/api/v1/jobs/mock", json={"episode_id": episode["id"]}).status_code == 201
+
+        subtitle = client.post(
+            f"/api/v1/episodes/{episode['id']}/subtitles/generate",
+            json={"preset": "burmese_default"},
+        ).json()
+        assert client.patch(
+            f"/api/v1/subtitles/{subtitle['id']}",
+            json={"cues": [{"start": 0, "end": 2, "text": "မြန်မာစာ"}]},
+        ).status_code == 200
+        assert client.post(f"/api/v1/episodes/{episode['id']}/subtitles/approve").status_code == 200
+        assert client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "needs_approval"}).status_code == 200
+        assert client.post(f"/api/v1/episodes/{episode['id']}/review/approve", json={
+            "video_watched": True, "audio_checked": True,
+            "subtitle_timing_checked": True, "thumbnail_present": True,
+        }).status_code == 200
+
+        exported = client.post(f"/api/v1/episodes/{episode['id']}/export/mock-drive")
+        assert exported.status_code == 200
+        assert exported.json()["status"] == "completed"
+        history = client.get(f"/api/v1/episodes/{episode['id']}/export/history")
+        assert history.status_code == 200
+        assert history.json()[0]["status"] == "completed"
+
+        log = client.post("/api/v1/manual-production-logs", json={
+            "episode_id": episode["id"], "topic": "Integration topic",
+            "hook_type": "question", "production_time_seconds": 120,
+            "published": True, "platform": "tiktok",
+        })
+        assert log.status_code == 201
+        assert client.get("/api/v1/analytics").status_code == 200
+    finally:
+        client.close()

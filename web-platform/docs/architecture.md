@@ -87,3 +87,12 @@ Week 9/10 closes the subtitle boundary around the transcript produced by the pro
 Subtitle validation checks missing cue text, invalid or overlapping timing, the default 1–7 second display window, Burmese text presence, line count, and preset character limits. Draft subtitles may contain validation issues for editing, but approval is blocked until the current version passes the quality gate. Approved versions cannot be edited in place.
 
 SRT and VTT are generated from the same cue data so exports remain deterministic. The Subtitle Studio exposes generation, cue editing, save, validation, approval, and SRT/VTT export actions. Real Whisper transcription remains behind the existing processing integration boundary; Phase 5 consumes the transcript asset without replacing the mock-first worker prematurely.
+
+
+## Phase 6 — Review, Approval, and Drive Export
+
+The Review Center is the human quality gate between subtitle review and final output. The checklist covers full-video review, audio, subtitle timing, and thumbnail presence; unresolved critical issues or subtitle validation errors block approval. Requesting revision moves the episode back to production. Final approval marks the latest processed video as the final asset while preserving the original/source asset.
+
+Drive export has two providers. Mock Drive is the deterministic local integration used for development and tests; it writes to isolated mock storage and records an export manifest. Google Drive is a real provider boundary using OAuth with the narrow drive.file scope. Refresh/access tokens are stored server-side in encrypted form and are never returned to the frontend. Real export creates an episode folder and uploads the final video, SRT subtitle, and JSON export manifest. Existing completed exports are returned without duplicating files.
+
+Google credentials and the OAuth encryption key are environment-only settings. If they are not configured, the UI exposes the Drive connection as disconnected rather than pretending export is available.

@@ -276,3 +276,14 @@ class SocialAnalyticsRecord(Base):
     comments: Mapped[int] = mapped_column(Integer, default=0)
     source: Mapped[str] = mapped_column(String(40), default="manual")
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class AuditEvent(Base):
+    __tablename__ = "audit_events"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    actor_email: Mapped[str] = mapped_column(String(255), index=True)
+    action: Mapped[str] = mapped_column(String(80), index=True)
+    resource_type: Mapped[str] = mapped_column(String(80))
+    resource_id: Mapped[str] = mapped_column(String(36), index=True)
+    metadata_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

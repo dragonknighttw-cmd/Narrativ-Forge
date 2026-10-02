@@ -1,0 +1,6 @@
+name = "narrativ-forge-edge"
+main = "src/index.ts"
+compatibility_date = "2026-10-02"
+
+[vars]
+API_ORIGIN = "https://api.example.com"

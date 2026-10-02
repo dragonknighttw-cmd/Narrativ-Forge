@@ -83,3 +83,21 @@ Next: build Ideas → Series → Seasons → Episodes as a complete vertical sli
 - [x] Backend vertical-slice tests for script, scene, asset upload
 - [x] Frontend typecheck/build CI workflow added
 - [ ] Real local test/build execution from a connected runtime — pending environment access
+
+
+## Phase 4 — Processing Engine
+
+- [x] Processing job lifecycle: queued → running → completed/failed
+- [x] Local mock worker entrypoint
+- [x] Mock media output is stored as a separate asset version
+- [x] Mock Burmese transcript JSON is generated as a separate asset
+- [x] Source asset is never overwritten
+- [x] Missing input and missing source-file failures are preserved on the job
+- [x] Retry endpoint only retries failed jobs and increments retry count
+- [x] Episode status can advance from in_production → processing → subtitle_review
+- [x] Episode status is marked failed when an active processing job fails
+- [x] Processing Queue UI
+- [x] Error/retry UI
+- [x] Backend processing lifecycle tests
+- [x] CI runs backend tests and frontend typecheck/build
+- [ ] Real FFmpeg/Whisper integration — intentionally deferred to the integration phase after mock-first validation

@@ -26,7 +26,7 @@ mobile/         # reserved mobile workspace
 - Backend: FastAPI
 - Local database: SQLite with SQLAlchemy models designed for PostgreSQL migration
 - Heavy work: worker boundary reserved; not executed inside frontend/API
-- Storage: local filesystem adapter comes later
+- Storage: provider abstraction with local development adapter and Backblaze B2 production adapter
 - AI/transcription/media/Drive: mock-first integration points before real providers
 - Authentication: invite-only development session using an httpOnly cookie
 - Authorization: backend dependency includes a reusable role guard; production roles and invite management are hardening work
@@ -67,7 +67,7 @@ The script/scene/asset slice follows the master data model:
 
 - scripts: version records per episode with one current version.
 - scenes: ordered per episode, optionally linked to an episode script.
-- assets: local upload records with version, MIME type, size, copyright state, and optional scene mapping.
+- assets: provider-backed records with version, MIME type, byte size, SHA-256 checksum, immutable object key, copyright state, and optional scene mapping.
 - Processing remains adapter-ready: Phase 2's mock job closes the Month 2 exit gate; real FFmpeg/Whisper workers remain later integration work.
 
 Upload safety is enforced server-side with MIME + extension allow-lists, a configurable size limit, sanitized filenames, and episode/scene ownership checks. Original files are stored separately from future processing outputs.
@@ -124,3 +124,16 @@ The application keeps mock processing and real processing as separate execution 
 - Missing FFmpeg/Whisper binaries, command failures, timeouts, and invalid transcript output are persisted as failed jobs with retry support.
 
 The real worker runtime is documented in backend/Dockerfile.worker. Whisper is intentionally an optional runtime dependency so the normal CI/test environment does not need to install the large ML runtime.
+
+
+## Storage boundary
+
+Production media storage uses Backblaze B2 through its S3-compatible API. Render API and worker share the same B2 bucket; Render disk is temporary workspace only. The storage abstraction supports upload, download, private presigned download URLs, soft-delete at the asset layer, provider delete operations, checksum verification, and immutable application-level versioned object keys.
+
+Asset objects follow:
+
+`episodes/{episode_id}/assets/v{version}/{asset_type}/{filename}`
+
+PostgreSQL remains the workflow source of truth for the storage provider, object key, SHA-256 checksum, and byte size. Source assets are never overwritten by processing; processed video and transcript outputs receive separate versions and object keys.
+
+B2 production credentials are environment-only. The bucket should remain private, and the S3-compatible application key should be scoped to the bucket with the object permissions required by the API/worker.

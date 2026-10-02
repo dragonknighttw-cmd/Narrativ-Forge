@@ -9,16 +9,19 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setBusy(true);
     try {
-      const result = await api.login(email, password);
-      localStorage.setItem("nf_session", result.access_token);
-      router.push("/dashboard");
+      await api.login(email.trim(), password);
+      router.replace("/dashboard");
     } catch {
-      setError("Login မအောင်မြင်ပါ။ Backend ကို run ထားပြီး credentials ကို စစ်ပါ။");
+      setError("Login မအောင်မြင်ပါ။ Email/password သို့မဟုတ် backend connection ကို စစ်ပါ။");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -27,11 +30,11 @@ export default function LoginPage() {
       <div className="brand-mark">NF</div>
       <div className="eyebrow">NARRATIV FORGE</div>
       <h1>Production workspace</h1>
-      <p className="muted">Invite-only access</p>
-      <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-      <input placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
-      {error && <div className="error">{error}</div>}
-      <button className="primary" type="submit">Sign in</button>
+      <p className="muted">Invite-only access. Session credentials are kept in an httpOnly cookie.</p>
+      <label className="field">Email<input required autoComplete="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} /></label>
+      <label className="field">Password<input required autoComplete="current-password" placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} /></label>
+      {error && <div className="error" role="alert">{error}</div>}
+      <button className="primary" type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
     </form>
   </main>;
 }

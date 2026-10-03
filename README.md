@@ -30,3 +30,6 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 The first implementation is mock-first. Heavy media processing, Whisper, FFmpeg, Google Drive OAuth, and cloud deployment are integration phases after the foundation is verified.
+## Production configuration
+
+Production startup requires security-sensitive settings to be supplied through the environment. In particular, `SESSION_SECRET` must be present and at least 32 characters long, and `SESSION_COOKIE_SECURE=true` is required in production. Do not commit production secrets to the repository or CI workflow files.

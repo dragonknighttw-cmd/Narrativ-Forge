@@ -1,0 +1,38 @@
+name: Bootstrap frontend lockfile
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  lockfile:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Generate npm lockfile
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Commit lockfile
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "package-lock.json already current"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore(ci): add frontend npm lockfile"
+          git push origin HEAD:${{ github.head_ref }}

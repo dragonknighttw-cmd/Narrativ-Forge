@@ -13,29 +13,6 @@ jobs:
   backend:
     name: Backend unit and integration tests
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: narrativ_forge
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U postgres -d narrativ_forge"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
     defaults:
       run:
         working-directory: web-platform/backend
@@ -45,6 +22,14 @@ jobs:
       REDIS_URL: redis://127.0.0.1:6379/0
     steps:
       - uses: actions/checkout@v4
+      - name: Start PostgreSQL and Redis
+        run: |
+          docker run -d --name narrativ-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=narrativ_forge -p 5432:5432 postgres:16
+          docker run -d --name narrativ-redis -p 6379:6379 redis:7
+          for i in {1..30}; do pg_isready -h 127.0.0.1 -U postgres -d narrativ_forge >/dev/null 2>&1 && break; sleep 1; done
+          pg_isready -h 127.0.0.1 -U postgres -d narrativ_forge
+          for i in {1..30}; do redis-cli -h 127.0.0.1 ping >/dev/null 2>&1 && break; sleep 1; done
+          redis-cli -h 127.0.0.1 ping
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

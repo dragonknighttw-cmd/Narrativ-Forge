@@ -26,10 +26,10 @@ jobs:
         run: |
           docker run -d --name narrativ-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=narrativ_forge -p 5432:5432 postgres:16
           docker run -d --name narrativ-redis -p 6379:6379 redis:7
-          for i in {1..30}; do pg_isready -h 127.0.0.1 -U postgres -d narrativ_forge >/dev/null 2>&1 && break; sleep 1; done
-          pg_isready -h 127.0.0.1 -U postgres -d narrativ_forge
-          for i in {1..30}; do redis-cli -h 127.0.0.1 ping >/dev/null 2>&1 && break; sleep 1; done
-          redis-cli -h 127.0.0.1 ping
+          for i in {1..30}; do docker exec narrativ-postgres pg_isready -U postgres -d narrativ_forge >/dev/null 2>&1 && break; sleep 1; done
+          docker exec narrativ-postgres pg_isready -U postgres -d narrativ_forge
+          for i in {1..30}; do docker exec narrativ-redis redis-cli ping >/dev/null 2>&1 && break; sleep 1; done
+          docker exec narrativ-redis redis-cli ping
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

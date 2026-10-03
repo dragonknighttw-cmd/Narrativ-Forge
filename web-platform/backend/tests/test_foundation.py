@@ -341,6 +341,9 @@ def test_review_blocks_until_checklist_and_approves_final_asset():
     client = auth_client()
     series = client.post("/api/v1/series", json={"title": "Review series"}).json()
     episode = client.post("/api/v1/episodes", json={"series_id": series["id"], "episode_number": 1, "title": "Review episode"}).json()
+    review_state = client.get(f"/api/v1/episodes/{episode['id']}/review")
+    assert review_state.status_code == 200
+    assert review_state.json()["episode_id"] == episode["id"]
     # Move the episode through the existing lifecycle to review.
     for status in ["planned", "script_draft", "script_review", "assets_needed", "in_production", "processing"]:
         response = client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": status})

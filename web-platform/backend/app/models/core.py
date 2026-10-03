@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db import Base
 
@@ -43,6 +45,9 @@ class Series(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
+    seasons: Mapped[list[Season]] = relationship(back_populates="series")
+    episodes: Mapped[list[Episode]] = relationship(back_populates="series")
+
 
 class Season(Base):
     __tablename__ = "seasons"
@@ -52,6 +57,9 @@ class Season(Base):
     season_number: Mapped[int] = mapped_column(Integer)
     title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+    series: Mapped[Series] = relationship(back_populates="seasons")
+    episodes: Mapped[list[Episode]] = relationship(back_populates="season")
 
 
 class Episode(Base):
@@ -72,6 +80,21 @@ class Episode(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
+    series: Mapped[Series] = relationship(back_populates="episodes")
+    season: Mapped[Season | None] = relationship(back_populates="episodes")
+    scripts: Mapped[list[Script]] = relationship(back_populates="episode")
+    scenes: Mapped[list[Scene]] = relationship(back_populates="episode")
+    processing_jobs: Mapped[list[ProcessingJob]] = relationship(back_populates="episode")
+    assets: Mapped[list[Asset]] = relationship(back_populates="episode")
+    subtitles: Mapped[list[Subtitle]] = relationship(back_populates="episode")
+    export_records: Mapped[list[ExportRecord]] = relationship(back_populates="episode")
+    review_record: Mapped[ReviewRecord | None] = relationship(
+        back_populates="episode",
+        uselist=False,
+    )
+    manual_production_logs: Mapped[list[ManualProductionLog]] = relationship(back_populates="episode")
+    social_publications: Mapped[list[SocialPublication]] = relationship(back_populates="episode")
+
 
 class Script(Base):
     __tablename__ = "scripts"
@@ -85,6 +108,9 @@ class Script(Base):
     is_current: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+    episode: Mapped[Episode] = relationship(back_populates="scripts")
+    scenes: Mapped[list[Scene]] = relationship(back_populates="script")
 
 
 class Scene(Base):
@@ -100,6 +126,10 @@ class Scene(Base):
     duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+    episode: Mapped[Episode] = relationship(back_populates="scenes")
+    script: Mapped[Script | None] = relationship(back_populates="scenes")
+    assets: Mapped[list[Asset]] = relationship(back_populates="scene")
 
 
 class ProcessingJob(Base):
@@ -118,6 +148,16 @@ class ProcessingJob(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+    episode: Mapped[Episode] = relationship(back_populates="processing_jobs")
+    input_asset: Mapped[Asset | None] = relationship(
+        foreign_keys=[input_asset_id],
+        back_populates="input_jobs",
+    )
+    output_asset: Mapped[Asset | None] = relationship(
+        foreign_keys=[output_asset_id],
+        back_populates="output_jobs",
+    )
 
 
 class Asset(Base):
@@ -144,6 +184,17 @@ class Asset(Base):
     status: Mapped[str] = mapped_column(String(40), default="uploaded")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
+    episode: Mapped[Episode] = relationship(back_populates="assets")
+    scene: Mapped[Scene | None] = relationship(back_populates="assets")
+    input_jobs: Mapped[list[ProcessingJob]] = relationship(
+        foreign_keys="ProcessingJob.input_asset_id",
+        back_populates="input_asset",
+    )
+    output_jobs: Mapped[list[ProcessingJob]] = relationship(
+        foreign_keys="ProcessingJob.output_asset_id",
+        back_populates="output_asset",
+    )
+
 
 class Subtitle(Base):
     __tablename__ = "subtitles"
@@ -161,6 +212,8 @@ class Subtitle(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
+    episode: Mapped[Episode] = relationship(back_populates="subtitles")
+
 
 class ExportRecord(Base):
     __tablename__ = "export_records"
@@ -176,6 +229,8 @@ class ExportRecord(Base):
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    episode: Mapped[Episode] = relationship(back_populates="export_records")
 
 
 class GoogleDriveConnection(Base):
@@ -204,6 +259,8 @@ class ReviewRecord(Base):
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+    episode: Mapped[Episode] = relationship(back_populates="review_record")
 
 
 class HookLibrary(Base):
@@ -251,6 +308,8 @@ class ManualProductionLog(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
+    episode: Mapped[Episode | None] = relationship(back_populates="manual_production_logs")
+
 
 class SocialPublication(Base):
     __tablename__ = "social_publications"
@@ -268,6 +327,9 @@ class SocialPublication(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
+    episode: Mapped[Episode] = relationship(back_populates="social_publications")
+    analytics_records: Mapped[list[SocialAnalyticsRecord]] = relationship(back_populates="publication")
+
 
 class SocialAnalyticsRecord(Base):
     __tablename__ = "social_analytics_records"
@@ -281,6 +343,8 @@ class SocialAnalyticsRecord(Base):
     comments: Mapped[int] = mapped_column(Integer, default=0)
     source: Mapped[str] = mapped_column(String(40), default="manual")
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+    publication: Mapped[SocialPublication] = relationship(back_populates="analytics_records")
 
 
 class AuditEvent(Base):

@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from ...db import get_db
 from ...models import Asset, Episode, ReviewRecord, Subtitle
@@ -25,26 +25,38 @@ class ReviewUpdate(BaseModel):
 class RevisionRequest(BaseModel):
     reason: str = Field(min_length=1, max_length=1000)
 
-def _episode(db, episode_id):
-    item = db.get(Episode, episode_id)
+def _episode(db, episode_id, *, load_review_data=False):
+    query = db.query(Episode)
+    if load_review_data:
+        query = query.options(
+            selectinload(Episode.assets),
+            selectinload(Episode.subtitles),
+        )
+    item = query.filter(Episode.id == episode_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Episode not found")
     return item
 
-def _review_assets(db, episode_id):
-    assets = db.query(Asset).filter(Asset.episode_id == episode_id).all()
-    video = any(a.asset_type in {"processed_video", "video"} and a.is_final for a in assets)
-    thumbnail = any(a.asset_type == "thumbnail" for a in assets)
+def _review_assets(episode: Episode):
+    video = any(a.asset_type in {"processed_video", "video"} and a.is_final for a in episode.assets)
+    thumbnail = any(a.asset_type == "thumbnail" for a in episode.assets)
     return {"video_watched": video, "thumbnail_present": thumbnail}
+
+def _current_episode_subtitle(episode: Episode):
+    return max(
+        (subtitle for subtitle in episode.subtitles if subtitle.is_current),
+        key=lambda subtitle: subtitle.version,
+        default=None,
+    )
 
 def _current_subtitle(db, episode_id):
     return db.query(Subtitle).filter(Subtitle.episode_id == episode_id, Subtitle.is_current.is_(True)).order_by(Subtitle.version.desc()).first()
 
 @router.get("/{episode_id}/review")
 def get_review(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    episode = _episode(db, episode_id)
-    subtitle = _current_subtitle(db, episode_id)
-    assets = _review_assets(db, episode_id)
+    episode = _episode(db, episode_id, load_review_data=True)
+    subtitle = _current_episode_subtitle(episode)
+    assets = _review_assets(episode)
     return {
         "episode_id": episode.id,
         "status": episode.status,

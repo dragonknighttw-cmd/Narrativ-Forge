@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:8000/api/v1/drive/google/callback"
     oauth_encryption_key: str = ""
+    sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = 0.1
     ffmpeg_binary: str = "ffmpeg"
     ffprobe_binary: str = "ffprobe"
     whisper_command: str = "whisper"

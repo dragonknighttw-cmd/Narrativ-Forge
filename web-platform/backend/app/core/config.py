@@ -53,8 +53,8 @@ class Settings(BaseSettings):
             return
         if not self.session_secret or len(self.session_secret) < 32:
             raise RuntimeError("SESSION_SECRET must be a strong secret (32+ characters) in production")
-        if not self.database_url.lower().startswith(("postgresql://", "postgresql+psycopg://")):
-            raise RuntimeError("DATABASE_URL must use PostgreSQL in production")
+        if self.app_env.lower() in {"production", "staging"} and not self.database_url.lower().startswith(("postgresql://", "postgresql+psycopg://")):
+            raise RuntimeError("DATABASE_URL must use PostgreSQL in staging/production")
         if not self.session_cookie_secure:
             raise RuntimeError("SESSION_COOKIE_SECURE must be true in production")
         if not self.cors_origin_list:

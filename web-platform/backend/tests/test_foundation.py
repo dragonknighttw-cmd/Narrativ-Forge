@@ -33,12 +33,15 @@ def auth_client():
     assert response.status_code == 200
     return client
 
+@pytest.mark.integration
 def test_health():
     with create_test_client(app) as client:
         response = client.get("/api/v1/health")
         assert response.status_code == 200
         assert response.json()["status"] == "ok"
 
+@pytest.mark.integration
+@pytest.mark.security
 def test_cors_preflight_allows_configured_origin_and_restricts_headers():
     with create_test_client(app) as client:
         response = client.options(
@@ -55,6 +58,8 @@ def test_cors_preflight_allows_configured_origin_and_restricts_headers():
         assert "x-secret-header" not in response.headers["access-control-allow-headers"].lower()
 
 
+@pytest.mark.integration
+@pytest.mark.security
 def test_login_sets_http_only_cookie():
     with create_test_client(app) as client:
         response = client.post("/api/v1/auth/login", json={"email": "admin@narrativ.local", "password": "change-me-123456"})
@@ -62,6 +67,8 @@ def test_login_sets_http_only_cookie():
         assert "nf_session" in response.cookies
         assert "httponly" in response.headers["set-cookie"].lower()
 
+@pytest.mark.integration
+@pytest.mark.security
 def test_login_rejects_invalid_password():
     with create_test_client(app) as client:
         response = client.post("/api/v1/auth/login", json={"email": "admin@narrativ.local", "password": "wrong-password"})
@@ -69,10 +76,13 @@ def test_login_rejects_invalid_password():
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid credentials"
 
+@pytest.mark.integration
+@pytest.mark.security
 def test_me_requires_authentication():
     with create_test_client(app) as client:
         assert client.get("/api/v1/auth/me").status_code == 401
 
+@pytest.mark.integration
 def test_story_structure_and_episode_status_workflow():
     client = auth_client()
     try:
@@ -114,6 +124,7 @@ def test_story_structure_and_episode_status_workflow():
         client.close()
 
 
+@pytest.mark.integration
 def test_script_scene_and_asset_vertical_slice(tmp_path, monkeypatch):
     from app.core.config import settings
     settings.upload_dir = str(tmp_path)
@@ -170,6 +181,7 @@ def test_script_scene_and_asset_vertical_slice(tmp_path, monkeypatch):
         client.close()
 
 
+@pytest.mark.integration
 def test_processing_mock_worker_creates_output_and_transcript(tmp_path):
     from app.core.config import settings
     settings.upload_dir = str(tmp_path)
@@ -201,6 +213,7 @@ def test_processing_mock_worker_creates_output_and_transcript(tmp_path):
         client.close()
 
 
+@pytest.mark.integration
 def test_processing_missing_input_is_failed_and_retryable(tmp_path):
     from app.core.config import settings
     settings.upload_dir = str(tmp_path)
@@ -222,6 +235,7 @@ def test_processing_missing_input_is_failed_and_retryable(tmp_path):
         client.close()
 
 
+@pytest.mark.integration
 def test_subtitle_generation_validation_and_export(tmp_path):
     from app.core.config import settings
     settings.upload_dir = str(tmp_path)
@@ -274,6 +288,7 @@ def test_subtitle_generation_validation_and_export(tmp_path):
         client.close()
 
 
+@pytest.mark.integration
 def test_subtitle_approved_version_is_immutable_and_revision_creates_new_version(tmp_path):
     from app.core.config import settings
     settings.upload_dir = str(tmp_path)
@@ -321,6 +336,7 @@ def test_subtitle_approved_version_is_immutable_and_revision_creates_new_version
         client.close()
 
 
+@pytest.mark.integration
 def test_review_blocks_until_checklist_and_approves_final_asset():
     client = auth_client()
     series = client.post("/api/v1/series", json={"title": "Review series"}).json()
@@ -337,6 +353,7 @@ def test_review_blocks_until_checklist_and_approves_final_asset():
     client.close()
 
 
+@pytest.mark.integration
 def test_mock_drive_export_is_idempotent_after_approval(tmp_path):
     from app.core.config import settings
     settings.upload_dir = str(tmp_path)
@@ -368,6 +385,7 @@ def test_mock_drive_export_is_idempotent_after_approval(tmp_path):
     client.close()
 
 
+@pytest.mark.integration
 def test_phase7_hook_log_social_and_analytics_flow():
     client = auth_client()
     series = client.post("/api/v1/series", json={"title": "Phase7 series"}).json()
@@ -404,6 +422,8 @@ def test_phase7_hook_log_social_and_analytics_flow():
     client.close()
 
 
+@pytest.mark.unit
+@pytest.mark.security
 def test_upload_safety_rejects_mime_extension_mismatch_and_sanitizes_filename():
     from app.api.routes.assets import safe_filename, validate_upload
     assert safe_filename("../../secret.mp4") == "secret.mp4"
@@ -414,6 +434,7 @@ def test_upload_safety_rejects_mime_extension_mismatch_and_sanitizes_filename():
         validate_upload("clip.mp4", "image/png", "video")
 
 
+@pytest.mark.integration
 def test_real_processing_pipeline_creates_render_and_whisper_assets(monkeypatch, tmp_path):
     from pathlib import Path
     from app.models import Asset, Episode, ProcessingJob, Series
@@ -481,6 +502,8 @@ def test_real_processing_pipeline_creates_render_and_whisper_assets(monkeypatch,
     assert "မြန်မာ" in Path(transcript.local_path).read_text(encoding="utf-8")
 
 
+@pytest.mark.integration
+@pytest.mark.security
 def test_session_cookie_is_signed_and_tampering_is_rejected():
     from app.api.dependencies import issue_session
     with create_test_client(app) as client:
@@ -492,6 +515,8 @@ def test_session_cookie_is_signed_and_tampering_is_rejected():
         assert client.get("/api/v1/auth/me").status_code == 401
 
 
+@pytest.mark.integration
+@pytest.mark.security
 def test_security_headers_are_present():
     with create_test_client(app) as client:
         response = client.get("/api/v1/health")
@@ -501,6 +526,7 @@ def test_security_headers_are_present():
         assert "permissions-policy" in response.headers
 
 
+@pytest.mark.integration
 def test_google_drive_export_failure_is_resumable(monkeypatch, tmp_path):
     import httpx
     from app.core.config import settings
@@ -587,6 +613,7 @@ def test_google_drive_export_failure_is_resumable(monkeypatch, tmp_path):
         client.close()
 
 
+@pytest.mark.integration
 def test_full_production_integration_flow(tmp_path):
     from app.core.config import settings
     settings.upload_dir = str(tmp_path)
@@ -652,6 +679,7 @@ def test_full_production_integration_flow(tmp_path):
         client.close()
 
 
+@pytest.mark.integration
 def test_approval_and_export_create_audit_events(tmp_path):
     from app.core.config import settings
     settings.upload_dir = str(tmp_path)
@@ -683,6 +711,8 @@ def test_approval_and_export_create_audit_events(tmp_path):
         client.close()
 
 
+@pytest.mark.integration
+@pytest.mark.security
 def test_production_rbac_invite_and_role_authority():
     client = auth_client()
     try:
@@ -711,6 +741,7 @@ def test_production_rbac_invite_and_role_authority():
         client.close()
 
 
+@pytest.mark.unit
 def test_storage_abstraction_upload_download_delete_and_asset_metadata(tmp_path, monkeypatch):
     from app.services.storage import LocalStorageProvider, build_object_key, sha256_file
 
@@ -735,6 +766,7 @@ def test_storage_abstraction_upload_download_delete_and_asset_metadata(tmp_path,
     assert not provider.exists(key)
 
 
+@pytest.mark.integration
 def test_upload_persists_storage_object_metadata(tmp_path):
     from app.core.config import settings
 
@@ -763,6 +795,8 @@ def test_upload_persists_storage_object_metadata(tmp_path):
         client.close()
 
 
+@pytest.mark.integration
+@pytest.mark.security
 def test_production_storage_gate_requires_b2_configuration(monkeypatch):
     from app.core.config import Settings
 
@@ -783,6 +817,7 @@ def test_production_storage_gate_requires_b2_configuration(monkeypatch):
         assert "B2 storage configuration missing" in str(exc)
 
 
+@pytest.mark.integration
 def test_b2_storage_integration_roundtrip_when_configured(tmp_path):
     import os
     from app.services.storage import get_storage
@@ -816,6 +851,8 @@ def test_b2_storage_integration_roundtrip_when_configured(tmp_path):
         assert not provider.exists(key)
 
 
+@pytest.mark.integration
+@pytest.mark.security
 def test_viewer_is_read_only_for_production_mutations():
     client = auth_client()
     try:
@@ -844,6 +881,7 @@ def test_viewer_is_read_only_for_production_mutations():
         client.close()
 
 
+@pytest.mark.unit
 def test_subtitle_quality_gate_enforces_source_requirements():
     from app.services.subtitles import validate_cues
 
@@ -857,6 +895,7 @@ def test_subtitle_quality_gate_enforces_source_requirements():
     assert "BURMESE_TEXT_REQUIRED" in codes
 
 
+@pytest.mark.unit
 def test_publication_metadata_validation():
     from app.api.routes.production_intelligence import validate_publication_payload
 
@@ -865,6 +904,7 @@ def test_publication_metadata_validation():
     assert "Caption is required" in validate_publication_payload("tiktok", "", [])
 
 
+@pytest.mark.unit
 def test_auto_mode_adapter_produces_deterministic_plan():
     from app.services.ai_adapter import MockAIAdapter
 
@@ -874,6 +914,7 @@ def test_auto_mode_adapter_produces_deterministic_plan():
     assert len(plan.scenes) >= 1
 
 
+@pytest.mark.integration
 def test_production_intelligence_crud_and_analytics():
     client = auth_client()
     try:
@@ -899,6 +940,7 @@ def test_production_intelligence_crud_and_analytics():
         client.close()
 
 
+@pytest.mark.integration
 def test_auto_mode_creates_script_versions_and_requires_source_video():
     client = auth_client()
     try:

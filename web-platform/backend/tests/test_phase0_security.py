@@ -10,6 +10,10 @@ from app.main import app
 from client_utils import create_test_client
 
 
+pytestmark = pytest.mark.security
+
+
+@pytest.mark.unit
 def test_login_email_validation_accepts_project_local_address():
     payload = LoginRequest(email="ADMIN@narrativ.local", password="test-password")
 
@@ -17,11 +21,13 @@ def test_login_email_validation_accepts_project_local_address():
 
 
 @pytest.mark.parametrize("email", ["adminnarrativ.local", "admin@ narrativ.local", "admin@narrativ"])
+@pytest.mark.unit
 def test_login_email_validation_rejects_malformed_address(email):
     with pytest.raises(ValidationError):
         LoginRequest(email=email, password="test-password")
 
 
+@pytest.mark.integration
 def test_login_cookie_is_secure_and_samesite_strict(monkeypatch):
     class FakeQuery:
         def filter(self, *_args):
@@ -59,6 +65,7 @@ def test_login_cookie_is_secure_and_samesite_strict(monkeypatch):
     assert "samesite=strict" in cookie.lower()
 
 
+@pytest.mark.integration
 def test_sqlite_foreign_keys_are_enabled():
     if not engine.url.drivername.startswith("sqlite"):
         return

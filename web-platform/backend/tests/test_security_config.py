@@ -1,5 +1,10 @@
+import pytest
+
 from app.core.config import Settings, settings
 from app.main import app
+
+
+pytestmark = [pytest.mark.unit, pytest.mark.security]
 
 
 def test_settings_instance_is_exported_and_application_imports():

@@ -1,4 +1,9 @@
+import pytest
+
 from app.services.passwords import hash_password, verify_password
+
+
+pytestmark = [pytest.mark.unit, pytest.mark.security]
 
 
 def test_password_hash_verifies_only_the_original_password():

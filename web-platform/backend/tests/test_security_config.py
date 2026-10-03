@@ -1,4 +1,10 @@
-from app.core.config import Settings
+from app.core.config import Settings, settings
+from app.main import app
+
+
+def test_settings_instance_is_exported_and_application_imports():
+    assert isinstance(settings, Settings)
+    assert app.title == "Narrativ Forge API"
 
 
 def production_settings(**overrides) -> Settings:

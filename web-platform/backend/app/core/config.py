@@ -68,3 +68,6 @@ class Settings(BaseSettings):
             missing = [name for name, value in required.items() if not value]
             if missing:
                 raise RuntimeError("B2 storage configuration missing: " + ", ".join(missing))
+
+
+settings = Settings()

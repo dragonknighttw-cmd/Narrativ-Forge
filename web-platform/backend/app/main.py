@@ -1,15 +1,26 @@
 from collections import defaultdict
 from time import monotonic
 
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .core.config import settings
+from .core.logging import configure_logging
 from .db import init_db
 from .api.router import api_router
 
 settings.validate_runtime()
+configure_logging()
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        traces_sample_rate=settings.sentry_traces_sample_rate,
+        environment=settings.app_env,
+        send_default_pii=False,
+    )
+
 app = FastAPI(title="Narrativ Forge API", version="0.1.0")
 
 app.add_middleware(
@@ -21,7 +32,7 @@ app.add_middleware(
     allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["Content-Type", "Authorization", "Idempotency-Key"],
 )
 
 _rate_windows: dict[str, list[float]] = defaultdict(list)

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from ...db import get_db
 from ...models import Season, Series
@@ -23,7 +23,7 @@ class SeasonCreate(BaseModel):
 
 @router.get("")
 def list_series(_: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.query(Series).order_by(Series.created_at.desc()).all()
+    return db.query(Series).options(selectinload(Series.seasons)).order_by(Series.created_at.desc()).all()
 
 @router.post("", status_code=201)
 def create_series(payload: SeriesCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):

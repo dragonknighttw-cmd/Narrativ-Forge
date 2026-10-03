@@ -1,3 +1,3 @@
 # Optional local/worker runtime dependencies for the real processing pipeline.
 # Install this in an environment that has enough CPU/RAM for Whisper.
-openai-whisper>=20240930,<2027
+openai-whisper>=20240930,<20270101

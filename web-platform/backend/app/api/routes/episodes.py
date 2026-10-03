@@ -1,7 +1,7 @@
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from ...db import get_db
 from ...models import Episode, Season, Series
@@ -76,7 +76,7 @@ def validate_structure(db: Session, series_id: str, season_id: str | None):
 
 @router.get("")
 def list_episodes(_: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.query(Episode).order_by(Episode.created_at.desc()).all()
+    return db.query(Episode).options(joinedload(Episode.series), joinedload(Episode.season)).order_by(Episode.created_at.desc()).all()
 
 @router.post("", status_code=201)
 def create_episode(payload: EpisodeCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):

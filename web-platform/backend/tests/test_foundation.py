@@ -62,6 +62,13 @@ def test_login_sets_http_only_cookie():
         assert "nf_session" in response.cookies
         assert "httponly" in response.headers["set-cookie"].lower()
 
+def test_login_rejects_invalid_password():
+    with create_test_client(app) as client:
+        response = client.post("/api/v1/auth/login", json={"email": "admin@narrativ.local", "password": "wrong-password"})
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid credentials"
+
 def test_me_requires_authentication():
     with create_test_client(app) as client:
         assert client.get("/api/v1/auth/me").status_code == 401

@@ -17,7 +17,7 @@ def hash_password(password: str) -> str:
 
 def verify_password(password: str, encoded: str) -> bool:
     try:
-        algorithm, iterations, salt_b64, digest_b64 = encoded.split("$", 3)
+        _, algorithm, iterations, salt_b64, digest_b64 = encoded.split("$", 4)
         if algorithm != _ALGORITHM:
             return False
         salt = base64.urlsafe_b64decode(salt_b64.encode())

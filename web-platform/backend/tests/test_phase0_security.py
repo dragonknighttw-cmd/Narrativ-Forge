@@ -1,10 +1,25 @@
+import pytest
+from pydantic import ValidationError
 from sqlalchemy import text
 
 from app.api.routes import auth
+from app.api.routes.auth import LoginRequest
 from app.core.config import settings
 from app.db import engine, get_db
 from app.main import app
 from client_utils import create_test_client
+
+
+def test_login_email_validation_accepts_project_local_address():
+    payload = LoginRequest(email="ADMIN@narrativ.local", password="test-password")
+
+    assert payload.email == "admin@narrativ.local"
+
+
+@pytest.mark.parametrize("email", ["adminnarrativ.local", "admin@ narrativ.local", "admin@narrativ"])
+def test_login_email_validation_rejects_malformed_address(email):
+    with pytest.raises(ValidationError):
+        LoginRequest(email=email, password="test-password")
 
 
 def test_login_cookie_is_secure_and_samesite_strict(monkeypatch):
@@ -41,7 +56,7 @@ def test_login_cookie_is_secure_and_samesite_strict(monkeypatch):
     cookie = response.headers["set-cookie"]
     assert "Secure" in cookie
     assert "HttpOnly" in cookie
-    assert "SameSite=Strict" in cookie
+    assert "samesite=strict" in cookie.lower()
 
 
 def test_sqlite_foreign_keys_are_enabled():

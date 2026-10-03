@@ -20,7 +20,7 @@ class LoginRequest(BaseModel):
     @classmethod
     def valid_email(cls, value: str) -> str:
         value = value.strip().lower()
-        if not re.fullmatch(r"[^@\\s]+@[^@\\s]+\\.[^@\\s]+", value):
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", value):
             raise ValueError("Invalid email")
         return value
 

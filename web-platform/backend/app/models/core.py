@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db import Base
 
@@ -42,6 +42,7 @@ class Series(Base):
     status: Mapped[str] = mapped_column(String(40), default="draft")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+    seasons: Mapped[list["Season"]] = relationship(back_populates="series", cascade="all, delete-orphan")
 
 
 class Season(Base):
@@ -52,6 +53,8 @@ class Season(Base):
     season_number: Mapped[int] = mapped_column(Integer)
     title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    series: Mapped["Series"] = relationship(back_populates="seasons")
+    episodes: Mapped[list["Episode"]] = relationship(back_populates="season")
 
 
 class Episode(Base):
@@ -71,6 +74,10 @@ class Episode(Base):
     current_step: Mapped[str] = mapped_column(String(40), default="idea")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+    series: Mapped["Series"] = relationship()
+    season: Mapped["Season | None"] = relationship(back_populates="episodes")
+    scripts: Mapped[list["Script"]] = relationship(back_populates="episode", cascade="all, delete-orphan")
+    assets: Mapped[list["Asset"]] = relationship(back_populates="episode", cascade="all, delete-orphan", foreign_keys="Asset.episode_id")
 
 
 class Script(Base):
@@ -85,6 +92,7 @@ class Script(Base):
     is_current: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+    episode: Mapped["Episode"] = relationship(back_populates="scripts")
 
 
 class Scene(Base):
@@ -143,6 +151,7 @@ class Asset(Base):
     is_final: Mapped[bool] = mapped_column(default=False)
     status: Mapped[str] = mapped_column(String(40), default="uploaded")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    episode: Mapped["Episode"] = relationship(back_populates="assets", foreign_keys=[episode_id])
 
 
 class Subtitle(Base):

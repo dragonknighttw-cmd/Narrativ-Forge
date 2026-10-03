@@ -1,3 +1,4 @@
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -7,6 +8,7 @@ class Settings(BaseSettings):
     bootstrap_admin_email: str = ""
     bootstrap_admin_password: str = ""
     session_secret: str = ""
+    sentry_dsn: SecretStr = SecretStr("")
     session_cookie_name: str = "nf_session"
     session_cookie_secure: bool = False
     session_ttl_seconds: int = 60 * 60 * 8

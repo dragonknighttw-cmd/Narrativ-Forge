@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 
+from ..core.config import settings
 from ..db import SessionLocal
 from ..models import ProcessingJob
+from ..observability import configure_logging, initialize_sentry
 from ..services.real_processing import run_real_job
 
 
@@ -19,6 +21,8 @@ def run_once(db: Session) -> int:
 
 
 if __name__ == "__main__":
+    configure_logging(settings.app_env)
+    initialize_sentry(settings.sentry_dsn.get_secret_value(), settings.app_env)
     db = SessionLocal()
     try:
         print(f"processed_jobs={run_once(db)}")

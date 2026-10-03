@@ -4,12 +4,16 @@ Usage:
     python -m app.workers.mock_worker
 """
 
+from app.core.config import settings
 from app.db import SessionLocal, init_db
 from app.models import ProcessingJob
+from app.observability import configure_logging, initialize_sentry
 from app.services.processing import run_mock_job
 
 
 def main() -> None:
+    configure_logging(settings.app_env)
+    initialize_sentry(settings.sentry_dsn.get_secret_value(), settings.app_env)
     init_db()
     db = SessionLocal()
     try:

@@ -8,7 +8,7 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   backend:
@@ -39,18 +39,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: npm install
+      - name: Bootstrap npm lockfile if missing
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !hashFiles('web-platform/frontend/package-lock.json')
+        run: |
+          npm install --package-lock-only --ignore-scripts
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore(ci): add frontend npm lockfile"
+          git push origin HEAD:${GITHUB_REF_NAME}
+      - name: Require npm lockfile
+        run: test -f package-lock.json
+      - run: npm ci
       - run: npm run typecheck
       - run: npm run build
 
 
   e2e:
+    needs: frontend
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: web-platform/frontend
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'push' && 'main' || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -58,10 +72,13 @@ jobs:
         run: pip install -r ../backend/requirements.txt
       - name: Start backend
         working-directory: web-platform/backend
+        env:
+          BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
         run: |
           mkdir -p storage/uploads
+          test -n "$BOOTSTRAP_ADMIN_PASSWORD" || { echo "BOOTSTRAP_ADMIN_PASSWORD GitHub Secret is required"; exit 1; }
           CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000 DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python -m alembic upgrade head
-          BOOTSTRAP_ADMIN_EMAIL=admin@narrativ.local BOOTSTRAP_ADMIN_PASSWORD=change-me-123456 DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python scripts/bootstrap_admin.py
+          BOOTSTRAP_ADMIN_EMAIL=admin@narrativ.local DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python scripts/bootstrap_admin.py
           CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000 PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &
           python - <<'PY'
 import time
@@ -78,7 +95,9 @@ PY
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: npm install
+      - name: Require npm lockfile
+        run: test -f package-lock.json
+      - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - name: Start frontend

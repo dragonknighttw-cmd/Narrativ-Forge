@@ -26,8 +26,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Require npm lockfile
+        working-directory: web-platform/frontend
+        run: test -f package-lock.json
       - name: Audit frontend dependencies
         working-directory: web-platform/frontend
         run: |
-          npm install
+          npm ci
           npm audit --audit-level=high

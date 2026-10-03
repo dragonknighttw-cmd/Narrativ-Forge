@@ -52,7 +52,7 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
         value=issue_session(user.email, user.role),
         httponly=True,
         secure=settings.session_cookie_secure,
-        samesite="lax",
+        samesite="strict",
         max_age=settings.session_ttl_seconds,
         path="/",
     )

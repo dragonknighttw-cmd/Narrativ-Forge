@@ -83,7 +83,7 @@ async def security_headers(request, call_next):
 
 @app.on_event("startup")
 def startup() -> None:
-    if not settings.is_production:
+    if settings.app_env.lower() not in {"production", "staging"}:
         init_db()
 
 

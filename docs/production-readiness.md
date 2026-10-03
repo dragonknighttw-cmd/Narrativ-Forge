@@ -11,6 +11,9 @@
 - Deploy the Next.js frontend on Netlify and set `NEXT_PUBLIC_API_BASE_URL` to the Render API origin.
 - Deploy the FastAPI API and real-processing worker on Render with the same application revision.
 - Use PostgreSQL for production rather than the SQLite development default.
+- Use Redis as the shared service for future background-job processing; Phase 1 CI provisions Redis so integration environments match the target foundation.
+- Run Alembic migrations explicitly before application startup; the application does not use schema creation as a production deployment mechanism.
+- Configure `SENTRY_DSN` when error reporting is enabled; Sentry is initialized without sending default PII.
 - Use Backblaze B2 as the production media object store (`STORAGE_PROVIDER=b2`); Render local disk is only temporary processing space.
 - Configure a private B2 bucket, bucket-scoped S3-compatible application key, region, and endpoint. Keep B2 credentials outside Git.
 - Persist each asset's storage provider, immutable object key, SHA-256 checksum, and byte size in PostgreSQL.

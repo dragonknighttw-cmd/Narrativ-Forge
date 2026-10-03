@@ -18,6 +18,8 @@ jobs:
         working-directory: web-platform/backend
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: phase0/sec003-infra-docker
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -56,6 +58,7 @@ jobs:
 
 
   e2e:
+    needs: frontend
     runs-on: ubuntu-latest
     defaults:
       run:

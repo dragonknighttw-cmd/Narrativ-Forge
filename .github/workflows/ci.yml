@@ -62,6 +62,7 @@ jobs:
           BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
         run: |
           mkdir -p storage/uploads
+          test -n "$BOOTSTRAP_ADMIN_PASSWORD" || { echo "BOOTSTRAP_ADMIN_PASSWORD GitHub Secret is required"; exit 1; }
           CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000 DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python -m alembic upgrade head
           BOOTSTRAP_ADMIN_EMAIL=admin@narrativ.local DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python scripts/bootstrap_admin.py
           CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000 PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &

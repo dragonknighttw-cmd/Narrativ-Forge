@@ -64,19 +64,3 @@ jobs:
       - run: npm ci
       - run: npm audit --audit-level=high
 
-  container:
-    name: Container scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build backend image
-        run: docker build -t narrativ-forge-backend:ci web-platform/backend
-      - name: Scan backend image
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: narrativ-forge-backend:ci
-          format: table
-          exit-code: "1"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"

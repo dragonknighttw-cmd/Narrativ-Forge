@@ -65,6 +65,8 @@ Run a restore drill before launch and periodically afterward. Keep backups outsi
 9. Verify Google OAuth/Drive export with a test Drive account before enabling production exports.
 10. Monitor processing failures and export failures; failed jobs must remain inspectable and retryable.
 
+Only `APP_ENV=development` may create tables automatically at application startup. Production and staging must apply `alembic upgrade head` before starting the API or worker. The automated migration-path tests currently use SQLite; they do not establish PostgreSQL compatibility.
+
 ## Current explicit pre-launch blockers
 
 - Production authentication is now database-backed with PBKDF2 password hashes, signed expiring sessions, owner/editor/viewer roles, and owner-only invites. The first owner is created explicitly with `scripts/bootstrap_admin.py`; remove bootstrap secrets after provisioning.

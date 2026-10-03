@@ -1,0 +1,126 @@
+name: Foundation CI
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend unit and integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: narrativ_forge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d narrativ_forge"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    defaults:
+      run:
+        working-directory: web-platform/backend
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/narrativ_forge
+      TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/narrativ_forge
+      REDIS_URL: redis://127.0.0.1:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Apply Alembic migrations
+        run: |
+          PYTHONPATH=. python -m alembic upgrade head
+          PYTHONPATH=. python -m alembic current
+      - name: Run unit tests
+        run: PYTHONPATH=. pytest -q -m "not integration and not heavy"
+      - name: Run integration tests
+        run: PYTHONPATH=. pytest -q -m integration
+
+  frontend:
+    name: Frontend typecheck and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Require npm lockfile
+        run: test -f package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+
+  e2e:
+    name: Browser E2E
+    needs: frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: pip install -r ../backend/requirements.txt
+      - name: Start backend
+        working-directory: web-platform/backend
+        env:
+          BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
+        run: |
+          mkdir -p storage/uploads
+          test -n "$BOOTSTRAP_ADMIN_PASSWORD" || { echo "BOOTSTRAP_ADMIN_PASSWORD GitHub Secret is required"; exit 1; }
+          CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000 DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python -m alembic upgrade head
+          BOOTSTRAP_ADMIN_EMAIL=admin@narrativ.local DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python scripts/bootstrap_admin.py
+          CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000 PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &
+          python - <<'PY'
+import time
+import urllib.request
+for _ in range(30):
+    try:
+        urllib.request.urlopen("http://127.0.0.1:8000/api/v1/health", timeout=2)
+        break
+    except Exception:
+        time.sleep(1)
+else:
+    raise SystemExit("backend did not become ready")
+PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Require npm lockfile
+        run: test -f package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Start frontend
+        run: |
+          NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run start > /tmp/narrativ-frontend.log 2>&1 &
+          node -e "const http=require('http'); let n=0; const f=()=>http.get('http://127.0.0.1:3000/login',r=>{if(r.statusCode===200)process.exit(0);setTimeout(f,1000)}).on('error',()=>{if(++n>30)process.exit(1);setTimeout(f,1000)});f()"
+      - run: npm run e2e

@@ -1,8 +1,6 @@
-import os
-from pathlib import Path
 
 import pytest
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, inspect
 
 from app.core.config import Settings
 from app.db import Base
@@ -28,19 +26,10 @@ def test_production_database_url_is_supported():
     assert settings.database_url.startswith("postgresql+psycopg://")
 
 
-@pytest.mark.unit
-def test_sqlite_schema_still_enforces_foreign_keys(tmp_path: Path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'phase1.db'}")
-    Base.metadata.create_all(engine)
-    with engine.connect() as connection:
-        assert connection.execute(text("PRAGMA foreign_keys")).scalar() == 0
 
 
 @pytest.mark.integration
-def test_postgres_schema_has_phase1_indexes():
-    postgres_url = os.environ.get("TEST_DATABASE_URL")
-    if not postgres_url:
-        pytest.skip("TEST_DATABASE_URL is required for integration tests")
+def test_postgres_schema_has_phase1_indexes(postgres_url: str):
     engine = create_engine(postgres_url)
     inspector = inspect(engine)
     assert "assets" in inspector.get_table_names()

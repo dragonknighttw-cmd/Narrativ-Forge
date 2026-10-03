@@ -8,7 +8,7 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   backend:
@@ -39,15 +39,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Bootstrap npm lockfile if missing
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !hashFiles('web-platform/frontend/package-lock.json')
-        run: |
-          npm install --package-lock-only --ignore-scripts
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          git commit -m "chore(ci): add frontend npm lockfile"
-          git push origin HEAD:${GITHUB_REF_NAME}
       - name: Require npm lockfile
         run: test -f package-lock.json
       - run: npm ci
@@ -63,8 +54,6 @@ jobs:
         working-directory: web-platform/frontend
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'push' && 'main' || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

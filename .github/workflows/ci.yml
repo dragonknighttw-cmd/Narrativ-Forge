@@ -40,7 +40,7 @@ jobs:
         with:
           node-version: "20"
       - name: Bootstrap npm lockfile if missing
-        if: github.ref == 'refs/heads/phase0/sec003-infra-docker' && !hashFiles('web-platform/frontend/package-lock.json')
+        if: github.head_ref == 'phase0/sec003-infra-docker' && !hashFiles('web-platform/frontend/package-lock.json')
         run: |
           npm install --package-lock-only --ignore-scripts
           git config user.name "github-actions[bot]"

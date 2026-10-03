@@ -30,6 +30,13 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 The first implementation is mock-first. Heavy media processing, Whisper, FFmpeg, Google Drive OAuth, and cloud deployment are integration phases after the foundation is verified.
+## CI secrets
+
+The GitHub Actions e2e workflow requires the repository secret `BOOTSTRAP_ADMIN_PASSWORD`. Configure it in GitHub repository Settings → Secrets and variables → Actions before relying on the e2e job.
+
 ## Production configuration
 
 Production startup requires security-sensitive settings to be supplied through the environment. In particular, `SESSION_SECRET` must be present and at least 32 characters long, and `SESSION_COOKIE_SECURE=true` is required in production. Do not commit production secrets to the repository or CI workflow files.
+### Session cookie policy
+
+Authentication session cookies use `HttpOnly` and `SameSite=Strict`; production additionally requires `SESSION_COOKIE_SECURE=true` so the browser only sends the cookie over HTTPS.

@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./narrativ_forge.db"
     bootstrap_admin_email: str = ""
     bootstrap_admin_password: str = ""
-    session_secret: str = "development-only-change-this-secret"
+    session_secret: str = ""
     session_cookie_name: str = "nf_session"
     session_cookie_secure: bool = False
     session_ttl_seconds: int = 60 * 60 * 8
@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     def validate_runtime(self) -> None:
         if not self.is_production:
             return
-        if self.session_secret == "development-only-change-this-secret" or len(self.session_secret) < 32:
+        if not self.session_secret or len(self.session_secret) < 32:
             raise RuntimeError("SESSION_SECRET must be a strong secret (32+ characters) in production")
         if not self.session_cookie_secure:
             raise RuntimeError("SESSION_COOKIE_SECURE must be true in production")

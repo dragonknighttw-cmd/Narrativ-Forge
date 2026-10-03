@@ -40,3 +40,16 @@ Production startup requires security-sensitive settings to be supplied through t
 ### Session cookie policy
 
 Authentication session cookies use `HttpOnly` and `SameSite=Strict`; production additionally requires `SESSION_COOKIE_SECURE=true` so the browser only sends the cookie over HTTPS.
+
+## Foundation development
+
+Local development may use SQLite, but staging and production should use PostgreSQL. Set `DATABASE_URL=postgresql+psycopg://...` for PostgreSQL environments and `REDIS_URL=redis://...` for the shared Redis service.
+
+Apply schema migrations before starting the API:
+
+```bash
+cd web-platform/backend
+PYTHONPATH=. python -m alembic upgrade head
+```
+
+Phase 1 CI runs unit tests separately from integration tests against PostgreSQL and Redis. Security CI runs CodeQL, Python dependency/SAST checks, npm audit, and a container vulnerability scan.

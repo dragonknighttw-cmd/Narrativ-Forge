@@ -1,6 +1,5 @@
 import pytest
 from uuid import uuid4
-from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -9,6 +8,7 @@ from app.main import app
 from app.db import Base, get_db
 from app.models import User
 from app.services.passwords import hash_password
+from client_utils import create_test_client
 
 engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
 TestingSession = sessionmaker(bind=engine)
@@ -28,19 +28,19 @@ def override_db():
 app.dependency_overrides[get_db] = override_db
 
 def auth_client():
-    client = TestClient(app)
+    client = create_test_client(app)
     response = client.post("/api/v1/auth/login", json={"email": "admin@narrativ.local", "password": "change-me-123456"})
     assert response.status_code == 200
     return client
 
 def test_health():
-    with TestClient(app) as client:
+    with create_test_client(app) as client:
         response = client.get("/api/v1/health")
         assert response.status_code == 200
         assert response.json()["status"] == "ok"
 
 def test_cors_preflight_allows_configured_origin_and_restricts_headers():
-    with TestClient(app) as client:
+    with create_test_client(app) as client:
         response = client.options(
             "/api/v1/health",
             headers={
@@ -56,14 +56,14 @@ def test_cors_preflight_allows_configured_origin_and_restricts_headers():
 
 
 def test_login_sets_http_only_cookie():
-    with TestClient(app) as client:
+    with create_test_client(app) as client:
         response = client.post("/api/v1/auth/login", json={"email": "admin@narrativ.local", "password": "change-me-123456"})
         assert response.status_code == 200
         assert "nf_session" in response.cookies
         assert "httponly" in response.headers["set-cookie"].lower()
 
 def test_me_requires_authentication():
-    with TestClient(app) as client:
+    with create_test_client(app) as client:
         assert client.get("/api/v1/auth/me").status_code == 401
 
 def test_story_structure_and_episode_status_workflow():
@@ -476,7 +476,7 @@ def test_real_processing_pipeline_creates_render_and_whisper_assets(monkeypatch,
 
 def test_session_cookie_is_signed_and_tampering_is_rejected():
     from app.api.dependencies import issue_session
-    with TestClient(app) as client:
+    with create_test_client(app) as client:
         token = issue_session("admin@narrativ.local")
         assert token != "dev-session"
         client.cookies.set("nf_session", token)
@@ -486,7 +486,7 @@ def test_session_cookie_is_signed_and_tampering_is_rejected():
 
 
 def test_security_headers_are_present():
-    with TestClient(app) as client:
+    with create_test_client(app) as client:
         response = client.get("/api/v1/health")
         assert response.headers["x-content-type-options"] == "nosniff"
         assert response.headers["x-frame-options"] == "DENY"

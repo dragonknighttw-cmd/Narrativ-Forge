@@ -1,10 +1,10 @@
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from app.api.routes import auth
 from app.core.config import settings
 from app.db import engine, get_db
 from app.main import app
+from client_utils import create_test_client
 
 
 def test_login_cookie_is_secure_and_samesite_strict(monkeypatch):
@@ -30,7 +30,7 @@ def test_login_cookie_is_secure_and_samesite_strict(monkeypatch):
 
     app.dependency_overrides[get_db] = lambda: FakeDB()
     try:
-        response = TestClient(app).post(
+        response = create_test_client(app).post(
             "/api/v1/auth/login",
             json={"email": "admin@narrativ.local", "password": "test-password"},
         )

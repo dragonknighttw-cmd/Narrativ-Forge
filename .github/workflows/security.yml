@@ -41,7 +41,14 @@ jobs:
       - run: pip install -r requirements.txt
       - run: pip install pip-audit bandit
       - run: pip-audit -r requirements.txt
-      - run: bandit -q -r app
+      - run: bandit -q -r app --severity-level medium
+      - name: Build backend image
+        run: docker build -t narrativ-forge-backend:ci .
+      - name: Scan backend image
+        run: >-
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock
+          aquasec/trivy:0.66.0 image --severity HIGH,CRITICAL
+          --ignore-unfixed --exit-code 1 narrativ-forge-backend:ci
 
   frontend-dependencies:
     name: Frontend SCA

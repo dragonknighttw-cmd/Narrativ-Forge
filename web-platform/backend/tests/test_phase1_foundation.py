@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -36,7 +37,10 @@ def test_sqlite_schema_still_enforces_foreign_keys(tmp_path: Path):
 
 
 @pytest.mark.integration
-def test_postgres_schema_has_phase1_indexes(postgres_url: str):
+def test_postgres_schema_has_phase1_indexes():
+    postgres_url = os.environ.get("TEST_DATABASE_URL")
+    if not postgres_url:
+        pytest.skip("TEST_DATABASE_URL is required for integration tests")
     engine = create_engine(postgres_url)
     inspector = inspect(engine)
     assert "assets" in inspector.get_table_names()

@@ -83,7 +83,8 @@ async def security_headers(request, call_next):
 
 @app.on_event("startup")
 def startup() -> None:
-    init_db()
+    if not settings.is_production:
+        init_db()
 
 
 app.include_router(api_router, prefix="/api/v1")

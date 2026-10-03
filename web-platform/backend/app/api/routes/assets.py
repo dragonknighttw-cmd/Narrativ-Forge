@@ -76,7 +76,7 @@ async def upload_asset(
     asset_type: str = Form(...),
     scene_id: str | None = Form(default=None),
     copyright_status: str = Form(default="unknown"),
-    _: dict = Depends(get_current_user),
+    _: dict = Depends(require_roles("owner", "editor")),
     db: Session = Depends(get_db),
 ):
     _episode_or_404(db, episode_id)
@@ -154,7 +154,7 @@ def download_asset(asset_id: str, _: dict = Depends(get_current_user), db: Sessi
 
 
 @asset_router.patch("/{asset_id}")
-def update_asset(asset_id: str, payload: AssetUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_asset(asset_id: str, payload: AssetUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(Asset, asset_id)
     if not item:
         raise HTTPException(status_code=404, detail="Asset not found")
@@ -177,7 +177,7 @@ def update_asset(asset_id: str, payload: AssetUpdate, _: dict = Depends(get_curr
 
 
 @asset_router.delete("/{asset_id}")
-def soft_delete_asset(asset_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def soft_delete_asset(asset_id: str, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(Asset, asset_id)
     if not item:
         raise HTTPException(status_code=404, detail="Asset not found")

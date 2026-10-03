@@ -37,7 +37,7 @@ def list_ideas(_: dict = Depends(get_current_user), db: Session = Depends(get_db
 
 
 @router.post("", status_code=201)
-def create_idea(payload: IdeaCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_idea(payload: IdeaCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     values = payload.model_dump()
     item = Idea(**values)
     db.add(item)
@@ -47,7 +47,7 @@ def create_idea(payload: IdeaCreate, _: dict = Depends(get_current_user), db: Se
 
 
 @router.patch("/{idea_id}")
-def update_idea(idea_id: str, payload: IdeaUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_idea(idea_id: str, payload: IdeaUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(Idea, idea_id)
     if not item:
         raise HTTPException(status_code=404, detail="Idea not found")

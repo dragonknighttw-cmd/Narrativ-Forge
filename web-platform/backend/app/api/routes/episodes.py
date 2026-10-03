@@ -79,7 +79,7 @@ def list_episodes(_: dict = Depends(get_current_user), db: Session = Depends(get
     return db.query(Episode).order_by(Episode.created_at.desc()).all()
 
 @router.post("", status_code=201)
-def create_episode(payload: EpisodeCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_episode(payload: EpisodeCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     validate_structure(db, payload.series_id, payload.season_id)
     if payload.season_id and db.query(Episode).filter(Episode.season_id == payload.season_id, Episode.episode_number == payload.episode_number).first():
         raise HTTPException(status_code=409, detail="Episode number already exists in this season")
@@ -100,7 +100,7 @@ def get_episode(episode_id: str, _: dict = Depends(get_current_user), db: Sessio
     return item
 
 @router.patch("/{episode_id}")
-def update_episode(episode_id: str, payload: EpisodeUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_episode(episode_id: str, payload: EpisodeUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(Episode, episode_id)
     if not item:
         raise HTTPException(status_code=404, detail="Episode not found")

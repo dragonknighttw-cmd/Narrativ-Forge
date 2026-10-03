@@ -41,7 +41,7 @@ def list_scripts(episode_id: str, _: dict = Depends(get_current_user), db: Sessi
 
 
 @router.post("/{episode_id}/scripts", status_code=201)
-def create_script(episode_id: str, payload: ScriptCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_script(episode_id: str, payload: ScriptCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
     latest = db.query(func.max(Script.version)).filter(Script.episode_id == episode_id).scalar() or 0
     db.query(Script).filter(Script.episode_id == episode_id, Script.is_current.is_(True)).update({Script.is_current: False})
@@ -53,7 +53,7 @@ def create_script(episode_id: str, payload: ScriptCreate, _: dict = Depends(get_
 
 
 @script_router.patch("/{script_id}")
-def update_script(script_id: str, payload: ScriptUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_script(script_id: str, payload: ScriptUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(Script, script_id)
     if not item:
         raise HTTPException(status_code=404, detail="Script not found")
@@ -65,7 +65,7 @@ def update_script(script_id: str, payload: ScriptUpdate, _: dict = Depends(get_c
 
 
 @router.post("/{episode_id}/scripts/versions", status_code=201)
-def create_script_version(episode_id: str, payload: ScriptVersionCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_script_version(episode_id: str, payload: ScriptVersionCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
     latest = db.query(func.max(Script.version)).filter(Script.episode_id == episode_id).scalar() or 0
     db.query(Script).filter(Script.episode_id == episode_id, Script.is_current.is_(True)).update({Script.is_current: False})

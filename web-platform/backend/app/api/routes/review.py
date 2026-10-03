@@ -60,7 +60,7 @@ def get_review(episode_id: str, _: dict = Depends(get_current_user), db: Session
     }
 
 @router.post("/{episode_id}/review")
-def save_review(episode_id: str, payload: ReviewUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def save_review(episode_id: str, payload: ReviewUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     episode = _episode(db, episode_id)
     if episode.status not in {"subtitle_review", "needs_approval", "rejected"}:
         raise HTTPException(status_code=409, detail="Episode is not in review workflow")
@@ -85,7 +85,7 @@ def save_review(episode_id: str, payload: ReviewUpdate, _: dict = Depends(get_cu
     return {"saved": True, "blocking_reasons": blockers, "ready": not blockers, "review": payload.model_dump()}
 
 @router.post("/{episode_id}/review/request-revision")
-def request_revision(episode_id: str, payload: RevisionRequest, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def request_revision(episode_id: str, payload: RevisionRequest, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     episode = _episode(db, episode_id)
     if episode.status not in {"subtitle_review", "needs_approval", "rejected"}:
         raise HTTPException(status_code=409, detail="Episode is not in review workflow")

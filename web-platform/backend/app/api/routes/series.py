@@ -26,7 +26,7 @@ def list_series(_: dict = Depends(get_current_user), db: Session = Depends(get_d
     return db.query(Series).order_by(Series.created_at.desc()).all()
 
 @router.post("", status_code=201)
-def create_series(payload: SeriesCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_series(payload: SeriesCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = Series(**payload.model_dump())
     db.add(item)
     db.commit()
@@ -41,7 +41,7 @@ def get_series(series_id: str, _: dict = Depends(get_current_user), db: Session 
     return item
 
 @router.patch("/{series_id}")
-def update_series(series_id: str, payload: SeriesUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_series(series_id: str, payload: SeriesUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(Series, series_id)
     if not item:
         raise HTTPException(status_code=404, detail="Series not found")
@@ -58,7 +58,7 @@ def list_seasons(series_id: str, _: dict = Depends(get_current_user), db: Sessio
     return db.query(Season).filter(Season.series_id == series_id).order_by(Season.season_number.asc()).all()
 
 @router.post("/{series_id}/seasons", status_code=201)
-def create_season(series_id: str, payload: SeasonCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_season(series_id: str, payload: SeasonCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     if not db.get(Series, series_id):
         raise HTTPException(status_code=404, detail="Series not found")
     existing = db.query(Season).filter(Season.series_id == series_id, Season.season_number == payload.season_number).first()

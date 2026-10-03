@@ -702,6 +702,9 @@ def test_production_rbac_invite_and_role_authority():
         assert login.status_code == 200
         assert login.json()["user"]["role"] == "editor"
 
+        assert client.post("/api/v1/ideas", json={"title": "editor idea"}).status_code == 201
+        assert client.post("/api/v1/series", json={"title": "editor series"}).status_code == 201
+
         forbidden = client.get("/api/v1/audit")
         assert forbidden.status_code == 403
     finally:

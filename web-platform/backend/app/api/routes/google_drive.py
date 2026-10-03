@@ -53,7 +53,7 @@ def google_status(user=Depends(require_roles("owner", "editor")), db: Session = 
     return {"connected": bool(item), "provider": "google_drive", "scope": item.scope if item else None}
 
 @router.get("/start")
-def google_start(user=Depends(get_current_user)):
+def google_start(user=Depends(require_roles("owner", "editor"))):
     if not settings.google_client_id or not settings.google_client_secret:
         raise HTTPException(status_code=503, detail="Drive disconnected: Google OAuth credentials are not configured")
     if not settings.oauth_encryption_key:

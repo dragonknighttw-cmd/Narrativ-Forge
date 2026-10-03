@@ -139,7 +139,7 @@ def mock_drive_export(episode_id: str, user=Depends(require_roles("owner", "edit
 
 
 @router.post("/{episode_id}/export/google-drive")
-async def google_drive_export(episode_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
+async def google_drive_export(episode_id: str, user=Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     from .google_drive import access_token_for
     from ...services.subtitles import render_srt
 

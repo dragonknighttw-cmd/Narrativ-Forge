@@ -49,7 +49,7 @@ def list_scenes(episode_id: str, _: dict = Depends(get_current_user), db: Sessio
 
 
 @router.post("/{episode_id}/scenes", status_code=201)
-def create_scene(episode_id: str, payload: SceneCreate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_scene(episode_id: str, payload: SceneCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
     _validate_script(db, episode_id, payload.script_id)
     if db.query(Scene).filter(Scene.episode_id == episode_id, Scene.scene_number == payload.scene_number).first():
@@ -62,7 +62,7 @@ def create_scene(episode_id: str, payload: SceneCreate, _: dict = Depends(get_cu
 
 
 @scene_router.patch("/{scene_id}")
-def update_scene(scene_id: str, payload: SceneUpdate, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_scene(scene_id: str, payload: SceneUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(Scene, scene_id)
     if not item:
         raise HTTPException(status_code=404, detail="Scene not found")
@@ -80,7 +80,7 @@ def update_scene(scene_id: str, payload: SceneUpdate, _: dict = Depends(get_curr
 
 
 @router.post("/{episode_id}/scenes/reorder")
-def reorder_scenes(episode_id: str, scene_ids: list[str], _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def reorder_scenes(episode_id: str, scene_ids: list[str], _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
     scenes = db.query(Scene).filter(Scene.episode_id == episode_id).all()
     by_id = {scene.id: scene for scene in scenes}

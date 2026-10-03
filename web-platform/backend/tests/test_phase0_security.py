@@ -16,7 +16,7 @@ def test_login_cookie_is_secure_and_samesite_strict(monkeypatch):
             return type(
                 "UserStub",
                 (),
-                {"email": "admin@narrativ.local", "role": "owner", "id": 1},
+                {"email": "admin@narrativ.local", "role": "owner", "id": 1, "password_hash": "unused"},
             )()
 
     class FakeDB:

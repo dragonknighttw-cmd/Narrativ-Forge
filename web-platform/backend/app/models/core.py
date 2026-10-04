@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, text
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db import Base
@@ -188,6 +188,51 @@ class FailedJob(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     dlq_published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class UploadSession(Base):
+    __tablename__ = "upload_sessions"
+    __table_args__ = (
+        UniqueConstraint("episode_id", "reserved_version", name="uq_upload_session_episode_version"),
+        Index("ix_upload_sessions_owner_status_expiry", "owner_id", "status", "expires_at"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.id"), nullable=False)
+    reserved_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    asset_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    scene_id: Mapped[str | None] = mapped_column(ForeignKey("scenes.id"), nullable=True)
+    original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    expected_size: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    chunk_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    copyright_status: Mapped[str] = mapped_column(String(40), nullable=False, default="unknown")
+    storage_provider: Mapped[str] = mapped_column(String(40), nullable=False)
+    object_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    provider_upload_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, default="active")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, nullable=False)
+    last_activity_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class UploadPart(Base):
+    __tablename__ = "upload_parts"
+    __table_args__ = (
+        UniqueConstraint("upload_session_id", "part_number", name="uq_upload_part_number"),
+        CheckConstraint("part_number BETWEEN 1 AND 10000", name="ck_upload_part_number_range"),
+        CheckConstraint("size_bytes > 0", name="ck_upload_part_size_positive"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    upload_session_id: Mapped[str] = mapped_column(
+        ForeignKey("upload_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    part_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    provider_etag: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, nullable=False)
 
 
 class Asset(Base):

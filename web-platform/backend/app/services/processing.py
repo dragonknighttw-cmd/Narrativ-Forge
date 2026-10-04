@@ -10,7 +10,7 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..models import Asset, Episode, ProcessingJob
+from ..models import Asset, Episode, ProcessingJob, UploadSession
 from .storage import StorageError, build_object_key, get_storage, materialize_asset
 
 
@@ -97,7 +97,12 @@ def run_mock_job(job_id: str, db: Session) -> ProcessingJob:
             transcript_path = work_dir / f"{uuid4().hex}_transcript.json"
             transcript_path.write_text(json.dumps(transcript, ensure_ascii=False, indent=2), encoding="utf-8")
 
-            version = (db.query(func.max(Asset.version)).filter(Asset.episode_id == episode.id).scalar() or 0) + 1
+            db.query(Episode.id).filter(Episode.id == episode.id).with_for_update().first()
+            asset_version = db.query(func.max(Asset.version)).filter(Asset.episode_id == episode.id).scalar() or 0
+            reserved_version = db.query(func.max(UploadSession.reserved_version)).filter(
+                UploadSession.episode_id == episode.id,
+            ).scalar() or 0
+            version = max(asset_version, reserved_version) + 1
             output_key = build_object_key(episode.id, version, output_path.name, "processed_video")
             transcript_key = build_object_key(episode.id, version + 1, transcript_path.name, "transcript")
             storage = get_storage()

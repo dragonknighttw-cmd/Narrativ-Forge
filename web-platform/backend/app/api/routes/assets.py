@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from ...core.config import settings
 from ...db import get_db
-from ...models import Asset, Episode, Scene
+from ...models import Asset, Episode, Scene, UploadSession
 from ...services.storage import StorageError, build_object_key, get_storage
 from ..dependencies import get_current_user, require_roles
 
@@ -79,14 +79,20 @@ async def upload_asset(
     _: dict = Depends(require_roles("owner", "editor")),
     db: Session = Depends(get_db),
 ):
-    _episode_or_404(db, episode_id)
+    episode = db.query(Episode).filter(Episode.id == episode_id).with_for_update().first()
+    if not episode:
+        raise HTTPException(status_code=404, detail="Episode not found")
     validate_upload(file.filename or "", file.content_type, asset_type)
     if scene_id:
         scene = db.get(Scene, scene_id)
         if not scene or scene.episode_id != episode_id:
             raise HTTPException(status_code=422, detail="Scene does not belong to this episode")
 
-    version = (db.query(func.max(Asset.version)).filter(Asset.episode_id == episode_id).scalar() or 0) + 1
+    asset_version = db.query(func.max(Asset.version)).filter(Asset.episode_id == episode_id).scalar() or 0
+    reserved_version = db.query(func.max(UploadSession.reserved_version)).filter(
+        UploadSession.episode_id == episode_id,
+    ).scalar() or 0
+    version = max(asset_version, reserved_version) + 1
     safe_name = safe_filename(file.filename or "upload.bin")
     object_key = build_object_key(episode_id, version, f"{uuid4().hex}_{safe_name}", asset_type)
 

@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     trusted_hosts: str = "localhost,127.0.0.1"
     upload_dir: str = "./storage/uploads"
     max_upload_size_bytes: int = 52428800
+    upload_chunk_size_bytes: int = Field(default=8 * 1024 * 1024, ge=5 * 1024 * 1024, le=5 * 1024 * 1024 * 1024)
+    upload_session_ttl_seconds: int = Field(default=86400, ge=3600, le=604800)
     storage_provider: str = "local"
     b2_application_key_id: str = ""
     b2_application_key: str = ""

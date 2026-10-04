@@ -81,6 +81,21 @@ unauthenticated for scraper access and must expose aggregate telemetry only.
 Worker metric writes are best-effort and use bounded Redis timeouts; Redis
 scrape-source or database errors return a generic `503` from `/metrics`.
 
+## Resumable asset uploads
+
+Asset uploads can use persisted sessions at `/api/v1/uploads`, with explicit
+part numbers and byte offsets. The API streams each request into a bounded
+single-part buffer, stores part checksums and provider ETags, and only creates
+an asset after all contiguous parts have been verified and completed. The
+default part size is 8 MiB; configure `UPLOAD_CHUNK_SIZE_BYTES` at 5 MiB or
+larger for B2 compatibility. `UPLOAD_SESSION_TTL_SECONDS` defaults to 24 hours.
+The existing `MAX_UPLOAD_SIZE_BYTES` limit remains in force, and uploads are
+also capped by the signed 32-bit size limit of the current Asset schema.
+Session ownership is enforced on resume, chunk, commit, and abort operations.
+Expired sessions are rejected and their provider multipart upload is aborted
+when the expired session is next accessed; incomplete uploads abandoned without
+another API request require storage-provider lifecycle cleanup.
+
 ## Backup and restore
 
 SQLite development backup:

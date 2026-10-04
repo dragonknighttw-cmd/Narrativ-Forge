@@ -14,7 +14,7 @@ from app import db
 pytestmark = pytest.mark.integration
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
-HEAD_REVISION = "0004_processing_retry_dlq"
+HEAD_REVISION = "0005_resumable_uploads"
 PREVIOUS_REVISION = "0002_asset_storage_metadata"
 
 
@@ -74,7 +74,7 @@ def test_fresh_database_migrates_to_head_with_expected_schema(tmp_path):
     assert HEAD_REVISION in output
 
     schema = migrated_schema(database_path)
-    assert {"users", "series", "episodes", "scripts", "scenes", "assets"} <= schema.keys()
+    assert {"users", "series", "episodes", "scripts", "scenes", "assets", "upload_sessions", "upload_parts"} <= schema.keys()
     assert {"password_hash", "is_active", "updated_at"} <= schema["users"]["columns"]
     assert {"object_key", "checksum_sha256"} <= schema["assets"]["columns"]
     assert {"max_retries", "next_run_at", "last_error"} <= schema["processing_jobs"]["columns"]
@@ -87,6 +87,16 @@ def test_fresh_database_migrates_to_head_with_expected_schema(tmp_path):
         "resolved_at",
         "dlq_published_at",
     } <= schema["failed_jobs"]["columns"]
+    assert {
+        "id", "owner_id", "episode_id", "reserved_version", "asset_type", "scene_id",
+        "original_filename", "mime_type", "expected_size", "chunk_size", "copyright_status",
+        "storage_provider", "object_key", "provider_upload_id", "status", "created_at",
+        "last_activity_at", "expires_at",
+    } <= schema["upload_sessions"]["columns"]
+    assert {
+        "id", "upload_session_id", "part_number", "size_bytes", "checksum_sha256",
+        "provider_etag", "created_at",
+    } <= schema["upload_parts"]["columns"]
     assert ("uq_scene_number_per_script", ("script_id", "scene_number")) in schema["scenes"]["unique_constraints"]
     assert ("uq_scene_number_per_episode", ("episode_id", "scene_number")) not in schema["scenes"]["unique_constraints"]
     engine = create_engine(f"sqlite:///{database_path.as_posix()}")
@@ -155,6 +165,25 @@ def test_retry_dlq_migration_upgrades_an_existing_0003_schema(tmp_path):
     schema = migrated_schema(database_path)
     assert {"max_retries", "next_run_at", "last_error"} <= schema["processing_jobs"]["columns"]
     assert "failed_jobs" in schema
+
+
+def test_upload_migration_upgrades_an_existing_0004_schema(tmp_path):
+    database_path = tmp_path / "existing_0004.db"
+    run_alembic(database_path, "upgrade", "0004_processing_retry_dlq")
+
+    engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+    try:
+        with engine.begin() as connection:
+            connection.exec_driver_sql("DROP TABLE IF EXISTS upload_parts")
+            connection.exec_driver_sql("DROP TABLE IF EXISTS upload_sessions")
+    finally:
+        engine.dispose()
+
+    output = run_alembic(database_path, "upgrade", "head")
+    assert HEAD_REVISION in output
+    schema = migrated_schema(database_path)
+    assert {"upload_sessions", "upload_parts"} <= schema.keys()
+    assert "expected_size" in schema["upload_sessions"]["columns"]
 
 
 @pytest.mark.parametrize("app_env", ["production", "staging"])

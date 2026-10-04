@@ -1,15 +1,21 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
+from uuid import UUID, uuid4
 from typing import Protocol
 
 from ..core.config import settings
 
 
 class StorageError(RuntimeError):
+    pass
+
+
+class MultipartUploadAlreadyCompleted(StorageError):
     pass
 
 
@@ -30,6 +36,27 @@ class StorageProvider(Protocol):
     def delete(self, object_key: str) -> None: ...
     def exists(self, object_key: str) -> bool: ...
     def download_url(self, object_key: str) -> str | None: ...
+    def initiate_multipart_upload(self, object_key: str, content_type: str, upload_token: str) -> str: ...
+    def upload_part(
+        self, upload_id: str, object_key: str, part_number: int, body: bytes, is_last: bool
+    ) -> str: ...
+    def list_multipart_parts(
+        self,
+        upload_id: str,
+        object_key: str,
+        upload_token: str | None = None,
+        expected_size: int | None = None,
+    ) -> list[dict]: ...
+    def complete_multipart_upload(
+        self,
+        upload_id: str,
+        object_key: str,
+        parts: list[dict],
+        expected_size: int,
+        chunk_size: int,
+        upload_token: str,
+    ) -> StoredObject: ...
+    def abort_multipart_upload(self, upload_id: str, object_key: str) -> None: ...
 
 
 def sha256_file(path: Path) -> str:
@@ -54,10 +81,62 @@ class LocalStorageProvider:
     def __init__(self, root: str | None = None):
         self.root = Path(root or settings.upload_dir) / "objects"
         self.root.mkdir(parents=True, exist_ok=True)
+        self.multipart_root = self.root.parent / ".multipart"
+        self.multipart_root.mkdir(parents=True, exist_ok=True)
+
+    def _multipart_path(self, upload_id: str) -> Path:
+        try:
+            safe_id = str(UUID(upload_id))
+        except ValueError as exc:
+            raise StorageError("Invalid multipart upload identifier") from exc
+        root = self.multipart_root.resolve()
+        path = (root / safe_id).resolve()
+        try:
+            path.relative_to(root)
+        except ValueError as exc:
+            raise StorageError("Invalid multipart upload identifier") from exc
+        return path
+
+    def _multipart_metadata(self, upload_id: str, object_key: str) -> tuple[Path, dict]:
+        directory = self._multipart_path(upload_id)
+        metadata_path = directory / "metadata.json"
+        if metadata_path.is_symlink():
+            raise StorageError("Multipart upload metadata is invalid")
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise StorageError("Multipart upload not found") from exc
+        if not isinstance(metadata, dict) or metadata.get("object_key") != _safe_object_key(object_key):
+            raise StorageError("Multipart upload object key mismatch")
+        return directory, metadata
+
+    @staticmethod
+    def _write_multipart_metadata(directory: Path, metadata: dict) -> None:
+        temporary = directory / f".metadata-{uuid4().hex}.tmp"
+        try:
+            temporary.write_text(json.dumps(metadata), encoding="utf-8")
+            temporary.replace(directory / "metadata.json")
+        except OSError as exc:
+            raise StorageError("Unable to persist multipart upload state") from exc
+        finally:
+            temporary.unlink(missing_ok=True)
+
+    @staticmethod
+    def _remove_multipart_parts(directory: Path) -> None:
+        try:
+            for part_path in directory.glob("part-*"):
+                part_path.unlink()
+        except OSError as exc:
+            raise StorageError("Unable to clean up multipart parts") from exc
 
     def _path(self, object_key: str) -> Path:
         key = _safe_object_key(object_key)
-        path = self.root / key
+        root = self.root.resolve()
+        path = (root / key).resolve()
+        try:
+            path.relative_to(root)
+        except ValueError as exc:
+            raise StorageError("Invalid storage object key") from exc
         path.parent.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -95,6 +174,174 @@ class LocalStorageProvider:
     def download_url(self, object_key: str) -> str | None:
         return None
 
+    def initiate_multipart_upload(self, object_key: str, content_type: str, upload_token: str) -> str:
+        key = _safe_object_key(object_key)
+        if not upload_token:
+            raise StorageError("Multipart upload token is required")
+        upload_id = str(uuid4())
+        directory = self._multipart_path(upload_id)
+        directory.mkdir(parents=True, exist_ok=False)
+        try:
+            self._write_multipart_metadata(
+                directory,
+                {"object_key": key, "upload_token": upload_token, "status": "active"},
+            )
+        except StorageError:
+            shutil.rmtree(directory, ignore_errors=True)
+            raise
+        return upload_id
+
+    def upload_part(
+        self, upload_id: str, object_key: str, part_number: int, body: bytes, is_last: bool
+    ) -> str:
+        if not 1 <= part_number <= 10_000:
+            raise StorageError("Invalid multipart part number")
+        if not body or len(body) > 5 * 1024 * 1024 * 1024:
+            raise StorageError("Invalid multipart part size")
+        directory, metadata = self._multipart_metadata(upload_id, object_key)
+        if metadata.get("status") != "active":
+            raise StorageError("Multipart upload is not active")
+        part_path = directory / f"part-{part_number:05d}"
+        temporary_path = directory / f".{part_path.name}.{uuid4().hex}.tmp"
+        try:
+            temporary_path.write_bytes(body)
+            temporary_path.replace(part_path)
+            return hashlib.md5(body, usedforsecurity=False).hexdigest()
+        except OSError as exc:
+            raise StorageError("Unable to persist multipart part") from exc
+        finally:
+            temporary_path.unlink(missing_ok=True)
+
+    def list_multipart_parts(
+        self,
+        upload_id: str,
+        object_key: str,
+        upload_token: str | None = None,
+        expected_size: int | None = None,
+    ) -> list[dict]:
+        directory, metadata = self._multipart_metadata(upload_id, object_key)
+        if metadata.get("status") != "active":
+            destination = self._path(object_key)
+            if (
+                metadata.get("status") == "completed"
+                and upload_token
+                and metadata.get("upload_token") == upload_token
+                and expected_size is not None
+                and destination.is_file()
+                and destination.stat().st_size == expected_size
+            ):
+                raise MultipartUploadAlreadyCompleted("Multipart upload already completed")
+            return []
+        parts = []
+        for part_path in directory.glob("part-*"):
+            if part_path.is_symlink():
+                raise StorageError("Multipart part path is invalid")
+            try:
+                part_number = int(part_path.name.removeprefix("part-"))
+            except ValueError:
+                continue
+            try:
+                digest = hashlib.md5(usedforsecurity=False)
+                with part_path.open("rb") as part_file:
+                    while chunk := part_file.read(1024 * 1024):
+                        digest.update(chunk)
+                size = part_path.stat().st_size
+            except OSError as exc:
+                raise StorageError("Unable to inspect multipart part") from exc
+            parts.append({
+                "PartNumber": part_number,
+                "Size": size,
+                "ETag": digest.hexdigest(),
+            })
+        return sorted(parts, key=lambda part: part["PartNumber"])
+
+    def complete_multipart_upload(
+        self,
+        upload_id: str,
+        object_key: str,
+        parts: list[dict],
+        expected_size: int,
+        chunk_size: int,
+        upload_token: str,
+    ) -> StoredObject:
+        key = _safe_object_key(object_key)
+        directory, metadata = self._multipart_metadata(upload_id, key)
+        if metadata.get("upload_token") != upload_token:
+            raise StorageError("Multipart upload token mismatch")
+        destination = self._path(key)
+        if metadata.get("status") == "completed":
+            if not destination.is_file() or destination.stat().st_size != expected_size:
+                raise StorageError("Completed multipart object is missing or has the wrong size")
+            self._remove_multipart_parts(directory)
+            return StoredObject(
+                provider=self.name,
+                object_key=key,
+                size_bytes=expected_size,
+                checksum_sha256=sha256_file(destination),
+                local_path=str(destination),
+            )
+
+        if chunk_size <= 0 or expected_size <= 0:
+            raise StorageError("Invalid multipart completion size")
+        available = {part["PartNumber"]: part for part in self.list_multipart_parts(upload_id, key)}
+        expected_count = (expected_size + chunk_size - 1) // chunk_size
+        if (len(parts) != expected_count
+            or set(available) != set(range(1, expected_count + 1))
+            or [part.get("PartNumber") for part in parts] != list(range(1, expected_count + 1))
+            or any(
+                part.get("ETag") != available[number]["ETag"]
+                or part.get("Size") != available[number]["Size"]
+                or available[number]["Size"] != (
+                    chunk_size if number < expected_count else expected_size - chunk_size * (expected_count - 1)
+                )
+                for number, part in enumerate(parts, start=1)
+            )):
+            raise StorageError("Multipart parts changed before completion")
+
+        temporary = destination.with_name(f".{destination.name}.{upload_id}.tmp")
+        digest = hashlib.sha256()
+        size = 0
+        try:
+            with temporary.open("wb") as output:
+                for part in parts:
+                    part_path = directory / f"part-{part['PartNumber']:05d}"
+                    with part_path.open("rb") as source:
+                        while chunk := source.read(1024 * 1024):
+                            output.write(chunk)
+                            digest.update(chunk)
+                            size += len(chunk)
+            if size != expected_size:
+                raise StorageError("Uploaded multipart size does not match the session")
+            temporary.replace(destination)
+        except OSError as exc:
+            raise StorageError("Unable to complete local multipart upload") from exc
+        finally:
+            temporary.unlink(missing_ok=True)
+        self._write_multipart_metadata(
+            directory,
+            {"object_key": key, "upload_token": upload_token, "status": "completed"},
+        )
+        self._remove_multipart_parts(directory)
+        return StoredObject(
+            provider=self.name,
+            object_key=key,
+            size_bytes=size,
+            checksum_sha256=digest.hexdigest(),
+            local_path=str(destination),
+        )
+
+    def abort_multipart_upload(self, upload_id: str, object_key: str) -> None:
+        directory = self._multipart_path(upload_id)
+        if not directory.exists():
+            return
+        directory, metadata = self._multipart_metadata(upload_id, object_key)
+        if metadata.get("status") != "active":
+            raise StorageError("Completed multipart upload cannot be aborted")
+        try:
+            shutil.rmtree(directory)
+        except OSError as exc:
+            raise StorageError("Unable to abort local multipart upload") from exc
+
 
 class B2StorageProvider:
     name = "b2"
@@ -110,6 +357,7 @@ class B2StorageProvider:
         try:
             import boto3
             from botocore.config import Config
+            from botocore.exceptions import ClientError
         except ImportError as exc:
             raise StorageError("boto3 is required for B2 storage") from exc
 
@@ -122,6 +370,7 @@ class B2StorageProvider:
             region_name=settings.b2_region,
             config=Config(signature_version="s3v4"),
         )
+        self._client_error = ClientError
         self.bucket = settings.b2_bucket_name
 
     def upload_file(self, source: Path, object_key: str, content_type: str) -> StoredObject:
@@ -192,6 +441,175 @@ class B2StorageProvider:
             )
         except Exception as exc:
             raise StorageError("B2 download URL generation failed") from exc
+
+    def initiate_multipart_upload(self, object_key: str, content_type: str, upload_token: str) -> str:
+        key = _safe_object_key(object_key)
+        if not upload_token:
+            raise StorageError("Multipart upload token is required")
+        try:
+            response = self.client.create_multipart_upload(
+                Bucket=self.bucket,
+                Key=key,
+                ContentType=content_type,
+                Metadata={"nf-upload-session": upload_token},
+            )
+            return response["UploadId"]
+        except Exception as exc:
+            raise StorageError("B2 multipart upload initialization failed") from exc
+
+    def upload_part(
+        self, upload_id: str, object_key: str, part_number: int, body: bytes, is_last: bool
+    ) -> str:
+        if not 1 <= part_number <= 10_000:
+            raise StorageError("Invalid multipart part number")
+        if not body or len(body) > 5 * 1024 * 1024 * 1024:
+            raise StorageError("Invalid multipart part size")
+        if not is_last and len(body) < 5 * 1024 * 1024:
+            raise StorageError("Non-final B2 multipart parts must be at least 5 MiB")
+        key = _safe_object_key(object_key)
+        try:
+            response = self.client.upload_part(
+                Bucket=self.bucket,
+                Key=key,
+                UploadId=upload_id,
+                PartNumber=part_number,
+                Body=body,
+            )
+            return response["ETag"]
+        except Exception as exc:
+            raise StorageError("B2 multipart chunk upload failed") from exc
+
+    def list_multipart_parts(
+        self,
+        upload_id: str,
+        object_key: str,
+        upload_token: str | None = None,
+        expected_size: int | None = None,
+    ) -> list[dict]:
+        key = _safe_object_key(object_key)
+        parts = []
+        marker = 0
+        try:
+            while True:
+                response = self.client.list_parts(
+                    Bucket=self.bucket,
+                    Key=key,
+                    UploadId=upload_id,
+                    PartNumberMarker=marker,
+                )
+                parts.extend(response.get("Parts", []))
+                if not response.get("IsTruncated"):
+                    return sorted(parts, key=lambda part: part["PartNumber"])
+                next_marker = response.get("NextPartNumberMarker")
+                if next_marker is None or next_marker <= marker:
+                    raise StorageError("B2 returned an invalid multipart pagination marker")
+                marker = next_marker
+        except self._client_error as exc:
+            code = str(exc.response.get("Error", {}).get("Code", ""))
+            if code == "NoSuchUpload" and upload_token and expected_size is not None:
+                completed = self._head_completed_object(key, expected_size, upload_token)
+                if completed:
+                    raise MultipartUploadAlreadyCompleted(
+                        "Multipart upload already completed"
+                    ) from exc
+            raise StorageError("B2 multipart state lookup failed") from exc
+        except Exception as exc:
+            raise StorageError("B2 multipart state lookup failed") from exc
+
+    def _head_completed_object(self, key: str, expected_size: int, upload_token: str) -> StoredObject | None:
+        try:
+            head = self.client.head_object(Bucket=self.bucket, Key=key)
+        except self._client_error as exc:
+            code = str(exc.response.get("Error", {}).get("Code", ""))
+            if code in {"404", "NoSuchKey", "NotFound"}:
+                return None
+            raise StorageError("B2 multipart object lookup failed") from exc
+        metadata = head.get("Metadata") or {}
+        if metadata.get("nf-upload-session") != upload_token or head.get("ContentLength") != expected_size:
+            raise StorageError("B2 object does not match this upload session")
+        try:
+            response = self.client.get_object(Bucket=self.bucket, Key=key)
+            digest = hashlib.sha256()
+            with response["Body"] as body:
+                while chunk := body.read(1024 * 1024):
+                    digest.update(chunk)
+        except Exception as exc:
+            raise StorageError("B2 completed object checksum verification failed") from exc
+        return StoredObject(
+            provider=self.name,
+            object_key=key,
+            size_bytes=expected_size,
+            checksum_sha256=digest.hexdigest(),
+        )
+
+    def complete_multipart_upload(
+        self,
+        upload_id: str,
+        object_key: str,
+        parts: list[dict],
+        expected_size: int,
+        chunk_size: int,
+        upload_token: str,
+    ) -> StoredObject:
+        key = _safe_object_key(object_key)
+        try:
+            already_completed = self._head_completed_object(key, expected_size, upload_token)
+            if already_completed:
+                return already_completed
+            provider_parts = self.list_multipart_parts(upload_id, key)
+            if chunk_size <= 0 or expected_size <= 0:
+                raise StorageError("Invalid multipart completion size")
+            expected_count = (expected_size + chunk_size - 1) // chunk_size
+            if (
+                len(parts) != expected_count
+                or len(provider_parts) != expected_count
+                or [part.get("PartNumber") for part in parts] != list(range(1, expected_count + 1))
+                or [part.get("PartNumber") for part in provider_parts] != list(range(1, expected_count + 1))
+                or any(
+                    part.get("ETag") != provider_parts[number - 1].get("ETag")
+                    or part.get("Size") != provider_parts[number - 1].get("Size")
+                    or provider_parts[number - 1].get("Size") != (
+                        chunk_size if number < expected_count else expected_size - chunk_size * (expected_count - 1)
+                    )
+                    for number, part in enumerate(parts, start=1)
+                )
+            ):
+                raise StorageError("B2 multipart parts are incomplete or inconsistent")
+            self.client.complete_multipart_upload(
+                Bucket=self.bucket,
+                Key=key,
+                UploadId=upload_id,
+                MultipartUpload={
+                    "Parts": [
+                        {"PartNumber": part["PartNumber"], "ETag": part["ETag"]}
+                        for part in parts
+                    ]
+                },
+            )
+            completed = self._head_completed_object(key, expected_size, upload_token)
+            if completed is None:
+                raise StorageError("B2 completed object is missing")
+            return completed
+        except StorageError:
+            raise
+        except Exception as exc:
+            raise StorageError("B2 multipart upload completion failed") from exc
+
+    def abort_multipart_upload(self, upload_id: str, object_key: str) -> None:
+        key = _safe_object_key(object_key)
+        try:
+            self.client.abort_multipart_upload(
+                Bucket=self.bucket,
+                Key=key,
+                UploadId=upload_id,
+            )
+        except self._client_error as exc:
+            code = str(exc.response.get("Error", {}).get("Code", ""))
+            if code == "NoSuchUpload":
+                return
+            raise StorageError("B2 multipart upload abort failed") from exc
+        except Exception as exc:
+            raise StorageError("B2 multipart upload abort failed") from exc
 
 
 def get_storage(provider: str | None = None) -> StorageProvider:

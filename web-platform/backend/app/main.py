@@ -86,7 +86,7 @@ async def baseline_rate_limit(request: Request, call_next):
     path = request.url.path
     if path.endswith("/auth/login"):
         bucket = "login"
-    elif "/assets/upload" in path:
+    elif "/assets/upload" in path or path.startswith("/api/v1/uploads"):
         bucket = "upload"
     else:
         bucket = "default"

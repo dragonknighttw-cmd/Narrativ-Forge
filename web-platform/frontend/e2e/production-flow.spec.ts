@@ -27,18 +27,37 @@ test("authenticated production flow reaches approved mock export", async ({ page
   await expect(page.getByText("PRODUCTION WORKSPACES")).toBeVisible();
 
   const episodeId = new URL(page.url()).pathname.split("/").filter(Boolean).pop()!;
-  const api = page.request;
   const apiBase = "http://127.0.0.1:8000/api/v1";
-
-  const upload = await api.post(apiBase + "/episodes/" + episodeId + "/assets/upload", {
-    multipart: {
-      file: { name: "source.mp4", mimeType: "video/mp4", buffer: Buffer.from("video-fixture") },
-      asset_type: "video",
-      copyright_status: "licensed",
-    },
+  const uploadRequests: { method: string; path: string }[] = [];
+  page.on("request", request => {
+    const url = new URL(request.url());
+    if (url.pathname.startsWith("/api/v1/uploads")) {
+      uploadRequests.push({ method: request.method(), path: url.pathname });
+    }
   });
-  expect(upload.ok()).toBeTruthy();
 
+  await page.goto(`/episodes/${episodeId}/assets`);
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "source.mp4",
+    mimeType: "video/mp4",
+    buffer: Buffer.from("video-fixture"),
+  });
+  await page.getByRole("button", { name: "Upload" }).click();
+  await expect(page.getByText(/source.mp4/)).toBeVisible();
+  const uploadSessionPath = uploadRequests.find(
+    request => request.method === "POST" && request.path === "/api/v1/uploads",
+  )?.path;
+  expect(uploadSessionPath).toBe("/api/v1/uploads");
+  const uploadId = uploadRequests.find(
+    request => request.method === "PUT" && request.path.endsWith("/chunks"),
+  )?.path.split("/")[4];
+  expect(uploadId).toBeTruthy();
+  expect(uploadRequests).toContainEqual({
+    method: "POST",
+    path: `/api/v1/uploads/${uploadId}/commit`,
+  });
+
+  const api = page.request;
   const job = await api.post(apiBase + "/jobs/mock", { data: { episode_id: episodeId } });
   expect(job.ok()).toBeTruthy();
 

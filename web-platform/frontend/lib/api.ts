@@ -21,6 +21,24 @@ export type Episode = { id: string; public_id: string; series_id: string; season
 export type Script = { id: string; episode_id: string; version: number; title?: string | null; content: string; status: string; is_current: boolean; created_at: string; updated_at: string };
 export type Scene = { id: string; episode_id: string; script_id?: string | null; scene_number: number; purpose: string; description?: string | null; dialogue?: string | null; duration_seconds?: number | null; created_at: string; updated_at: string };
 export type Asset = { id: string; episode_id: string; scene_id?: string | null; asset_type: string; original_filename: string; storage_provider: string; local_path?: string | null; mime_type: string; file_size_bytes: number; version: number; copyright_status: string; is_final: boolean; status: string; created_at: string };
+type UploadPart = { part_number: number; size_bytes: number; checksum_sha256: string };
+type UploadSession = {
+  id: string;
+  episode_id: string;
+  asset_type: string;
+  mime_type: string;
+  expected_size: number;
+  chunk_size: number;
+  scene_id?: string | null;
+  status: string;
+  parts: UploadPart[];
+  asset?: Asset;
+};
+class UploadResponseError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
 export type CreateSceneInput = { scene_number: number; script_id?: string; purpose: string; description?: string; dialogue?: string; duration_seconds?: number };
 export type ProcessingJob = { id: string; episode_id: string; job_type: string; status: string; progress: number; retry_count: number; input_asset_id?: string | null; output_asset_id?: string | null; error_code?: string | null; error_message?: string | null; created_at: string; completed_at?: string | null };
 
@@ -63,12 +81,124 @@ export const api = {
   approveSubtitle: (episodeId: string) => request<Subtitle>(`/episodes/${episodeId}/subtitles/approve`, { method: "POST" }),
   exportSubtitle: (subtitleId: string, format: "srt" | "vtt") => `${base}/subtitles/${subtitleId}/export?format=${format}`,
   uploadAsset: async (episodeId: string, file: File, assetType: string, sceneId?: string) => {
-    const form = new FormData();
-    form.append("file", file); form.append("asset_type", assetType);
-    if (sceneId) form.append("scene_id", sceneId);
-    const response = await fetch(base + `/episodes/${episodeId}/assets/upload`, { method: "POST", credentials: "include", body: form });
-    if (!response.ok) { let message = "Upload failed"; try { const body = await response.json(); message = body.detail ?? message; } catch {} throw new Error(message); }
-    return response.json() as Promise<Asset>;
+    if (file.size <= 0) throw new Error("Choose a non-empty file to upload");
+    const resumeKey = `nf-upload:${episodeId}:${assetType}:${sceneId ?? ""}:${file.name}:${file.size}:${file.lastModified}`;
+    const checksumFor = async (chunk: Blob) => Array.from(
+      new Uint8Array(await crypto.subtle.digest("SHA-256", await chunk.arrayBuffer())),
+    ).map(value => value.toString(16).padStart(2, "0")).join("");
+    const readResponse = async <T,>(response: Response): Promise<T> => {
+      if (!response.ok) {
+        let message = "Upload failed";
+        try { const body = await response.json(); message = body.detail ?? message; } catch {}
+        throw new UploadResponseError(message, response.status);
+      }
+      return response.json() as Promise<T>;
+    };
+    const createSession = async () => readResponse<UploadSession>(await fetch(base + "/uploads", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        episode_id: episodeId,
+        original_filename: file.name,
+        mime_type: file.type,
+        asset_type: assetType,
+        expected_size: file.size,
+        scene_id: sceneId ?? null,
+      }),
+    }));
+
+    let session: UploadSession | undefined;
+    const savedSessionId = localStorage.getItem(resumeKey);
+    if (savedSessionId) {
+      const response = await fetch(base + `/uploads/${encodeURIComponent(savedSessionId)}`, {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const existing = await response.json() as UploadSession;
+        if (
+          existing.episode_id === episodeId
+          && existing.asset_type === assetType
+          && existing.mime_type === file.type
+          && existing.expected_size === file.size
+          && (existing.scene_id ?? undefined) === sceneId
+        ) {
+          if (existing.status === "committed" && existing.asset) {
+            let committedPartsMatch = existing.parts.length === Math.ceil(file.size / existing.chunk_size);
+            for (const part of existing.parts) {
+              if (!committedPartsMatch) break;
+              const offset = (part.part_number - 1) * existing.chunk_size;
+              const chunk = file.slice(offset, Math.min(file.size, offset + existing.chunk_size));
+              committedPartsMatch = chunk.size === part.size_bytes
+                && await checksumFor(chunk) === part.checksum_sha256;
+            }
+            if (committedPartsMatch) {
+              localStorage.removeItem(resumeKey);
+              return existing.asset;
+            }
+          } else if (existing.status === "active") {
+            session = existing;
+          }
+        }
+        if (!session) {
+          const deleted = await fetch(base + `/uploads/${encodeURIComponent(savedSessionId)}`, {
+            method: "DELETE",
+            credentials: "include",
+          });
+          if (!deleted.ok && ![404, 409, 410].includes(deleted.status)) await readResponse(deleted);
+        }
+      } else if (response.status !== 404 && response.status !== 410) {
+        await readResponse(response);
+      }
+      if (!session) localStorage.removeItem(resumeKey);
+    }
+
+    if (!session) {
+      session = await createSession();
+      localStorage.setItem(resumeKey, session.id);
+    }
+
+    const knownParts = new Map(session.parts.map(part => [part.part_number, part]));
+    const partCount = Math.ceil(file.size / session.chunk_size);
+    for (let partNumber = 1; partNumber <= partCount; partNumber += 1) {
+      const offset = (partNumber - 1) * session.chunk_size;
+      const chunk = file.slice(offset, Math.min(file.size, offset + session.chunk_size));
+      const checksum = await checksumFor(chunk);
+      const known = knownParts.get(partNumber);
+      if (known && known.size_bytes === chunk.size && known.checksum_sha256 === checksum) continue;
+
+      let lastError: Error | undefined;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          const response = await fetch(
+            base + `/uploads/${encodeURIComponent(session.id)}/chunks?part_number=${partNumber}&offset=${offset}`,
+            {
+              method: "PUT",
+              credentials: "include",
+              headers: { "Content-Type": "application/octet-stream" },
+              body: chunk,
+            },
+          );
+          if (response.status >= 400 && response.status < 500) await readResponse(response);
+          if (!response.ok) await readResponse(response);
+          lastError = undefined;
+          break;
+        } catch (error) {
+          if (error instanceof UploadResponseError && error.status < 500) throw error;
+          lastError = error instanceof Error ? error : new Error("Chunk upload failed");
+          if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 250 * (2 ** attempt)));
+        }
+      }
+      if (lastError) throw lastError;
+    }
+
+    const response = await fetch(base + `/uploads/${encodeURIComponent(session.id)}/commit`, {
+      method: "POST",
+      credentials: "include",
+    });
+    const asset = await readResponse<Asset>(response);
+    localStorage.removeItem(resumeKey);
+    return asset;
   },
 };
 

@@ -68,6 +68,19 @@ FFmpeg/Whisper process trees, not threads or resource usage inside one such
 process. The worker pool is shared with dead-letter notifications, which do not
 acquire the processing semaphore.
 
+## Prometheus metrics
+
+The API exposes aggregate metrics at the public `/metrics` endpoint. It
+reports API HTTP request counts and durations by bounded method, route
+template, and status-class labels; worker lifecycle events, timeouts, and
+processing duration are aggregated in the existing shared Redis service.
+Queued real-processing depth is read from PostgreSQL and distinguishes due
+jobs from future-scheduled retries. Do not add job IDs, user data, filenames,
+exception text, or raw request paths to metric labels. The endpoint is
+unauthenticated for scraper access and must expose aggregate telemetry only.
+Worker metric writes are best-effort and use bounded Redis timeouts; Redis
+scrape-source or database errors return a generic `503` from `/metrics`.
+
 ## Backup and restore
 
 SQLite development backup:

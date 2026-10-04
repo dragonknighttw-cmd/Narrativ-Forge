@@ -10,6 +10,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from .core.config import settings
 from .db import init_db
 from .api.router import api_router
+from .metrics import observe_http_metrics, router as metrics_router
 from .observability import configure_logging, initialize_sentry
 
 settings.validate_runtime()
@@ -21,6 +22,11 @@ initialize_sentry(
 )
 app = FastAPI(title="Narrativ Forge API", version="0.1.0")
 request_logger = logging.getLogger("app.http")
+
+
+@app.middleware("http")
+async def prometheus_http_metrics(request: Request, call_next):
+    return await observe_http_metrics(request, call_next)
 
 
 @app.middleware("http")
@@ -119,6 +125,7 @@ def startup() -> None:
 
 
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(metrics_router)
 
 
 @app.get("/")

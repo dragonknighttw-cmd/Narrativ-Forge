@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+import subprocess
 from datetime import datetime, timedelta, timezone
+from time import perf_counter
 from typing import Optional
 
 from sqlalchemy import and_, not_, select, update
@@ -9,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .. import db as app_db
+from .. import metrics
 from ..models import FailedJob, ProcessingJob
 from ..services.audit import record_event
 from ..services.real_processing import run_real_job
@@ -185,13 +188,27 @@ def register_tasks(celery_app):
                 if not _claim_job(db, job_id, claimed_at):
                     return job_id
 
+                metrics.record_processing_started()
+                processing_started = perf_counter()
+                processing_duration = 0.0
+                processing_outcome = "failed"
+                timed_out = False
                 try:
-                    result = run_real_job(job_id, db, already_claimed=True)
+                    try:
+                        result = run_real_job(job_id, db, already_claimed=True)
+                    finally:
+                        processing_duration = perf_counter() - processing_started
+                    timed_out = getattr(result, "error_code", None) == "PROCESSING_TIMEOUT"
                     if result.status == "failed":
                         reason = result.last_error or result.error_message or result.error_code or "Processing failed"
                         outcome, failed_job_id = handle_attempt_failure(db, job_id, claimed_at, reason)
+                        processing_outcome = {
+                            "scheduled": "retry",
+                            "exhausted": "dlq",
+                        }.get(outcome, "failed")
                     else:
                         outcome, failed_job_id = "completed", None
+                        processing_outcome = "completed"
                         db.execute(
                             update(ProcessingJob)
                             .where(ProcessingJob.id == job_id, ProcessingJob.status == "completed")
@@ -199,7 +216,18 @@ def register_tasks(celery_app):
                         )
                         db.commit()
                 except Exception as exc:
+                    timed_out = timed_out or isinstance(exc, subprocess.TimeoutExpired)
                     outcome, failed_job_id = handle_attempt_failure(db, job_id, claimed_at, str(exc))
+                    processing_outcome = {
+                        "scheduled": "retry",
+                        "exhausted": "dlq",
+                    }.get(outcome, "failed")
+                finally:
+                    metrics.record_processing_finished(
+                        processing_outcome,
+                        processing_duration,
+                        timed_out=timed_out,
+                    )
 
                 if outcome == "exhausted" and failed_job_id is not None:
                     publish_dead_letter(celery_app, db, failed_job_id)

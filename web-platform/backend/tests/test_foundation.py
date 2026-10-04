@@ -472,7 +472,7 @@ def test_real_processing_pipeline_creates_render_and_whisper_assets(monkeypatch,
     )
     db.add(asset)
     db.flush()
-    job = ProcessingJob(episode_id=episode.id, job_type="real_processing", input_asset_id=asset.id)
+    job = ProcessingJob(episode_id=episode.id, job_type="real_processing", status="running", input_asset_id=asset.id)
     db.add(job)
     db.commit()
 
@@ -494,7 +494,7 @@ def test_real_processing_pipeline_creates_render_and_whisper_assets(monkeypatch,
 
     monkeypatch.setattr(real_processing, "_run", fake_run)
     monkeypatch.setattr(real_processing.settings, "upload_dir", str(tmp_path / "uploads"))
-    result = real_processing.run_real_job(job.id, db)
+    result = real_processing.run_real_job(job.id, db, already_claimed=True)
 
     assert result.status == "completed"
     assert db.get(Episode, episode.id).status == "subtitle_review"

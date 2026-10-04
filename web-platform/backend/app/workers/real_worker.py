@@ -1,3 +1,6 @@
+import logging
+import time
+
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
@@ -6,6 +9,10 @@ from ..models import ProcessingJob
 from ..observability import configure_logging, initialize_sentry
 from .celery_app import get_celery
 
+logger = logging.getLogger(__name__)
+POLL_INTERVAL_SECONDS = 5
+BATCH_SIZE = 5
+
 
 def run_once(db: Session) -> int:
     celery = get_celery()
@@ -13,7 +20,7 @@ def run_once(db: Session) -> int:
         db.query(ProcessingJob)
         .filter(ProcessingJob.job_type == "real_processing", ProcessingJob.status == "queued")
         .order_by(ProcessingJob.created_at.asc())
-        .limit(5)
+        .limit(BATCH_SIZE)
         .all()
     )
     for job in jobs:
@@ -21,11 +28,24 @@ def run_once(db: Session) -> int:
     return len(jobs)
 
 
+def run_forever(poll_interval: int = POLL_INTERVAL_SECONDS, sleep_fn=None) -> None:
+    if sleep_fn is None:
+        sleep_fn = time.sleep
+
+    while True:
+        db = SessionLocal()
+        try:
+            try:
+                run_once(db)
+            except Exception:
+                logger.exception("Dispatcher cycle failed; queued jobs remain eligible for dispatch")
+        finally:
+            db.close()
+        sleep_fn(poll_interval)
+
+
 if __name__ == "__main__":
     configure_logging(settings.app_env)
     initialize_sentry(settings.sentry_dsn.get_secret_value(), settings.app_env)
-    db = SessionLocal()
-    try:
-        print(f"dispatched_jobs={run_once(db)}")
-    finally:
-        db.close()
+    get_celery()
+    run_forever()

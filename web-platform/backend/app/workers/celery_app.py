@@ -28,6 +28,9 @@ def make_celery(broker_url: Optional[str] = None) -> Celery:
         enable_utc=True,
         task_track_started=False,
     )
+    from .tasks import register_tasks
+
+    register_tasks(app)
     return app
 
 

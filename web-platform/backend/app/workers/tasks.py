@@ -6,7 +6,6 @@ from typing import Optional
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
-from .celery_app import get_celery
 from .. import db as app_db
 from ..models import ProcessingJob
 from ..services.real_processing import run_real_job
@@ -31,7 +30,7 @@ def _claim_job(db: Session, job_id: str) -> bool:
         )
     )
     db.commit()
-    return result.rowcount > 0
+    return result.rowcount == 1
 
 
 def register_tasks(celery_app):
@@ -69,7 +68,7 @@ def register_tasks(celery_app):
                     return job.id
                 return job.id
 
-            run_real_job(job_id, db)
+            run_real_job(job_id, db, already_claimed=True)
             return job_id
         except Exception as exc:  # pylint: disable=broad-except
             try:
@@ -92,11 +91,3 @@ def register_tasks(celery_app):
                     pass
 
     return process_real_job_task
-
-
-# Optional convenience: if a Celery app exists in the environment, register
-# tasks automatically. Tests should call register_tasks explicitly with a
-# test Celery instance to avoid depending on a live broker.
-_env_celery = get_celery(allow_missing=True)
-if _env_celery is not None:
-    register_tasks(_env_celery)

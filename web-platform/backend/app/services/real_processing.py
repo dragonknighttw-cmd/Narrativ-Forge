@@ -74,11 +74,11 @@ def _validate_rendered_media(path: Path) -> tuple[int, int, float]:
         raise ValueError("Rendered output has invalid duration")
     return width, height, duration
 
-def run_real_job(job_id: str, db: Session) -> ProcessingJob:
+def run_real_job(job_id: str, db: Session, *, already_claimed: bool = False) -> ProcessingJob:
     job = db.get(ProcessingJob, job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Processing job not found")
-    if job.status in {"completed", "running"}:
+    if job.status == "completed" or (job.status == "running" and not already_claimed):
         return job
 
     episode = db.get(Episode, job.episode_id)

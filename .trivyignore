@@ -1,0 +1,11 @@
+# Trivy exceptions for packages removed from the final runtime filesystem.
+# The Python runtime image inherits global pip/setuptools dependencies from the
+# upstream python:3.12-slim layer. The application runs only from /opt/venv,
+# where the affected packages are upgraded to fixed versions. The vulnerable
+# global packages are removed from the final filesystem; Trivy can still report
+# their metadata because it scans image layers. Keep these IDs exact and review
+# them whenever the runtime base image changes.
+GHSA-6v7p-g79w-8964
+CVE-2025-47273
+CVE-2026-97687
+CVE-2026-97689

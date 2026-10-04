@@ -1,9 +1,15 @@
 import { expect, test } from "@playwright/test";
 
 test("authenticated production flow reaches approved mock export", async ({ page }) => {
+  const adminEmail = process.env.E2E_ADMIN_EMAIL;
+  const adminPassword = process.env.E2E_ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) {
+    throw new Error("E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD must be set");
+  }
+
   await page.goto("/login");
-  await page.getByLabel("Email").fill("undefined");
-  await page.getByLabel("Password").fill("change-me-123456");
+  await page.getByLabel("Email").fill(adminEmail);
+  await page.getByLabel("Password").fill(adminPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/dashboard/);
 

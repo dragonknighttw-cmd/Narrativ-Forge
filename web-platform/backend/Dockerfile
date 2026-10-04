@@ -6,8 +6,8 @@ RUN python -m venv "$VIRTUAL_ENV"
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 COPY requirements.txt requirements-real-processing.txt ./
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt -r requirements-real-processing.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools \
+    && pip install --no-cache-dir --upgrade -r requirements.txt -r requirements-real-processing.txt
 
 FROM python:3.12-slim AS runtime
 

@@ -14,6 +14,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.status === 204 ? (undefined as T) : response.json();
 }
 
+async function idempotentRequest<T>(storageKey: string, path: string, init: RequestInit): Promise<T> {
+  const key = typeof window === "undefined"
+    ? crypto.randomUUID()
+    : localStorage.getItem(storageKey) ?? crypto.randomUUID();
+  if (typeof window !== "undefined") localStorage.setItem(storageKey, key);
+  const result = await request<T>(path, {
+    ...init,
+    headers: { ...(init.headers ?? {}), "Idempotency-Key": key },
+  });
+  if (typeof window !== "undefined") localStorage.removeItem(storageKey);
+  return result;
+}
+
 export type Idea = { id: string; title: string; concept?: string | null; category?: string | null; hook?: string | null; content_warning?: string | null; status: string; created_at: string };
 export type Series = { id: string; title: string; description?: string | null; status: string; created_at: string };
 export type Season = { id: string; series_id: string; season_number: number; title?: string | null; created_at: string };
@@ -71,8 +84,8 @@ export const api = {
   listAssets: (episodeId: string) => request<Asset[]>(`/episodes/${episodeId}/assets`),
   updateAsset: (assetId: string, data: Partial<Asset>) => request<Asset>(`/assets/${assetId}`, { method: "PATCH", body: JSON.stringify(data) }),
   listJobs: () => request<ProcessingJob[]>(`/jobs`),
-  createMockJob: (episodeId: string) => request<ProcessingJob>(`/jobs/mock`, { method: "POST", body: JSON.stringify({ episode_id: episodeId }) }),
-  createRealJob: (episodeId: string) => request<ProcessingJob>(`/jobs/real`, { method: "POST", body: JSON.stringify({ episode_id: episodeId }) }),
+  createMockJob: (episodeId: string) => idempotentRequest<ProcessingJob>(`nf-idempotency:jobs:mock:${episodeId}`, `/jobs/mock`, { method: "POST", body: JSON.stringify({ episode_id: episodeId }) }),
+  createRealJob: (episodeId: string) => idempotentRequest<ProcessingJob>(`nf-idempotency:jobs:real:${episodeId}`, `/jobs/real`, { method: "POST", body: JSON.stringify({ episode_id: episodeId }) }),
   retryJob: (jobId: string) => request<ProcessingJob>(`/jobs/${jobId}/retry`, { method: "POST" }),
   listSubtitles: (episodeId: string) => request<Subtitle[]>(`/episodes/${episodeId}/subtitles`),
   generateSubtitle: (episodeId: string, preset = "burmese_default") => request<Subtitle>(`/episodes/${episodeId}/subtitles/generate`, { method: "POST", body: JSON.stringify({ preset }) }),
@@ -83,6 +96,7 @@ export const api = {
   uploadAsset: async (episodeId: string, file: File, assetType: string, sceneId?: string) => {
     if (file.size <= 0) throw new Error("Choose a non-empty file to upload");
     const resumeKey = `nf-upload:${episodeId}:${assetType}:${sceneId ?? ""}:${file.name}:${file.size}:${file.lastModified}`;
+    const idempotencyStorageKey = `nf-upload-idempotency:${resumeKey}`;
     const checksumFor = async (chunk: Blob) => Array.from(
       new Uint8Array(await crypto.subtle.digest("SHA-256", await chunk.arrayBuffer())),
     ).map(value => value.toString(16).padStart(2, "0")).join("");
@@ -94,19 +108,26 @@ export const api = {
       }
       return response.json() as Promise<T>;
     };
-    const createSession = async () => readResponse<UploadSession>(await fetch(base + "/uploads", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        episode_id: episodeId,
-        original_filename: file.name,
-        mime_type: file.type,
-        asset_type: assetType,
-        expected_size: file.size,
-        scene_id: sceneId ?? null,
-      }),
-    }));
+    const createSession = async () => {
+      const idempotencyKey = localStorage.getItem(idempotencyStorageKey) ?? crypto.randomUUID();
+      localStorage.setItem(idempotencyStorageKey, idempotencyKey);
+      return readResponse<UploadSession>(await fetch(base + "/uploads", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify({
+          episode_id: episodeId,
+          original_filename: file.name,
+          mime_type: file.type,
+          asset_type: assetType,
+          expected_size: file.size,
+          scene_id: sceneId ?? null,
+        }),
+      }));
+    };
 
     let session: UploadSession | undefined;
     const savedSessionId = localStorage.getItem(resumeKey);
@@ -150,7 +171,10 @@ export const api = {
       } else if (response.status !== 404 && response.status !== 410) {
         await readResponse(response);
       }
-      if (!session) localStorage.removeItem(resumeKey);
+      if (!session) {
+        localStorage.removeItem(resumeKey);
+        localStorage.removeItem(idempotencyStorageKey);
+      }
     }
 
     if (!session) {
@@ -198,6 +222,7 @@ export const api = {
     });
     const asset = await readResponse<Asset>(response);
     localStorage.removeItem(resumeKey);
+    localStorage.removeItem(idempotencyStorageKey);
     return asset;
   },
 };

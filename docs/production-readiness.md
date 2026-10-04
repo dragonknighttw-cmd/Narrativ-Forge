@@ -96,6 +96,27 @@ Expired sessions are rejected and their provider multipart upload is aborted
 when the expired session is next accessed; incomplete uploads abandoned without
 another API request require storage-provider lifecycle cleanup.
 
+## Idempotent create requests
+
+Clients may send `Idempotency-Key` on direct asset upload, mock/real job
+creation, and resumable upload-session creation. Keys are scoped to the
+authenticated user, compared against a SHA-256 fingerprint of the validated
+operation (direct uploads include the streamed file checksum), and replay the
+stored JSON response for an identical request. Reusing a key for a different
+request returns `409`. Keys are optional; requests without them retain the
+existing behavior. Authentication, validation failures, and failed database
+transactions do not consume a key. The 24-hour default retention is configured
+with `IDEMPOTENCY_TTL_SECONDS`; expired rows are removed lazily in bounded
+batches during keyed requests. Operators can also delete expired rows with:
+
+```sql
+DELETE FROM idempotency_records WHERE expires_at < CURRENT_TIMESTAMP;
+```
+
+Responses larger than 256 KiB are not cached. The supported scope deliberately
+excludes authentication, retry/action endpoints, and unrelated resource-creation
+routes; chunk PUT, upload commit, and upload abort behavior is unchanged.
+
 ## Backup and restore
 
 SQLite development backup:

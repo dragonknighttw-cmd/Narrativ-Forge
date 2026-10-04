@@ -14,7 +14,7 @@ from app import db
 pytestmark = pytest.mark.integration
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
-HEAD_REVISION = "0005_resumable_uploads"
+HEAD_REVISION = "0006_idempotency_keys"
 PREVIOUS_REVISION = "0002_asset_storage_metadata"
 
 
@@ -74,7 +74,10 @@ def test_fresh_database_migrates_to_head_with_expected_schema(tmp_path):
     assert HEAD_REVISION in output
 
     schema = migrated_schema(database_path)
-    assert {"users", "series", "episodes", "scripts", "scenes", "assets", "upload_sessions", "upload_parts"} <= schema.keys()
+    assert {
+        "users", "series", "episodes", "scripts", "scenes", "assets",
+        "upload_sessions", "upload_parts", "idempotency_records",
+    } <= schema.keys()
     assert {"password_hash", "is_active", "updated_at"} <= schema["users"]["columns"]
     assert {"object_key", "checksum_sha256"} <= schema["assets"]["columns"]
     assert {"max_retries", "next_run_at", "last_error"} <= schema["processing_jobs"]["columns"]
@@ -97,6 +100,14 @@ def test_fresh_database_migrates_to_head_with_expected_schema(tmp_path):
         "id", "upload_session_id", "part_number", "size_bytes", "checksum_sha256",
         "provider_etag", "created_at",
     } <= schema["upload_parts"]["columns"]
+    assert {
+        "id", "actor_id", "key", "method", "target", "request_fingerprint",
+        "status", "resource_type", "resource_id", "response_status", "response_body",
+        "response_content_type", "created_at", "updated_at", "expires_at",
+    } <= schema["idempotency_records"]["columns"]
+    assert ("uq_idempotency_actor_key", ("actor_id", "key")) in schema[
+        "idempotency_records"
+    ]["unique_constraints"]
     assert ("uq_scene_number_per_script", ("script_id", "scene_number")) in schema["scenes"]["unique_constraints"]
     assert ("uq_scene_number_per_episode", ("episode_id", "scene_number")) not in schema["scenes"]["unique_constraints"]
     engine = create_engine(f"sqlite:///{database_path.as_posix()}")
@@ -105,6 +116,9 @@ def test_fresh_database_migrates_to_head_with_expected_schema(tmp_path):
         assert failed_indexes["uq_failed_jobs_active_processing_job"]["unique"] == 1
         assert "ix_processing_jobs_dispatch_due" in {
             index["name"] for index in inspect(engine).get_indexes("processing_jobs")
+        }
+        assert "ix_idempotency_records_expires_at" in {
+            index["name"] for index in inspect(engine).get_indexes("idempotency_records")
         }
     finally:
         engine.dispose()
@@ -184,6 +198,28 @@ def test_upload_migration_upgrades_an_existing_0004_schema(tmp_path):
     schema = migrated_schema(database_path)
     assert {"upload_sessions", "upload_parts"} <= schema.keys()
     assert "expected_size" in schema["upload_sessions"]["columns"]
+
+
+def test_idempotency_migration_upgrades_and_downgrades_existing_0005_schema(tmp_path):
+    database_path = tmp_path / "existing_0005.db"
+    run_alembic(database_path, "upgrade", "0005_resumable_uploads")
+    engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+    try:
+        with engine.begin() as connection:
+            connection.exec_driver_sql("DROP TABLE IF EXISTS idempotency_records")
+    finally:
+        engine.dispose()
+
+    output = run_alembic(database_path, "upgrade", "head")
+    assert HEAD_REVISION in output
+    schema = migrated_schema(database_path)
+    assert "idempotency_records" in schema
+    assert ("uq_idempotency_actor_key", ("actor_id", "key")) in schema[
+        "idempotency_records"
+    ]["unique_constraints"]
+
+    run_alembic(database_path, "downgrade", "0005_resumable_uploads")
+    assert "idempotency_records" not in migrated_schema(database_path)
 
 
 @pytest.mark.parametrize("app_env", ["production", "staging"])

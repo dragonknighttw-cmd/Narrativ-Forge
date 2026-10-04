@@ -28,11 +28,15 @@ test("authenticated production flow reaches approved mock export", async ({ page
 
   const episodeId = new URL(page.url()).pathname.split("/").filter(Boolean).pop()!;
   const apiBase = "http://127.0.0.1:8000/api/v1";
-  const uploadRequests: { method: string; path: string }[] = [];
+  const uploadRequests: { method: string; path: string; idempotencyKey?: string }[] = [];
   page.on("request", request => {
     const url = new URL(request.url());
     if (url.pathname.startsWith("/api/v1/uploads")) {
-      uploadRequests.push({ method: request.method(), path: url.pathname });
+      uploadRequests.push({
+        method: request.method(),
+        path: url.pathname,
+        idempotencyKey: request.headers()["idempotency-key"],
+      });
     }
   });
 
@@ -48,6 +52,9 @@ test("authenticated production flow reaches approved mock export", async ({ page
     request => request.method === "POST" && request.path === "/api/v1/uploads",
   )?.path;
   expect(uploadSessionPath).toBe("/api/v1/uploads");
+  expect(uploadRequests.find(
+    request => request.method === "POST" && request.path === uploadSessionPath,
+  )?.idempotencyKey).toBeTruthy();
   const uploadId = uploadRequests.find(
     request => request.method === "PUT" && request.path.endsWith("/chunks"),
   )?.path.split("/")[4];

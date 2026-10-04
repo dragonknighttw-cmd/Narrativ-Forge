@@ -49,12 +49,13 @@ def test_cors_preflight_allows_configured_origin_and_restricts_headers():
             headers={
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "POST",
-                "Access-Control-Request-Headers": "content-type",
+                "Access-Control-Request-Headers": "content-type,idempotency-key",
             },
         )
         assert response.status_code == 200
         assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
         assert "content-type" in response.headers["access-control-allow-headers"].lower()
+        assert "idempotency-key" in response.headers["access-control-allow-headers"].lower()
         assert "x-secret-header" not in response.headers["access-control-allow-headers"].lower()
 
 

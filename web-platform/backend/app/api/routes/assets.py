@@ -1,9 +1,11 @@
 from pathlib import Path
 import re
 import tempfile
+import hashlib
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request, UploadFile
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func
@@ -12,6 +14,14 @@ from sqlalchemy.orm import Session
 from ...core.config import settings
 from ...db import get_db
 from ...models import Asset, Episode, Scene, UploadSession
+from ...middleware.idempotency import (
+    IdempotencyClaim,
+    StoredResponse,
+    begin_idempotency,
+    complete_idempotency,
+    request_fingerprint,
+    validate_idempotency_key,
+)
 from ...services.storage import StorageError, build_object_key, get_storage
 from ..dependencies import get_current_user, require_roles
 
@@ -72,13 +82,16 @@ def list_assets(episode_id: str, _: dict = Depends(get_current_user), db: Sessio
 @router.post("/{episode_id}/assets/upload", status_code=201)
 async def upload_asset(
     episode_id: str,
+    request: Request,
     file: UploadFile = File(...),
     asset_type: str = Form(...),
     scene_id: str | None = Form(default=None),
     copyright_status: str = Form(default="unknown"),
-    _: dict = Depends(require_roles("owner", "editor")),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    user: dict = Depends(require_roles("owner", "editor")),
     db: Session = Depends(get_db),
 ):
+    idempotency_key = validate_idempotency_key(idempotency_key)
     episode = db.query(Episode).filter(Episode.id == episode_id).with_for_update().first()
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
@@ -97,6 +110,7 @@ async def upload_asset(
     object_key = build_object_key(episode_id, version, f"{uuid4().hex}_{safe_name}", asset_type)
 
     temp_path = None
+    digest = hashlib.sha256()
     try:
         with tempfile.NamedTemporaryFile(prefix="nf-upload-", suffix=Path(safe_name).suffix, delete=False) as temp:
             temp_path = Path(temp.name)
@@ -105,7 +119,36 @@ async def upload_asset(
                 size += len(chunk)
                 if size > settings.max_upload_size_bytes:
                     raise HTTPException(status_code=413, detail="File exceeds upload size limit")
+                digest.update(chunk)
                 temp.write(chunk)
+
+        claim_or_response = begin_idempotency(
+            db,
+            actor_id=user["id"],
+            key=idempotency_key,
+            method=request.method,
+            target=request.url.path,
+            fingerprint=request_fingerprint(
+                request.method,
+                request.url.path,
+                {
+                    "episode_id": episode_id,
+                    "filename": safe_name,
+                    "mime_type": file.content_type,
+                    "asset_type": asset_type,
+                    "scene_id": scene_id,
+                    "copyright_status": copyright_status,
+                    "size_bytes": size,
+                    "sha256": digest.hexdigest(),
+                },
+            ),
+            resource_type="asset",
+        )
+        if isinstance(claim_or_response, StoredResponse):
+            return claim_or_response.response()
+        if isinstance(claim_or_response, IdempotencyClaim) and not claim_or_response.created:
+            raise HTTPException(status_code=409, detail="Asset upload request is still processing")
+        claim = claim_or_response if isinstance(claim_or_response, IdempotencyClaim) else None
 
         stored = get_storage().upload_file(temp_path, object_key, file.content_type or "application/octet-stream")
     except HTTPException:
@@ -117,6 +160,7 @@ async def upload_asset(
             temp_path.unlink(missing_ok=True)
 
     item = Asset(
+        id=claim.record.resource_id if claim else str(uuid4()),
         episode_id=episode_id,
         scene_id=scene_id,
         asset_type=asset_type,
@@ -132,7 +176,11 @@ async def upload_asset(
         status="uploaded",
     )
     db.add(item)
+    db.flush()
+    stored_response = complete_idempotency(claim, jsonable_encoder(item), status_code=201)
     db.commit()
+    if stored_response:
+        return stored_response.response()
     db.refresh(item)
     return item
 

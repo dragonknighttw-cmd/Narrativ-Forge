@@ -5,15 +5,22 @@ from datetime import datetime, timedelta, timezone
 from math import ceil
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-
 from ...core.config import settings
 from ...db import get_db
 from ...models import Asset, Episode, Scene, UploadPart, UploadSession
+from ...middleware.idempotency import (
+    IdempotencyClaim,
+    StoredResponse,
+    begin_idempotency,
+    complete_idempotency,
+    request_fingerprint,
+    validate_idempotency_key,
+)
 from ...services.storage import (
     MultipartUploadAlreadyCompleted,
     StorageError,
@@ -171,9 +178,12 @@ def _session_response(db: Session, session: UploadSession) -> dict:
 @router.post("", status_code=201)
 def create_upload_session(
     payload: CreateUploadSession,
+    request: Request,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     user: dict = Depends(require_roles("owner", "editor")),
     db: Session = Depends(get_db),
 ):
+    idempotency_key = validate_idempotency_key(idempotency_key)
     if payload.expected_size > min(settings.max_upload_size_bytes, MAX_ASSET_SIZE_BYTES):
         raise HTTPException(status_code=413, detail="File exceeds upload size limit")
     if ceil(payload.expected_size / settings.upload_chunk_size_bytes) > MAX_MULTIPART_PARTS:
@@ -188,12 +198,27 @@ def create_upload_session(
         if not scene or scene.episode_id != episode.id:
             raise HTTPException(status_code=422, detail="Scene does not belong to this episode")
 
+    claim_or_response = begin_idempotency(
+        db,
+        actor_id=user["id"],
+        key=idempotency_key,
+        method=request.method,
+        target=request.url.path,
+        fingerprint=request_fingerprint(request.method, request.url.path, payload.model_dump(mode="json")),
+        resource_type="upload_session",
+    )
+    if isinstance(claim_or_response, StoredResponse):
+        return claim_or_response.response()
+    if isinstance(claim_or_response, IdempotencyClaim) and not claim_or_response.created:
+        raise HTTPException(status_code=409, detail="Upload session request is still processing")
+    claim = claim_or_response if isinstance(claim_or_response, IdempotencyClaim) else None
+
     asset_version = db.query(func.max(Asset.version)).filter(Asset.episode_id == episode.id).scalar() or 0
     session_version = db.query(func.max(UploadSession.reserved_version)).filter(
         UploadSession.episode_id == episode.id,
     ).scalar() or 0
     version = max(asset_version, session_version) + 1
-    session_id = str(uuid4())
+    session_id = claim.record.resource_id if claim else str(uuid4())
     object_key = build_object_key(
         episode.id,
         version,
@@ -233,6 +258,9 @@ def create_upload_session(
             session_id,
         )
         upload.provider_upload_id = provider_upload_id
+        db.flush()
+        response_data = _session_payload(upload, [])
+        stored_response = complete_idempotency(claim, response_data, status_code=201)
         db.commit()
     except IntegrityError as exc:
         db.rollback()
@@ -258,7 +286,7 @@ def create_upload_session(
             except StorageError:
                 logger.exception("upload_session_creation_cleanup_failed")
         raise
-    return _session_payload(upload, [])
+    return stored_response.response() if stored_response else response_data
 
 
 @router.get("/{upload_id}")

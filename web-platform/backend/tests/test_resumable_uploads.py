@@ -16,7 +16,7 @@ from app.api.routes import uploads
 from app.core.config import settings
 from app.db import Base, get_db
 from app.main import app
-from app.models import Asset, Episode, Scene, Series, UploadPart, UploadSession, User
+from app.models import Asset, Episode, IdempotencyRecord, ProcessingJob, Scene, Series, UploadPart, UploadSession, User
 from app.services.storage import (
     B2StorageProvider,
     LocalStorageProvider,
@@ -25,6 +25,7 @@ from app.services.storage import (
 )
 from app.services.passwords import hash_password
 from app.api.dependencies import issue_session
+from app.middleware.idempotency import request_fingerprint
 
 
 @pytest.fixture
@@ -147,12 +148,13 @@ def create_session(env, size=10, **values):
     return env["owner"].post("/api/v1/uploads", json=payload)
 
 
-def put_part(client, session_id, part_number, offset, body):
+def put_part(client, session_id, part_number, offset, body, extra_headers=None):
+    headers = {"Content-Type": "application/octet-stream", **(extra_headers or {})}
     return client.put(
         f"/api/v1/uploads/{session_id}/chunks",
         params={"part_number": part_number, "offset": offset},
         content=body,
-        headers={"Content-Type": "application/octet-stream"},
+        headers=headers,
     )
 
 
@@ -485,3 +487,230 @@ def test_b2_multipart_uses_provider_parts_checks_etags_and_reconciles_retry():
         provider.list_multipart_parts(upload_id, key, token, 11)
     provider.abort_multipart_upload(str(uuid4()), key)
     assert provider.client.aborted[-1][1] == key
+
+
+def test_idempotent_upload_session_replay_mismatch_and_actor_scope(upload_env):
+    env = upload_env
+    key = str(uuid4())
+    headers = {"Idempotency-Key": key}
+    first = env["owner"].post(
+        "/api/v1/uploads",
+        json={
+            "episode_id": env["episode_id"],
+            "original_filename": "source.mp4",
+            "mime_type": "video/mp4",
+            "asset_type": "video",
+            "expected_size": 10,
+        },
+        headers=headers,
+    )
+    replay = env["owner"].post(
+        "/api/v1/uploads",
+        json={
+            "episode_id": env["episode_id"],
+            "original_filename": "source.mp4",
+            "mime_type": "video/mp4",
+            "asset_type": "video",
+            "expected_size": 10,
+        },
+        headers=headers,
+    )
+    assert first.status_code == replay.status_code == 201
+    assert replay.json() == first.json()
+    with env["db_factory"]() as db:
+        assert db.query(UploadSession).filter(UploadSession.owner_id == env["owner_id"]).count() == 1
+        stored = db.query(IdempotencyRecord).filter(IdempotencyRecord.key == key).one()
+        assert stored.status == "completed"
+        assert stored.response_status == 201
+        assert first.json()["id"] in stored.response_body
+
+    mismatch = env["owner"].post(
+        "/api/v1/uploads",
+        json={
+            "episode_id": env["episode_id"],
+            "original_filename": "source.mp4",
+            "mime_type": "video/mp4",
+            "asset_type": "video",
+            "expected_size": 11,
+        },
+        headers=headers,
+    )
+    assert mismatch.status_code == 409
+
+    other_user = env["other"].post(
+        "/api/v1/uploads",
+        json={
+            "episode_id": env["episode_id"],
+            "original_filename": "source.mp4",
+            "mime_type": "video/mp4",
+            "asset_type": "video",
+            "expected_size": 10,
+        },
+        headers=headers,
+    )
+    assert other_user.status_code == 201
+    assert other_user.json()["id"] != first.json()["id"]
+
+
+def test_idempotent_direct_asset_hashes_content_and_prevents_duplicate_assets(upload_env):
+    env = upload_env
+    key = str(uuid4())
+    endpoint = f"/api/v1/episodes/{env['episode_id']}/assets/upload"
+
+    def upload(body):
+        return env["owner"].post(
+            endpoint,
+            files={"file": ("source.mp4", body, "video/mp4")},
+            data={"asset_type": "video"},
+            headers={"Idempotency-Key": key},
+        )
+
+    first = upload(b"asset-fixture")
+    replay = upload(b"asset-fixture")
+    assert first.status_code == replay.status_code == 201
+    assert replay.json() == first.json()
+    assert upload(b"different-content").status_code == 409
+    with env["db_factory"]() as db:
+        assert db.query(Asset).filter(Asset.episode_id == env["episode_id"]).count() == 1
+        stored = db.query(IdempotencyRecord).filter(IdempotencyRecord.key == key).one()
+        assert b"asset-fixture" not in stored.response_body.encode("utf-8")
+
+
+def test_idempotent_job_replay_and_same_key_different_endpoint_conflict(upload_env):
+    env = upload_env
+    key = str(uuid4())
+    headers = {"Idempotency-Key": key}
+    payload = {"episode_id": env["episode_id"]}
+    first = env["owner"].post("/api/v1/jobs/real", json=payload, headers=headers)
+    replay = env["owner"].post("/api/v1/jobs/real", json=payload, headers=headers)
+    assert first.status_code == replay.status_code == 201
+    assert first.json() == replay.json()
+    assert env["owner"].post("/api/v1/jobs/mock", json=payload, headers=headers).status_code == 409
+    with env["db_factory"]() as db:
+        assert db.query(ProcessingJob).filter(ProcessingJob.episode_id == env["episode_id"]).count() == 1
+
+
+def test_idempotent_mock_job_reuses_job_after_processing(upload_env):
+    env = upload_env
+    key = str(uuid4())
+    payload = {"episode_id": env["episode_id"]}
+    headers = {"Idempotency-Key": key}
+    first = env["owner"].post("/api/v1/jobs/mock", json=payload, headers=headers)
+    replay = env["owner"].post("/api/v1/jobs/mock", json=payload, headers=headers)
+    assert first.status_code == replay.status_code == 201
+    assert replay.json() == first.json()
+    with env["db_factory"]() as db:
+        assert db.query(ProcessingJob).filter(ProcessingJob.episode_id == env["episode_id"]).count() == 1
+
+
+def test_incomplete_job_idempotency_record_recovers_existing_resource(upload_env):
+    env = upload_env
+    key = str(uuid4())
+    path = "/api/v1/jobs/real"
+    job_id = str(uuid4())
+    payload = {"episode_id": env["episode_id"], "job_type": "real_processing"}
+    with env["db_factory"]() as db:
+        db.add(ProcessingJob(
+            id=job_id,
+            episode_id=env["episode_id"],
+            job_type="real_processing",
+            status="queued",
+            progress=0,
+        ))
+        db.add(IdempotencyRecord(
+            actor_id=env["owner_id"],
+            key=key,
+            method="POST",
+            target=path,
+            request_fingerprint=request_fingerprint("POST", path, payload),
+            status="processing",
+            resource_type="processing_job",
+            resource_id=job_id,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+        ))
+        db.commit()
+
+    response = env["owner"].post(
+        path,
+        json={"episode_id": env["episode_id"]},
+        headers={"Idempotency-Key": key},
+    )
+    assert response.status_code == 201
+    assert response.json()["id"] == job_id
+    with env["db_factory"]() as db:
+        record = db.query(IdempotencyRecord).filter(IdempotencyRecord.key == key).one()
+        assert record.status == "completed"
+        assert job_id in record.response_body
+
+
+def test_idempotency_validation_failures_are_retryable_and_keys_are_bounded(upload_env):
+    env = upload_env
+    key = str(uuid4())
+    invalid = env["owner"].post(
+        "/api/v1/jobs/real",
+        json={"episode_id": "missing-episode"},
+        headers={"Idempotency-Key": key},
+    )
+    assert invalid.status_code == 404
+    with env["db_factory"]() as db:
+        assert db.query(IdempotencyRecord).filter(IdempotencyRecord.key == key).count() == 0
+
+    retry = env["owner"].post(
+        "/api/v1/jobs/real",
+        json={"episode_id": env["episode_id"]},
+        headers={"Idempotency-Key": key},
+    )
+    assert retry.status_code == 201
+    assert env["owner"].post(
+        "/api/v1/jobs/real",
+        json={"episode_id": env["episode_id"]},
+        headers={"Idempotency-Key": "x" * 256},
+    ).status_code == 400
+    assert env["owner"].post(
+        "/api/v1/jobs/real",
+        json={"episode_id": env["episode_id"]},
+        headers={"Idempotency-Key": ""},
+    ).status_code == 400
+
+
+def test_expired_idempotency_key_is_reusable_and_unkeyed_requests_remain_optional(upload_env):
+    env = upload_env
+    key = str(uuid4())
+    payload = {"episode_id": env["episode_id"]}
+    first = env["owner"].post(
+        "/api/v1/jobs/real",
+        json=payload,
+        headers={"Idempotency-Key": key},
+    )
+    with env["db_factory"]() as db:
+        record = db.query(IdempotencyRecord).filter(IdempotencyRecord.key == key).one()
+        record.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+        db.commit()
+    reused = env["owner"].post(
+        "/api/v1/jobs/real",
+        json=payload,
+        headers={"Idempotency-Key": key},
+    )
+    assert reused.status_code == 201
+    assert reused.json()["id"] != first.json()["id"]
+
+    unkeyed_first = env["owner"].post("/api/v1/jobs/real", json=payload)
+    unkeyed_second = env["owner"].post("/api/v1/jobs/real", json=payload)
+    assert unkeyed_first.status_code == unkeyed_second.status_code == 201
+    assert unkeyed_first.json()["id"] != unkeyed_second.json()["id"]
+
+
+def test_chunk_put_does_not_create_or_consume_idempotency_record(upload_env):
+    env = upload_env
+    session = create_session(env, size=4).json()
+    response = put_part(
+        env["owner"],
+        session["id"],
+        1,
+        0,
+        b"data",
+        extra_headers={"Idempotency-Key": str(uuid4())},
+    )
+    assert response.status_code == 200
+    with env["db_factory"]() as db:
+        assert db.query(IdempotencyRecord).count() == 0

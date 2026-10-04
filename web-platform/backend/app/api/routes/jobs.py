@@ -1,12 +1,22 @@
 from datetime import datetime, timezone
+from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from ...db import get_db
 from ...models import Episode, FailedJob, ProcessingJob
+from ...middleware.idempotency import (
+    IdempotencyClaim,
+    StoredResponse,
+    begin_idempotency,
+    complete_idempotency,
+    request_fingerprint,
+    validate_idempotency_key,
+)
 from ...services.processing import run_mock_job
 from ..dependencies import get_current_user, require_roles
 
@@ -23,28 +33,128 @@ class RealJobCreate(BaseModel):
     job_type: str = Field(default="real_processing", max_length=40)
 
 
-def _create_job(episode: Episode, job_type: str, db: Session) -> ProcessingJob:
-    job = ProcessingJob(episode_id=episode.id, job_type=job_type, status="queued", progress=0)
+def _create_job(
+    episode: Episode,
+    job_type: str,
+    db: Session,
+    *,
+    job_id: str | None = None,
+    commit: bool = True,
+) -> ProcessingJob:
+    job = ProcessingJob(
+        id=job_id or str(uuid4()),
+        episode_id=episode.id,
+        job_type=job_type,
+        status="queued",
+        progress=0,
+    )
     db.add(job)
-    db.commit()
-    db.refresh(job)
+    db.flush()
+    if commit:
+        db.commit()
+        db.refresh(job)
     return job
 
 
 @router.post("/mock", status_code=201)
-def create_mock_job(payload: MockJobCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def create_mock_job(
+    payload: MockJobCreate,
+    request: Request,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    user: dict = Depends(require_roles("owner", "editor")),
+    db: Session = Depends(get_db),
+):
+    idempotency_key = validate_idempotency_key(idempotency_key)
     episode = db.get(Episode, payload.episode_id)
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
-    return run_mock_job(_create_job(episode, payload.job_type, db).id, db)
+    claim_or_response = begin_idempotency(
+        db,
+        actor_id=user["id"],
+        key=idempotency_key,
+        method=request.method,
+        target=request.url.path,
+        fingerprint=request_fingerprint(request.method, request.url.path, payload.model_dump(mode="json")),
+        resource_type="processing_job",
+    )
+    if isinstance(claim_or_response, StoredResponse):
+        return claim_or_response.response()
+    if isinstance(claim_or_response, IdempotencyClaim) and not claim_or_response.created:
+        job = db.get(ProcessingJob, claim_or_response.record.resource_id)
+        if not job:
+            raise HTTPException(status_code=409, detail="Job request is still processing")
+        stored_response = complete_idempotency(
+            claim_or_response,
+            jsonable_encoder(job),
+            status_code=201,
+        )
+        db.commit()
+        return stored_response.response()
+    claim = claim_or_response if isinstance(claim_or_response, IdempotencyClaim) else None
+    job = _create_job(
+        episode,
+        payload.job_type,
+        db,
+        job_id=claim.record.resource_id if claim else None,
+        commit=claim is None,
+    )
+    if not claim:
+        return run_mock_job(job.id, db)
+
+    db.commit()
+    result = run_mock_job(job.id, db)
+    stored_response = complete_idempotency(claim, jsonable_encoder(result), status_code=201)
+    db.commit()
+    return stored_response.response()
 
 
 @router.post("/real", status_code=201)
-def create_real_job(payload: RealJobCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def create_real_job(
+    payload: RealJobCreate,
+    request: Request,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    user: dict = Depends(require_roles("owner", "editor")),
+    db: Session = Depends(get_db),
+):
+    idempotency_key = validate_idempotency_key(idempotency_key)
     episode = db.get(Episode, payload.episode_id)
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
-    return _create_job(episode, payload.job_type, db)
+    claim_or_response = begin_idempotency(
+        db,
+        actor_id=user["id"],
+        key=idempotency_key,
+        method=request.method,
+        target=request.url.path,
+        fingerprint=request_fingerprint(request.method, request.url.path, payload.model_dump(mode="json")),
+        resource_type="processing_job",
+    )
+    if isinstance(claim_or_response, StoredResponse):
+        return claim_or_response.response()
+    if isinstance(claim_or_response, IdempotencyClaim) and not claim_or_response.created:
+        job = db.get(ProcessingJob, claim_or_response.record.resource_id)
+        if not job:
+            raise HTTPException(status_code=409, detail="Job request is still processing")
+        stored_response = complete_idempotency(
+            claim_or_response,
+            jsonable_encoder(job),
+            status_code=201,
+        )
+        db.commit()
+        return stored_response.response()
+    claim = claim_or_response if isinstance(claim_or_response, IdempotencyClaim) else None
+    job = _create_job(
+        episode,
+        payload.job_type,
+        db,
+        job_id=claim.record.resource_id if claim else None,
+        commit=claim is None,
+    )
+    if not claim:
+        return job
+    stored_response = complete_idempotency(claim, jsonable_encoder(job), status_code=201)
+    db.commit()
+    return stored_response.response()
 
 
 @router.get("")

@@ -11,6 +11,8 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
+      - key: REDIS_URL
+        sync: false
       - key: SESSION_SECRET
         sync: false
       - key: SENTRY_DSN
@@ -51,10 +53,57 @@ services:
     runtime: docker
     rootDir: web-platform/backend
     dockerfilePath: ./Dockerfile.worker
+    startCommand: python -m app.workers.real_worker
     envVars:
       - key: APP_ENV
         sync: false
       - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: UPLOAD_DIR
+        value: /var/lib/narrativ-forge/uploads
+      - key: STORAGE_PROVIDER
+        value: b2
+      - key: B2_APPLICATION_KEY_ID
+        sync: false
+      - key: B2_APPLICATION_KEY
+        sync: false
+      - key: B2_BUCKET_NAME
+        sync: false
+      - key: B2_REGION
+        sync: false
+      - key: B2_ENDPOINT_URL
+        sync: false
+      - key: B2_SIGNED_URL_EXPIRY_SECONDS
+        value: "900"
+      - key: FFMPEG_BINARY
+        value: ffmpeg
+      - key: FFPROBE_BINARY
+        value: ffprobe
+      - key: WHISPER_COMMAND
+        value: whisper
+      - key: WHISPER_MODEL
+        value: small
+      - key: PROCESSING_TIMEOUT_SECONDS
+        value: "3600"
+
+  - type: worker
+    name: narrativ-forge-celery-worker
+    runtime: docker
+    rootDir: web-platform/backend
+    dockerfilePath: ./Dockerfile.worker
+    startCommand: celery -A app.workers.celery_app:celery_app worker -l info --concurrency=1
+    envVars:
+      - key: APP_ENV
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
         sync: false
       - key: SESSION_SECRET
         sync: false

@@ -31,8 +31,14 @@ def make_celery(broker_url: Optional[str] = None) -> Celery:
     return app
 
 
-# Helper: safe factory that returns None if broker not configured
-celery_app: Celery | None = None
+# Safe default for CLI imports: create the app only when a broker is available.
+# This keeps test imports and local code working without REDIS_URL while allowing
+# production worker startup to fail fast when the runtime is misconfigured.
+try:
+    celery_app: Celery | None = make_celery()
+except RuntimeError:
+    celery_app = None
+
 
 def get_celery(allow_missing: bool = False) -> Optional[Celery]:
     global celery_app

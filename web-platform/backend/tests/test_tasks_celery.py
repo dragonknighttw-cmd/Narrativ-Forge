@@ -10,6 +10,7 @@ from app.models import Episode, ProcessingJob
 import app.db as app_db
 
 from app.workers import tasks as tasks_module
+from app.workers import real_worker
 
 
 @pytest.fixture
@@ -43,6 +44,67 @@ def test_task_registration_and_config(testing_db):
     process_task = tasks_module.register_tasks(celery)
     # The task should be registered on the Celery app
     assert "narrativ.process_real_job" in celery.tasks
+
+
+def test_real_worker_dispatches_queued_jobs_without_running_them(testing_db):
+    Session = testing_db
+    db = Session()
+    ep = Episode(public_id="TST-DISPATCH", series_id="s1", episode_number=1, title="dispatch")
+    db.add(ep)
+    db.commit()
+    job = ProcessingJob(episode_id=ep.id, job_type="real_processing", status="queued", progress=0)
+    db.add(job)
+    db.commit()
+    job_id = job.id
+    db.close()
+
+    calls = {}
+
+    class DummyCelery:
+        def send_task(self, name, args=None, **kwargs):
+            calls["name"] = name
+            calls["args"] = args
+            return None
+
+    old_get_celery = real_worker.get_celery
+    try:
+        real_worker.get_celery = lambda: DummyCelery()
+        dispatched = real_worker.run_once(Session())
+        assert dispatched == 1
+        assert calls["name"] == "narrativ.process_real_job"
+        assert calls["args"] == [job_id]
+    finally:
+        real_worker.get_celery = old_get_celery
+
+
+def test_task_skips_already_running_jobs(testing_db):
+    celery = make_test_celery()
+    process_task = tasks_module.register_tasks(celery)
+
+    Session = testing_db
+    db = Session()
+    ep = Episode(public_id="TST-RUNNING", series_id="s1", episode_number=1, title="running")
+    db.add(ep)
+    db.commit()
+    job = ProcessingJob(episode_id=ep.id, job_type="real_processing", status="running", progress=0)
+    db.add(job)
+    db.commit()
+    job_id = job.id
+    db.close()
+
+    called = {"count": 0}
+
+    def fake_run_real_job(job_id_arg, db_arg):
+        called["count"] += 1
+
+    orig = tasks_module.run_real_job
+    tasks_module.run_real_job = fake_run_real_job
+    try:
+        result = process_task.apply(args=(job_id,))
+        assert result.get() == job_id
+        assert called["count"] == 0
+    finally:
+        tasks_module.run_real_job = orig
 
 
 def test_missing_job_fails_cleanly(testing_db):

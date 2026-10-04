@@ -983,14 +983,9 @@ def test_historical_script_version_is_immutable():
     try:
         series = client.post("/api/v1/series", json={"title": "Immutable script series"}).json()
         episode = client.post(
-            f"/api/v1/episodes/{series['id']}/episodes",
-            json={"episode_number": 1, "title": "Immutable episode"},
+            "/api/v1/episodes",
+            json={"series_id": series["id"], "episode_number": 1, "title": "Immutable episode"},
         )
-        if episode.status_code != 201:
-            episode = client.post(
-                "/api/v1/episodes",
-                json={"series_id": series["id"], "episode_number": 1, "title": "Immutable episode"},
-            )
         assert episode.status_code == 201
         ep = episode.json()
         first = client.post(

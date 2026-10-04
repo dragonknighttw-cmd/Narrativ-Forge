@@ -53,6 +53,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Report runner Docker disk state
+        run: |
+          df -h /
+          docker system df || true
       - name: Free disposable Docker state
         run: |
           docker system prune --all --force --volumes

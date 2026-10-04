@@ -27,7 +27,52 @@ jobs:
           rm -f /tmp/narrativ-ci.db
           DATABASE_URL=sqlite:////tmp/narrativ-ci.db PYTHONPATH=. python -m alembic upgrade head
           DATABASE_URL=sqlite:////tmp/narrativ-ci.db PYTHONPATH=. python -m alembic current
-      - run: PYTHONPATH=. pytest -q
+      - name: Run backend unit tests
+        run: PYTHONPATH=. pytest -m unit -q
+
+  backend-integration:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-platform/backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-password
+          POSTGRES_DB: narrativ_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d narrativ_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Apply PostgreSQL migrations
+        env:
+          DATABASE_URL: postgresql://postgres:ci-test-password@localhost:5432/narrativ_test
+        run: PYTHONPATH=. python -m alembic upgrade head
+      - name: Run backend integration tests
+        env:
+          DATABASE_URL: postgresql://postgres:ci-test-password@localhost:5432/narrativ_test
+          REDIS_URL: redis://localhost:6379/0
+        run: PYTHONPATH=. pytest -m integration -q
 
   frontend:
     runs-on: ubuntu-latest

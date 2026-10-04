@@ -23,7 +23,7 @@ def upgrade() -> None:
     if "updated_at" not in columns:
         op.add_column("users", sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True))
     op.execute(sa.text("UPDATE users SET password_hash = :hash WHERE password_hash IS NULL").bindparams(hash="disabled$bootstrap-required"))
-    op.execute(sa.text("UPDATE users SET is_active = 1 WHERE is_active IS NULL"))
+    op.execute(sa.text("UPDATE users SET is_active = TRUE WHERE is_active IS NULL"))
 
     asset_columns = {column["name"] for column in inspector.get_columns("assets")}
     if "object_key" not in asset_columns:

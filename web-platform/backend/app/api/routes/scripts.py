@@ -60,6 +60,15 @@ def update_script(script_id: str, payload: ScriptUpdate, _: dict = Depends(requi
     if not item:
         raise HTTPException(status_code=404, detail="Script not found")
 
+    if not item.is_current:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "HISTORICAL_SCRIPT_IMMUTABLE",
+                "message": "Historical script versions are immutable; create a new version instead",
+            },
+        )
+
     data = payload.model_dump(exclude={"expected_row_version"}, exclude_unset=True)
     data["row_version"] = Script.row_version + 1
     data["updated_at"] = datetime.now(timezone.utc)

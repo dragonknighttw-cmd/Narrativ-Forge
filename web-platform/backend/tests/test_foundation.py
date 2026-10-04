@@ -975,3 +975,40 @@ def test_auto_mode_creates_script_versions_and_requires_source_video():
         assert blocked.status_code == 409
     finally:
         client.close()
+
+
+@pytest.mark.integration
+def test_historical_script_version_is_immutable():
+    client = auth_client()
+    try:
+        series = client.post("/api/v1/series", json={"title": "Immutable script series"}).json()
+        episode = client.post(
+            f"/api/v1/episodes/{series['id']}/episodes",
+            json={"episode_number": 1, "title": "Immutable episode"},
+        )
+        if episode.status_code != 201:
+            episode = client.post(
+                "/api/v1/episodes",
+                json={"series_id": series["id"], "episode_number": 1, "title": "Immutable episode"},
+            )
+        assert episode.status_code == 201
+        ep = episode.json()
+        first = client.post(
+            f"/api/v1/episodes/{ep['id']}/scripts",
+            json={"title": "v1", "content": "original"},
+        )
+        assert first.status_code == 201
+        second = client.post(
+            f"/api/v1/episodes/{ep['id']}/scripts/versions",
+            json={"title": "v2", "content": "new"},
+        )
+        assert second.status_code == 201
+        old = first.json()
+        response = client.patch(
+            f"/api/v1/scripts/{old['id']}",
+            json={"content": "tampered", "expected_row_version": old["row_version"]},
+        )
+        assert response.status_code == 409
+        assert response.json()["detail"]["code"] == "HISTORICAL_SCRIPT_IMMUTABLE"
+    finally:
+        client.close()

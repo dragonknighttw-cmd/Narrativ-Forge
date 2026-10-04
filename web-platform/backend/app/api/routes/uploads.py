@@ -453,6 +453,54 @@ def commit_upload(
         db.rollback()
         raise HTTPException(status_code=502, detail="Unable to finalize upload") from exc
 
+    existing = db.query(Asset).filter(
+        Asset.checksum_sha256 == stored.checksum_sha256,
+        Asset.asset_type == session.asset_type,
+        Asset.status != "deleted",
+    ).order_by(Asset.created_at.asc()).first()
+
+    if existing:
+        if existing.episode_id == session.episode_id:
+            try:
+                if stored.object_key != existing.object_key:
+                    storage.delete(stored.object_key)
+            except StorageError:
+                logger.exception("checksum_dedupe_cleanup_failed")
+            else:
+                session.status = "committed"
+                session.last_activity_at = datetime.now(timezone.utc)
+                db.commit()
+                return existing
+
+        if existing.episode_id != session.episode_id:
+            try:
+                if stored.object_key != existing.object_key:
+                    storage.delete(stored.object_key)
+            except StorageError:
+                logger.exception("checksum_dedupe_cross_episode_cleanup_failed")
+            else:
+                asset = Asset(
+                    episode_id=session.episode_id,
+                    scene_id=session.scene_id,
+                    asset_type=session.asset_type,
+                    original_filename=session.original_filename,
+                    storage_provider=existing.storage_provider,
+                    local_path=existing.local_path,
+                    object_key=existing.object_key,
+                    checksum_sha256=existing.checksum_sha256,
+                    mime_type=session.mime_type,
+                    file_size_bytes=existing.file_size_bytes,
+                    version=session.reserved_version,
+                    copyright_status=session.copyright_status,
+                    status="uploaded",
+                )
+                session.status = "committed"
+                session.last_activity_at = datetime.now(timezone.utc)
+                db.add(asset)
+                db.commit()
+                db.refresh(asset)
+                return asset
+
     asset = Asset(
         episode_id=session.episode_id,
         scene_id=session.scene_id,

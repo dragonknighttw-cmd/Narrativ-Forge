@@ -87,6 +87,7 @@ async def upload_asset(
     asset_type: str = Form(...),
     scene_id: str | None = Form(default=None),
     copyright_status: str = Form(default="unknown"),
+    checksum_header: str | None = Header(default=None, alias="X-Content-SHA256"),
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     user: dict = Depends(require_roles("owner", "editor")),
     db: Session = Depends(get_db),
@@ -122,6 +123,14 @@ async def upload_asset(
                 digest.update(chunk)
                 temp.write(chunk)
 
+        checksum = digest.hexdigest()
+        if checksum_header is not None:
+            checksum_header = checksum_header.strip().lower()
+            if not re.fullmatch(r"[0-9a-f]{64}", checksum_header):
+                raise HTTPException(status_code=422, detail="Invalid X-Content-SHA256 checksum")
+            if checksum_header != checksum:
+                raise HTTPException(status_code=422, detail="X-Content-SHA256 does not match uploaded content")
+
         claim_or_response = begin_idempotency(
             db,
             actor_id=user["id"],
@@ -139,7 +148,7 @@ async def upload_asset(
                     "scene_id": scene_id,
                     "copyright_status": copyright_status,
                     "size_bytes": size,
-                    "sha256": digest.hexdigest(),
+                    "sha256": checksum,
                 },
             ),
             resource_type="asset",
@@ -149,6 +158,46 @@ async def upload_asset(
         if isinstance(claim_or_response, IdempotencyClaim) and not claim_or_response.created:
             raise HTTPException(status_code=409, detail="Asset upload request is still processing")
         claim = claim_or_response if isinstance(claim_or_response, IdempotencyClaim) else None
+
+        existing = db.query(Asset).filter(
+            Asset.checksum_sha256 == checksum,
+            Asset.asset_type == asset_type,
+            Asset.status != "deleted",
+        ).order_by(Asset.created_at.asc()).first()
+        if existing:
+            if existing.episode_id == episode_id:
+                if claim:
+                    claim.record.resource_id = existing.id
+                    stored_response = complete_idempotency(claim, jsonable_encoder(existing), status_code=201)
+                    db.commit()
+                    if stored_response:
+                        return stored_response.response()
+                return existing
+
+            item = Asset(
+                id=claim.record.resource_id if claim else str(uuid4()),
+                episode_id=episode_id,
+                scene_id=scene_id,
+                asset_type=asset_type,
+                original_filename=safe_name,
+                storage_provider=existing.storage_provider,
+                local_path=existing.local_path,
+                object_key=existing.object_key,
+                checksum_sha256=existing.checksum_sha256,
+                mime_type=file.content_type or existing.mime_type,
+                file_size_bytes=existing.file_size_bytes,
+                version=version,
+                copyright_status=copyright_status,
+                status="uploaded",
+            )
+            db.add(item)
+            db.flush()
+            stored_response = complete_idempotency(claim, jsonable_encoder(item), status_code=201)
+            db.commit()
+            if stored_response:
+                return stored_response.response()
+            db.refresh(item)
+            return item
 
         stored = get_storage().upload_file(temp_path, object_key, file.content_type or "application/octet-stream")
     except HTTPException:
@@ -199,12 +248,18 @@ def download_asset(asset_id: str, _: dict = Depends(get_current_user), db: Sessi
     if not item.object_key:
         raise HTTPException(status_code=404, detail="Asset storage object is missing")
     try:
-        url = get_storage(item.storage_provider).download_url(item.object_key)
+        storage = get_storage(item.storage_provider)
+        url = storage.download_url(item.object_key)
     except StorageError as exc:
         raise HTTPException(status_code=502, detail="Unable to create a download URL") from exc
     if not url:
         raise HTTPException(status_code=502, detail="Storage provider does not support direct downloads")
-    return {"asset_id": item.id, "storage_provider": item.storage_provider, "url": url, "expires_in": settings.b2_signed_url_expiry_seconds}
+    return {
+        "asset_id": item.id,
+        "storage_provider": item.storage_provider,
+        "url": url,
+        "expires_in": getattr(storage, "signed_url_expiry_seconds", None),
+    }
 
 
 @asset_router.patch("/{asset_id}")

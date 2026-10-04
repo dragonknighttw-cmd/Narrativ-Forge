@@ -14,7 +14,7 @@ from app import db
 pytestmark = pytest.mark.integration
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
-HEAD_REVISION = "0006_idempotency_keys"
+HEAD_REVISION = "0007_optimistic_locking"
 PREVIOUS_REVISION = "0002_asset_storage_metadata"
 
 
@@ -79,6 +79,8 @@ def test_fresh_database_migrates_to_head_with_expected_schema(tmp_path):
         "upload_sessions", "upload_parts", "idempotency_records",
     } <= schema.keys()
     assert {"password_hash", "is_active", "updated_at"} <= schema["users"]["columns"]
+    assert "row_version" in schema["episodes"]["columns"]
+    assert "row_version" in schema["scripts"]["columns"]
     assert {"object_key", "checksum_sha256"} <= schema["assets"]["columns"]
     assert {"max_retries", "next_run_at", "last_error"} <= schema["processing_jobs"]["columns"]
     assert {

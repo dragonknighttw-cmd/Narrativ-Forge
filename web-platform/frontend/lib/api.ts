@@ -8,7 +8,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     let message = "Request failed";
-    try { const body = await response.json(); message = body.detail ?? message; } catch {}
+    try {
+      const body = await response.json();
+      message = typeof body.detail === "string" ? body.detail : body.detail?.message ?? message;
+    } catch {}
     throw new Error(message);
   }
   return response.status === 204 ? (undefined as T) : response.json();
@@ -30,8 +33,9 @@ async function idempotentRequest<T>(storageKey: string, path: string, init: Requ
 export type Idea = { id: string; title: string; concept?: string | null; category?: string | null; hook?: string | null; content_warning?: string | null; status: string; created_at: string };
 export type Series = { id: string; title: string; description?: string | null; status: string; created_at: string };
 export type Season = { id: string; series_id: string; season_number: number; title?: string | null; created_at: string };
-export type Episode = { id: string; public_id: string; series_id: string; season_id?: string | null; episode_number: number; title: string; category?: string | null; synopsis?: string | null; target_duration_seconds: number; actual_duration_seconds?: number | null; status: string; current_step: string; created_at: string; updated_at: string };
-export type Script = { id: string; episode_id: string; version: number; title?: string | null; content: string; status: string; is_current: boolean; created_at: string; updated_at: string };
+export type Episode = { id: string; public_id: string; series_id: string; season_id?: string | null; episode_number: number; title: string; category?: string | null; synopsis?: string | null; target_duration_seconds: number; actual_duration_seconds?: number | null; status: string; current_step: string; row_version: number; created_at: string; updated_at: string };
+export type Script = { id: string; episode_id: string; version: number; title?: string | null; content: string; status: string; is_current: boolean; row_version: number; created_at: string; updated_at: string };
+export type EpisodeUpdateInput = Partial<Omit<Episode, "id" | "row_version" | "created_at" | "updated_at">> & { expected_row_version: number };
 export type Scene = { id: string; episode_id: string; script_id?: string | null; scene_number: number; purpose: string; description?: string | null; dialogue?: string | null; duration_seconds?: number | null; created_at: string; updated_at: string };
 export type Asset = { id: string; episode_id: string; scene_id?: string | null; asset_type: string; original_filename: string; storage_provider: string; local_path?: string | null; mime_type: string; file_size_bytes: number; version: number; copyright_status: string; is_final: boolean; status: string; created_at: string };
 type UploadPart = { part_number: number; size_bytes: number; checksum_sha256: string };
@@ -72,7 +76,7 @@ export const api = {
   listEpisodes: () => request<Episode[]>("/episodes"),
   createEpisode: (data: { series_id: string; season_id?: string; episode_number: number; title: string; category?: string; synopsis?: string; target_duration_seconds?: number }) => request<Episode>("/episodes", { method: "POST", body: JSON.stringify(data) }),
   getEpisode: (id: string) => request<Episode>(`/episodes/${id}`),
-  updateEpisode: (id: string, data: Partial<Episode>) => request<Episode>(`/episodes/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  updateEpisode: (id: string, data: EpisodeUpdateInput) => request<Episode>(`/episodes/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   listScripts: (episodeId: string) => request<Script[]>(`/episodes/${episodeId}/scripts`),
   createScript: (episodeId: string, data: { title?: string; content: string }) => request<Script>(`/episodes/${episodeId}/scripts`, { method: "POST", body: JSON.stringify(data) }),
   updateScript: (episodeId: string, scriptId: string, data: Partial<Script>) => request<Script>(`/scripts/${scriptId}`, { method: "PATCH", body: JSON.stringify(data) }),

@@ -103,6 +103,7 @@ class Episode(Base):
     current_step: Mapped[str] = mapped_column(String(40), default="idea")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+    row_version: Mapped[int] = mapped_column(Integer, default=1, server_default=text("1"), nullable=False)
 
     series: Mapped[Series] = relationship(back_populates="episodes")
     season: Mapped[Season | None] = relationship(back_populates="episodes")
@@ -132,6 +133,7 @@ class Script(Base):
     is_current: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+    row_version: Mapped[int] = mapped_column(Integer, default=1, server_default=text("1"), nullable=False)
 
     episode: Mapped[Episode] = relationship(back_populates="scripts")
     scenes: Mapped[list[Scene]] = relationship(back_populates="script")

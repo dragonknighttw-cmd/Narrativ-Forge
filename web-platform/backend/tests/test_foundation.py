@@ -115,11 +115,11 @@ def test_story_structure_and_episode_status_workflow():
         })
         assert duplicate.status_code == 409
 
-        moved = client.patch(f"/api/v1/episodes/{episode_id}", json={"status": "planned"})
+        moved = client.patch(f"/api/v1/episodes/{episode_id}", json={"status": "planned", "expected_row_version": episode["row_version"]})
         assert moved.status_code == 200
         assert moved.json()["current_step"] == "structure"
 
-        invalid = client.patch(f"/api/v1/episodes/{episode_id}", json={"status": "approved"})
+        invalid = client.patch(f"/api/v1/episodes/{episode_id}", json={"status": "approved", "expected_row_version": moved.json()["row_version"]})
         assert invalid.status_code == 409
     finally:
         client.close()
@@ -148,7 +148,7 @@ def test_script_scene_and_asset_vertical_slice(tmp_path, monkeypatch):
         assert version.json()["version"] == 2
         assert version.json()["is_current"] is True
         script_id = version.json()["id"]
-        script_patch = client.patch(f"/api/v1/scripts/{script_id}", json={"status": "review"})
+        script_patch = client.patch(f"/api/v1/scripts/{script_id}", json={"status": "review", "expected_row_version": version.json()["row_version"]})
         assert script_patch.status_code == 200
 
         scene = client.post(f"/api/v1/episodes/{episode['id']}/scenes", json={
@@ -346,10 +346,14 @@ def test_review_blocks_until_checklist_and_approves_final_asset():
     assert review_state.status_code == 200
     assert review_state.json()["episode_id"] == episode["id"]
     # Move the episode through the existing lifecycle to review.
+    episode_version = episode["row_version"]
     for status in ["planned", "script_draft", "script_review", "assets_needed", "in_production", "processing"]:
-        response = client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": status})
+        response = client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": status, "expected_row_version": episode_version})
         assert response.status_code == 200
-    client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "subtitle_review"})
+        episode_version = response.json()["row_version"]
+    response = client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "subtitle_review", "expected_row_version": episode_version})
+    assert response.status_code == 200
+    episode_version = response.json()["row_version"]
     review = client.post(f"/api/v1/episodes/{episode['id']}/review/approve", json={
         "video_watched": True, "audio_checked": True, "subtitle_timing_checked": True, "thumbnail_present": True
     })
@@ -375,7 +379,8 @@ def test_mock_drive_export_is_idempotent_after_approval(tmp_path):
     assert approved_subtitle.status_code == 200
 
     # Move processing -> subtitle_review -> needs_approval.
-    assert client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "needs_approval"}).status_code == 200
+    episode_state = client.get(f"/api/v1/episodes/{episode['id']}").json()
+    assert client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "needs_approval", "expected_row_version": episode_state["row_version"]}).status_code == 200
     approved = client.post(f"/api/v1/episodes/{episode['id']}/review/approve", json={
         "video_watched": True, "audio_checked": True, "subtitle_timing_checked": True, "thumbnail_present": True
     })

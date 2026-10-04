@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import update
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -59,6 +60,7 @@ class EpisodeUpdate(BaseModel):
     actual_duration_seconds: int | None = Field(default=None, ge=0)
     status: str | None = None
     current_step: str | None = Field(default=None, max_length=40)
+    expected_row_version: int = Field(ge=1)
 
 def generated_public_id(db: Session) -> str:
     prefix = date.today().strftime("nar_%Y%m%d_")
@@ -104,7 +106,9 @@ def update_episode(episode_id: str, payload: EpisodeUpdate, _: dict = Depends(re
     item = db.get(Episode, episode_id)
     if not item:
         raise HTTPException(status_code=404, detail="Episode not found")
-    data = payload.model_dump(exclude_unset=True)
+
+    expected_row_version = payload.expected_row_version
+    data = payload.model_dump(exclude={"expected_row_version"}, exclude_unset=True)
     if "status" in data:
         status = data["status"]
         if status not in VALID_STATUSES:
@@ -114,12 +118,37 @@ def update_episode(episode_id: str, payload: EpisodeUpdate, _: dict = Depends(re
     season_id = data.get("season_id", item.season_id)
     validate_structure(db, item.series_id, season_id)
     number = data.get("episode_number", item.episode_number)
-    if season_id and db.query(Episode).filter(Episode.id != item.id, Episode.season_id == season_id, Episode.episode_number == number).first():
+    if season_id and db.query(Episode).filter(
+        Episode.id != item.id,
+        Episode.season_id == season_id,
+        Episode.episode_number == number,
+    ).first():
         raise HTTPException(status_code=409, detail="Episode number already exists in this season")
-    for key, value in data.items():
-        setattr(item, key, value)
+
     if "status" in data:
-        item.current_step = STEP_BY_STATUS[data["status"]]
+        data["current_step"] = STEP_BY_STATUS[data["status"]]
+
+    data["row_version"] = Episode.row_version + 1
+    data["updated_at"] = datetime.now(timezone.utc)
+    result = db.execute(
+        update(Episode)
+        .where(Episode.id == episode_id, Episode.row_version == expected_row_version)
+        .values(**data)
+    )
+    if result.rowcount != 1:
+        db.rollback()
+        current = db.get(Episode, episode_id)
+        if not current:
+            raise HTTPException(status_code=404, detail="Episode not found")
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "STALE_ROW_VERSION",
+                "message": "Episode was modified by another request",
+                "current": current,
+            },
+        )
+
     db.commit()
     db.refresh(item)
     return item

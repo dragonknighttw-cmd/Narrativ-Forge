@@ -1,6 +1,7 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import func
+from sqlalchemy import func, update
 from sqlalchemy.orm import Session
 
 from ...db import get_db
@@ -20,6 +21,7 @@ class ScriptUpdate(BaseModel):
     title: str | None = Field(default=None, max_length=255)
     content: str | None = None
     status: str | None = Field(default=None, max_length=40)
+    expected_row_version: int = Field(ge=1)
 
 
 class ScriptVersionCreate(BaseModel):
@@ -57,8 +59,29 @@ def update_script(script_id: str, payload: ScriptUpdate, _: dict = Depends(requi
     item = db.get(Script, script_id)
     if not item:
         raise HTTPException(status_code=404, detail="Script not found")
-    for key, value in payload.model_dump(exclude_unset=True).items():
-        setattr(item, key, value)
+
+    data = payload.model_dump(exclude={"expected_row_version"}, exclude_unset=True)
+    data["row_version"] = Script.row_version + 1
+    data["updated_at"] = datetime.now(timezone.utc)
+    result = db.execute(
+        update(Script)
+        .where(Script.id == script_id, Script.row_version == payload.expected_row_version)
+        .values(**data)
+    )
+    if result.rowcount != 1:
+        db.rollback()
+        current = db.get(Script, script_id)
+        if not current:
+            raise HTTPException(status_code=404, detail="Script not found")
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "STALE_ROW_VERSION",
+                "message": "Script was modified by another request",
+                "current": current,
+            },
+        )
+
     db.commit()
     db.refresh(item)
     return item

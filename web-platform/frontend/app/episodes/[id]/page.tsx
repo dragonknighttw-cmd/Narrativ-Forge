@@ -40,7 +40,7 @@ export default function EpisodeDetailPage() {
     setBusy(true);
     setError("");
     try {
-      await api.updateEpisode(item.id, { status: nextStatus });
+      await api.updateEpisode(item.id, { status: nextStatus, expected_row_version: item.row_version });
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Status transition failed");
@@ -57,6 +57,7 @@ export default function EpisodeDetailPage() {
       await api.updateEpisode(item.id, {
         title: editTitle.trim(),
         target_duration_seconds: Number(editDuration),
+        expected_row_version: item.row_version,
       });
       setEditing(false);
       await load();

@@ -7,8 +7,8 @@ from .core.config import settings
 
 def normalize_database_url(database_url: str) -> URL:
     url = make_url(database_url)
-    if url.get_backend_name() == "postgres":
-        return url.set(drivername="postgresql")
+    if url.drivername in {"postgres", "postgresql"}:
+        return url.set(drivername="postgresql+psycopg2")
     return url
 
 

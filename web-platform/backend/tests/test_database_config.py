@@ -25,7 +25,7 @@ def test_postgresql_url_is_accepted_without_sqlite_connection_behavior():
     settings = Settings(database_url="postgresql://user@localhost/narrativ")
     engine = create_database_engine(settings.database_url)
     try:
-        assert str(engine.url) == settings.database_url
+        assert engine.url.drivername == "postgresql+psycopg2"
         assert engine.dialect.name == "postgresql"
         assert not event.contains(engine, "connect", _set_sqlite_foreign_keys)
     finally:
@@ -45,9 +45,12 @@ def test_postgresql_url_preserves_url_encoded_credentials():
     database_url = "postgresql://test-user:test%40pass%3Aword%2Fpart%25tag%23hash@localhost/narrativ"
     engine = create_database_engine(database_url)
     try:
+        assert engine.url.drivername == "postgresql+psycopg2"
         assert engine.dialect.name == "postgresql"
         assert engine.url.password == "test@pass:word/part%tag#hash"
-        assert engine.url.render_as_string(hide_password=False) == database_url
+        assert engine.url.render_as_string(hide_password=False) == database_url.replace(
+            "postgresql://", "postgresql+psycopg2://", 1
+        )
     finally:
         engine.dispose()
 
@@ -57,5 +60,5 @@ def test_legacy_postgres_url_is_normalized_without_losing_credentials():
 
     normalized_url = normalize_database_url(database_url)
 
-    assert normalized_url.drivername == "postgresql"
+    assert normalized_url.drivername == "postgresql+psycopg2"
     assert normalized_url.password == "test@pass:word"

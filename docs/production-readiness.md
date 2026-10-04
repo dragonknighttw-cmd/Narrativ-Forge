@@ -35,6 +35,22 @@
 - Export is gated by approval, final asset, and approved subtitle.
 - Google Drive export persists partial progress and retries without intentionally creating duplicate files.
 
+## Real-processing retry and dead-letter handling
+
+Real-processing retries are scheduled in PostgreSQL and dispatched when due.
+The initial execution may be followed by at most three automatic retries, with
+deterministic delays of 60, 120, and 240 seconds (capped at one hour). Failed
+attempt details remain in `last_error`; an exhausted job is recorded in
+`failed_jobs`, audited in `audit_events`, and published as a notification to
+the Celery `dead_letter` queue. The database record remains the durable source
+of truth if Redis is unavailable during notification publication.
+
+Authorized manual retry preserves the processing job ID. For a job below its
+automatic retry limit it does not consume another automatic retry; recovering
+an exhausted job resolves its active failed-job record and resets the retry
+counter. A worker crash can still leave a job in `running`; automatic abandoned
+job recovery is not implemented.
+
 ## Backup and restore
 
 SQLite development backup:

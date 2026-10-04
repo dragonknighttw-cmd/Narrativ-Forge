@@ -1,9 +1,12 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from ...db import get_db
-from ...models import Episode, ProcessingJob
+from ...models import Episode, FailedJob, ProcessingJob
 from ...services.processing import run_mock_job
 from ..dependencies import get_current_user, require_roles
 
@@ -64,13 +67,46 @@ def retry_job(job_id: str, _: dict = Depends(require_roles("owner", "editor")), 
         raise HTTPException(status_code=404, detail="Job not found")
     if job.status != "failed":
         raise HTTPException(status_code=409, detail="Only failed jobs can be retried")
-    job.retry_count += 1
-    job.status = "queued"
-    job.progress = 0
-    job.error_code = None
-    job.error_message = None
-    job.completed_at = None
+
+    exhausted = job.job_type == "real_processing" and job.retry_count >= job.max_retries
+    current_retry_count = job.retry_count
+    retry_count = 0 if exhausted else (
+        current_retry_count + 1 if job.job_type != "real_processing" else current_retry_count
+    )
+    result = db.execute(
+        update(ProcessingJob)
+        .where(
+            ProcessingJob.id == job_id,
+            ProcessingJob.status == "failed",
+            ProcessingJob.retry_count == current_retry_count,
+            ProcessingJob.max_retries == job.max_retries,
+        )
+        .values(
+            retry_count=retry_count,
+            status="queued",
+            progress=0,
+            next_run_at=None,
+            last_error=None,
+            error_code=None,
+            error_message=None,
+            started_at=None,
+            completed_at=None,
+        )
+    )
+    if result.rowcount != 1:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Job state changed; refresh and retry")
+    if exhausted:
+        db.execute(
+            update(FailedJob)
+            .where(
+                FailedJob.processing_job_id == job_id,
+                FailedJob.resolved_at.is_(None),
+            )
+            .values(resolved_at=datetime.now(timezone.utc))
+        )
     db.commit()
+    db.refresh(job)
     if job.job_type == "real_processing":
         return job
     return run_mock_job(job.id, db)

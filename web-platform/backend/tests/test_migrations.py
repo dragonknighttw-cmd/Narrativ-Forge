@@ -14,7 +14,7 @@ from app import db
 pytestmark = pytest.mark.integration
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
-HEAD_REVISION = "0003_scene_script_scope"
+HEAD_REVISION = "0004_processing_retry_dlq"
 PREVIOUS_REVISION = "0002_asset_storage_metadata"
 
 
@@ -77,8 +77,27 @@ def test_fresh_database_migrates_to_head_with_expected_schema(tmp_path):
     assert {"users", "series", "episodes", "scripts", "scenes", "assets"} <= schema.keys()
     assert {"password_hash", "is_active", "updated_at"} <= schema["users"]["columns"]
     assert {"object_key", "checksum_sha256"} <= schema["assets"]["columns"]
+    assert {"max_retries", "next_run_at", "last_error"} <= schema["processing_jobs"]["columns"]
+    assert {
+        "id",
+        "processing_job_id",
+        "reason",
+        "retry_count",
+        "created_at",
+        "resolved_at",
+        "dlq_published_at",
+    } <= schema["failed_jobs"]["columns"]
     assert ("uq_scene_number_per_script", ("script_id", "scene_number")) in schema["scenes"]["unique_constraints"]
     assert ("uq_scene_number_per_episode", ("episode_id", "scene_number")) not in schema["scenes"]["unique_constraints"]
+    engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+    try:
+        failed_indexes = {index["name"]: index for index in inspect(engine).get_indexes("failed_jobs")}
+        assert failed_indexes["uq_failed_jobs_active_processing_job"]["unique"] == 1
+        assert "ix_processing_jobs_dispatch_due" in {
+            index["name"] for index in inspect(engine).get_indexes("processing_jobs")
+        }
+    finally:
+        engine.dispose()
 
 
 def test_upgrade_from_previous_revision_matches_fresh_schema(tmp_path):
@@ -100,6 +119,42 @@ def test_upgrade_from_previous_revision_matches_fresh_schema(tmp_path):
 
     run_alembic(upgraded_database, "upgrade", "head")
     assert migrated_schema(upgraded_database) == migrated_schema(fresh_database)
+
+
+def test_retry_dlq_migration_downgrades_to_previous_revision(tmp_path):
+    database_path = tmp_path / "retry_dlq.db"
+    run_alembic(database_path, "upgrade", "head")
+
+    run_alembic(database_path, "downgrade", "0003_scene_script_scope")
+    schema = migrated_schema(database_path)
+    assert "failed_jobs" not in schema
+    assert not {"max_retries", "next_run_at", "last_error"} & schema["processing_jobs"]["columns"]
+
+    run_alembic(database_path, "upgrade", "head")
+    schema = migrated_schema(database_path)
+    assert "failed_jobs" in schema
+    assert {"max_retries", "next_run_at", "last_error"} <= schema["processing_jobs"]["columns"]
+
+
+def test_retry_dlq_migration_upgrades_an_existing_0003_schema(tmp_path):
+    database_path = tmp_path / "existing_0003.db"
+    run_alembic(database_path, "upgrade", "0003_scene_script_scope")
+
+    engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+    try:
+        with engine.begin() as connection:
+            connection.exec_driver_sql("DROP INDEX IF EXISTS ix_processing_jobs_dispatch_due")
+            connection.exec_driver_sql("DROP TABLE IF EXISTS failed_jobs")
+            for column in ("last_error", "next_run_at", "max_retries"):
+                connection.exec_driver_sql(f"ALTER TABLE processing_jobs DROP COLUMN {column}")
+    finally:
+        engine.dispose()
+
+    output = run_alembic(database_path, "upgrade", "head")
+    assert HEAD_REVISION in output
+    schema = migrated_schema(database_path)
+    assert {"max_retries", "next_run_at", "last_error"} <= schema["processing_jobs"]["columns"]
+    assert "failed_jobs" in schema
 
 
 @pytest.mark.parametrize("app_env", ["production", "staging"])

@@ -97,7 +97,7 @@ services:
     runtime: docker
     rootDir: web-platform/backend
     dockerfilePath: ./Dockerfile.worker
-    startCommand: celery -A app.workers.celery_app:celery_app worker -l info --concurrency=1
+    startCommand: celery -A app.workers.celery_app:celery_app worker -l info --concurrency=1 -Q celery,dead_letter
     envVars:
       - key: APP_ENV
         sync: false

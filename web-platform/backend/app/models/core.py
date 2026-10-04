@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db import Base
@@ -134,12 +134,18 @@ class Scene(Base):
 
 class ProcessingJob(Base):
     __tablename__ = "processing_jobs"
+    __table_args__ = (
+        Index("ix_processing_jobs_dispatch_due", "job_type", "status", "next_run_at"),
+    )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.id"), index=True)
     job_type: Mapped[str] = mapped_column(String(40))
     status: Mapped[str] = mapped_column(String(40), default="queued")
     progress: Mapped[int] = mapped_column(Integer, default=0)
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
+    max_retries: Mapped[int] = mapped_column(Integer, default=3, server_default=text("3"), nullable=False)
+    next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     input_asset_id: Mapped[str | None] = mapped_column(ForeignKey("assets.id"), nullable=True)
     output_asset_id: Mapped[str | None] = mapped_column(ForeignKey("assets.id"), nullable=True)
     error_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
@@ -158,6 +164,30 @@ class ProcessingJob(Base):
         foreign_keys=[output_asset_id],
         back_populates="output_jobs",
     )
+
+
+class FailedJob(Base):
+    __tablename__ = "failed_jobs"
+    __table_args__ = (
+        Index(
+            "uq_failed_jobs_active_processing_job",
+            "processing_job_id",
+            unique=True,
+            postgresql_where=text("resolved_at IS NULL"),
+            sqlite_where=text("resolved_at IS NULL"),
+        ),
+        Index("ix_failed_jobs_dlq_pending", "resolved_at", "dlq_published_at"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    processing_job_id: Mapped[str] = mapped_column(
+        ForeignKey("processing_jobs.id"),
+        nullable=False,
+    )
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    retry_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    dlq_published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Asset(Base):

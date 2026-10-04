@@ -25,6 +25,7 @@ def _fail(job: ProcessingJob, code: str, message: str, db: Session) -> Processin
     job.status = "failed"
     job.error_code = code
     job.error_message = message
+    job.last_error = message
     job.completed_at = now()
     episode = db.get(Episode, job.episode_id)
     if episode and episode.status in {"processing", "subtitle_review"}:
@@ -92,7 +93,8 @@ def run_real_job(job_id: str, db: Session, *, already_claimed: bool = False) -> 
     job.input_asset_id = input_asset.id
     job.status = "running"
     job.progress = 5
-    job.started_at = now()
+    if not already_claimed:
+        job.started_at = now()
     job.error_code = None
     job.error_message = None
     if episode.status == "in_production":

@@ -133,7 +133,10 @@ jobs:
         run: test -f package-lock.json
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run build
+      - name: Build frontend with CI API URL
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000/api/v1
+        run: npm run build
       - name: Start frontend
         run: |
           NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run start > /tmp/narrativ-frontend.log 2>&1 &

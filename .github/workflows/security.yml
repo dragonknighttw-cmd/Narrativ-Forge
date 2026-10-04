@@ -39,6 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
       security-events: write
     steps:
       - uses: actions/checkout@v4
@@ -54,6 +55,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build backend image
         run: docker build --tag narrativ-forge-backend:ci --file web-platform/backend/Dockerfile web-platform/backend
+      - name: Free disposable Docker build cache
+        run: docker builder prune --all --force
       - name: Scan backend image for vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
         with:

@@ -1,4 +1,4 @@
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     whisper_model: str = "small"
     processing_timeout_seconds: int = 3600
     processing_timeout_grace_seconds: int = 10
+    worker_max_concurrency: int = Field(default=1, ge=1)
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

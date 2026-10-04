@@ -12,6 +12,7 @@ from .. import db as app_db
 from ..models import FailedJob, ProcessingJob
 from ..services.audit import record_event
 from ..services.real_processing import run_real_job
+from . import concurrency
 
 logger = logging.getLogger(__name__)
 INITIAL_RETRY_DELAY_SECONDS = 60
@@ -170,41 +171,42 @@ def publish_dead_letter(celery_app, db: Session, failed_job_id: str) -> bool:
 def register_tasks(celery_app):
     @celery_app.task(name="narrativ.process_real_job")
     def process_real_job_task(job_id: str) -> str:
-        db: Optional[Session] = None
-        try:
-            db = app_db.SessionLocal()
-            job = db.get(ProcessingJob, job_id)
-            if not job:
-                raise RuntimeError("Processing job not found")
-            if job.status in {"completed", "running", "failed"}:
-                return job.id
-
-            claimed_at = _now()
-            if not _claim_job(db, job_id, claimed_at):
-                return job_id
-
+        with concurrency.processing_semaphore.acquire():
+            db: Optional[Session] = None
             try:
-                result = run_real_job(job_id, db, already_claimed=True)
-                if result.status == "failed":
-                    reason = result.last_error or result.error_message or result.error_code or "Processing failed"
-                    outcome, failed_job_id = handle_attempt_failure(db, job_id, claimed_at, reason)
-                else:
-                    outcome, failed_job_id = "completed", None
-                    db.execute(
-                        update(ProcessingJob)
-                        .where(ProcessingJob.id == job_id, ProcessingJob.status == "completed")
-                        .values(last_error=None, next_run_at=None)
-                    )
-                    db.commit()
-            except Exception as exc:
-                outcome, failed_job_id = handle_attempt_failure(db, job_id, claimed_at, str(exc))
+                db = app_db.SessionLocal()
+                job = db.get(ProcessingJob, job_id)
+                if not job:
+                    raise RuntimeError("Processing job not found")
+                if job.status in {"completed", "running", "failed"}:
+                    return job.id
 
-            if outcome == "exhausted" and failed_job_id is not None:
-                publish_dead_letter(celery_app, db, failed_job_id)
-            return job_id
-        finally:
-            if db is not None:
-                db.close()
+                claimed_at = _now()
+                if not _claim_job(db, job_id, claimed_at):
+                    return job_id
+
+                try:
+                    result = run_real_job(job_id, db, already_claimed=True)
+                    if result.status == "failed":
+                        reason = result.last_error or result.error_message or result.error_code or "Processing failed"
+                        outcome, failed_job_id = handle_attempt_failure(db, job_id, claimed_at, reason)
+                    else:
+                        outcome, failed_job_id = "completed", None
+                        db.execute(
+                            update(ProcessingJob)
+                            .where(ProcessingJob.id == job_id, ProcessingJob.status == "completed")
+                            .values(last_error=None, next_run_at=None)
+                        )
+                        db.commit()
+                except Exception as exc:
+                    outcome, failed_job_id = handle_attempt_failure(db, job_id, claimed_at, str(exc))
+
+                if outcome == "exhausted" and failed_job_id is not None:
+                    publish_dead_letter(celery_app, db, failed_job_id)
+                return job_id
+            finally:
+                if db is not None:
+                    db.close()
 
     @celery_app.task(name="narrativ.dead_letter")
     def dead_letter_notification_task(job_id: str) -> str:

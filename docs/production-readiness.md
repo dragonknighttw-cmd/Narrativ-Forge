@@ -51,6 +51,23 @@ an exhausted job resolves its active failed-job record and resets the retry
 counter. A worker crash can still leave a job in `running`; automatic abandoned
 job recovery is not implemented.
 
+## Real-processing worker concurrency
+
+`WORKER_MAX_CONCURRENCY` configures the Celery worker's bounded process pool
+and a process-shared semaphore used only by real-processing tasks; it defaults
+to `1`. Values must be positive integers; zero, negative, and non-integer
+values fail configuration validation. Both limits together cap expensive work
+at the lower of the pool size and semaphore limit; the semaphore protects the
+per-instance limit if the Celery pool is configured larger. The setting limits
+work per Celery worker instance, not across the deployment: three instances
+set to `1` can process up to three jobs concurrently. Each running task
+occupies one pool slot until real processing, including timeout process
+cleanup, returns. Jobs beyond available slots wait for Celery capacity instead
+of starting more processing subprocess trees. This limits concurrent
+FFmpeg/Whisper process trees, not threads or resource usage inside one such
+process. The worker pool is shared with dead-letter notifications, which do not
+acquire the processing semaphore.
+
 ## Backup and restore
 
 SQLite development backup:

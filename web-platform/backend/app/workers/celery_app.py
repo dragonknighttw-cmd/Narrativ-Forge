@@ -27,6 +27,7 @@ def make_celery(broker_url: Optional[str] = None) -> Celery:
         timezone="UTC",
         enable_utc=True,
         task_track_started=False,
+        worker_concurrency=settings.worker_max_concurrency,
     )
     from .tasks import register_tasks
 

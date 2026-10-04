@@ -343,35 +343,39 @@ class LocalStorageProvider:
             raise StorageError("Unable to abort local multipart upload") from exc
 
 
-class B2StorageProvider:
+class S3CompatibleStorageProvider:
     name = "b2"
 
-    def __init__(self):
-        if not all([
-            settings.b2_application_key_id,
-            settings.b2_application_key,
-            settings.b2_bucket_name,
-            settings.b2_region,
-        ]):
-            raise StorageError("B2 storage is not configured")
+    def __init__(
+        self,
+        *,
+        access_key_id: str,
+        secret_access_key: str,
+        bucket_name: str,
+        region: str,
+        endpoint_url: str,
+        signed_url_expiry_seconds: int,
+    ):
+        if not all([access_key_id, secret_access_key, bucket_name, region, endpoint_url]):
+            raise StorageError(f"{self.name.upper()} storage is not configured")
         try:
             import boto3
             from botocore.config import Config
             from botocore.exceptions import ClientError
         except ImportError as exc:
-            raise StorageError("boto3 is required for B2 storage") from exc
+            raise StorageError("boto3 is required for S3-compatible storage") from exc
 
-        endpoint = settings.b2_endpoint_url or f"https://s3.{settings.b2_region}.backblazeb2.com"
         self.client = boto3.client(
             "s3",
-            endpoint_url=endpoint,
-            aws_access_key_id=settings.b2_application_key_id,
-            aws_secret_access_key=settings.b2_application_key,
-            region_name=settings.b2_region,
+            endpoint_url=endpoint_url,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key,
+            region_name=region,
             config=Config(signature_version="s3v4"),
         )
         self._client_error = ClientError
-        self.bucket = settings.b2_bucket_name
+        self.bucket = bucket_name
+        self.signed_url_expiry_seconds = signed_url_expiry_seconds
 
     def upload_file(self, source: Path, object_key: str, content_type: str) -> StoredObject:
         key = _safe_object_key(object_key)
@@ -437,7 +441,7 @@ class B2StorageProvider:
             return self.client.generate_presigned_url(
                 "get_object",
                 Params={"Bucket": self.bucket, "Key": key},
-                ExpiresIn=settings.b2_signed_url_expiry_seconds,
+                ExpiresIn=self.signed_url_expiry_seconds,
             )
         except Exception as exc:
             raise StorageError("B2 download URL generation failed") from exc
@@ -612,10 +616,40 @@ class B2StorageProvider:
             raise StorageError("B2 multipart upload abort failed") from exc
 
 
+
+class B2StorageProvider(S3CompatibleStorageProvider):
+    name = "b2"
+
+    def __init__(self):
+        super().__init__(
+            access_key_id=settings.b2_application_key_id,
+            secret_access_key=settings.b2_application_key,
+            bucket_name=settings.b2_bucket_name,
+            region=settings.b2_region,
+            endpoint_url=settings.b2_endpoint_url or f"https://s3.{settings.b2_region}.backblazeb2.com",
+            signed_url_expiry_seconds=settings.b2_signed_url_expiry_seconds,
+        )
+
+
+class StorjStorageProvider(S3CompatibleStorageProvider):
+    name = "storj"
+
+    def __init__(self):
+        super().__init__(
+            access_key_id=settings.storj_access_key_id,
+            secret_access_key=settings.storj_secret_access_key,
+            bucket_name=settings.storj_bucket_name,
+            region=settings.storj_region,
+            endpoint_url=settings.storj_endpoint_url,
+            signed_url_expiry_seconds=settings.storj_signed_url_expiry_seconds,
+        )
+
 def get_storage(provider: str | None = None) -> StorageProvider:
     selected = (provider or settings.storage_provider).lower()
     if selected == "local":
         return LocalStorageProvider()
+    if selected == "storj":
+        return StorjStorageProvider()
     if selected == "b2":
         return B2StorageProvider()
     raise StorageError(f"Unsupported storage provider: {selected}")

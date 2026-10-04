@@ -12,8 +12,8 @@
 - Deploy the FastAPI API and real-processing worker on Render with the same application revision.
 - Use PostgreSQL for production rather than the SQLite development default.
 - Provision managed PostgreSQL and Redis and configure both services securely; see the [managed services provisioning guide](../infra/managed-services.md).
-- Use Backblaze B2 as the production media object store (`STORAGE_PROVIDER=b2`); Render local disk is only temporary processing space.
-- Configure a private B2 bucket, bucket-scoped S3-compatible application key, region, and endpoint. Keep B2 credentials outside Git.
+- Use Storj DCS as the production media object store (`STORAGE_PROVIDER=storj`); Render local disk is only temporary processing space.
+- Configure a private Storj bucket, bucket-scoped S3-compatible application key, region, and endpoint. Keep Storj credentials outside Git.
 - Persist each asset's storage provider, immutable object key, SHA-256 checksum, and byte size in PostgreSQL.
 - Source, processed, transcript, and future revisions use separate versioned object keys; source objects are never overwritten by processing.
 - Put a real edge/proxy rate limiter in front of the API. The application has a small in-process baseline limiter, but it is not shared across multiple workers/instances.
@@ -88,7 +88,7 @@ part numbers and byte offsets. The API streams each request into a bounded
 single-part buffer, stores part checksums and provider ETags, and only creates
 an asset after all contiguous parts have been verified and completed. The
 default part size is 8 MiB; configure `UPLOAD_CHUNK_SIZE_BYTES` at 5 MiB or
-larger for B2 compatibility. `UPLOAD_SESSION_TTL_SECONDS` defaults to 24 hours.
+larger for Storj compatibility. `UPLOAD_SESSION_TTL_SECONDS` defaults to 24 hours.
 The existing `MAX_UPLOAD_SIZE_BYTES` limit remains in force, and uploads are
 also capped by the signed 32-bit size limit of the current Asset schema.
 Session ownership is enforced on resume, chunk, commit, and abort operations.
@@ -155,5 +155,5 @@ Only `APP_ENV=development` may create tables automatically at application startu
 - Production authentication is now database-backed with PBKDF2 password hashes, signed expiring sessions, owner/editor/viewer roles, and owner-only invites. The first owner is created explicitly with `scripts/bootstrap_admin.py`; remove bootstrap secrets after provisioning.
 - Alembic is now the production schema migration mechanism. The first baseline is `0001_bootstrap`; every subsequent schema change must ship as a reviewed Alembic revision.
 - Real Google Drive OAuth/export and real FFmpeg/Whisper require environment-level credentials/binaries and have not been proven by CI.
-- Render + Netlify are now the target deployment providers, with Backblaze B2 as the shared durable media store for both API and worker.
-- B2 credentials/bucket configuration and a real upload/download/delete smoke test still require environment-level provisioning; no cloud credentials are stored in the repository.
+- Render + Netlify are now the target deployment providers, with Storj DCS as the shared durable media store for both API and worker.
+- Storj credentials/bucket configuration and a real upload/download/delete smoke test still require environment-level provisioning; no cloud credentials are stored in the repository.

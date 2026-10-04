@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     upload_session_ttl_seconds: int = Field(default=86400, ge=3600, le=604800)
     idempotency_ttl_seconds: int = Field(default=86400, ge=60, le=2592000)
     storage_provider: str = "local"
+    storj_access_key_id: str = ""
+    storj_secret_access_key: str = ""
+    storj_bucket_name: str = ""
+    storj_region: str = "global"
+    storj_endpoint_url: str = "https://gateway.storjshare.io"
+    storj_signed_url_expiry_seconds: int = 900
+    # Legacy B2 settings remain readable for data migration/legacy asset access.
     b2_application_key_id: str = ""
     b2_application_key: str = ""
     b2_bucket_name: str = ""
@@ -64,18 +71,19 @@ class Settings(BaseSettings):
             raise RuntimeError("CORS_ORIGINS must contain at least one allowed origin in production")
         if not self.trusted_host_list:
             raise RuntimeError("TRUSTED_HOSTS must contain at least one allowed host in production")
-        if self.storage_provider.lower() != "b2":
-            raise RuntimeError("STORAGE_PROVIDER must be b2 in production")
-        if self.storage_provider.lower() == "b2":
+        if self.storage_provider.lower() != "storj":
+            raise RuntimeError("STORAGE_PROVIDER must be storj in production")
+        if self.storage_provider.lower() == "storj":
             required = {
-                "B2_APPLICATION_KEY_ID": self.b2_application_key_id,
-                "B2_APPLICATION_KEY": self.b2_application_key,
-                "B2_BUCKET_NAME": self.b2_bucket_name,
-                "B2_REGION": self.b2_region,
+                "STORJ_ACCESS_KEY_ID": self.storj_access_key_id,
+                "STORJ_SECRET_ACCESS_KEY": self.storj_secret_access_key,
+                "STORJ_BUCKET_NAME": self.storj_bucket_name,
+                "STORJ_REGION": self.storj_region,
+                "STORJ_ENDPOINT_URL": self.storj_endpoint_url,
             }
             missing = [name for name, value in required.items() if not value]
             if missing:
-                raise RuntimeError("B2 storage configuration missing: " + ", ".join(missing))
+                raise RuntimeError("Storj storage configuration missing: " + ", ".join(missing))
 
 
 settings = Settings()

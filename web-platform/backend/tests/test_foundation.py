@@ -810,7 +810,7 @@ def test_upload_persists_storage_object_metadata(tmp_path):
 
 @pytest.mark.integration
 @pytest.mark.security
-def test_production_storage_gate_requires_b2_configuration(monkeypatch):
+def test_production_storage_gate_requires_storj_configuration(monkeypatch):
     from app.core.config import Settings
 
     settings_obj = Settings(
@@ -821,37 +821,37 @@ def test_production_storage_gate_requires_b2_configuration(monkeypatch):
         cors_origins="https://app.example.com",
         trusted_hosts="api.example.com",
         oauth_encryption_key="y" * 32,
-        storage_provider="b2",
+        storage_provider="storj",
     )
     try:
         settings_obj.validate_runtime()
-        assert False, "expected missing B2 configuration to be rejected"
+        assert False, "expected missing Storj configuration to be rejected"
     except RuntimeError as exc:
-        assert "B2 storage configuration missing" in str(exc)
+        assert "Storj storage configuration missing" in str(exc)
 
 
 @pytest.mark.integration
-def test_b2_storage_integration_roundtrip_when_configured(tmp_path):
+def test_storj_storage_integration_roundtrip_when_configured(tmp_path):
     import os
     from app.services.storage import get_storage
 
     required = [
-        os.getenv("B2_APPLICATION_KEY_ID"),
-        os.getenv("B2_APPLICATION_KEY"),
-        os.getenv("B2_BUCKET_NAME"),
-        os.getenv("B2_REGION"),
+        os.getenv("STORJ_ACCESS_KEY_ID"),
+        os.getenv("STORJ_SECRET_ACCESS_KEY"),
+        os.getenv("STORJ_BUCKET_NAME"),
+        os.getenv("STORJ_REGION"),
     ]
     if not all(required):
-        pytest.skip("B2 integration credentials are not configured")
+        pytest.skip("Storj integration credentials are not configured")
 
-    provider = get_storage("b2")
-    source = tmp_path / "b2-fixture.bin"
-    source.write_bytes(b"narrativ-forge-b2-integration")
+    provider = get_storage("storj")
+    source = tmp_path / "storj-fixture.bin"
+    source.write_bytes(b"narrativ-forge-storj-integration")
     key = f"tests/{uuid4().hex}/fixture.bin"
 
     try:
         stored = provider.upload_file(source, key, "application/octet-stream")
-        assert stored.provider == "b2"
+        assert stored.provider == "storj"
         assert stored.size_bytes == source.stat().st_size
         assert provider.exists(key)
 

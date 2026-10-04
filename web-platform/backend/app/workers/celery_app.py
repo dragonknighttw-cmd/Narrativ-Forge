@@ -19,6 +19,12 @@ def make_celery(broker_url: Optional[str] = None) -> Celery:
         raise RuntimeError("REDIS_URL must be configured to create the Celery broker")
 
     app = Celery("narrativ", broker=broker)
+    app.conf.beat_schedule = {
+        "purge-deleted-assets": {
+            "task": "narrativ.purge_deleted_assets",
+            "schedule": 3600.0,
+        },
+    }
     # Minimal, safe configuration
     app.conf.update(
         task_serializer="json",

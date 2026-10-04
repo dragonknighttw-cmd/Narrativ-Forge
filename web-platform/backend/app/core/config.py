@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     storj_region: str = "global"
     storj_endpoint_url: str = "https://gateway.storjshare.io"
     storj_signed_url_expiry_seconds: int = 900
+    asset_retention_days: int = 30
+    temp_file_retention_hours: int = 24
     # Legacy B2 settings remain readable for data migration/legacy asset access.
     b2_application_key_id: str = ""
     b2_application_key: str = ""

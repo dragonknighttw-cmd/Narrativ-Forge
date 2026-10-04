@@ -14,6 +14,7 @@ from .. import db as app_db
 from .. import metrics
 from ..models import FailedJob, ProcessingJob
 from ..services.audit import record_event
+from ..services.asset_gc import purge_deleted_assets
 from ..services.real_processing import run_real_job
 from . import concurrency
 
@@ -235,6 +236,16 @@ def register_tasks(celery_app):
             finally:
                 if db is not None:
                     db.close()
+
+
+
+    @celery_app.task(name="narrativ.purge_deleted_assets")
+    def purge_deleted_assets_task():
+        db = SessionLocal()
+        try:
+            return purge_deleted_assets(db)
+        finally:
+            db.close()
 
     @celery_app.task(name="narrativ.dead_letter")
     def dead_letter_notification_task(job_id: str) -> str:

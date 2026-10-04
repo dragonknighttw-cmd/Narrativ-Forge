@@ -11,3 +11,6 @@ httpx>=0.27,<1
 cryptography>=50,<51
 alembic>=1.16,<2
 boto3==1.43.107
+setuptools>=78.1.1,<81
+urllib3>=2.8.0,<3
+msgpack>=1.2.1,<2

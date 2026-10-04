@@ -1007,3 +1007,33 @@ def test_historical_script_version_is_immutable():
         assert response.json()["detail"]["code"] == "HISTORICAL_SCRIPT_IMMUTABLE"
     finally:
         client.close()
+
+
+@pytest.mark.integration
+def test_export_state_compare_and_set_blocks_second_export_claim():
+    client = auth_client()
+    try:
+        series = client.post("/api/v1/series", json={"title": "Export CAS series"}).json()
+        episode = client.post(
+            "/api/v1/episodes",
+            json={"series_id": series["id"], "episode_number": 1, "title": "Export CAS episode"},
+        ).json()
+        moved = client.patch(
+            f"/api/v1/episodes/{episode['id']}",
+            json={"status": "approved", "expected_row_version": episode["row_version"]},
+        )
+        assert moved.status_code == 200
+
+        from app.db import SessionLocal
+        from app.api.routes.export import _claim_export
+
+        db = SessionLocal()
+        try:
+            _claim_export(db, episode["id"], expected_status="approved")
+            with pytest.raises(Exception) as exc_info:
+                _claim_export(db, episode["id"], expected_status="approved")
+            assert getattr(exc_info.value, "status_code", None) == 409
+        finally:
+            db.close()
+    finally:
+        client.close()

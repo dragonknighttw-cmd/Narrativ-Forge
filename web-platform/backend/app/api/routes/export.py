@@ -7,6 +7,7 @@ from pathlib import Path
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import update
 
 from ...core.config import settings
 from ...db import get_db
@@ -34,6 +35,30 @@ def _record(db, episode_id: str, provider: str):
 
 def _manifest(record: ExportRecord) -> dict:
     return json.loads(record.manifest_json or "{}")
+
+
+def _claim_export(db: Session, episode_id: str, *, expected_status: str) -> Episode:
+    result = db.execute(
+        update(Episode)
+        .where(Episode.id == episode_id, Episode.status == expected_status)
+        .values(status="exporting", current_step="output")
+    )
+    if result.rowcount != 1:
+        db.rollback()
+        current = db.get(Episode, episode_id)
+        if not current:
+            raise HTTPException(status_code=404, detail="Episode not found")
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "EXPORT_STATE_CHANGED",
+                "message": "Episode export state changed; refresh and retry",
+                "current": current,
+            },
+        )
+    db.commit()
+    db.refresh(db.get(Episode, episode_id))
+    return db.get(Episode, episode_id)
 
 
 @router.get("/{episode_id}/export")
@@ -84,6 +109,9 @@ def mock_drive_export(episode_id: str, user=Depends(require_roles("owner", "edit
         return {"status": "completed", "id": record.id, "manifest": _manifest(record)}
     if episode.status != "approved":
         raise HTTPException(status_code=409, detail="Episode must be approved before Drive export")
+
+    _claim_export(db, episode_id, expected_status="approved")
+    episode = _episode(db, episode_id)
 
     subtitle = db.query(Subtitle).filter(
         Subtitle.episode_id == episode_id,
@@ -150,6 +178,13 @@ async def google_drive_export(episode_id: str, user=Depends(require_roles("owner
         return {"status": "completed", "id": record.id, "manifest": _manifest(record)}
     if episode.status != "approved" and not retrying_failed_export:
         raise HTTPException(status_code=409, detail="Episode must be approved before Drive export")
+
+    _claim_export(
+        db,
+        episode_id,
+        expected_status="failed" if retrying_failed_export else "approved",
+    )
+    episode = _episode(db, episode_id)
 
     subtitle = db.query(Subtitle).filter(
         Subtitle.episode_id == episode_id,

@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     whisper_command: str = "whisper"
     whisper_model: str = "small"
     processing_timeout_seconds: int = 3600
+    processing_timeout_grace_seconds: int = 10
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

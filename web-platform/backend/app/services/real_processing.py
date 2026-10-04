@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
+import signal
 import subprocess
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -15,6 +19,8 @@ from ..core.config import settings
 from ..models import Asset, Episode, ProcessingJob
 from .storage import StorageError, build_object_key, get_storage, materialize_asset
 from .subtitles import generate_subtitle_for_episode
+
+logger = logging.getLogger(__name__)
 
 
 def now() -> datetime:
@@ -36,8 +42,130 @@ def _fail(job: ProcessingJob, code: str, message: str, db: Session) -> Processin
     return job
 
 
+def _posix_process_group_exists(process_group_id: int) -> bool:
+    try:
+        os.killpg(process_group_id, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _send_windows_tree_signal(process_id: int, *, force: bool) -> bool:
+    command = ["taskkill", "/PID", str(process_id), "/T"]
+    if force:
+        command.append("/F")
+    try:
+        killer = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        killer.communicate()
+    except OSError:
+        logger.exception("Could not terminate Windows processing process tree pid=%s", process_id)
+        return False
+    if killer.returncode != 0:
+        logger.warning(
+            "Windows process-tree termination returned %s for pid=%s",
+            killer.returncode,
+            process_id,
+        )
+    return killer.returncode == 0
+
+
+def _terminate_and_collect(
+    process: subprocess.Popen[str],
+    *,
+    grace_seconds: float,
+) -> tuple[str | None, str | None]:
+    if os.name == "posix":
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+
+        deadline = time.monotonic() + grace_seconds
+        while _posix_process_group_exists(process.pid) and time.monotonic() < deadline:
+            process.poll()
+            time.sleep(min(0.05, max(0, deadline - time.monotonic())))
+
+        if _posix_process_group_exists(process.pid):
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+    else:
+        try:
+            process.send_signal(signal.CTRL_BREAK_EVENT)
+        except (AttributeError, OSError):
+            _send_windows_tree_signal(process.pid, force=False)
+
+        _send_windows_tree_signal(process.pid, force=False)
+        try:
+            process.wait(timeout=grace_seconds)
+        except subprocess.TimeoutExpired:
+            pass
+        _send_windows_tree_signal(process.pid, force=True)
+        if process.poll() is None:
+            try:
+                process.kill()
+            except OSError:
+                logger.exception("Could not terminate Windows processing process pid=%s", process.pid)
+
+    return process.communicate()
+
+
 def _run(command: list[str], *, timeout: int) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, check=True, capture_output=True, text=True, timeout=timeout)
+    process_options: dict[str, object] = {
+        "stdout": subprocess.PIPE,
+        "stderr": subprocess.PIPE,
+        "text": True,
+    }
+    if os.name == "posix":
+        process_options["preexec_fn"] = os.setsid
+    else:
+        process_options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+
+    process = subprocess.Popen(command, **process_options)
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        try:
+            stdout, stderr = _terminate_and_collect(
+                process,
+                grace_seconds=settings.processing_timeout_grace_seconds,
+            )
+        except BaseException:
+            logger.exception("Failed to fully clean up timed-out processing process pid=%s", process.pid)
+            raise subprocess.TimeoutExpired(
+                command,
+                timeout,
+                output=exc.output,
+                stderr=exc.stderr,
+            ) from exc
+        raise subprocess.TimeoutExpired(
+            command,
+            timeout,
+            output=stdout,
+            stderr=stderr,
+        ) from exc
+    except BaseException:
+        try:
+            _terminate_and_collect(
+                process,
+                grace_seconds=settings.processing_timeout_grace_seconds,
+            )
+        except BaseException:
+            logger.exception("Failed to clean up interrupted processing process pid=%s", process.pid)
+        raise
+
+    result = subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+    if process.returncode:
+        raise subprocess.CalledProcessError(
+            process.returncode,
+            command,
+            output=stdout,
+            stderr=stderr,
+        )
+    return result
 
 
 def _source_asset(db: Session, episode: Episode, job: ProcessingJob) -> Asset | None:

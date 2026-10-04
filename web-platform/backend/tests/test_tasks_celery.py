@@ -404,7 +404,7 @@ def test_retry_delay_is_capped_exponential():
     assert retry_delay_seconds(7) == 3600
 
 
-def test_failed_return_schedules_retry(testing_db, monkeypatch):
+def test_processing_timeout_failure_schedules_retry(testing_db, monkeypatch):
     celery = make_test_celery()
     task = tasks_module.register_tasks(celery)
     Session = testing_db
@@ -422,8 +422,9 @@ def test_failed_return_schedules_retry(testing_db, monkeypatch):
         assert already_claimed
         processing_job = task_db.get(ProcessingJob, job_id_arg)
         processing_job.status = "failed"
-        processing_job.error_code = "PROCESSING_IO_ERROR"
-        processing_job.error_message = "temporary failure"
+        processing_job.error_code = "PROCESSING_TIMEOUT"
+        processing_job.error_message = "processing timeout"
+        processing_job.last_error = "processing timeout"
         processing_job.completed_at = datetime.now(timezone.utc)
         task_db.commit()
         return processing_job
@@ -435,7 +436,8 @@ def test_failed_return_schedules_retry(testing_db, monkeypatch):
     failed_job = verify.get(ProcessingJob, job_id)
     assert failed_job.status == "queued"
     assert failed_job.retry_count == 1
-    assert failed_job.last_error == "temporary failure"
+    assert failed_job.error_code == "PROCESSING_TIMEOUT"
+    assert failed_job.last_error == "processing timeout"
     assert failed_job.next_run_at is not None
     verify.close()
 

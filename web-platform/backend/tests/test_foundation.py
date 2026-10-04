@@ -476,7 +476,10 @@ def test_real_processing_pipeline_creates_render_and_whisper_assets(monkeypatch,
     db.add(job)
     db.commit()
 
+    seen_timeouts = []
+
     def fake_run(command, *, timeout):
+        seen_timeouts.append(timeout)
         if "ffprobe" in command[0]:
             return type("Result", (), {"stdout": '{"streams":[{"codec_type":"video","width":1080,"height":1920},{"codec_type":"audio"}],"format":{"duration":"2.0"}}', "stderr": ""})()
         output = Path(command[-1])
@@ -500,6 +503,7 @@ def test_real_processing_pipeline_creates_render_and_whisper_assets(monkeypatch,
     assert db.get(Episode, episode.id).status == "subtitle_review"
     output = db.get(Asset, result.output_asset_id)
     assert output.asset_type == "processed_video"
+    assert seen_timeouts == [real_processing.settings.processing_timeout_seconds] * 3
     assert Path(output.local_path).read_bytes() == b"rendered"
     transcript = db.query(Asset).filter(Asset.episode_id == episode.id, Asset.asset_type == "transcript").one()
     assert "မြန်မာ" in Path(transcript.local_path).read_text(encoding="utf-8")

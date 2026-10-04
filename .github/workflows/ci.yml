@@ -70,17 +70,17 @@ jobs:
           BOOTSTRAP_ADMIN_EMAIL=admin@narrativ.local DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python scripts/bootstrap_admin.py
           CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000 PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &
           python - <<'PY'
-import time
-import urllib.request
-for _ in range(30):
-    try:
-        urllib.request.urlopen("http://127.0.0.1:8000/api/v1/health", timeout=2)
-        break
-    except Exception:
-        time.sleep(1)
-else:
-    raise SystemExit("backend did not become ready")
-PY
+          import time
+          import urllib.request
+          for _ in range(30):
+              try:
+                  urllib.request.urlopen("http://127.0.0.1:8000/api/v1/health", timeout=2)
+                  break
+              except Exception:
+                  time.sleep(1)
+          else:
+              raise SystemExit("backend did not become ready")
+          PY
       - uses: actions/setup-node@v4
         with:
           node-version: "20"

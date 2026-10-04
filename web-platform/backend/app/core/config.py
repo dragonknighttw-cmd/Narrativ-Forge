@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_env: str = "development"
     database_url: str = "sqlite:///./narrativ_forge.db"
+    redis_url: str | None = None
     bootstrap_admin_email: str = ""
     bootstrap_admin_password: str = ""
     session_secret: str = ""

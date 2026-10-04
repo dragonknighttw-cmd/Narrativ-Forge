@@ -1,8 +1,15 @@
 from sqlalchemy import create_engine, event, make_url
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, URL
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from .core.config import settings
+
+
+def normalize_database_url(database_url: str) -> URL:
+    url = make_url(database_url)
+    if url.get_backend_name() == "postgres":
+        return url.set(drivername="postgresql")
+    return url
 
 
 def _set_sqlite_foreign_keys(dbapi_connection, _connection_record):
@@ -12,7 +19,7 @@ def _set_sqlite_foreign_keys(dbapi_connection, _connection_record):
 
 
 def create_database_engine(database_url: str) -> Engine:
-    url = make_url(database_url)
+    url = normalize_database_url(database_url)
     is_sqlite = url.get_backend_name() == "sqlite"
     engine = create_engine(
         url,

@@ -221,8 +221,8 @@ def consume_magic_link(payload: MagicLinkConsume, response: Response, db: Sessio
     record.consumed_at = _now()
     db.commit()
     response.set_cookie(
-        key="nf_session", value=issue_session(user.email, user.role),
-        httponly=True, secure=False, samesite="strict", max_age=8 * 3600, path="/",
+        key=settings.session_cookie_name, value=issue_session(user.email, user.role),
+        httponly=True, secure=settings.session_cookie_secure, samesite="strict", max_age=settings.session_ttl_seconds, path="/",
     )
     return {"authenticated": True, "user": {"id": user.id, "email": user.email, "role": user.role}}
 
@@ -334,6 +334,8 @@ class NotificationCreate(BaseModel):
 @router.post("/webhooks")
 def create_webhook(payload: WebhookCreate, membership=Depends(current_membership), db: Session = Depends(get_db)):
     secret = secrets.token_urlsafe(32)
+    if not settings.oauth_encryption_key:
+        raise HTTPException(status_code=503, detail="Webhook secret encryption is not configured")
     endpoint = WebhookEndpoint(
         organization_id=membership.organization_id,
         url=payload.url.strip(),
@@ -384,6 +386,37 @@ def list_notifications(membership=Depends(current_membership), db: Session = Dep
     return rows
 
 
+@router.post("/billing/checkout")
+def create_checkout(plan: str, membership=Depends(current_membership), user=Depends(require_roles("owner")), db: Session = Depends(get_db)):
+    if plan not in {"pro", "business"}:
+        raise HTTPException(status_code=422, detail="Only paid plans can use Stripe Checkout")
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Stripe billing is not configured")
+    price_id = settings.stripe_price_pro if plan == "pro" else settings.stripe_price_business
+    if not price_id:
+        raise HTTPException(status_code=503, detail=f"Stripe price is not configured for {plan}")
+    import stripe
+    stripe.api_key = settings.stripe_secret_key
+    sub = db.query(BillingSubscription).filter(BillingSubscription.organization_id == membership.organization_id).first()
+    if not sub:
+        sub = BillingSubscription(organization_id=membership.organization_id)
+        db.add(sub)
+        db.flush()
+    if not sub.external_customer_id:
+        customer = stripe.Customer.create(email=user["email"], metadata={"organization_id": membership.organization_id})
+        sub.external_customer_id = customer.id
+        sub.provider = "stripe"
+        db.commit()
+    session = stripe.checkout.Session.create(
+        mode="subscription", customer=sub.external_customer_id,
+        line_items=[{"price": price_id, "quantity": 1}],
+        success_url=f"{settings.cors_origin_list[0]}/settings/billing?checkout=success",
+        cancel_url=f"{settings.cors_origin_list[0]}/settings/billing?checkout=cancelled",
+        metadata={"organization_id": membership.organization_id, "plan": plan},
+        subscription_data={"metadata": {"organization_id": membership.organization_id, "plan": plan}},
+    )
+    return {"id": session.id, "url": session.url, "plan": plan}
+
 @router.post("/billing/stripe/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     if not settings.stripe_webhook_secret:
@@ -396,6 +429,11 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     except Exception as exc:
         raise HTTPException(status_code=400, detail="Invalid Stripe webhook") from exc
 
+    event_id = event.get("id")
+    if not event_id:
+        raise HTTPException(status_code=400, detail="Stripe webhook event id is missing")
+    if db.get(StripeWebhookEvent, event_id):
+        return {"received": True, "duplicate": True}
     event_type = event["type"]
     obj = event["data"]["object"]
     customer_id = obj.get("customer")
@@ -413,4 +451,6 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             elif event_type.startswith("customer.subscription."):
                 sub.status = obj.get("status", sub.status)
             db.commit()
+    db.add(StripeWebhookEvent(id=event_id, event_type=event_type))
+    db.commit()
     return {"received": True}

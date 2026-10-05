@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ...db import get_db
 from ...models import Episode, Script
-from ..dependencies import get_current_user, require_roles
+from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["scripts"])
 script_router = APIRouter(prefix="/scripts", tags=["scripts"])
@@ -30,21 +30,21 @@ class ScriptVersionCreate(BaseModel):
     content: str = Field(default="")
 
 
-def _episode_or_404(db: Session, episode_id: str) -> Episode:
-    item = db.get(Episode, episode_id)
+def _episode_or_404(db: Session, episode_id: str, organization_id: str | None = None) -> Episode:
+    item = db.query(Episode).filter(Episode.id == episode_id, *( [Episode.organization_id == organization_id] if organization_id else [] )).first()
     if not item:
         raise HTTPException(status_code=404, detail="Episode not found")
     return item
 
 
 @router.get("/{episode_id}/scripts")
-def list_scripts(episode_id: str, limit: int = Query(default=50, ge=1, le=100), offset: int = Query(default=0, ge=0), _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    _episode_or_404(db, episode_id)
+def list_scripts(episode_id: str, limit: int = Query(default=50, ge=1, le=100), offset: int = Query(default=0, ge=0), membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    _episode_or_404(db, episode_id, membership.organization_id)
     return db.query(Script).filter(Script.episode_id == episode_id).order_by(Script.version.desc()).offset(offset).limit(limit).all()
 
 
 @router.post("/{episode_id}/scripts", status_code=201)
-def create_script(episode_id: str, payload: ScriptCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def create_script(episode_id: str, payload: ScriptCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
     latest = db.query(func.max(Script.version)).filter(Script.episode_id == episode_id).scalar() or 0
     db.query(Script).filter(Script.episode_id == episode_id, Script.is_current.is_(True)).update({Script.is_current: False})
@@ -56,8 +56,8 @@ def create_script(episode_id: str, payload: ScriptCreate, _: dict = Depends(requ
 
 
 @script_router.patch("/{script_id}")
-def update_script(script_id: str, payload: ScriptUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(Script, script_id)
+def update_script(script_id: str, payload: ScriptUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    item = db.query(Script).join(Episode, Script.episode_id == Episode.id).filter(Script.id == script_id, Episode.organization_id == membership.organization_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Script not found")
 
@@ -98,7 +98,7 @@ def update_script(script_id: str, payload: ScriptUpdate, _: dict = Depends(requi
 
 
 @router.post("/{episode_id}/scripts/versions", status_code=201)
-def create_script_version(episode_id: str, payload: ScriptVersionCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def create_script_version(episode_id: str, payload: ScriptVersionCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
     latest = db.query(func.max(Script.version)).filter(Script.episode_id == episode_id).scalar() or 0
     db.query(Script).filter(Script.episode_id == episode_id, Script.is_current.is_(True)).update({Script.is_current: False})

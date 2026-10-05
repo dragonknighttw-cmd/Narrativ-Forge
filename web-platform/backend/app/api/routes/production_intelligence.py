@@ -7,7 +7,7 @@ from sqlalchemy import func
 
 from ...db import get_db
 from ...models import Episode, HookLibrary, ManualProductionLog, SocialAnalyticsRecord, SocialPublication
-from ..dependencies import get_current_user, require_roles
+from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(tags=["production-intelligence"])
 
@@ -138,8 +138,11 @@ def delete_hook(hook_id: str, _: dict = Depends(require_roles("owner", "editor")
 
 
 @router.get("/manual-production-logs")
-def list_production_logs(_: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    return [serialize_log(x) for x in db.query(ManualProductionLog).order_by(ManualProductionLog.created_at.desc()).all()]
+def list_production_logs(membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    rows = (db.query(ManualProductionLog).outerjoin(Episode, ManualProductionLog.episode_id == Episode.id)
+        .filter((ManualProductionLog.episode_id.is_(None)) | (Episode.organization_id == membership.organization_id))
+        .order_by(ManualProductionLog.created_at.desc()).all())
+    return [serialize_log(x) for x in rows]
 
 
 
@@ -170,11 +173,11 @@ class ProductionLogUpdate(BaseModel):
 
 
 @router.patch("/manual-production-logs/{log_id}")
-def update_production_log(log_id: str, payload: ProductionLogUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def update_production_log(log_id: str, payload: ProductionLogUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(ManualProductionLog, log_id)
     if not item:
         raise HTTPException(status_code=404, detail="Production log not found")
-    if payload.episode_id and not db.get(Episode, payload.episode_id):
+    if payload.episode_id and not db.query(Episode).filter(Episode.id == payload.episode_id, Episode.organization_id == membership.organization_id).first():
         raise HTTPException(status_code=404, detail="Episode not found")
     if payload.hook_type and payload.hook_type not in HOOK_TYPES:
         raise HTTPException(status_code=422, detail="Unsupported hook type")
@@ -186,7 +189,7 @@ def update_production_log(log_id: str, payload: ProductionLogUpdate, _: dict = D
 
 
 @router.delete("/manual-production-logs/{log_id}", status_code=204)
-def delete_production_log(log_id: str, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def delete_production_log(log_id: str, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(ManualProductionLog, log_id)
     if not item:
         raise HTTPException(status_code=404, detail="Production log not found")
@@ -196,7 +199,7 @@ def delete_production_log(log_id: str, _: dict = Depends(require_roles("owner", 
 
 
 @router.post("/manual-production-logs", status_code=201)
-def create_production_log(payload: ProductionLogCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def create_production_log(payload: ProductionLogCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     if payload.episode_id and not db.get(Episode, payload.episode_id):
         raise HTTPException(status_code=404, detail="Episode not found")
     if payload.hook_type and payload.hook_type not in HOOK_TYPES:
@@ -235,14 +238,14 @@ class PublicationUpdate(PublicationCreate):
 
 
 @router.get("/episodes/{episode_id}/social-prep")
-def list_social_prep(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    if not db.get(Episode, episode_id):
+def list_social_prep(episode_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    if not db.query(Episode).filter(Episode.id == episode_id, Episode.organization_id == membership.organization_id).first():
         raise HTTPException(status_code=404, detail="Episode not found")
     return [serialize_publication(x) for x in db.query(SocialPublication).filter(SocialPublication.episode_id == episode_id).order_by(SocialPublication.created_at.desc()).all()]
 
 
 @router.post("/social-prep", status_code=201)
-def create_social_prep(payload: PublicationCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def create_social_prep(payload: PublicationCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     if not db.get(Episode, payload.episode_id):
         raise HTTPException(status_code=404, detail="Episode not found")
     errors = validate_publication_payload(payload.platform, payload.caption, payload.hashtags)
@@ -261,7 +264,7 @@ def create_social_prep(payload: PublicationCreate, _: dict = Depends(require_rol
 
 
 @router.patch("/social-prep/{publication_id}")
-def update_social_prep(publication_id: str, payload: PublicationUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def update_social_prep(publication_id: str, payload: PublicationUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(SocialPublication, publication_id)
     if not item:
         raise HTTPException(status_code=404, detail="Social preparation not found")

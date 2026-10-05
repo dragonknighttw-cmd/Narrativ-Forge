@@ -17,8 +17,6 @@ services:
         sync: false
       - key: SENTRY_DSN
         sync: false
-      - key: FRONTEND_BASE_URL
-        sync: false
       - key: SESSION_COOKIE_SECURE
         value: "true"
       - key: CORS_ORIGINS
@@ -94,7 +92,7 @@ services:
       - key: UPLOAD_DIR
         value: /var/lib/narrativ-forge/uploads
       - key: STORAGE_PROVIDER
-        value: b2
+        value: cloudinary
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
@@ -115,6 +113,28 @@ services:
         value: small
       - key: PROCESSING_TIMEOUT_SECONDS
         value: "3600"
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_USE_TLS
+        value: "true"
+      - key: FRONTEND_BASE_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_PRO
+        sync: false
+      - key: STRIPE_PRICE_BUSINESS
+        sync: false
 
   - type: worker
     name: narrativ-forge-celery-worker

@@ -7,7 +7,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.db import Base, get_db
-from app.models import User
+from app.models import Organization, OrganizationMembership, User
 from app.services.passwords import hash_password
 from client_utils import create_test_client
 
@@ -29,6 +29,20 @@ def override_db():
 app.dependency_overrides[get_db] = override_db
 
 def auth_client():
+    with TestingSession() as db:
+        organization = db.query(Organization).filter(Organization.slug == "test-workspace").first()
+        if not organization:
+            organization = Organization(name="Test Workspace", slug="test-workspace", plan="trial")
+            db.add(organization)
+            db.flush()
+        admin = db.query(User).filter(User.email == "admin@narrativ.local").first()
+        if not db.query(OrganizationMembership).filter(
+            OrganizationMembership.organization_id == organization.id,
+            OrganizationMembership.user_id == admin.id,
+        ).first():
+            db.add(OrganizationMembership(organization_id=organization.id, user_id=admin.id, role="owner"))
+        db.commit()
+
     client = create_test_client(app)
     response = client.post("/api/v1/auth/login", json={"email": "admin@narrativ.local", "password": "change-me-123456"})
     assert response.status_code == 200

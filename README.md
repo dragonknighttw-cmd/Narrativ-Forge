@@ -176,7 +176,7 @@ B2 uploads explicitly request server-side encryption.
 
 ---
 
-## 5. Current implementation status
+## 5. Cloud processing architecture\n\nThe primary free processing path now moves heavy media work away from Render:\n\n```text\nBrowser\n  └─ ffmpeg.wasm → extract 16 kHz mono audio\n        └─ Cloudflare Worker → Workers AI @cf/openai/whisper\n              └─ VTT + text → Narrativ API → Subtitle Studio\n```\n\nCloudflare Workers AI currently provides a 10,000-neuron/day free allocation. Whisper is available in the model catalog and is priced by audio minute beyond the free allocation. Therefore this is **free within the daily allocation**, not unlimited free compute. citeturn0search1turn0search0\n\nSecurity:\n- Browser never receives the shared Worker secret.\n- Backend mints a short-lived signed token scoped to the episode.\n- Worker verifies the token and allowed origin before invoking Whisper.\n- Extracted audio is limited to 50 MB per request.\n\nRepository implementation:\n- `web-platform/cloudflare/whisper-worker/` — Worker source + Wrangler config\n- `web-platform/frontend/lib/cloud-whisper.ts` — browser ffmpeg/Whisper client\n- `web-platform/backend/app/api/routes/cloud_processing.py` — signed token API\n- `web-platform/backend/app/api/routes/subtitles.py` — Cloud VTT import\n\n### Cloudflare setup still required\n\nThe Worker source is committed, but deployment requires a Wrangler/Cloudflare Workers upload and one secret that cannot safely be committed. After deployment, configure Render with:\n\n```text\nCLOUDFLARE_WHISPER_WORKER_URL=https://<worker>.workers.dev\nCLOUDFLARE_WHISPER_SHARED_SECRET=<same secret used by the Worker>\nCLOUDFLARE_WHISPER_TOKEN_TTL_SECONDS=300\n```\n\nThe Worker can be deployed without a custom domain using the Cloudflare `workers.dev` subdomain.\n\n## 6. Current implementation status
 
 ### Completed / implemented
 
@@ -233,7 +233,7 @@ B2 uploads explicitly request server-side encryption.
 
 ---
 
-## 6. What is still blocking a true production-ready release
+## 7. What is still blocking a true production-ready release
 
 ### P0 — infrastructure / secrets
 
@@ -291,7 +291,7 @@ After secrets are available:
 
 ---
 
-## 7. Production hardening backlog
+## 8. Production hardening backlog
 
 ### Security
 
@@ -344,7 +344,7 @@ After secrets are available:
 
 ---
 
-## 8. Testing gates
+## 9. Testing gates
 
 ### Integration test
 
@@ -400,7 +400,7 @@ Critical quality issue
 
 ---
 
-## 9. Environment configuration
+## 10. Environment configuration
 
 Production configuration is environment-only. Never commit real credentials.
 
@@ -434,7 +434,7 @@ GOOGLE_CLIENT_SECRET=<secret>
 GOOGLE_REDIRECT_URI=<backend-callback>
 OAUTH_ENCRYPTION_KEY=<secret>
 
-SENTRY_DSN=<secret>
+SENTRY_DSN=<secret>\n\nCLOUDFLARE_WHISPER_WORKER_URL=<worker-url>\nCLOUDFLARE_WHISPER_SHARED_SECRET=<secret>\nCLOUDFLARE_WHISPER_TOKEN_TTL_SECONDS=300
 
 STRIPE_SECRET_KEY=<secret>
 STRIPE_WEBHOOK_SECRET=<secret>
@@ -452,7 +452,7 @@ Do not switch this until B2 and Supabase production credentials are actually ava
 
 ---
 
-## 10. Deployment model
+## 11. Deployment model
 
 ### Current free deployment
 
@@ -478,7 +478,7 @@ The Render blueprint intentionally does **not** declare a background worker beca
 
 ---
 
-## 11. Working rule for future development
+## 12. Working rule for future development
 
 For each meaningful production change:
 
@@ -509,7 +509,7 @@ This prevents the project documentation from drifting away from the actual code.
 
 ---
 
-## 12. Current next sequence
+## 13. Current next sequence
 
 The recommended execution order from the current state is:
 
@@ -539,7 +539,7 @@ The recommended execution order from the current state is:
 
 ---
 
-## 13. Development
+## 14. Development
 
 Frontend:
 
@@ -577,7 +577,7 @@ The GitHub Actions e2e workflow requires the repository secret `BOOTSTRAP_ADMIN_
 
 ---
 
-## 14. Security notes
+## 15. Security notes
 
 - Never commit production secrets.
 - Never expose Supabase `service_role` credentials to the frontend.
@@ -592,7 +592,7 @@ The GitHub Actions e2e workflow requires the repository secret `BOOTSTRAP_ADMIN_
 
 ---
 
-## 15. Reference documents
+## 16. Reference documents
 
 Project planning and remediation documents are maintained alongside this repository/project context. When implementation changes, the README above should be updated to reflect the **actual code and deployment state**, while the planning documents remain the broader roadmap/audit source.
 

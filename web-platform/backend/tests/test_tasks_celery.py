@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 from uuid import uuid4
 
 from app.db import Base
-from app.models import AuditEvent, Episode, FailedJob, ProcessingJob, Series
+from app.models import AuditEvent, Episode, FailedJob, Organization, ProcessingJob, Series
 import app.db as app_db
 
 from app.api.routes.jobs import retry_job
@@ -557,7 +557,7 @@ def test_concurrent_postgresql_manual_retry_only_transitions_once():
         try:
             barrier.wait(timeout=5)
             try:
-                retry_job(job_id, {}, session)
+                retry_job(job_id, SimpleNamespace(organization_id=organization.id), None, session)
                 return "queued"
             except Exception as exc:
                 if getattr(exc, "status_code", None) == 409:

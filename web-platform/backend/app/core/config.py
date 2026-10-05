@@ -60,6 +60,8 @@ class Settings(BaseSettings):
     processing_timeout_seconds: int = 3600
     processing_timeout_grace_seconds: int = 10
     worker_max_concurrency: int = Field(default=1, ge=1)
+    single_user_mode: bool = False
+    single_user_email: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -78,6 +80,8 @@ class Settings(BaseSettings):
     def validate_runtime(self) -> None:
         if not self.is_production:
             return
+        if self.single_user_mode and not self.single_user_email:
+            raise RuntimeError("SINGLE_USER_EMAIL must be configured when SINGLE_USER_MODE is enabled")
         if not self.session_secret or len(self.session_secret) < 32 or self.session_secret in {"change-me", "change-me-in-production", "dev-secret", "secret"}:
             raise RuntimeError("SESSION_SECRET must be a strong non-default secret (32+ characters) in production")
         if not self.session_cookie_secure:

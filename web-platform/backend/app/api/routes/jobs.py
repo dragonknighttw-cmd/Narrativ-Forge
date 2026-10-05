@@ -18,7 +18,7 @@ from ...middleware.idempotency import (
     validate_idempotency_key,
 )
 from ...services.processing import run_mock_job
-from ..dependencies import get_current_user, require_roles
+from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -62,10 +62,11 @@ def create_mock_job(
     request: Request,
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     user: dict = Depends(require_roles("owner", "editor")),
+    membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
     idempotency_key = validate_idempotency_key(idempotency_key)
-    episode = db.get(Episode, payload.episode_id)
+    episode = db.query(Episode).filter(Episode.id == payload.episode_id, Episode.organization_id == membership.organization_id).first()
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
     claim_or_response = begin_idempotency(
@@ -158,21 +159,21 @@ def create_real_job(
 
 
 @router.get("")
-def list_jobs(_: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.query(ProcessingJob).order_by(ProcessingJob.created_at.desc()).all()
+def list_jobs(membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    return db.query(ProcessingJob).join(Episode, ProcessingJob.episode_id == Episode.id).filter(Episode.organization_id == membership.organization_id).order_by(ProcessingJob.created_at.desc()).all()
 
 
 @router.get("/{job_id}")
-def get_job(job_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    job = db.get(ProcessingJob, job_id)
+def get_job(job_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    job = db.query(ProcessingJob).join(Episode, ProcessingJob.episode_id == Episode.id).filter(ProcessingJob.id == job_id, Episode.organization_id == membership.organization_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
 
 
 @router.post("/{job_id}/retry")
-def retry_job(job_id: str, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    job = db.get(ProcessingJob, job_id)
+def retry_job(job_id: str, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    job = db.query(ProcessingJob).join(Episode, ProcessingJob.episode_id == Episode.id).filter(ProcessingJob.id == job_id, Episode.organization_id == membership.organization_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     if job.status != "failed":

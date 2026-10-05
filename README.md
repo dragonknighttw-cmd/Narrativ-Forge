@@ -4,7 +4,7 @@ Private, invite-only Burmese short-form video production workspace.
 
 > **Documentation rule:** This README is the source-of-truth map for the current implementation, infrastructure, production blockers, and next work. Whenever a production-relevant change is completed, update this README in the same logical change/commit.
 
-**Last updated:** 2026-10-05
+**Last updated:** 2026-10-05 — final code/infrastructure audit pass
 
 ---
 
@@ -117,7 +117,8 @@ Narrativ-Forge/
 | Raw video/audio/large media | Backblaze B2 | Backblaze |
 | Final exports | User-owned Drive | Google Drive |
 | Error monitoring | Sentry SDK integration | Sentry |
-| Cloud transcription | Browser ffmpeg.wasm + Cloudflare Workers AI | primary free path |\n| Long-running worker | Celery + FFmpeg + Whisper | optional fallback; not hosted on Render Free |
+| Cloud transcription | Browser ffmpeg.wasm + Cloudflare Workers AI | primary free path |
+| Long-running worker | Celery + FFmpeg + Whisper | optional fallback; not hosted on Render Free |
 
 ### Current deployment endpoints
 
@@ -232,6 +233,8 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] Asset management
 - [x] Direct and resumable upload foundation
 - [x] Processing job model and Celery task foundation
+- [x] Dedicated worker image runs the actual Celery worker + beat runtime
+- [x] Real-job dispatch lock, retry re-dispatch, and periodic queued-job recovery
 - [x] Retry / failed-job preservation / queue foundation
 - [x] Burmese/Zawgyi normalization pipeline
 - [x] Subtitle foundation and pagination
@@ -242,7 +245,8 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] Export idempotency/status transition foundation
 - [x] Production log / social preparation / analytics foundation
 - [x] Hook Library backend foundation
-- [x] Usage metering foundation\n- [x] Cloudflare Whisper daily usage guard (80% warning / 95% fallback guardrail)
+- [x] Usage metering foundation
+- [x] Cloudflare Whisper daily usage guard (80% warning / 95% fallback guardrail)
 - [x] Organization/tenant scope foundation
 - [x] Webhook + notification foundation
 - [x] Stripe billing/webhook foundation
@@ -253,11 +257,15 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] B2 media upload encryption setting
 - [x] Render free-only blueprint (no billable worker silently provisioned)
 - [x] Production configuration hardening
+- [x] Supabase Storage object endpoint/path handling hardened
+- [x] Cloudflare Worker rejects disallowed browser origins
 - [x] CORS / trusted-host validation
 - [x] Webhook SSRF protections
 - [x] Audit-event organization scoping
 - [x] Alembic production migration fix
 - [x] Latest storage deployment verified live on Render
+- [x] CodeQL security analysis workflow
+- [x] Operational runbooks for stuck jobs, secret rotation, and database restore
 
 ### Cloudflare Whisper status
 
@@ -269,7 +277,13 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] Worker shared secret configured in Cloudflare
 - [ ] Render Worker URL/shared-secret configuration verification (Worker URL configured; secret presence cannot be read back from Render connector)
 - [ ] Real audio → Whisper → VTT → Subtitle Studio verification
-- [ ] Verify Celery fallback on a real quota-exhaustion/95% guard condition\n\nThe Whisper workstream is **not Done** until the remaining real-credential and end-to-end verification gates are passed.\n\n### Implemented in code but still needs production verification
+- [ ] Verify Celery fallback on a real quota-exhaustion/95% guard condition
+
+The Whisper workstream is **not Done** until the remaining real-credential and end-to-end verification gates are passed.
+
+### Implemented in code but still needs production verification
+
+The final code audit has been completed without running the requested real-media/live integration tests. The remaining unchecked items below are intentionally verification gates, not claims of completion.
 
 - [ ] Real B2 upload/download/delete against production credentials
 - [ ] Real Supabase Storage upload/download/delete against production credentials
@@ -309,9 +323,13 @@ Keep all secrets outside Git.
 
 ### P0 — Cloudflare real end-to-end verification
 
-The GitHub Actions Cloudflare credentials are now working and the Worker deploy/secret configuration has been verified. The remaining gate is the real audio → Whisper → VTT → Subtitle Studio test, plus verification that the Render environment points at the deployed Worker with the same shared secret. Do not mark Whisper Offload done before that test passes.\n\n### P0 — long-running media worker
+The GitHub Actions Cloudflare credentials are now working and the Worker deploy/secret configuration has been verified. The remaining gate is the real audio → Whisper → VTT → Subtitle Studio test, plus verification that the Render environment points at the deployed Worker with the same shared secret. Do not mark Whisper Offload done before that test passes.
 
-Render Free can host the API web service, but it does not provide a free Background Worker.
+### P0 — long-running media worker
+
+The repository now contains a real Celery worker container, including beat scheduling, guarded job dispatch, retry re-dispatch, and periodic recovery. The worker image is ready for a real worker runtime.
+
+Render Free can host the API web service, but the current free deployment intentionally does not provision that long-running worker.
 
 Therefore:
 
@@ -324,7 +342,7 @@ Celery + FFmpeg + Whisper
         = requires a real worker runtime
 ```
 
-The worker code, Celery configuration, tasks, and worker Dockerfile are kept in the repository so the architecture is ready. Celery is **not obsolete**: it remains the long-running fallback and the runtime for scheduled/batch processing. The current Render Free service does not host that worker. **Do not create a paid Render worker without explicit approval.**
+The worker code, Celery configuration, tasks, dispatch recovery, and worker Dockerfile are kept in the repository and now form a complete worker runtime path. Celery remains the long-running fallback and the runtime for scheduled/batch processing. The current Render Free service does not host that worker. **Do not create a paid Render worker without explicit approval.**
 
 For a genuinely production-grade video-processing system, a dedicated worker host/runtime is still required.
 
@@ -359,6 +377,7 @@ After secrets are available:
 - [x] Webhook HTTPS/SSRF protections
 - [x] Filename/path safety
 - [x] Upload MIME/size validation
+- [x] Add CodeQL security analysis workflow
 - [ ] Run final dependency/security scan
 - [ ] Run Docker image vulnerability scan
 - [ ] Final penetration/security review
@@ -371,10 +390,10 @@ After secrets are available:
 - [x] Failed-job preservation
 - [x] Export state transition protection
 - [x] Resumable upload foundation
-- [ ] Prevent redundant queue dispatches with a robust claim/lock strategy
+- [x] Prevent redundant queue dispatches with a Redis dispatch lock plus database claim guard
 - [ ] Full flaky-network upload test suite
 - [ ] Backup/restore drill
-- [ ] Operational runbook
+- [x] Operational runbooks for stuck jobs, secret rotation, and database restore
 
 ### Product / UX
 
@@ -490,7 +509,11 @@ GOOGLE_CLIENT_SECRET=<secret>
 GOOGLE_REDIRECT_URI=<backend-callback>
 OAUTH_ENCRYPTION_KEY=<secret>
 
-SENTRY_DSN=<secret>\n\nCLOUDFLARE_WHISPER_WORKER_URL=<worker-url>\nCLOUDFLARE_WHISPER_SHARED_SECRET=<secret>\nCLOUDFLARE_WHISPER_TOKEN_TTL_SECONDS=300
+SENTRY_DSN=<secret>
+
+CLOUDFLARE_WHISPER_WORKER_URL=<worker-url>
+CLOUDFLARE_WHISPER_SHARED_SECRET=<secret>
+CLOUDFLARE_WHISPER_TOKEN_TTL_SECONDS=300
 
 STRIPE_SECRET_KEY=<secret>
 STRIPE_WEBHOOK_SECRET=<secret>
@@ -534,7 +557,19 @@ The Render blueprint intentionally does **not** declare a background worker beca
 
 ---
 
-## 12. Working rule for future development
+## 12. Operational runbooks
+
+The repository now includes:
+
+- `web-platform/docs/runbooks/stuck_job.md`
+- `web-platform/docs/runbooks/rotate_secrets.md`
+- `web-platform/docs/runbooks/restore.md`
+
+These document recovery procedures without exposing production secrets.
+
+---
+
+## 13. Working rule for future development
 
 For each meaningful production change:
 

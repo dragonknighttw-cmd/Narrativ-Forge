@@ -174,7 +174,7 @@ class ProductionLogUpdate(BaseModel):
 
 @router.patch("/manual-production-logs/{log_id}")
 def update_production_log(log_id: str, payload: ProductionLogUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(ManualProductionLog, log_id)
+    item = (db.query(ManualProductionLog).outerjoin(Episode, ManualProductionLog.episode_id == Episode.id).filter(ManualProductionLog.id == log_id, (ManualProductionLog.episode_id.is_(None)) | (Episode.organization_id == membership.organization_id)).first())
     if not item:
         raise HTTPException(status_code=404, detail="Production log not found")
     if payload.episode_id and not db.query(Episode).filter(Episode.id == payload.episode_id, Episode.organization_id == membership.organization_id).first():
@@ -200,7 +200,7 @@ def delete_production_log(log_id: str, membership=Depends(get_current_membership
 
 @router.post("/manual-production-logs", status_code=201)
 def create_production_log(payload: ProductionLogCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    if payload.episode_id and not db.get(Episode, payload.episode_id):
+    if payload.episode_id and not db.query(Episode).filter(Episode.id == payload.episode_id, Episode.organization_id == membership.organization_id).first():
         raise HTTPException(status_code=404, detail="Episode not found")
     if payload.hook_type and payload.hook_type not in HOOK_TYPES:
         raise HTTPException(status_code=422, detail="Unsupported hook type")
@@ -246,7 +246,7 @@ def list_social_prep(episode_id: str, membership=Depends(get_current_membership)
 
 @router.post("/social-prep", status_code=201)
 def create_social_prep(payload: PublicationCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    if not db.get(Episode, payload.episode_id):
+    if not db.query(Episode).filter(Episode.id == payload.episode_id, Episode.organization_id == membership.organization_id).first():
         raise HTTPException(status_code=404, detail="Episode not found")
     errors = validate_publication_payload(payload.platform, payload.caption, payload.hashtags)
     if errors:
@@ -265,7 +265,7 @@ def create_social_prep(payload: PublicationCreate, membership=Depends(get_curren
 
 @router.patch("/social-prep/{publication_id}")
 def update_social_prep(publication_id: str, payload: PublicationUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(SocialPublication, publication_id)
+    item = db.query(SocialPublication).join(Episode, SocialPublication.episode_id == Episode.id).filter(SocialPublication.id == publication_id, Episode.organization_id == membership.organization_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Social preparation not found")
     if payload.state not in PUBLICATION_STATES:
@@ -300,15 +300,15 @@ class AnalyticsCreate(BaseModel):
 
 
 @router.get("/social-prep/{publication_id}/analytics")
-def list_analytics(publication_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    if not db.get(SocialPublication, publication_id):
+def list_analytics(publication_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    if not db.query(SocialPublication).join(Episode, SocialPublication.episode_id == Episode.id).filter(SocialPublication.id == publication_id, Episode.organization_id == membership.organization_id).first():
         raise HTTPException(status_code=404, detail="Social preparation not found")
     return db.query(SocialAnalyticsRecord).filter(SocialAnalyticsRecord.publication_id == publication_id).order_by(SocialAnalyticsRecord.recorded_at.desc()).all()
 
 
 @router.post("/social-prep/{publication_id}/analytics", status_code=201)
-def create_analytics(publication_id: str, payload: AnalyticsCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    publication = db.get(SocialPublication, publication_id)
+def create_analytics(publication_id: str, payload: AnalyticsCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    publication = db.query(SocialPublication).join(Episode, SocialPublication.episode_id == Episode.id).filter(SocialPublication.id == publication_id, Episode.organization_id == membership.organization_id).first()
     if not publication:
         raise HTTPException(status_code=404, detail="Social preparation not found")
     item = SocialAnalyticsRecord(publication_id=publication_id, **payload.model_dump())
@@ -321,9 +321,9 @@ def create_analytics(publication_id: str, payload: AnalyticsCreate, _: dict = De
 
 
 @router.get("/analytics")
-def analytics_summary(_: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    logs = db.query(ManualProductionLog).all()
-    analytics = db.query(SocialAnalyticsRecord).all()
+def analytics_summary(membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    logs = db.query(ManualProductionLog).outerjoin(Episode, ManualProductionLog.episode_id == Episode.id).filter((ManualProductionLog.episode_id.is_(None)) | (Episode.organization_id == membership.organization_id)).all()
+    analytics = db.query(SocialAnalyticsRecord).join(SocialPublication).join(Episode).filter(Episode.organization_id == membership.organization_id).all()
     platform_rows = (
         db.query(
             SocialPublication.platform,
@@ -332,7 +332,9 @@ def analytics_summary(_: dict = Depends(get_current_user), db: Session = Depends
             func.coalesce(func.sum(SocialAnalyticsRecord.shares), 0),
             func.coalesce(func.sum(SocialAnalyticsRecord.saves), 0),
         )
+        .join(Episode, SocialPublication.episode_id == Episode.id)
         .join(SocialAnalyticsRecord, SocialAnalyticsRecord.publication_id == SocialPublication.id)
+        .filter(Episode.organization_id == membership.organization_id)
         .group_by(SocialPublication.platform)
         .all()
     )
@@ -342,7 +344,7 @@ def analytics_summary(_: dict = Depends(get_current_user), db: Session = Depends
             func.count(ManualProductionLog.id),
             func.coalesce(func.sum(ManualProductionLog.views), 0),
         )
-        .filter(ManualProductionLog.hook_type.isnot(None))
+        .join(Episode, ManualProductionLog.episode_id == Episode.id).filter(ManualProductionLog.hook_type.isnot(None), Episode.organization_id == membership.organization_id)
         .group_by(ManualProductionLog.hook_type)
         .all()
     )

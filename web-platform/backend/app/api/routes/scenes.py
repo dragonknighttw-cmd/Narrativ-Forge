@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ...db import get_db
 from ...models import Episode, Scene, Script
-from ..dependencies import get_current_user, require_roles
+from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["scenes"])
 scene_router = APIRouter(prefix="/scenes", tags=["scenes"])
@@ -28,8 +28,8 @@ class SceneUpdate(BaseModel):
     duration_seconds: int | None = Field(default=None, ge=1)
 
 
-def _episode_or_404(db: Session, episode_id: str) -> Episode:
-    item = db.get(Episode, episode_id)
+def _episode_or_404(db: Session, episode_id: str, organization_id: str | None = None) -> Episode:
+    item = db.query(Episode).filter(Episode.id == episode_id, *( [Episode.organization_id == organization_id] if organization_id else [] )).first()
     if not item:
         raise HTTPException(status_code=404, detail="Episode not found")
     return item
@@ -43,13 +43,13 @@ def _validate_script(db: Session, episode_id: str, script_id: str | None) -> Non
 
 
 @router.get("/{episode_id}/scenes")
-def list_scenes(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    _episode_or_404(db, episode_id)
+def list_scenes(episode_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    _episode_or_404(db, episode_id, membership.organization_id)
     return db.query(Scene).filter(Scene.episode_id == episode_id).order_by(Scene.scene_number).all()
 
 
 @router.post("/{episode_id}/scenes", status_code=201)
-def create_scene(episode_id: str, payload: SceneCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def create_scene(episode_id: str, payload: SceneCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
     _validate_script(db, episode_id, payload.script_id)
     if db.query(Scene).filter(Scene.episode_id == episode_id, Scene.scene_number == payload.scene_number).first():
@@ -62,8 +62,8 @@ def create_scene(episode_id: str, payload: SceneCreate, _: dict = Depends(requir
 
 
 @scene_router.patch("/{scene_id}")
-def update_scene(scene_id: str, payload: SceneUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(Scene, scene_id)
+def update_scene(scene_id: str, payload: SceneUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    item = db.query(Scene).join(Episode, Scene.episode_id == Episode.id).filter(Scene.id == scene_id, Episode.organization_id == membership.organization_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Scene not found")
     episode_id = item.episode_id
@@ -80,7 +80,7 @@ def update_scene(scene_id: str, payload: SceneUpdate, _: dict = Depends(require_
 
 
 @router.post("/{episode_id}/scenes/reorder")
-def reorder_scenes(episode_id: str, scene_ids: list[str], _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def reorder_scenes(episode_id: str, scene_ids: list[str], membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
     scenes = db.query(Scene).filter(Scene.episode_id == episode_id).all()
     by_id = {scene.id: scene for scene in scenes}

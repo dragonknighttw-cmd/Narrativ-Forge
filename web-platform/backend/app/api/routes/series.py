@@ -42,7 +42,7 @@ def get_series(series_id: str, membership=Depends(get_current_membership), db: S
 
 @router.patch("/{series_id}")
 def update_series(series_id: str, payload: SeriesUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(Series, series_id)
+    item = db.query(Series).filter(Series.id == series_id, Series.organization_id == membership.organization_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Series not found")
     for key, value in payload.model_dump(exclude_unset=True).items():
@@ -59,7 +59,7 @@ def list_seasons(series_id: str, membership=Depends(get_current_membership), db:
 
 @router.post("/{series_id}/seasons", status_code=201)
 def create_season(series_id: str, payload: SeasonCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    if not db.get(Series, series_id):
+    if not db.query(Series).filter(Series.id == series_id, Series.organization_id == membership.organization_id).first():
         raise HTTPException(status_code=404, detail="Series not found")
     existing = db.query(Season).filter(Season.series_id == series_id, Season.season_number == payload.season_number).first()
     if existing:

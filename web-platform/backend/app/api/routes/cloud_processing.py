@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from ...core.config import settings
 from ...db import get_db
-from ...models import Episode
+from ...models import Episode, UsageEvent
 from ..dependencies import get_current_membership, require_roles
 
 router = APIRouter(prefix="/cloud-processing", tags=["cloud-processing"])
@@ -54,7 +54,7 @@ def create_whisper_token(
     claims = {
         "sub": str(user["id"]),
         "episode_id": episode.id,
-        "exp": now + settings.cloudflare_whisper_token_ttl_seconds,
+        "exp": now + settings.cloudflare_whisper_token_ttl_seconds,\n        "jti": str(uuid4()),
     }
     return {
         "worker_url": settings.cloudflare_whisper_worker_url.rstrip("/"),

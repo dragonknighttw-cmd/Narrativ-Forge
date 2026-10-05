@@ -98,15 +98,16 @@ def test_story_structure_and_episode_status_workflow():
         season = client.post(f"/api/v1/series/{series['id']}/seasons", json={"season_number": 1, "title": "Season 1"})
         assert season.status_code == 201
 
-        episode = client.post("/api/v1/episodes", json={
+        episode_response = client.post("/api/v1/episodes", json={
             "series_id": series["id"],
             "season_id": season.json()["id"],
             "episode_number": 1,
             "title": "Episode 1",
             "target_duration_seconds": 180,
         })
-        assert episode.status_code == 201
-        episode_id = episode.json()["id"]
+        assert episode_response.status_code == 201
+        episode = episode_response.json()
+        episode_id = episode["id"]
 
         duplicate = client.post("/api/v1/episodes", json={
             "series_id": series["id"],
@@ -569,7 +570,7 @@ def test_google_drive_export_failure_is_resumable(monkeypatch, tmp_path):
             json={"cues": [{"start": 0, "end": 2, "text": "မြန်မာစာ"}]},
         ).status_code == 200
         assert client.post(f"/api/v1/episodes/{episode['id']}/subtitles/approve").status_code == 200
-        assert client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "needs_approval"}).status_code == 200
+        assert client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "needs_approval", "expected_row_version": episode["row_version"]}).status_code == 200
         approved = client.post(f"/api/v1/episodes/{episode['id']}/review/approve", json={
             "video_watched": True, "audio_checked": True,
             "subtitle_timing_checked": True, "thumbnail_present": True,

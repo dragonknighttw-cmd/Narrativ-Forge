@@ -49,6 +49,9 @@ export default {
     const origin = request.headers.get("Origin") ?? "";
     const headers = corsHeaders(origin, env.ALLOWED_ORIGIN);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
+    if (origin && origin !== env.ALLOWED_ORIGIN) {
+      return Response.json({ error: "Origin not allowed" }, { status: 403, headers });
+    }
     if (request.method !== "POST") return Response.json({ error: "Method not allowed" }, { status: 405, headers });
 
     const auth = request.headers.get("Authorization") ?? "";

@@ -41,6 +41,8 @@ class InviteRequest(BaseModel):
 
 @router.post("/login")
 def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
+    if settings.single_user_mode and payload.email.lower() != settings.single_user_email.strip().lower():
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     user = db.query(User).filter(User.email == payload.email.lower(), User.is_active.is_(True)).first()
     if not user:
         # Keep the same response for unknown users and bad passwords.
@@ -76,6 +78,8 @@ def invite(
     user=Depends(require_roles("owner")),
     db: Session = Depends(get_db),
 ):
+    if settings.single_user_mode:
+        raise HTTPException(status_code=403, detail="Invitations are disabled in single-user mode")
     role = payload.role.lower()
     if role not in {"owner", "editor", "viewer"}:
         raise HTTPException(status_code=422, detail="Invalid role")

@@ -305,7 +305,9 @@ The final code audit has been completed without running the requested real-media
 
 ### P0 — infrastructure / secrets
 
-The code is prepared, but these production values must exist before switching the global storage provider to `hybrid`:
+The production deployment is configured for `STORAGE_PROVIDER=hybrid`, and the latest Render deployment passed the application's production configuration validation. The connector cannot read secret values back, so the exact secret contents are intentionally not documented or exposed here.
+
+Required production configuration remains:
 
 ```text
 B2_APPLICATION_KEY_ID
@@ -600,37 +602,35 @@ This prevents the project documentation from drifting away from the actual code.
 
 ---
 
-## 13. Current next sequence
+## 14. Current next sequence
 
-The recommended execution order from the current state is:
+The remaining sequence is verification and release hardening; the requested real-media/live tests are intentionally not being run in this code-audit pass.
 
 ```text
-1. Verify B2 + Supabase production secrets in Render
+1. Verify production storage credentials without exposing them
         ↓
-2. Switch storage provider to hybrid (configuration is now set; deployment verification pending)
+2. Run real B2 / Supabase / Cloudinary storage verification
         ↓
-3. Deploy + verify all three storage routes
+3. Run real Cloudflare Whisper → VTT → Subtitle Studio verification
         ↓
-4. Verify Google Drive OAuth/export
+4. Run a real Celery worker/runtime smoke test
         ↓
-5. Verify Celery task registration + worker runtime
+5. Verify Google Drive export + idempotent retry
         ↓
-6. Fix duplicate dispatch / retry edge cases
+6. Verify Stripe + SMTP + Sentry + audit events
         ↓
-7. Verify Stripe + SMTP + Sentry
+7. Complete backup/restore, dependency, Docker, accessibility and security audits
         ↓
-8. Run full integration + E2E tests
+8. Run the full integration/E2E suite
         ↓
-9. Backup/restore + security/accessibility audits
-        ↓
-10. Final production readiness audit
+9. Final production readiness decision
 ```
 
 **Important:** A “production-ready” claim should only be made after the real storage integrations, worker runtime, export flow, monitoring, backups, and final tests have been verified—not merely because the code exists.
 
 ---
 
-## 14. Development
+## 15. Development
 
 Frontend:
 
@@ -668,7 +668,7 @@ The GitHub Actions e2e workflow requires the repository secret `BOOTSTRAP_ADMIN_
 
 ---
 
-## 15. Security notes
+## 16. Security notes
 
 - Never commit production secrets.
 - Never expose Supabase `service_role` credentials to the frontend.
@@ -683,7 +683,7 @@ The GitHub Actions e2e workflow requires the repository secret `BOOTSTRAP_ADMIN_
 
 ---
 
-## 16. Reference documents
+## 17. Reference documents
 
 Project planning and remediation documents are maintained alongside this repository/project context. When implementation changes, the README above should be updated to reflect the **actual code and deployment state**, while the planning documents remain the broader roadmap/audit source.
 

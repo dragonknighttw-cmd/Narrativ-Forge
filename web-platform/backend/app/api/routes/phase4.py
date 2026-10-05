@@ -68,6 +68,26 @@ def ensure_membership(db: Session, user: dict) -> OrganizationMembership:
 def current_membership(user=Depends(get_current_user), db: Session = Depends(get_db)):
     return ensure_membership(db, user)
 
+def _resource_belongs_to_org(db: Session, organization_id: str, resource_type: str, resource_id: str) -> bool:
+    from ...models import Idea, Series, Episode, ManualProductionLog, SocialPublication
+    resource_type = resource_type.strip().lower()
+    if resource_type == "idea":
+        return db.query(Idea.id).filter(Idea.id == resource_id, Idea.organization_id == organization_id).first() is not None
+    if resource_type == "series":
+        return db.query(Series.id).filter(Series.id == resource_id, Series.organization_id == organization_id).first() is not None
+    if resource_type == "episode":
+        return db.query(Episode.id).filter(Episode.id == resource_id, Episode.organization_id == organization_id).first() is not None
+    if resource_type == "production_log":
+        return db.query(ManualProductionLog.id).join(Episode, ManualProductionLog.episode_id == Episode.id).filter(
+            ManualProductionLog.id == resource_id, Episode.organization_id == organization_id
+        ).first() is not None
+    if resource_type == "social_publication":
+        return db.query(SocialPublication.id).join(Episode, SocialPublication.episode_id == Episode.id).filter(
+            SocialPublication.id == resource_id, Episode.organization_id == organization_id
+        ).first() is not None
+    raise HTTPException(status_code=422, detail="Unsupported tag resource type")
+
+
 
 class InviteCreate(BaseModel):
     email: str
@@ -145,12 +165,17 @@ def create_invitation(
     )
     db.add(invitation)
     db.commit()
+    try:
+        get_celery().send_task("narrativ.send_email", args=[payload.email, "You are invited to Narrativ Forge", f"Accept your workspace invitation: {settings.frontend_base_url}/invite?token={token}"])
+        delivery = "queued"
+    except Exception:
+        delivery = "pending"
     return {
         "id": invitation.id,
         "email": invitation.email,
         "role": invitation.role,
         "expires_at": invitation.expires_at,
-        "delivery": "pending",
+        "delivery": delivery,
         "token": None if settings.is_production else token,
     }
 
@@ -202,7 +227,12 @@ def request_magic_link(payload: MagicLinkRequest, db: Session = Depends(get_db))
     ).update({"consumed_at": _now()})
     db.add(MagicLinkToken(email=email, token_hash=_token_hash(token), expires_at=_now() + timedelta(minutes=15)))
     db.commit()
-    return {"requested": True, "delivery": "pending", "token": None if settings.is_production else token}
+    try:
+        get_celery().send_task("narrativ.send_email", args=[email, "Your Narrativ Forge sign-in link", f"Sign in to Narrativ Forge: {settings.frontend_base_url}/auth/magic-link?token={token}"])
+        delivery = "queued"
+    except Exception:
+        delivery = "pending"
+    return {"requested": True, "delivery": delivery, "token": None if settings.is_production else token}
 
 
 @router.post("/magic-link/consume")
@@ -251,7 +281,9 @@ def assign_tag(tag_id: str, payload: TagAssign, membership=Depends(current_membe
     tag = db.query(Tag).filter(Tag.id == tag_id, Tag.organization_id == membership.organization_id).first()
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")
-    assignment = TagAssignment(tag_id=tag.id, resource_type=payload.resource_type, resource_id=payload.resource_id)
+    if not _resource_belongs_to_org(db, membership.organization_id, payload.resource_type, payload.resource_id):
+        raise HTTPException(status_code=404, detail="Tag resource not found in workspace")
+    assignment = TagAssignment(tag_id=tag.id, resource_type=payload.resource_type.strip().lower(), resource_id=payload.resource_id)
     db.add(assignment)
     try:
         db.commit()

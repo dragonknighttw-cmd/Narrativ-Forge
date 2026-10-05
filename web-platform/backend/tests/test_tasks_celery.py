@@ -541,7 +541,8 @@ def test_concurrent_postgresql_manual_retry_only_transitions_once():
     )
     seed.add(episode)
     seed.commit()
-    job = ProcessingJob(episode_id=episode.id, job_type="real_processing", status="failed")
+    episode_id = episode.id
+    job = ProcessingJob(episode_id=episode_id, job_type="real_processing", status="failed")
     seed.add(job)
     seed.commit()
     job_id = job.id
@@ -572,7 +573,7 @@ def test_concurrent_postgresql_manual_retry_only_transitions_once():
     job = verify.get(ProcessingJob, job_id)
     assert sorted(outcomes) == ["conflict", "queued"]
     assert job.status == "queued"
-    assert verify.query(ProcessingJob).filter_by(episode_id=episode.id).count() == 1
+    assert verify.query(ProcessingJob).filter_by(episode_id=episode_id).count() == 1
     verify.close()
 
 

@@ -10,7 +10,7 @@ from ..db import SessionLocal
 from ..models import FailedJob, ProcessingJob
 from ..observability import configure_logging, initialize_sentry
 from .celery_app import get_celery
-from .tasks import publish_dead_letter
+from .tasks import enqueue_real_job, publish_dead_letter
 
 logger = logging.getLogger(__name__)
 POLL_INTERVAL_SECONDS = 5
@@ -31,10 +31,10 @@ def run_once(db: Session) -> int:
         .limit(BATCH_SIZE)
         .all()
     )
+    dispatched = 0
     for job in jobs:
-        celery.send_task("narrativ.process_real_job", args=[job.id])
-
-    dispatched = len(jobs)
+        if enqueue_real_job(job.id):
+            dispatched += 1
     pending_failed_jobs = (
         db.query(FailedJob)
         .filter(FailedJob.resolved_at.is_(None), FailedJob.dlq_published_at.is_(None))

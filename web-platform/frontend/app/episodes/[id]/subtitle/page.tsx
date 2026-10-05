@@ -98,7 +98,13 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
             if (!cloudFile) return;
             setBusy(true); setError(""); setCloudProgress("");
             try {
-              const result = await transcribeVideoWithCloudflare(episodeId, cloudFile, () => api.createCloudWhisperToken(episodeId), setCloudProgress);
+              const result = await transcribeVideoWithCloudflare(
+                episodeId,
+                cloudFile,
+                (estimatedSeconds) => api.createCloudWhisperToken(episodeId, estimatedSeconds),
+                setCloudProgress,
+                (usageKey, audioSeconds) => api.recordCloudWhisperUsage(usageKey, audioSeconds),
+              );
               const imported = await api.importCloudTranscript(episodeId, result.vtt, preset);
               setSubtitle(imported);
               setCloudProgress("Cloudflare transcript imported into Subtitle Studio.");

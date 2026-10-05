@@ -71,6 +71,12 @@ services:
         value: "true"
       - key: SINGLE_USER_EMAIL
         sync: false
+      - key: CLOUDFLARE_WHISPER_WORKER_URL
+        sync: false
+      - key: CLOUDFLARE_WHISPER_SHARED_SECRET
+        sync: false
+      - key: CLOUDFLARE_WHISPER_TOKEN_TTL_SECONDS
+        value: "300"
 
 # Long-running Celery/FFmpeg/Whisper workers are intentionally not declared here.
 # Render does not provide free Background Workers. Keep worker runtime files in

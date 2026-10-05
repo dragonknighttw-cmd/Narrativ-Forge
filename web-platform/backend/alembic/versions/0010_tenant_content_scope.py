@@ -27,13 +27,7 @@ def upgrade() -> None:
         "VALUES (:id, :name, :slug, :plan, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
     ), {"id": LEGACY_ORG_ID, "name": "Legacy Workspace", "slug": "legacy-workspace", "plan": "trial"})
 
-    bind.execute(sa.text(
-        "INSERT INTO organization_memberships (id, organization_id, user_id, role, created_at) "
-        "SELECT :org_id, :org_id, id, role, CURRENT_TIMESTAMP FROM users"
-    ), {"org_id": LEGACY_ORG_ID})
-
-    # Membership ids must be unique per user; use a deterministic per-user value.
-    bind.execute(sa.text("DELETE FROM organization_memberships WHERE id = :org_id"), {"org_id": LEGACY_ORG_ID})
+    # Membership ids are generated per user to preserve the primary-key invariant.
     rows = bind.execute(sa.text("SELECT id, role FROM users")).fetchall()
     import uuid
     for user_id, role in rows:

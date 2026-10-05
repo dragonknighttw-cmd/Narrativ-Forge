@@ -247,6 +247,8 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] Webhook + notification foundation
 - [x] Stripe billing/webhook foundation
 - [x] Hybrid storage routing
+- [x] Processed-video/transcript outputs use explicit hybrid storage routing
+- [x] Cloudflare 95% safety guard automatically queues Celery fallback
 - [x] Supabase private storage bucket
 - [x] B2 media upload encryption setting
 - [x] Render free-only blueprint (no billable worker silently provisioned)
@@ -265,7 +267,7 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] Daily usage metering and 80%/95% guardrails
 - [x] GitHub Actions Worker deployment with real Cloudflare credentials
 - [x] Worker shared secret configured in Cloudflare
-- [ ] Render Worker URL/shared-secret configuration verification
+- [ ] Render Worker URL/shared-secret configuration verification (Worker URL configured; secret presence cannot be read back from Render connector)
 - [ ] Real audio → Whisper → VTT → Subtitle Studio verification
 - [ ] Verify Celery fallback on a real quota-exhaustion/95% guard condition\n\nThe Whisper workstream is **not Done** until the remaining real-credential and end-to-end verification gates are passed.\n\n### Implemented in code but still needs production verification
 
@@ -570,7 +572,7 @@ The recommended execution order from the current state is:
 ```text
 1. Verify B2 + Supabase production secrets in Render
         ↓
-2. Switch storage provider to hybrid
+2. Switch storage provider to hybrid (configuration is now set; deployment verification pending)
         ↓
 3. Deploy + verify all three storage routes
         ↓

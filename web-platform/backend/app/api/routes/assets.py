@@ -33,6 +33,10 @@ ALLOWED_TYPES = {
     "audio": {"audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp4"},
     "image": {"image/jpeg", "image/png", "image/webp"},
     "thumbnail": {"image/jpeg", "image/png", "image/webp"},
+    "cover": {"image/jpeg", "image/png", "image/webp"},
+    "srt_preview": {"text/plain", "application/x-subrip"},
+    "srt": {"text/plain", "application/x-subrip"},
+    "manifest": {"application/json", "text/plain"},
 }
 SAFE_NAME = re.compile(r"[^A-Za-z0-9._-]+")
 
@@ -59,6 +63,10 @@ def validate_upload(filename: str, content_type: str | None, asset_type: str) ->
     suffixes = {
         "image": {".jpg", ".jpeg", ".png", ".webp"},
         "thumbnail": {".jpg", ".jpeg", ".png", ".webp"},
+        "cover": {".jpg", ".jpeg", ".png", ".webp"},
+        "srt_preview": {".srt", ".txt"},
+        "srt": {".srt", ".txt"},
+        "manifest": {".json", ".txt"},
         "video": {".mp4", ".webm", ".mov"},
         "audio": {".mp3", ".wav", ".m4a"},
     }

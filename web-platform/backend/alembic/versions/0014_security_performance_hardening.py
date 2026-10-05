@@ -2,7 +2,7 @@
 from alembic import op
 import sqlalchemy as sa
 
-revision = "0014_security_performance_hardening"
+revision = "0014_security_perf_hardening"
 down_revision = "0013_tenant_scope_integrations"
 branch_labels = None
 depends_on = None

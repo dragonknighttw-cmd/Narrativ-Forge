@@ -229,7 +229,8 @@ def create_upload_session(
         payload.asset_type,
     )
     try:
-        storage = get_storage()
+        selected_provider = storage_provider_for_asset(payload.asset_type, payload.expected_size, payload.mime_type)
+        storage = get_storage(selected_provider)
     except StorageError as exc:
         raise HTTPException(status_code=502, detail="Unable to initialize upload storage") from exc
     provider_upload_id = None

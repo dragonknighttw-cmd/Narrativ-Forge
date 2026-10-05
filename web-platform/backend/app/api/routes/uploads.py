@@ -30,7 +30,7 @@ from ...services.storage import (
     get_storage,
 )
 from .assets import safe_filename, validate_upload
-from ..dependencies import require_roles
+from ..dependencies import get_current_membership, require_roles
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
 logger = logging.getLogger(__name__)
@@ -52,8 +52,8 @@ def _utc(value: datetime) -> datetime:
     return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
 
 
-def _owned_session(db: Session, upload_id: str, user_id: str, *, lock: bool = False) -> UploadSession:
-    query = db.query(UploadSession).filter(UploadSession.id == upload_id)
+def _owned_session(db: Session, upload_id: str, user_id: str, organization_id: str, *, lock: bool = False) -> UploadSession:
+    query = db.query(UploadSession).join(Episode, UploadSession.episode_id == Episode.id).filter(UploadSession.id == upload_id, Episode.organization_id == organization_id)
     if lock:
         query = query.with_for_update()
     session = query.first()
@@ -183,6 +183,7 @@ def create_upload_session(
     request: Request,
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     user: dict = Depends(require_roles("owner", "editor")),
+    membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
     idempotency_key = validate_idempotency_key(idempotency_key)
@@ -192,11 +193,11 @@ def create_upload_session(
         raise HTTPException(status_code=413, detail="File exceeds multipart part-count limit")
     safe_name = safe_filename(payload.original_filename)
     validate_upload(safe_name, payload.mime_type, payload.asset_type)
-    episode = db.query(Episode).filter(Episode.id == payload.episode_id).with_for_update().first()
+    episode = db.query(Episode).filter(Episode.id == payload.episode_id, Episode.organization_id == membership.organization_id).with_for_update().first()
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
     if payload.scene_id is not None:
-        scene = db.get(Scene, payload.scene_id)
+        scene = db.query(Scene).join(Episode, Scene.episode_id == Episode.id).filter(Scene.id == payload.scene_id, Episode.organization_id == membership.organization_id).first()
         if not scene or scene.episode_id != episode.id:
             raise HTTPException(status_code=422, detail="Scene does not belong to this episode")
 
@@ -297,7 +298,7 @@ def get_upload_session(
     user: dict = Depends(require_roles("owner", "editor")),
     db: Session = Depends(get_db),
 ):
-    session = _owned_session(db, upload_id, user["id"], lock=True)
+    session = _owned_session(db, upload_id, user["id"], membership.organization_id, lock=True)
     if session.status == "active":
         _require_active(db, session)
     elif session.status == "expired":

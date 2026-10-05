@@ -108,7 +108,7 @@ export default function ScriptStudioPage() {
         <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Script title" />
         <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Write the Burmese script…" rows={14} />
         <div className="inline-form">
-          <button className="primary" disabled={busy || !!active} onClick={() => createNew(false)}>Create script</button>
+          <button className="primary" disabled={busy || !!active} onClick={() => createNew(false)}>Create script</button><button disabled={busy} onClick={() => { setActive(null); setTitle(""); setContent(""); setSaveState("saved"); setError(""); }}>New draft</button>
           <button disabled={busy || !content.trim()} onClick={() => createNew(true)}>Save new version</button>
           {active?.is_current && <span className="muted">{saveState === "saving" ? "Saving…" : saveState === "dirty" ? "Unsaved changes…" : saveState === "conflict" ? "Conflict — reload before continuing" : "Saved"}</span>}
         </div>

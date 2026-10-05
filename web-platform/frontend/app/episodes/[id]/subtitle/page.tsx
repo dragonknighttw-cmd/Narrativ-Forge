@@ -104,10 +104,22 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
             if (!cloudFile) return;
             setBusy(true); setError(""); setCloudProgress("");
             try {
+              const tokenResponse = await api.createCloudWhisperToken(episodeId, 0);
+              if (tokenResponse.fallback_required) {
+                const job = await api.createRealJob(episodeId);
+                setCloudProgress(`Cloudflare daily safety threshold reached. Celery fallback queued (job ${job.id.slice(0, 8)}…).`);
+                return;
+              }
               const result = await transcribeVideoWithCloudflare(
                 episodeId,
                 cloudFile,
-                (estimatedSeconds) => api.createCloudWhisperToken(episodeId, estimatedSeconds),
+                async (estimatedSeconds) => {
+                  const token = await api.createCloudWhisperToken(episodeId, estimatedSeconds);
+                  if (token.fallback_required) {
+                    throw new Error("Cloudflare daily safety threshold reached; use Celery fallback.");
+                  }
+                  return token;
+                },
                 setCloudProgress,
                 (usageKey, audioSeconds) => api.recordCloudWhisperUsage(usageKey, audioSeconds),
               );

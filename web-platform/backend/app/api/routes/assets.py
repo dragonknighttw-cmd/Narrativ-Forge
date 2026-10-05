@@ -22,7 +22,7 @@ from ...middleware.idempotency import (
     request_fingerprint,
     validate_idempotency_key,
 )
-from ...services.storage import StorageError, build_object_key, get_storage
+from ...services.storage import StorageError, build_object_key, get_storage, storage_provider_for_asset
 from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["assets"])
@@ -200,7 +200,8 @@ async def upload_asset(
             db.refresh(item)
             return item
 
-        stored = get_storage().upload_file(temp_path, object_key, file.content_type or "application/octet-stream")
+        selected_provider = storage_provider_for_asset(asset_type, size, file.content_type)
+        stored = get_storage(selected_provider).upload_file(temp_path, object_key, file.content_type or "application/octet-stream")
     except HTTPException:
         raise
     except StorageError as exc:

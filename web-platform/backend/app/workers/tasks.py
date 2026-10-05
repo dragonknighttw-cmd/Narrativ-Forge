@@ -6,6 +6,9 @@ import hmac
 import json
 import subprocess
 import tempfile
+import ipaddress
+import socket
+from urllib.parse import urlparse
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from time import perf_counter
@@ -214,6 +217,26 @@ def _send_email(to_email: str, subject: str, body: str) -> None:
             smtp.send_message(message)
 
 
+
+def _validate_webhook_destination(url: str) -> None:
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or not parsed.hostname:
+        raise ValueError("Webhook URL must use HTTPS")
+    host = parsed.hostname.strip().lower().rstrip(".")
+    try:
+        literal = ipaddress.ip_address(host)
+        addresses = [literal]
+    except ValueError:
+        try:
+            infos = socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+        except socket.gaierror as exc:
+            raise ValueError("Webhook host could not be resolved") from exc
+        addresses = {ipaddress.ip_address(info[4][0]) for info in infos}
+    for address in addresses:
+        if address.is_private or address.is_loopback or address.is_link_local or address.is_multicast or address.is_unspecified or address.is_reserved:
+            raise ValueError("Webhook URL resolves to a non-public address")
+
+
 def register_tasks(celery_app):
     @celery_app.task(
         name="narrativ.send_email",
@@ -256,6 +279,7 @@ def register_tasks(celery_app):
                 secret = (Fernet(settings.oauth_encryption_key.encode()).decrypt(endpoint.secret_encrypted.encode()) if endpoint.secret_encrypted and settings.oauth_encryption_key else bytes.fromhex(endpoint.secret_hash))
                 signature = hmac.new(secret, payload, hashlib.sha256).hexdigest()
                 try:
+                    _validate_webhook_destination(endpoint.url)
                     response = httpx.post(
                         endpoint.url,
                         content=payload,

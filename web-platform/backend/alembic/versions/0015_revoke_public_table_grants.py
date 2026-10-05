@@ -21,7 +21,9 @@ def upgrade() -> None:
         DO $$
         DECLARE r record;
         BEGIN
-          FOR r IN
+          IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon')
+             AND EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+            FOR r IN
             SELECT table_schema, table_name
             FROM information_schema.tables
             WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
@@ -31,8 +33,9 @@ def upgrade() -> None:
               r.table_schema,
               r.table_name
             );
-          END LOOP;
-        END $$;
+            END LOOP;
+          END IF;
+        END $;
         """
     )
 

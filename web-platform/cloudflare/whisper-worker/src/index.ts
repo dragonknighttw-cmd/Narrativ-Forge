@@ -4,7 +4,7 @@ interface Env {
   ALLOWED_ORIGIN: string;
 }
 
-type TokenPayload = { sub: string; episode_id: string; exp: number };
+type TokenPayload = { sub: string; episode_id: string; exp: number; max_audio_seconds?: number };
 
 function base64url(input: ArrayBuffer | Uint8Array): string {
   const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
@@ -63,11 +63,17 @@ export default {
     if (episodeId !== claims.episode_id) return Response.json({ error: "Episode token mismatch" }, { status: 403, headers });
 
     const contentType = request.headers.get("Content-Type") ?? "audio/wav";
-    if (!contentType.startsWith("audio/")) return Response.json({ error: "Audio content is required" }, { status: 415, headers });
+    if (contentType !== "audio/wav") return Response.json({ error: "WAV audio is required" }, { status: 415, headers });
 
     const body = await request.arrayBuffer();
     if (body.byteLength === 0) return Response.json({ error: "Empty audio payload" }, { status: 400, headers });
     if (body.byteLength > 50 * 1024 * 1024) return Response.json({ error: "Audio payload exceeds 50 MB" }, { status: 413, headers });
+
+    const maxAudioSeconds = Math.max(1, Number(claims.max_audio_seconds ?? 0));
+    const maxExpectedBytes = 44 + (maxAudioSeconds * 32000) + 4096;
+    if (!Number.isFinite(maxExpectedBytes) || body.byteLength > maxExpectedBytes) {
+      return Response.json({ error: "Audio payload exceeds the signed duration estimate" }, { status: 413, headers });
+    }
 
     try {
       const result = await env.AI.run("@cf/openai/whisper", { audio: body });

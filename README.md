@@ -259,12 +259,16 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] Production configuration hardening
 - [x] Supabase Storage object endpoint/path handling hardened
 - [x] Cloudflare Worker rejects disallowed browser origins
+- [x] Whisper usage keys are signed and bound to the requested user/episode/duration
+- [x] Worker enforces the signed Whisper audio-duration bound
 - [x] CORS / trusted-host validation
 - [x] Webhook SSRF protections
 - [x] Audit-event organization scoping
 - [x] Alembic production migration fix
 - [x] Latest storage deployment verified live on Render
 - [x] CodeQL security analysis workflow
+- [x] Whisper usage-key security regression tests
+- [x] Hybrid storage and Whisper guardrail regression tests
 - [x] Operational runbooks for stuck jobs, secret rotation, and database restore
 
 ### Cloudflare Whisper status

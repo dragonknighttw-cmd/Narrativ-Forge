@@ -298,6 +298,10 @@ class Asset(Base):
         foreign_keys="ProcessingJob.output_asset_id",
         back_populates="output_asset",
     )
+    storage_replicas: Mapped[list["StorageReplica"]] = relationship(
+        back_populates="asset",
+        cascade="all, delete-orphan",
+    )
 
 
 class StorageReplica(Base):

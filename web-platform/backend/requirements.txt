@@ -16,3 +16,5 @@ urllib3>=2.8.0,<3
 msgpack>=1.2.1,<2
 celery>=5.3.0,<6
 prometheus-client>=0.21,<1
+myanmartools==1.2.1
+PyICU>=2.12,<3

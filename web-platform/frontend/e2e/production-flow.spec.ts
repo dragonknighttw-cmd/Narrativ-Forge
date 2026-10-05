@@ -80,7 +80,12 @@ test("authenticated production flow reaches approved mock export", async ({ page
   expect(editSubtitle.ok()).toBeTruthy();
 
   expect((await api.post(apiBase + "/episodes/" + episodeId + "/subtitles/approve")).ok()).toBeTruthy();
-  expect((await api.patch(apiBase + "/episodes/" + episodeId, { data: { status: "needs_approval" } })).ok()).toBeTruthy();
+  const episodeState = await api.get(apiBase + "/episodes/" + episodeId);
+  expect(episodeState.ok()).toBeTruthy();
+  const episodeJson = await episodeState.json();
+  expect((await api.patch(apiBase + "/episodes/" + episodeId, {
+    data: { status: "needs_approval", expected_row_version: episodeJson.row_version },
+  })).ok()).toBeTruthy();
 
   const approve = await api.post(apiBase + "/episodes/" + episodeId + "/review/approve", {
     data: {

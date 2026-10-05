@@ -259,6 +259,7 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] Production configuration hardening
 - [x] Supabase Storage object endpoint/path handling hardened
 - [x] Cloudflare Worker rejects disallowed browser origins
+- [x] Supabase public `anon`/`authenticated` table CRUD grants revoked; backend remains the database access boundary
 - [x] Whisper usage keys are signed and bound to the requested user/episode/duration
 - [x] Worker enforces the signed Whisper audio-duration bound
 - [x] CORS / trusted-host validation
@@ -268,6 +269,7 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] Latest storage deployment verified live on Render
 - [x] CodeQL security analysis workflow
 - [x] Whisper usage-key security regression tests
+- [x] Supabase security advisor reviewed and public table grants hardened
 - [x] Hybrid storage and Whisper guardrail regression tests
 - [x] Operational runbooks for stuck jobs, secret rotation, and database restore
 
@@ -612,6 +614,8 @@ The remaining sequence is verification and release hardening; the requested real
 
 ```text
 1. Verify production storage credentials without exposing them
+        ↓
+   Supabase public table grants: verified revoked
         ↓
 2. Run real B2 / Supabase / Cloudinary storage verification
         ↓

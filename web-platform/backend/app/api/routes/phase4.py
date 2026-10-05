@@ -530,9 +530,8 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             if plan:
                 sub.plan = plan
         elif event_type.startswith("customer.subscription."):
-            metadata = obj.get("metadata") or {}
-            plan = metadata.get("plan")
-            if plan in {"pro", "business"}:
+            plan = _stripe_plan(obj)
+            if plan:
                 sub.plan = plan
             sub.status = "canceled" if event_type == "customer.subscription.deleted" else obj.get("status", sub.status)
             if obj.get("current_period_start"):

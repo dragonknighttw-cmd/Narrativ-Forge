@@ -28,7 +28,7 @@ async function verifyToken(token: string, secret: string): Promise<TokenPayload 
     const expected = await hmac(secret, parts[0]);
     const supplied = fromBase64url(parts[1]);
     if (supplied.length !== new Uint8Array(expected).length) return null;
-    if (!crypto.subtle.timingSafeEqual(supplied, new Uint8Array(expected))) return null;
+    const expectedBytes = new Uint8Array(expected);\n    let difference = supplied.length ^ expectedBytes.length;\n    for (let i = 0; i < Math.min(supplied.length, expectedBytes.length); i++) difference |= supplied[i] ^ expectedBytes[i];\n    if (difference !== 0) return null;
     const payload = JSON.parse(new TextDecoder().decode(fromBase64url(parts[0]))) as TokenPayload;
     return payload.exp > Math.floor(Date.now() / 1000) && payload.sub && payload.episode_id ? payload : null;
   } catch { return null; }

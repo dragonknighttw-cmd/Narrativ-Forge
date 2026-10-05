@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 import subprocess
+import tempfile
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from time import perf_counter
 from typing import Optional
@@ -12,10 +14,11 @@ from sqlalchemy.orm import Session
 
 from .. import db as app_db
 from .. import metrics
-from ..models import FailedJob, ProcessingJob
+from ..models import Asset, FailedJob, ProcessingJob, StorageReplica
 from ..services.audit import record_event
 from ..services.asset_gc import purge_deleted_assets
 from ..services.real_processing import run_real_job
+from ..services.storage import StorageError, get_storage
 from . import concurrency
 
 logger = logging.getLogger(__name__)
@@ -172,7 +175,91 @@ def publish_dead_letter(celery_app, db: Session, failed_job_id: str) -> bool:
     return result.rowcount == 1
 
 
+def enqueue_asset_replica(celery_app, asset_id: str) -> bool:
+    if not settings.storage_replica_enabled or not settings.storage_replica_provider:
+        return False
+    try:
+        celery_app.send_task("narrativ.replicate_asset", args=[asset_id], queue="storage_replica")
+        return True
+    except Exception:
+        logger.exception("storage_replica_enqueue_failed", extra={"asset_id": asset_id})
+        return False
+
+
 def register_tasks(celery_app):
+    @celery_app.task(
+        name="narrativ.replicate_asset",
+        bind=True,
+        autoretry_for=(StorageError,),
+        retry_backoff=True,
+        retry_backoff_max=3600,
+        retry_kwargs={"max_retries": 5},
+    )
+    def replicate_asset_task(self, asset_id: str) -> str:
+        db = app_db.SessionLocal()
+        replica = None
+        try:
+            asset = db.get(Asset, asset_id)
+            if asset is None:
+                return asset_id
+            provider = settings.storage_replica_provider.lower()
+            if not provider or provider == asset.storage_provider.lower():
+                return asset_id
+            replica = db.query(StorageReplica).filter(
+                StorageReplica.asset_id == asset.id,
+                StorageReplica.provider == provider,
+            ).first()
+            if replica is None:
+                replica = StorageReplica(
+                    asset_id=asset.id,
+                    provider=provider,
+                    object_key=asset.object_key or f"episodes/{asset.episode_id}/assets/v{asset.version}/{asset.asset_type}/{asset.original_filename}",
+                    status="queued",
+                )
+                db.add(replica)
+                db.commit()
+            if replica.status == "ready" and replica.checksum_sha256 == asset.checksum_sha256:
+                return asset_id
+            replica.status = "copying"
+            replica.last_error = None
+            replica.retry_count = self.request.retries
+            db.commit()
+            if not asset.object_key:
+                raise StorageError("Primary asset object key is missing")
+            source = get_storage(asset.storage_provider)
+            destination = get_storage(provider)
+            with tempfile.TemporaryDirectory(prefix="narrativ-replica-") as tmp:
+                local_copy = Path(tmp) / Path(asset.original_filename).name
+                source.download_file(asset.object_key, local_copy)
+                stored = destination.upload_file(local_copy, replica.object_key, asset.mime_type)
+            if asset.checksum_sha256 and stored.checksum_sha256 != asset.checksum_sha256:
+                raise StorageError("Replica checksum does not match primary asset")
+            replica.status = "ready"
+            replica.checksum_sha256 = stored.checksum_sha256
+            replica.size_bytes = stored.size_bytes
+            replica.last_error = None
+            replica.completed_at = _now()
+            db.commit()
+            return asset_id
+        except Exception as exc:
+            db.rollback()
+            if replica is not None:
+                try:
+                    replica = db.get(StorageReplica, replica.id)
+                    if replica:
+                        replica.status = "failed"
+                        replica.last_error = str(exc)[:4000]
+                        replica.retry_count = self.request.retries
+                        db.commit()
+                except Exception:
+                    db.rollback()
+            if isinstance(exc, StorageError):
+                raise
+            raise StorageError("Asset replication failed") from exc
+        finally:
+            db.close()
+
+
     @celery_app.task(name="narrativ.process_real_job")
     def process_real_job_task(job_id: str) -> str:
         with concurrency.processing_semaphore.acquire():
@@ -241,7 +328,7 @@ def register_tasks(celery_app):
 
     @celery_app.task(name="narrativ.purge_deleted_assets")
     def purge_deleted_assets_task():
-        db = SessionLocal()
+        db = app_db.SessionLocal()
         try:
             return purge_deleted_assets(db)
         finally:

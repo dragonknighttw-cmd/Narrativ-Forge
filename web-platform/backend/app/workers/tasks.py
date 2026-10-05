@@ -191,7 +191,42 @@ def enqueue_asset_replica(celery_app, asset_id: str) -> bool:
         return False
 
 
+def _send_email(to_email: str, subject: str, body: str) -> None:
+    if not settings.smtp_host or not settings.smtp_from_email:
+        raise RuntimeError("SMTP email delivery is not configured")
+    import smtplib
+    from email.message import EmailMessage
+    message = EmailMessage()
+    message["From"] = settings.smtp_from_email
+    message["To"] = to_email
+    message["Subject"] = subject
+    message.set_content(body)
+    if settings.smtp_use_tls:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as smtp:
+            smtp.starttls()
+            if settings.smtp_username:
+                smtp.login(settings.smtp_username, settings.smtp_password.get_secret_value())
+            smtp.send_message(message)
+    else:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as smtp:
+            if settings.smtp_username:
+                smtp.login(settings.smtp_username, settings.smtp_password.get_secret_value())
+            smtp.send_message(message)
+
+
 def register_tasks(celery_app):
+    @celery_app.task(
+        name="narrativ.send_email",
+        bind=True,
+        autoretry_for=(Exception,),
+        retry_backoff=True,
+        retry_backoff_max=900,
+        retry_kwargs={"max_retries": 5},
+    )
+    def send_email_task(self, to_email: str, subject: str, body: str) -> str:
+        _send_email(to_email, subject, body)
+        return to_email
+
     @celery_app.task(
         name="narrativ.deliver_notification",
         bind=True,

@@ -359,7 +359,7 @@ class ExportRecord(Base):
 
 class GoogleDriveConnection(Base):
     __tablename__ = "google_drive_connections"
-    __table_args__ = (UniqueConstraint("user_email", name="uq_google_drive_user"),)
+    __table_args__ = (UniqueConstraint("organization_id", "user_email", name="uq_google_drive_org_user"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     organization_id: Mapped[str | None] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True, nullable=True)
     user_email: Mapped[str] = mapped_column(String(255), index=True)

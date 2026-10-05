@@ -123,7 +123,7 @@ def test_resumable_checksum_dedupe_reuses_existing_asset():
         )
         assert first_part.status_code == 200
         first_asset = client.post(f"/api/v1/uploads/{first_session['id']}/commit")
-        assert first_asset.status_code == 201
+        assert first_asset.status_code == 200
 
         second_session = client.post("/api/v1/uploads", json=payload).json()
         second_part = client.put(

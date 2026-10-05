@@ -92,8 +92,8 @@ class Settings(BaseSettings):
             Fernet(self.oauth_encryption_key.encode())
         except Exception as exc:
             raise RuntimeError("OAUTH_ENCRYPTION_KEY must be a valid Fernet key in production") from exc
-        if not self.smtp_host or not self.smtp_from_email:
-            raise RuntimeError("SMTP_HOST and SMTP_FROM_EMAIL must be configured in production")
+        if not self.single_user_mode and (not self.smtp_host or not self.smtp_from_email):
+            raise RuntimeError("SMTP_HOST and SMTP_FROM_EMAIL must be configured in production unless SINGLE_USER_MODE is enabled")
         if not self.cors_origin_list:
             raise RuntimeError("CORS_ORIGINS must contain at least one allowed origin in production")
         if any(origin == "*" for origin in self.cors_origin_list):

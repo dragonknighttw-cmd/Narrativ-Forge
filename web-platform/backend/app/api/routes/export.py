@@ -203,7 +203,7 @@ async def google_drive_export(episode_id: str, user=Depends(require_roles("owner
     export_temp = tempfile.TemporaryDirectory(prefix="nf-drive-export-")
     try:
         local_final = materialize_asset(final_asset, Path(export_temp.name))
-        token = await access_token_for(user["email"], db)
+        token = await access_token_for(user["email"], membership.organization_id, db)
         episode.status = "exporting"
         if not record:
             record = ExportRecord(episode_id=episode_id, provider="google_drive")

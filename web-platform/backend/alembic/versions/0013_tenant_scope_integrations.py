@@ -1,6 +1,7 @@
 """tenant-scope audit, hooks, and Google Drive connections"""
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 revision = "0013_tenant_scope_integrations"
 down_revision = "0012_stripe_webhook_events"
@@ -8,48 +9,55 @@ branch_labels = None
 depends_on = None
 
 def upgrade() -> None:
-    with op.batch_alter_table("audit_events") as batch:
-        batch.add_column(sa.Column("organization_id", sa.String(36), nullable=True))
-        batch.create_index("ix_audit_events_organization_id", ["organization_id"])
-        batch.create_foreign_key(
-            "fk_audit_events_organization_id",
-            "organizations",
-            ["organization_id"],
-            ["id"],
-            ondelete="SET NULL",
-        )
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    if "organization_id" not in {column["name"] for column in inspector.get_columns("audit_events")}:
+        with op.batch_alter_table("audit_events") as batch:
+            batch.add_column(sa.Column("organization_id", sa.String(36), nullable=True))
+            batch.create_index("ix_audit_events_organization_id", ["organization_id"])
+            batch.create_foreign_key(
+                "fk_audit_events_organization_id",
+                "organizations",
+                ["organization_id"],
+                ["id"],
+                ondelete="SET NULL",
+            )
 
     bind = op.get_bind()
     bind.execute(sa.text(
         "UPDATE audit_events SET organization_id = (SELECT om.organization_id FROM organization_memberships om JOIN users u ON u.id = om.user_id WHERE u.email = audit_events.actor_email ORDER BY om.created_at LIMIT 1) WHERE organization_id IS NULL"
     ))
 
-    with op.batch_alter_table("hook_library") as batch:
-        batch.add_column(sa.Column("organization_id", sa.String(36), nullable=True))
-        batch.create_index("ix_hook_library_organization_id", ["organization_id"])
-        batch.create_foreign_key(
-            "fk_hook_library_organization_id",
-            "organizations",
-            ["organization_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
+    if "organization_id" not in {column["name"] for column in inspector.get_columns("hook_library")}:
+        with op.batch_alter_table("hook_library") as batch:
+            batch.add_column(sa.Column("organization_id", sa.String(36), nullable=True))
+            batch.create_index("ix_hook_library_organization_id", ["organization_id"])
+            batch.create_foreign_key(
+                "fk_hook_library_organization_id",
+                "organizations",
+                ["organization_id"],
+                ["id"],
+                ondelete="CASCADE",
+            )
 
-    with op.batch_alter_table("google_drive_connections") as batch:
-        batch.drop_constraint("uq_google_drive_user", type_="unique")
-        batch.add_column(sa.Column("organization_id", sa.String(36), nullable=True))
-        batch.create_index("ix_google_drive_connections_organization_id", ["organization_id"])
-        batch.create_foreign_key(
-            "fk_google_drive_connections_organization_id",
-            "organizations",
-            ["organization_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
-        batch.create_unique_constraint(
-            "uq_google_drive_org_user",
-            ["organization_id", "user_email"],
-        )
+    if "organization_id" not in {column["name"] for column in inspector.get_columns("google_drive_connections")}:
+        with op.batch_alter_table("google_drive_connections") as batch:
+            constraints = {item.get("name") for item in inspector.get_unique_constraints("google_drive_connections")}
+            if "uq_google_drive_user" in constraints:
+                batch.drop_constraint("uq_google_drive_user", type_="unique")
+            batch.add_column(sa.Column("organization_id", sa.String(36), nullable=True))
+            batch.create_index("ix_google_drive_connections_organization_id", ["organization_id"])
+            batch.create_foreign_key(
+                "fk_google_drive_connections_organization_id",
+                "organizations",
+                ["organization_id"],
+                ["id"],
+                ondelete="CASCADE",
+            )
+            batch.create_unique_constraint(
+                "uq_google_drive_org_user",
+                ["organization_id", "user_email"],
+            )
 
     bind = op.get_bind()
     connections = bind.execute(sa.text("SELECT id, user_email FROM google_drive_connections WHERE organization_id IS NULL")).fetchall()

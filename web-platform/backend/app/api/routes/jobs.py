@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 import json
 from uuid import uuid4
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
@@ -27,12 +28,12 @@ router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 class MockJobCreate(BaseModel):
     episode_id: str
-    job_type: str = Field(default="mock_processing", max_length=40)
+    job_type: Literal["mock_processing"] = "mock_processing"
 
 
 class RealJobCreate(BaseModel):
     episode_id: str
-    job_type: str = Field(default="real_processing", max_length=40)
+    job_type: Literal["real_processing"] = "real_processing"
 
 
 

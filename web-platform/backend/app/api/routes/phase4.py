@@ -16,9 +16,10 @@ from ...db import get_db
 from ...workers.celery_app import get_celery
 from ...models import (
     BillingSubscription, Invitation, MagicLinkToken, Organization,
-    OrganizationMembership, Tag, TagAssignment, UsageEvent,
+    OrganizationMembership, Tag, TagAssignment, UsageEvent, WebhookEndpoint, NotificationEvent,
 )
 from ...services.passwords import hash_password
+from ...core.config import settings
 
 router = APIRouter(prefix="/phase4", tags=["phase4"])
 
@@ -181,8 +182,8 @@ def accept_invitation(payload: InviteAccept, response: Response, db: Session = D
     invitation.accepted_at = _now()
     db.commit()
     response.set_cookie(
-        key="nf_session", value=issue_session(user.email, user.role),
-        httponly=True, secure=False, samesite="strict", max_age=8 * 3600, path="/",
+        key=settings.session_cookie_name, value=issue_session(user.email, user.role),
+        httponly=True, secure=settings.session_cookie_secure, samesite="strict", max_age=settings.session_ttl_seconds, path="/",
     )
     return {"authenticated": True, "user": {"id": user.id, "email": user.email, "role": user.role}}
 

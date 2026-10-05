@@ -5,6 +5,7 @@ import json
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Response, Request
 from pydantic import BaseModel, field_validator
@@ -16,7 +17,7 @@ from ...db import get_db
 from ...workers.celery_app import get_celery
 from ...models import (
     BillingSubscription, Invitation, MagicLinkToken, Organization,
-    OrganizationMembership, Tag, TagAssignment, UsageEvent, WebhookEndpoint, NotificationEvent,
+    OrganizationMembership, Tag, TagAssignment, UsageEvent, WebhookEndpoint, NotificationEvent, StripeWebhookEvent,
 )
 from ...services.passwords import hash_password
 from ...core.config import settings
@@ -327,6 +328,18 @@ class WebhookCreate(BaseModel):
     url: str
     events: list[str] = []
 
+    @field_validator("url")
+    @classmethod
+    def webhook_url(cls, value: str) -> str:
+        value = value.strip()
+        parsed = urlparse(value)
+        host = (parsed.hostname or "").lower()
+        if parsed.scheme != "https" or not host:
+            raise ValueError("Webhook URL must use HTTPS")
+        if host in {"localhost", "127.0.0.1", "0.0.0.0", "::1", "metadata.google.internal", "169.254.169.254"}:
+            raise ValueError("Webhook URL host is not allowed")
+        return value
+
 class NotificationCreate(BaseModel):
     event_type: str
     payload: dict = {}
@@ -452,5 +465,9 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 sub.status = obj.get("status", sub.status)
             db.commit()
     db.add(StripeWebhookEvent(id=event_id, event_type=event_type))
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return {"received": True, "duplicate": True}
     return {"received": True}

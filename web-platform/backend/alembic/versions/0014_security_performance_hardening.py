@@ -11,9 +11,16 @@ depends_on = None
 def upgrade() -> None:
     bind = op.get_bind()
     if bind.dialect.name == "postgresql":
-        bind.execute(sa.text("REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM PUBLIC"))
-        bind.execute(sa.text("REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM anon"))
-        bind.execute(sa.text("REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM authenticated"))
+        bind.execute(sa.text("""
+            DO $
+            BEGIN
+              IF to_regprocedure('public.rls_auto_enable()') IS NOT NULL THEN
+                EXECUTE 'REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM PUBLIC';
+                EXECUTE 'REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM anon';
+                EXECUTE 'REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM authenticated';
+              END IF;
+            END $;
+        """))
         bind.execute(sa.text("DROP INDEX IF EXISTS public.ix_organizations_slug"))
         bind.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_invitations_organization_id ON public.invitations (organization_id)"))
         bind.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_processing_jobs_input_asset_id ON public.processing_jobs (input_asset_id)"))

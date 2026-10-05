@@ -66,7 +66,7 @@ export const api = {
   me: () => request<{ id: string; email: string; role: string }>("/auth/me"),
   requestMagicLink: (email: string) => request<{ requested: boolean; delivery?: string; token?: string }>("/phase4/magic-link/request", { method: "POST", body: JSON.stringify({ email }) }),
   consumeMagicLink: (token: string) => request<{ authenticated: boolean; user: { id: string; email: string; role: string } }>("/phase4/magic-link/consume", { method: "POST", body: JSON.stringify({ token }) }),
-  createInvitation: (email: string, role = "viewer") => request<{ id: string; email: string; role: string; expires_at: string; token: string }>("/phase4/invitations", { method: "POST", body: JSON.stringify({ email, role }) }),
+  createInvitation: (email: string, role = "viewer") => request<{ id: string; email: string; role: string; expires_at: string; delivery: string; token: string | null }>("/phase4/invitations", { method: "POST", body: JSON.stringify({ email, role }) }),
   acceptInvitation: (token: string, password: string) => request<{ authenticated: boolean; user: { id: string; email: string; role: string } }>("/phase4/invitations/accept", { method: "POST", body: JSON.stringify({ token, password }) }),
   getWorkspace: () => request<{ id: string; name: string; slug: string; plan: string; role: string }>("/phase4/workspace"),
   listTags: () => request<Array<{ id: string; name: string; slug: string }>>("/phase4/tags"),

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
@@ -8,7 +9,7 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from ...db import get_db
-from ...models import Episode, FailedJob, ProcessingJob
+from ...models import Episode, FailedJob, ProcessingJob, UsageEvent
 from ...middleware.idempotency import (
     IdempotencyClaim,
     StoredResponse,
@@ -32,6 +33,13 @@ class RealJobCreate(BaseModel):
     episode_id: str
     job_type: str = Field(default="real_processing", max_length=40)
 
+
+
+def _meter_processing_job(db: Session, organization_id: str, job: ProcessingJob) -> None:
+    period_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if db.query(UsageEvent).filter(UsageEvent.idempotency_key == f"job:{job.id}").first():
+        return
+    db.add(UsageEvent(organization_id=organization_id, metric="processing_jobs", quantity=1, unit="job", idempotency_key=f"job:{job.id}", period_start=period_start, metadata_json=json.dumps({"job_id": job.id, "job_type": job.job_type}, separators=(",", ":"))))
 
 def _create_job(
     episode: Episode,
@@ -99,6 +107,7 @@ def create_mock_job(
         job_id=claim.record.resource_id if claim else None,
         commit=claim is None,
     )
+    _meter_processing_job(db, membership.organization_id, job)
     if not claim:
         return run_mock_job(job.id, db)
 

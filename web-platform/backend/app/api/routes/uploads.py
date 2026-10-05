@@ -28,6 +28,7 @@ from ...services.storage import (
     StorageError,
     build_object_key,
     get_storage,
+    storage_provider_for_asset,
 )
 from .assets import safe_filename, validate_upload
 from ..dependencies import get_current_membership, require_roles

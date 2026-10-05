@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import requests
 from dataclasses import dataclass
 from pathlib import Path
 from math import ceil
@@ -618,6 +619,212 @@ class S3CompatibleStorageProvider:
 
 
 
+class SupabaseStorageProvider:
+    name = "supabase"
+
+    def __init__(self):
+        self.url = settings.supabase_url.rstrip("/")
+        self.key = settings.supabase_service_role_key
+        self.bucket = settings.supabase_storage_bucket
+        self.signed_url_expiry_seconds = settings.supabase_signed_url_expiry_seconds
+        if not self.url or not self.key or not self.bucket:
+            raise StorageError("Supabase Storage is not configured")
+        self.headers = {
+            "apikey": self.key,
+            "Authorization": f"Bearer {self.key}",
+        }
+        self.multipart_root = Path(settings.upload_dir) / ".supabase-multipart"
+        self.multipart_root.mkdir(parents=True, exist_ok=True)
+
+    def _url(self, action: str, object_key: str = "") -> str:
+        from urllib.parse import quote
+        path = quote(_safe_object_key(object_key), safe="/") if object_key else ""
+        return f"{self.url}/storage/v1/object/{action}/{self.bucket}/{path}".rstrip("/")
+
+    def upload_file(self, source: Path, object_key: str, content_type: str) -> StoredObject:
+        key = _safe_object_key(object_key)
+        checksum = sha256_file(source)
+        try:
+            with source.open("rb") as handle:
+                response = requests.post(
+                    self._url(""),
+                    headers={**self.headers, "Content-Type": content_type, "x-upsert": "true"},
+                    data=handle,
+                    timeout=300,
+                )
+            response.raise_for_status()
+        except Exception as exc:
+            raise StorageError("Supabase Storage upload failed") from exc
+        return StoredObject(provider=self.name, object_key=key, size_bytes=source.stat().st_size, checksum_sha256=checksum)
+
+    def download_file(self, object_key: str, destination: Path) -> StoredObject:
+        key = _safe_object_key(object_key)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            response = requests.get(self._url(""), headers=self.headers, timeout=300, stream=True)
+            response.raise_for_status()
+            with destination.open("wb") as handle:
+                for chunk in response.iter_content(chunk_size=1024 * 1024):
+                    if chunk:
+                        handle.write(chunk)
+        except Exception as exc:
+            destination.unlink(missing_ok=True)
+            raise StorageError("Supabase Storage download failed") from exc
+        checksum = sha256_file(destination)
+        return StoredObject(provider=self.name, object_key=key, size_bytes=destination.stat().st_size, checksum_sha256=checksum)
+
+    def delete(self, object_key: str) -> None:
+        key = _safe_object_key(object_key)
+        try:
+            response = requests.post(
+                f"{self.url}/storage/v1/object/remove/{self.bucket}",
+                headers={**self.headers, "Content-Type": "application/json"},
+                json={"prefixes": [key]},
+                timeout=60,
+            )
+            response.raise_for_status()
+        except Exception as exc:
+            raise StorageError("Supabase Storage delete failed") from exc
+
+    def exists(self, object_key: str) -> bool:
+        key = _safe_object_key(object_key)
+        try:
+            response = requests.head(self._url("", key), headers=self.headers, timeout=30)
+            return response.status_code == 200
+        except Exception:
+            return False
+
+    def download_url(self, object_key: str) -> str:
+        key = _safe_object_key(object_key)
+        try:
+            response = requests.post(
+                f"{self.url}/storage/v1/object/sign/{self.bucket}/{key}",
+                headers={**self.headers, "Content-Type": "application/json"},
+                json={"expiresIn": self.signed_url_expiry_seconds},
+                timeout=30,
+            )
+            response.raise_for_status()
+            signed = response.json().get("signedURL") or response.json().get("signedUrl")
+            if not signed:
+                raise StorageError("Supabase Storage did not return a signed URL")
+            return signed if signed.startswith("http") else f"{self.url}/storage/v1{signed}"
+        except StorageError:
+            raise
+        except Exception as exc:
+            raise StorageError("Supabase Storage signed URL generation failed") from exc
+
+    def _dir(self, upload_id: str) -> Path:
+        try:
+            safe_id = str(UUID(upload_id))
+        except ValueError as exc:
+            raise StorageError("Invalid multipart upload identifier") from exc
+        root = self.multipart_root.resolve()
+        directory = (root / safe_id).resolve()
+        try:
+            directory.relative_to(root)
+        except ValueError as exc:
+            raise StorageError("Invalid multipart upload identifier") from exc
+        return directory
+
+    def _meta(self, upload_id: str, object_key: str) -> tuple[Path, dict]:
+        directory = self._dir(upload_id)
+        try:
+            metadata = json.loads((directory / "metadata.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise StorageError("Supabase multipart upload not found") from exc
+        if metadata.get("object_key") != _safe_object_key(object_key):
+            raise StorageError("Supabase multipart object key mismatch")
+        return directory, metadata
+
+    def initiate_multipart_upload(self, object_key: str, content_type: str, upload_token: str) -> str:
+        if not upload_token:
+            raise StorageError("Multipart upload token is required")
+        upload_id = str(uuid4())
+        directory = self._dir(upload_id)
+        directory.mkdir(parents=True, exist_ok=False)
+        (directory / "metadata.json").write_text(json.dumps({
+            "object_key": _safe_object_key(object_key),
+            "content_type": content_type,
+            "upload_token": upload_token,
+            "status": "active",
+        }), encoding="utf-8")
+        return upload_id
+
+    def upload_part(self, upload_id: str, object_key: str, part_number: int, body: bytes, is_last: bool) -> str:
+        if not 1 <= part_number <= 10_000 or not body:
+            raise StorageError("Invalid multipart part")
+        directory, metadata = self._meta(upload_id, object_key)
+        if metadata.get("status") != "active":
+            raise StorageError("Multipart upload is not active")
+        part = directory / f"part-{part_number:05d}"
+        temporary = directory / f".{part.name}.{uuid4().hex}.tmp"
+        try:
+            temporary.write_bytes(body)
+            temporary.replace(part)
+            return hashlib.md5(body, usedforsecurity=False).hexdigest()
+        except OSError as exc:
+            raise StorageError("Unable to persist Supabase multipart part") from exc
+        finally:
+            temporary.unlink(missing_ok=True)
+
+    def list_multipart_parts(self, upload_id: str, object_key: str, upload_token: str | None = None, expected_size: int | None = None) -> list[dict]:
+        directory, metadata = self._meta(upload_id, object_key)
+        if upload_token and metadata.get("upload_token") != upload_token:
+            raise StorageError("Multipart upload token mismatch")
+        parts = []
+        for path in directory.glob("part-*"):
+            try:
+                number = int(path.name.removeprefix("part-"))
+                size = path.stat().st_size
+            except (ValueError, OSError):
+                continue
+            digest = hashlib.md5(usedforsecurity=False)
+            with path.open("rb") as handle:
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            parts.append({"PartNumber": number, "Size": size, "ETag": digest.hexdigest()})
+        return sorted(parts, key=lambda item: item["PartNumber"])
+
+    def complete_multipart_upload(self, upload_id: str, object_key: str, parts: list[dict], expected_size: int, chunk_size: int, upload_token: str) -> StoredObject:
+        directory, metadata = self._meta(upload_id, object_key)
+        if metadata.get("upload_token") != upload_token:
+            raise StorageError("Multipart upload token mismatch")
+        expected_parts = ceil(expected_size / chunk_size)
+        available = {part["PartNumber"]: part for part in self.list_multipart_parts(upload_id, object_key)}
+        if len(parts) != expected_parts or set(available) != set(range(1, expected_parts + 1)):
+            raise StorageError("Multipart upload is incomplete")
+        for part in parts:
+            remote = available.get(part.get("PartNumber"))
+            if not remote or remote["ETag"] != part.get("ETag") or remote["Size"] != part.get("Size"):
+                raise StorageError("Multipart parts changed before completion")
+        temporary = directory / "assembled.tmp"
+        checksum = hashlib.sha256()
+        size = 0
+        try:
+            with temporary.open("wb") as output:
+                for part in parts:
+                    source = directory / f"part-{part['PartNumber']:05d}"
+                    with source.open("rb") as handle:
+                        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                            output.write(chunk)
+                            checksum.update(chunk)
+                            size += len(chunk)
+            if size != expected_size:
+                raise StorageError("Supabase multipart size mismatch")
+            stored = self.upload_file(temporary, object_key, metadata["content_type"])
+        except OSError as exc:
+            raise StorageError("Unable to assemble Supabase multipart upload") from exc
+        finally:
+            shutil.rmtree(directory, ignore_errors=True)
+        return stored
+
+    def abort_multipart_upload(self, upload_id: str, object_key: str) -> None:
+        directory = self._dir(upload_id)
+        if directory.exists():
+            self._meta(upload_id, object_key)
+            shutil.rmtree(directory, ignore_errors=True)
+
+
 class CloudinaryStorageProvider:
     name = "cloudinary"
     def __init__(self):
@@ -770,7 +977,22 @@ def get_storage(provider: str | None = None) -> StorageProvider:
         return B2StorageProvider()
     if selected == "cloudinary":
         return CloudinaryStorageProvider()
+    if selected == "supabase":
+        return SupabaseStorageProvider()
     raise StorageError(f"Unsupported storage provider: {selected}")
+
+
+def storage_provider_for_asset(asset_type: str, size_bytes: int, content_type: str | None = None) -> str:
+    """Choose durable storage by media role; never put raw video/audio in Cloudinary."""
+    kind = (asset_type or "").lower()
+    mime = (content_type or "").lower()
+    if kind in {"video", "audio"} or mime.startswith(("video/", "audio/")):
+        return "b2"
+    if kind in {"thumbnail", "cover", "image", "srt_preview"} and size_bytes <= 10 * 1024 * 1024:
+        return "cloudinary"
+    if size_bytes <= 50 * 1024 * 1024:
+        return "supabase"
+    return "b2"
 
 
 def materialize_asset(asset, destination_dir: Path) -> Path:

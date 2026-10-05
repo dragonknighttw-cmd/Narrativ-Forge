@@ -18,7 +18,7 @@ def upgrade() -> None:
         return
     op.execute(
         """
-        DO $$
+        DO $nf$
         DECLARE r record;
         BEGIN
           IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon')
@@ -35,7 +35,7 @@ def upgrade() -> None:
             );
             END LOOP;
           END IF;
-        END $;
+        END $nf$;
         """
     )
 

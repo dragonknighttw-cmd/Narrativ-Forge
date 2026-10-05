@@ -617,6 +617,135 @@ class S3CompatibleStorageProvider:
 
 
 
+class CloudinaryStorageProvider:
+    name = "cloudinary"
+    def __init__(self):
+        try:
+            import cloudinary
+            import cloudinary.uploader
+            import cloudinary.utils
+        except ImportError as exc:
+            raise StorageError("cloudinary package is required for Cloudinary storage") from exc
+        if not all([settings.cloudinary_cloud_name, settings.cloudinary_api_key, settings.cloudinary_api_secret]):
+            raise StorageError("Cloudinary storage is not configured")
+        cloudinary.config(cloud_name=settings.cloudinary_cloud_name, api_key=settings.cloudinary_api_key, api_secret=settings.cloudinary_api_secret, secure=True)
+        self.cloudinary = cloudinary
+        self.uploader = cloudinary.uploader
+        self.utils = cloudinary.utils
+        self.multipart_root = Path(settings.upload_dir) / ".cloudinary-multipart"
+        self.multipart_root.mkdir(parents=True, exist_ok=True)
+    @staticmethod
+    def _resource_type(object_key: str) -> str:
+        return "video" if Path(object_key).suffix.lower() in {".mp4", ".webm", ".mov", ".mp3", ".wav", ".m4a"} else "raw"
+    @staticmethod
+    def _public_id(object_key: str) -> str:
+        return _safe_object_key(object_key).rsplit(".", 1)[0]
+    def upload_file(self, source: Path, object_key: str, content_type: str) -> StoredObject:
+        key = _safe_object_key(object_key)
+        kwargs = {"resource_type": self._resource_type(key), "public_id": self._public_id(key), "overwrite": True, "invalidate": True}
+        try:
+            self.uploader.upload_large(str(source), chunk_size=settings.cloudinary_chunk_size_bytes, **kwargs) if source.stat().st_size > 100 * 1024 * 1024 else self.uploader.upload(str(source), **kwargs)
+        except Exception as exc:
+            raise StorageError("Cloudinary upload failed") from exc
+        return StoredObject(provider=self.name, object_key=key, size_bytes=source.stat().st_size, checksum_sha256=sha256_file(source))
+    def download_file(self, object_key: str, destination: Path) -> StoredObject:
+        key = _safe_object_key(object_key)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            import urllib.request
+            urllib.request.urlretrieve(self.download_url(key), str(destination))
+        except Exception as exc:
+            raise StorageError("Cloudinary download failed") from exc
+        return StoredObject(provider=self.name, object_key=key, size_bytes=destination.stat().st_size, checksum_sha256=sha256_file(destination))
+    def delete(self, object_key: str) -> None:
+        key = _safe_object_key(object_key)
+        try:
+            self.uploader.destroy(self._public_id(key), resource_type=self._resource_type(key), type="upload", invalidate=True)
+        except Exception as exc:
+            raise StorageError("Cloudinary delete failed") from exc
+    def exists(self, object_key: str) -> bool:
+        key = _safe_object_key(object_key)
+        try:
+            self.cloudinary.api.resource(self._public_id(key), resource_type=self._resource_type(key), type="upload")
+            return True
+        except Exception:
+            return False
+    def download_url(self, object_key: str) -> str | None:
+        key = _safe_object_key(object_key)
+        try:
+            url, _ = self.utils.cloudinary_url(self._public_id(key), resource_type=self._resource_type(key), type="upload", secure=True, sign_url=True)
+            return url
+        except Exception as exc:
+            raise StorageError("Cloudinary URL generation failed") from exc
+    def _multipart_dir(self, upload_id: str) -> Path:
+        try:
+            safe_id = str(UUID(upload_id))
+        except ValueError as exc:
+            raise StorageError("Invalid multipart upload identifier") from exc
+        root = self.multipart_root.resolve()
+        path = (root / safe_id).resolve()
+        path.relative_to(root)
+        return path
+    def initiate_multipart_upload(self, object_key: str, content_type: str, upload_token: str) -> str:
+        upload_id = str(uuid4())
+        directory = self._multipart_dir(upload_id)
+        directory.mkdir(parents=True, exist_ok=False)
+        (directory / "metadata.json").write_text(json.dumps({"object_key": _safe_object_key(object_key), "upload_token": upload_token, "content_type": content_type}), encoding="utf-8")
+        return upload_id
+    def upload_part(self, upload_id: str, object_key: str, part_number: int, body: bytes, is_last: bool) -> str:
+        directory = self._multipart_dir(upload_id)
+        metadata = json.loads((directory / "metadata.json").read_text(encoding="utf-8"))
+        if metadata.get("object_key") != _safe_object_key(object_key):
+            raise StorageError("Multipart upload object key mismatch")
+        (directory / f"part-{part_number:05d}").write_bytes(body)
+        return hashlib.md5(body, usedforsecurity=False).hexdigest()
+    def list_multipart_parts(self, upload_id: str, object_key: str, upload_token: str | None = None, expected_size: int | None = None) -> list[dict]:
+        directory = self._multipart_dir(upload_id)
+        metadata = json.loads((directory / "metadata.json").read_text(encoding="utf-8"))
+        if metadata.get("object_key") != _safe_object_key(object_key):
+            raise StorageError("Multipart upload object key mismatch")
+        if upload_token and metadata.get("upload_token") != upload_token:
+            raise StorageError("Multipart upload token mismatch")
+        result = []
+        for path in sorted(directory.glob("part-*")):
+            data = path.read_bytes()
+            result.append({"PartNumber": int(path.name.removeprefix("part-")), "Size": len(data), "ETag": hashlib.md5(data, usedforsecurity=False).hexdigest()})
+        return result
+    def complete_multipart_upload(self, upload_id: str, object_key: str, parts: list[dict], expected_size: int, chunk_size: int, upload_token: str) -> StoredObject:
+        directory = self._multipart_dir(upload_id)
+        metadata = json.loads((directory / "metadata.json").read_text(encoding="utf-8"))
+        if metadata.get("object_key") != _safe_object_key(object_key) or metadata.get("upload_token") != upload_token:
+            raise StorageError("Multipart upload authorization failed")
+        expected_count = ceil(expected_size / chunk_size)
+        if len(parts) != expected_count:
+            raise StorageError("Multipart parts are incomplete")
+        temporary = directory / "combined.tmp"
+        digest = hashlib.sha256()
+        size = 0
+        try:
+            with temporary.open("wb") as output:
+                for number in range(1, expected_count + 1):
+                    path = directory / f"part-{number:05d}"
+                    if not path.is_file():
+                        raise StorageError("Multipart part is missing")
+                    data = path.read_bytes()
+                    expected = parts[number - 1]
+                    if expected.get("PartNumber") != number or expected.get("Size") != len(data) or expected.get("ETag") != hashlib.md5(data, usedforsecurity=False).hexdigest():
+                        raise StorageError("Multipart part changed before completion")
+                    output.write(data)
+                    digest.update(data)
+                    size += len(data)
+            if size != expected_size:
+                raise StorageError("Multipart size mismatch")
+            self.upload_file(temporary, object_key, metadata.get("content_type", "application/octet-stream"))
+        finally:
+            shutil.rmtree(directory, ignore_errors=True)
+        return StoredObject(provider=self.name, object_key=_safe_object_key(object_key), size_bytes=size, checksum_sha256=digest.hexdigest())
+    def abort_multipart_upload(self, upload_id: str, object_key: str) -> None:
+        directory = self._multipart_dir(upload_id)
+        if directory.exists():
+            shutil.rmtree(directory, ignore_errors=True)
+
 class B2StorageProvider(S3CompatibleStorageProvider):
     name = "b2"
 

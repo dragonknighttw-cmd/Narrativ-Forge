@@ -147,6 +147,67 @@ def update_subtitle(subtitle_id: str, payload: SubtitleUpdate, membership=Depend
     db.refresh(item)
     return _serialize(item)
 
+@router.post("/{episode_id}/subtitles/import-cloud-transcript", status_code=201)
+def import_cloud_transcript(
+    episode_id: str,
+    payload: dict,
+    membership=Depends(get_current_membership),
+    _: dict = Depends(require_roles("owner", "editor")),
+    db: Session = Depends(get_db),
+):
+    _episode_or_404(db, episode_id, membership.organization_id)
+    vtt = str(payload.get("vtt") or "")
+    preset = str(payload.get("preset") or "burmese_default")
+    if preset not in ("burmese_default", "burmese_compact"):
+        raise HTTPException(status_code=422, detail="Unsupported subtitle preset")
+    if not vtt.strip():
+        raise HTTPException(status_code=422, detail="Cloud transcript VTT is required")
+
+    import re
+    blocks = re.split(r"\\n\\s*\\n", vtt.replace("\\r\\n", "\\n").replace("\\r", "\\n"))
+    cues = []
+    timestamp = re.compile(r"(?P<start>\\d{2}:\\d{2}:\\d{2}\\.\\d{3})\\s*-->\\s*(?P<end>\\d{2}:\\d{2}:\\d{2}\\.\\d{3})")
+    def seconds(value: str) -> float:
+        hours, minutes, rest = value.split(":")
+        sec, millis = rest.split(".")
+        return int(hours) * 3600 + int(minutes) * 60 + int(sec) + int(millis) / 1000
+
+    for block in blocks:
+        lines = [line.strip() for line in block.split("\\n") if line.strip()]
+        match = next((timestamp.search(line) for line in lines), None)
+        if not match:
+            continue
+        text_lines = lines[lines.index(next(line for line in lines if timestamp.search(line))) + 1:]
+        text = " ".join(text_lines).strip()
+        if not text:
+            continue
+        cues.append({
+            "start": seconds(match.group("start")),
+            "end": seconds(match.group("end")),
+            "text": text,
+        })
+    if not cues:
+        raise HTTPException(status_code=422, detail="No subtitle cues were found in Cloudflare VTT output")
+
+    cues = _normalize_cues(cues)
+    errors = validate_cues(cues, preset)
+    version = (db.query(func.max(Subtitle.version)).filter(Subtitle.episode_id == episode_id).scalar() or 0) + 1
+    db.query(Subtitle).filter(Subtitle.episode_id == episode_id, Subtitle.is_current.is_(True)).update({Subtitle.is_current: False})
+    item = Subtitle(
+        episode_id=episode_id,
+        version=version,
+        preset=preset,
+        cues_json=json.dumps(cues, ensure_ascii=False),
+        validation_errors_json=json.dumps(errors, ensure_ascii=False),
+        status="draft",
+        is_current=True,
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return _serialize(item)
+
+
 @router.post("/{episode_id}/subtitles/validate")
 def validate_subtitles(episode_id: str, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)

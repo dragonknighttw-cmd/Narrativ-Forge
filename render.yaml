@@ -26,7 +26,7 @@ services:
       - key: UPLOAD_DIR
         value: /var/lib/narrativ-forge/uploads
       - key: STORAGE_PROVIDER
-        value: cloudinary
+        value: hybrid
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
@@ -37,6 +37,26 @@ services:
         value: narrativ-forge
       - key: CLOUDINARY_CHUNK_SIZE_BYTES
         value: "20971520"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: narrativ-forge
+      - key: SUPABASE_SIGNED_URL_EXPIRY_SECONDS
+        value: "900"
+      - key: B2_APPLICATION_KEY_ID
+        sync: false
+      - key: B2_APPLICATION_KEY
+        sync: false
+      - key: B2_BUCKET_NAME
+        sync: false
+      - key: B2_REGION
+        sync: false
+      - key: B2_ENDPOINT_URL
+        sync: false
+      - key: B2_SIGNED_URL_EXPIRY_SECONDS
+        value: "900"
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
@@ -77,6 +97,14 @@ services:
         sync: false
       - key: CLOUDFLARE_WHISPER_TOKEN_TTL_SECONDS
         value: "300"
+      - key: CLOUDFLARE_WHISPER_DAILY_NEURON_BUDGET
+        value: "10000"
+      - key: CLOUDFLARE_WHISPER_WARNING_THRESHOLD
+        value: "0.80"
+      - key: CLOUDFLARE_WHISPER_FALLBACK_THRESHOLD
+        value: "0.95"
+      - key: CLOUDFLARE_WHISPER_NEURONS_PER_AUDIO_MINUTE
+        value: "41.14"
 
 # Long-running Celery/FFmpeg/Whisper workers are intentionally not declared here.
 # Render does not provide free Background Workers. Keep worker runtime files in

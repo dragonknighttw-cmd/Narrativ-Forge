@@ -101,9 +101,15 @@ async def baseline_rate_limit(request: Request, call_next):
             content={"detail": "Too many requests. Please retry later."},
             headers={"Retry-After": str(window)},
         )
-    entries.append(now)
-    _rate_windows[key] = entries
     response = await call_next(request)
+    # Count failed authentication attempts rather than successful logins so
+    # the test suite and normal users do not exhaust the brute-force budget.
+    if bucket == "login" and response.status_code in {401, 403}:
+        entries.append(now)
+        _rate_windows[key] = entries
+    elif bucket != "login":
+        entries.append(now)
+        _rate_windows[key] = entries
     return response
 
 

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ...db import get_db
 from ...models import Idea
-from ..dependencies import get_current_user, require_roles
+from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/ideas", tags=["ideas"])
 
@@ -32,14 +32,14 @@ class IdeaUpdate(BaseModel):
 
 
 @router.get("")
-def list_ideas(_: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.query(Idea).order_by(Idea.created_at.desc()).all()
+def list_ideas(membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    return db.query(Idea).filter(Idea.organization_id == membership.organization_id).order_by(Idea.created_at.desc()).all()
 
 
 @router.post("", status_code=201)
-def create_idea(payload: IdeaCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def create_idea(payload: IdeaCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     values = payload.model_dump()
-    item = Idea(**values)
+    item = Idea(organization_id=membership.organization_id, **values)
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -47,8 +47,8 @@ def create_idea(payload: IdeaCreate, _: dict = Depends(require_roles("owner", "e
 
 
 @router.patch("/{idea_id}")
-def update_idea(idea_id: str, payload: IdeaUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(Idea, idea_id)
+def update_idea(idea_id: str, payload: IdeaUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    item = db.query(Idea).filter(Idea.id == idea_id, Idea.organization_id == membership.organization_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Idea not found")
     values = payload.model_dump(exclude_unset=True)

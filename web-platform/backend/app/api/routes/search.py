@@ -24,7 +24,7 @@ def global_search(
     pattern = f"%{term}%"
     results = []
 
-    candidate_limit = min(limit + offset, 200)
+    candidate_limit = offset + limit
 
     idea_query = db.query(Idea).filter(Idea.organization_id == membership.organization_id,
         or_(Idea.title.ilike(pattern), Idea.concept.ilike(pattern), Idea.hook.ilike(pattern))
@@ -42,7 +42,7 @@ def global_search(
     series_query = db.query(Series).filter(Series.organization_id == membership.organization_id,
         or_(Series.title.ilike(pattern), Series.description.ilike(pattern))
     )
-    for item in series_query.order_by(Series.updated_at.desc()).offset(offset).limit(limit).all():
+    for item in series_query.order_by(Series.updated_at.desc()).limit(candidate_limit).all():
         results.append({
             "type": "series",
             "id": item.id,
@@ -55,7 +55,7 @@ def global_search(
     episode_query = db.query(Episode).filter(Episode.organization_id == membership.organization_id,
         or_(Episode.title.ilike(pattern), Episode.synopsis.ilike(pattern), Episode.category.ilike(pattern))
     )
-    for item in episode_query.order_by(Episode.updated_at.desc()).offset(offset).limit(limit).all():
+    for item in episode_query.order_by(Episode.updated_at.desc()).limit(candidate_limit).all():
         results.append({
             "type": "episode",
             "id": item.id,
@@ -68,7 +68,7 @@ def global_search(
     script_query = db.query(Script).join(Episode, Script.episode_id == Episode.id).filter(Episode.organization_id == membership.organization_id,
         or_(Script.title.ilike(pattern), Script.content.ilike(pattern))
     )
-    for item in script_query.order_by(Script.updated_at.desc()).offset(offset).limit(limit).all():
+    for item in script_query.order_by(Script.updated_at.desc()).limit(candidate_limit).all():
         results.append({
             "type": "script",
             "id": item.id,

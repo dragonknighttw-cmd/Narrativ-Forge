@@ -174,9 +174,8 @@ def accept_invitation(payload: InviteAccept, response: Response, db: Session = D
         user = User(email=invitation.email, role=invitation.role, password_hash=password_hash, is_active=True)
         db.add(user)
         db.flush()
-    if not db.query(OrganizationMembership).filter_by(
-        organization_id=invitation.organization_id, user_id=user.id
-    ).first():
+    existing_membership = db.query(OrganizationMembership).filter_by(organization_id=invitation.organization_id, user_id=user.id).first()
+    if not existing_membership:
         db.add(OrganizationMembership(
             organization_id=invitation.organization_id, user_id=user.id, role=invitation.role
         ))

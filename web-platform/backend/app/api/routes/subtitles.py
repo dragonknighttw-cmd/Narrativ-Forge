@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from ...db import get_db
 from ...models import Asset, Episode, Subtitle
 from ...services.storage import StorageError, materialize_asset
-from ...services.subtitles import load_transcript, preset_config, render_srt, render_vtt, validate_cues
+from ...services.subtitles import load_transcript, normalize_burmese_text, preset_config, render_srt, render_vtt, validate_cues
 from ..dependencies import get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["subtitles"])
@@ -36,6 +36,15 @@ def _episode_or_404(db: Session, episode_id: str):
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
     return episode
+
+
+def _normalize_cues(cues):
+    normalized = []
+    for cue in cues:
+        item = dict(cue)
+        item["text"], _ = normalize_burmese_text(str(item.get("text") or "").strip())
+        normalized.append(item)
+    return normalized
 
 def _serialize(item: Subtitle):
     return {
@@ -90,6 +99,7 @@ def create_subtitle_version(subtitle_id: str, payload: SubtitleUpdate, _: dict =
     if preset not in ("burmese_default", "burmese_compact"):
         raise HTTPException(status_code=422, detail="Unsupported subtitle preset")
     cue_data = cues if cues is not None else json.loads(source.cues_json or "[]")
+    cue_data = _normalize_cues(cue_data)
     errors = validate_cues(cue_data, preset)
     version = (db.query(func.max(Subtitle.version)).filter(Subtitle.episode_id == source.episode_id).scalar() or 0) + 1
     db.query(Subtitle).filter(Subtitle.episode_id == source.episode_id, Subtitle.is_current.is_(True)).update({Subtitle.is_current: False})
@@ -125,6 +135,7 @@ def update_subtitle(subtitle_id: str, payload: SubtitleUpdate, _: dict = Depends
         cue_data = [cue if isinstance(cue, dict) else cue.model_dump() for cue in cues]
     else:
         cue_data = json.loads(item.cues_json or "[]")
+    cue_data = _normalize_cues(cue_data)
     errors = validate_cues(cue_data, preset)
     item.cues_json = json.dumps(cue_data, ensure_ascii=False)
     item.validation_errors_json = json.dumps(errors, ensure_ascii=False)

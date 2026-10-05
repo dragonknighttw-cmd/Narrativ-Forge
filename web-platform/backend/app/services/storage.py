@@ -391,6 +391,7 @@ class S3CompatibleStorageProvider:
                 ExtraArgs={
                     "ContentType": content_type,
                     "Metadata": {"sha256": checksum},
+                    "ServerSideEncryption": "AES256",
                 },
             )
         except Exception as exc:
@@ -458,6 +459,7 @@ class S3CompatibleStorageProvider:
                 Key=key,
                 ContentType=content_type,
                 Metadata={"nf-upload-session": upload_token},
+                ServerSideEncryption="AES256",
             )
             return response["UploadId"]
         except Exception as exc:

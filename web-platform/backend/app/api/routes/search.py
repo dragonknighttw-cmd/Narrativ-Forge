@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ...db import get_db
 from ...models import Episode, Idea, Script, Series
-from ..dependencies import get_current_user
+from ..dependencies import get_current_membership
 
 router = APIRouter(prefix="/search", tags=["search"])
 

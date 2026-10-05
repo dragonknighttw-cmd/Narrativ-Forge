@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { AppShell } from "../../../../components/app-shell";
 import { ErrorState } from "../../../../components/domain-forms";
 import { api, Episode, Subtitle, SubtitleCue } from "../../../../lib/api";
+import { transcribeVideoWithCloudflare } from "../../../../lib/cloud-whisper";
 
 export default function SubtitleStudioPage({ params }: { params: { id: string } }) {
   const episodeId = params.id;
@@ -13,6 +14,8 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
   const [preset, setPreset] = useState("burmese_default");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [cloudFile, setCloudFile] = useState<File | null>(null);
+  const [cloudProgress, setCloudProgress] = useState("");
 
   async function load() {
     try {
@@ -81,6 +84,32 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
           <option value="burmese_compact">Burmese Compact · 1–5s · 32 chars</option>
         </select>
         <button className="primary" disabled={busy} onClick={generate}>Generate from transcript</button>
+      </div>
+    </section>
+    
+    <section className="card">
+      <div className="eyebrow">CLOUDFLARE CLOUD PROCESSING</div>
+      <h2>Browser FFmpeg → Cloudflare Whisper</h2>
+      <p className="muted">Video ကို browser ထဲမှာ audio ပြောင်းပြီး Whisper ကို Cloudflare Workers AI ဆီပို့ပါတယ်။ Render server မှာ FFmpeg/Whisper မ run ပါဘူး။</p>
+      <div className="stack-form">
+        <input type="file" accept="video/*" onChange={e => setCloudFile(e.target.files?.[0] ?? null)} aria-label="Choose video for Cloudflare transcription" />
+        <div className="inline-form">
+          <button className="primary" disabled={busy || !cloudFile} onClick={async () => {
+            if (!cloudFile) return;
+            setBusy(true); setError(""); setCloudProgress("");
+            try {
+              const result = await transcribeVideoWithCloudflare(episodeId, cloudFile, () => api.createCloudWhisperToken(episodeId), setCloudProgress);
+              const imported = await api.importCloudTranscript(episodeId, result.vtt, preset);
+              setSubtitle(imported);
+              setCloudProgress("Cloudflare transcript imported into Subtitle Studio.");
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "Cloudflare transcription failed");
+            } finally {
+              setBusy(false);
+            }
+          }}>{busy ? "Processing…" : "Transcribe with Cloudflare"}</button>
+          {cloudProgress && <span className="muted">{cloudProgress}</span>}
+        </div>
       </div>
     </section>
 

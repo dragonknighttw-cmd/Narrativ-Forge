@@ -66,7 +66,7 @@ def run_mock_job(job_id: str, db: Session) -> ProcessingJob:
     job.input_asset_id = input_asset.id
     job.status = "running"
     job.progress = 10
-    if episode.status == "in_production":
+    if episode.status in {"idea", "planned", "script_draft", "script_review", "assets_needed", "in_production"}:
         episode.status = "processing"
         episode.current_step = "processing"
     job.started_at = now()

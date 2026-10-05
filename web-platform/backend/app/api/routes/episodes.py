@@ -1,5 +1,6 @@
 from datetime import date, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import update
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -145,7 +146,7 @@ def update_episode(episode_id: str, payload: EpisodeUpdate, _: dict = Depends(re
             detail={
                 "code": "STALE_ROW_VERSION",
                 "message": "Episode was modified by another request",
-                "current": current,
+                "current": jsonable_encoder(current),
             },
         )
 

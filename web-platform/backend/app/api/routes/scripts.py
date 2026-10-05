@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 from sqlalchemy import func, update
 from sqlalchemy.orm import Session
@@ -87,7 +88,7 @@ def update_script(script_id: str, payload: ScriptUpdate, _: dict = Depends(requi
             detail={
                 "code": "STALE_ROW_VERSION",
                 "message": "Script was modified by another request",
-                "current": current,
+                "current": jsonable_encoder(current),
             },
         )
 

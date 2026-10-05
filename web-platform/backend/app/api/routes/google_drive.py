@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from ...core.config import settings
 from ...db import get_db
-from ...models import GoogleDriveConnection
+from ...models import GoogleDriveConnection, OrganizationMembership, User
 from ..dependencies import get_current_user, require_roles
 from ..routes.phase4 import current_membership
 
@@ -73,6 +73,11 @@ def google_start(user=Depends(require_roles("owner", "editor")), membership=Depe
 @router.get("/callback")
 async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
     email, organization_id = _verify_state(state)
+    member = db.query(OrganizationMembership).join(User, User.id == OrganizationMembership.user_id).filter(
+        User.email == email, OrganizationMembership.organization_id == organization_id
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="Google Drive OAuth workspace membership is no longer valid")
     if not settings.google_client_id or not settings.google_client_secret:
         raise HTTPException(status_code=503, detail="Google OAuth credentials are not configured")
     async with httpx.AsyncClient(timeout=20) as client:

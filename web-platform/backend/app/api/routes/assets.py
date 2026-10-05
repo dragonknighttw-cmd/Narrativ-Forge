@@ -23,7 +23,7 @@ from ...middleware.idempotency import (
     validate_idempotency_key,
 )
 from ...services.storage import StorageError, build_object_key, get_storage
-from ..dependencies import get_current_user, require_roles
+from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["assets"])
 asset_router = APIRouter(prefix="/assets", tags=["assets"])
@@ -66,16 +66,16 @@ def validate_upload(filename: str, content_type: str | None, asset_type: str) ->
         raise HTTPException(status_code=415, detail="Unsupported file extension")
 
 
-def _episode_or_404(db: Session, episode_id: str) -> Episode:
-    item = db.get(Episode, episode_id)
+def _episode_or_404(db: Session, episode_id: str, organization_id: str | None = None) -> Episode:
+    item = db.query(Episode).filter(Episode.id == episode_id, *( [Episode.organization_id == organization_id] if organization_id else [] )).first()
     if not item:
         raise HTTPException(status_code=404, detail="Episode not found")
     return item
 
 
 @router.get("/{episode_id}/assets")
-def list_assets(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    _episode_or_404(db, episode_id)
+def list_assets(episode_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    _episode_or_404(db, episode_id, membership.organization_id)
     return db.query(Asset).filter(Asset.episode_id == episode_id).order_by(Asset.created_at.desc()).all()
 
 
@@ -90,15 +90,16 @@ async def upload_asset(
     checksum_header: str | None = Header(default=None, alias="X-Content-SHA256"),
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     user: dict = Depends(require_roles("owner", "editor")),
+    membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
     idempotency_key = validate_idempotency_key(idempotency_key)
-    episode = db.query(Episode).filter(Episode.id == episode_id).with_for_update().first()
+    episode = db.query(Episode).filter(Episode.id == episode_id, Episode.organization_id == membership.organization_id).with_for_update().first()
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
     validate_upload(file.filename or "", file.content_type, asset_type)
     if scene_id:
-        scene = db.get(Scene, scene_id)
+        scene = db.query(Scene).join(Episode, Scene.episode_id == Episode.id).filter(Scene.id == scene_id, Episode.organization_id == membership.organization_id).first()
         if not scene or scene.episode_id != episode_id:
             raise HTTPException(status_code=422, detail="Scene does not belong to this episode")
 
@@ -235,8 +236,8 @@ async def upload_asset(
 
 
 @asset_router.get("/{asset_id}/download")
-def download_asset(asset_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    item = db.get(Asset, asset_id)
+def download_asset(asset_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    item = db.query(Asset).join(Episode, Asset.episode_id == Episode.id).filter(Asset.id == asset_id, Episode.organization_id == membership.organization_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Asset not found")
     if item.status == "deleted":
@@ -263,7 +264,7 @@ def download_asset(asset_id: str, _: dict = Depends(get_current_user), db: Sessi
 
 
 @asset_router.patch("/{asset_id}")
-def update_asset(asset_id: str, payload: AssetUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def update_asset(asset_id: str, payload: AssetUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(Asset, asset_id)
     if not item:
         raise HTTPException(status_code=404, detail="Asset not found")
@@ -286,7 +287,7 @@ def update_asset(asset_id: str, payload: AssetUpdate, _: dict = Depends(require_
 
 
 @asset_router.delete("/{asset_id}")
-def soft_delete_asset(asset_id: str, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def soft_delete_asset(asset_id: str, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     item = db.get(Asset, asset_id)
     if not item:
         raise HTTPException(status_code=404, detail="Asset not found")

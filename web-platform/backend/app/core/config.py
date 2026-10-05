@@ -1,4 +1,5 @@
 from pydantic import Field, SecretStr
+from cryptography.fernet import Fernet
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -81,6 +82,14 @@ class Settings(BaseSettings):
             raise RuntimeError("SESSION_SECRET must be a strong non-default secret (32+ characters) in production")
         if not self.session_cookie_secure:
             raise RuntimeError("SESSION_COOKIE_SECURE must be true in production")
+        if not self.oauth_encryption_key:
+            raise RuntimeError("OAUTH_ENCRYPTION_KEY must be configured in production")
+        try:
+            Fernet(self.oauth_encryption_key.encode())
+        except Exception as exc:
+            raise RuntimeError("OAUTH_ENCRYPTION_KEY must be a valid Fernet key in production") from exc
+        if not self.smtp_host or not self.smtp_from_email:
+            raise RuntimeError("SMTP_HOST and SMTP_FROM_EMAIL must be configured in production")
         if not self.cors_origin_list:
             raise RuntimeError("CORS_ORIGINS must contain at least one allowed origin in production")
         if any(origin == "*" for origin in self.cors_origin_list):

@@ -213,6 +213,11 @@ CLOUDFLARE_WHISPER_TOKEN_TTL_SECONDS=300
 
 The Worker can use the Cloudflare `workers.dev` subdomain; no custom domain is required.
 
+For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the Worker when its source changes. GitHub repository Actions secrets required:
+- `CLOUDFLARE_API_TOKEN` — Workers Scripts Write permission
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_WHISPER_SHARED_SECRET` — same value configured in Render
+
 ## 6. Current implementation status
 
 ### Completed / implemented

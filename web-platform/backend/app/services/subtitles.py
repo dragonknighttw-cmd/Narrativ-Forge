@@ -1,9 +1,39 @@
 import json
 import re
 import tempfile
+import unicodedata
 from pathlib import Path
 
 MYANMAR_RE = re.compile(r"[\u1000-\u109F]")
+
+try:
+    from myanmartools import ZawgyiDetector
+    from icu import Transliterator
+    _ZAWGYI_DETECTOR = ZawgyiDetector()
+    _ZAWGYI_CONVERTER = Transliterator.createInstance("Zawgyi-my")
+except ImportError:  # pragma: no cover
+    _ZAWGYI_DETECTOR = None
+    _ZAWGYI_CONVERTER = None
+
+def zawgyi_probability(text: str) -> float:
+    if not text or _ZAWGYI_DETECTOR is None:
+        return 0.0
+    return float(_ZAWGYI_DETECTOR.get_zawgyi_probability(text))
+
+def normalize_burmese_text(text: str, *, zawgyi_threshold: float = 0.80) -> tuple[str, dict]:
+    original = text or ""
+    probability = zawgyi_probability(original)
+    converted = original
+    detected = probability >= zawgyi_threshold
+    if detected and _ZAWGYI_CONVERTER is not None:
+        converted = _ZAWGYI_CONVERTER.transliterate(original)
+    normalized = unicodedata.normalize("NFC", converted)
+    return normalized, {
+        "zawgyi_probability": round(probability, 6),
+        "zawgyi_detected": detected,
+        "changed": normalized != original,
+    }
+
 PRESETS = {
     "burmese_default": {"max_chars": 42, "min_seconds": 1.0, "max_seconds": 7.0, "max_lines": 2},
     "burmese_compact": {"max_chars": 32, "min_seconds": 1.0, "max_seconds": 5.0, "max_lines": 2},
@@ -72,7 +102,7 @@ def load_transcript(path: str):
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     segments = data.get("segments", [])
     return [
-        {"id": index, "start": float(segment["start"]), "end": float(segment["end"]), "text": str(segment.get("text", "")).strip()}
+        {"id": index, "start": float(segment["start"]), "end": float(segment["end"]), "text": normalize_burmese_text(str(segment.get("text", "")).strip())[0]}
         for index, segment in enumerate(segments, 1)
         if "start" in segment and "end" in segment
     ]

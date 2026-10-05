@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "../../lib/api";
 
-export default function InvitePage() {
+function InviteContent() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get("token") ?? "";
@@ -38,4 +38,12 @@ export default function InvitePage() {
       <button className="primary" disabled={busy || !token}>{busy ? "Joining…" : "Accept invitation"}</button>
     </form>
   </main>;
+}
+
+export default function InvitePage() {
+  return (
+    <Suspense fallback={<main className="login"><section className="login-card"><div className="brand-mark">NF</div><div className="eyebrow">NARRATIV FORGE</div><h1>Join workspace</h1><p className="muted">Loading invitation…</p></section></main>}>
+      <InviteContent />
+    </Suspense>
+  );
 }

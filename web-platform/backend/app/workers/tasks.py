@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from .. import db as app_db
 from ..core.config import settings
+from cryptography.fernet import Fernet
 from .. import metrics
 from ..models import Asset, FailedJob, ProcessingJob, StorageReplica, NotificationEvent, WebhookEndpoint
 from ..services.audit import record_event
@@ -217,9 +218,8 @@ def register_tasks(celery_app):
                 events = json.loads(endpoint.events_json or "[]")
                 if events and event.event_type not in events:
                     continue
-                signature = hmac.new(
-                    bytes.fromhex(endpoint.secret_hash), payload, hashlib.sha256
-                ).hexdigest()
+                secret = (Fernet(settings.oauth_encryption_key.encode()).decrypt(endpoint.secret_encrypted.encode()) if endpoint.secret_encrypted and settings.oauth_encryption_key else bytes.fromhex(endpoint.secret_hash))
+                signature = hmac.new(secret, payload, hashlib.sha256).hexdigest()
                 try:
                     response = httpx.post(
                         endpoint.url,

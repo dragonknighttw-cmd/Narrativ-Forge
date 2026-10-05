@@ -153,6 +153,8 @@ def create_invitation(
     user=Depends(require_roles("owner")),
     db: Session = Depends(get_db),
 ):
+    if settings.single_user_mode:
+        raise HTTPException(status_code=403, detail="Invitations are disabled in single-user mode")
     if payload.role not in {"owner", "editor", "viewer"}:
         raise HTTPException(status_code=422, detail="Invalid role")
     token = secrets.token_urlsafe(32)
@@ -182,6 +184,8 @@ def create_invitation(
 
 @router.post("/invitations/accept")
 def accept_invitation(payload: InviteAccept, response: Response, db: Session = Depends(get_db)):
+    if settings.single_user_mode:
+        raise HTTPException(status_code=403, detail="Invitations are disabled in single-user mode")
     invitation = db.query(Invitation).filter(
         Invitation.token_hash == _token_hash(payload.token),
         Invitation.status == "pending",
@@ -217,6 +221,8 @@ def accept_invitation(payload: InviteAccept, response: Response, db: Session = D
 @router.post("/magic-link/request")
 def request_magic_link(payload: MagicLinkRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
+    if settings.single_user_mode and email != settings.single_user_email.strip().lower():
+        return {"requested": True}
     from ...models import User
     user = db.query(User).filter(User.email == email, User.is_active.is_(True)).first()
     if not user:

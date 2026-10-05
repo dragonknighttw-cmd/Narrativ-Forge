@@ -92,20 +92,18 @@ class Settings(BaseSettings):
             if missing:
                 raise RuntimeError("Cloudinary storage configuration missing: " + ", ".join(missing))
         if self.storage_replica_enabled and self.storage_replica_provider.lower() not in {"cloudinary", "b2"}:
-            raise RuntimeError("STORAGE_REPLICA_PROVIDER must be one of: storj, b2 when replication is enabled")
+            raise RuntimeError("STORAGE_REPLICA_PROVIDER must be one of: cloudinary, b2 when replication is enabled")
         if self.storage_replica_enabled and self.storage_replica_provider.lower() == self.storage_provider.lower():
             raise RuntimeError("STORAGE_REPLICA_PROVIDER must differ from STORAGE_PROVIDER")
-        if self.storage_replica_enabled and self.storage_replica_provider.lower() == "storj":
+        if self.storage_replica_enabled and self.storage_replica_provider.lower() == "cloudinary":
             required = {
-                "STORJ_ACCESS_KEY_ID": self.storj_access_key_id,
-                "STORJ_SECRET_ACCESS_KEY": self.storj_secret_access_key,
-                "STORJ_BUCKET_NAME": self.storj_bucket_name,
-                "STORJ_REGION": self.storj_region,
-                "STORJ_ENDPOINT_URL": self.storj_endpoint_url,
+                "CLOUDINARY_CLOUD_NAME": self.cloudinary_cloud_name,
+                "CLOUDINARY_API_KEY": self.cloudinary_api_key,
+                "CLOUDINARY_API_SECRET": self.cloudinary_api_secret,
             }
             missing = [name for name, value in required.items() if not value]
             if missing:
-                raise RuntimeError("Storj replica configuration missing: " + ", ".join(missing))
+                raise RuntimeError("Cloudinary replica configuration missing: " + ", ".join(missing))
         if self.storage_replica_enabled and self.storage_replica_provider.lower() == "b2":
             required = {
                 "B2_APPLICATION_KEY_ID": self.b2_application_key_id,

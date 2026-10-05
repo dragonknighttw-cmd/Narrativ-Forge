@@ -46,6 +46,17 @@ def upgrade() -> None:
             ["organization_id", "user_email"],
         )
 
+    bind = op.get_bind()
+    connections = bind.execute(sa.text("SELECT id, user_email FROM google_drive_connections WHERE organization_id IS NULL")).fetchall()
+    for connection_id, email in connections:
+        membership = bind.execute(sa.text(
+            "SELECT om.organization_id FROM organization_memberships om JOIN users u ON u.id = om.user_id WHERE u.email = :email ORDER BY om.created_at LIMIT 1"
+        ), {"email": email}).first()
+        if membership:
+            bind.execute(sa.text(
+                "UPDATE google_drive_connections SET organization_id = :organization_id WHERE id = :id"
+            ), {"organization_id": membership[0], "id": connection_id})
+
 def downgrade() -> None:
     with op.batch_alter_table("google_drive_connections") as batch:
         batch.drop_constraint("uq_google_drive_org_user", type_="unique")

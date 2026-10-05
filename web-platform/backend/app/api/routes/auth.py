@@ -3,10 +3,10 @@ from pydantic import BaseModel, field_validator
 import re
 from sqlalchemy.orm import Session
 
-from ..dependencies import get_current_user, issue_session, require_roles
+from ..dependencies import get_current_membership, get_current_user, issue_session, require_roles
 from ...core.config import settings
 from ...db import get_db
-from ...models import User
+from ...models import OrganizationMembership, User
 from ...services.passwords import hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -76,6 +76,7 @@ def me(user=Depends(get_current_user)):
 def invite(
     payload: InviteRequest,
     user=Depends(require_roles("owner")),
+    membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
     if settings.single_user_mode:
@@ -92,6 +93,8 @@ def invite(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     created = User(email=email, role=role, password_hash=password_hash, is_active=True)
     db.add(created)
+    db.flush()
+    db.add(OrganizationMembership(organization_id=membership.organization_id, user_id=created.id, role=role))
     db.commit()
     db.refresh(created)
     return {"id": created.id, "email": created.email, "role": created.role}

@@ -14,13 +14,13 @@ from ...db import get_db
 from ...models import Asset, Episode, ExportRecord, Subtitle
 from ...services.audit import record_event
 from ...services.storage import StorageError, materialize_asset
-from ..dependencies import get_current_user, require_roles
+from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["export"])
 
 
-def _episode(db, episode_id):
-    item = db.get(Episode, episode_id)
+def _episode(db, episode_id, organization_id=None):
+    item = db.query(Episode).filter(Episode.id == episode_id, *( [Episode.organization_id == organization_id] if organization_id else [] )).first()
     if not item:
         raise HTTPException(status_code=404, detail="Episode not found")
     return item
@@ -62,8 +62,8 @@ def _claim_export(db: Session, episode_id: str, *, expected_status: str) -> Epis
 
 
 @router.get("/{episode_id}/export")
-def get_export(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    _episode(db, episode_id)
+def get_export(episode_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    _episode(db, episode_id, membership.organization_id)
     item = _record(db, episode_id, "mock_drive")
     if not item:
         return {"status": "not_exported", "episode_id": episode_id}
@@ -82,7 +82,7 @@ def get_export(episode_id: str, _: dict = Depends(get_current_user), db: Session
 
 
 @router.get("/{episode_id}/export/history")
-def export_history(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def export_history(episode_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):
     _episode(db, episode_id)
     records = db.query(ExportRecord).filter(
         ExportRecord.episode_id == episode_id
@@ -102,7 +102,7 @@ def export_history(episode_id: str, _: dict = Depends(get_current_user), db: Ses
 
 
 @router.post("/{episode_id}/export/mock-drive")
-def mock_drive_export(episode_id: str, user=Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def mock_drive_export(episode_id: str, user=Depends(require_roles("owner", "editor")), membership=Depends(get_current_membership), db: Session = Depends(get_db)):
     episode = _episode(db, episode_id)
     record = _record(db, episode_id, "mock_drive")
     if record and record.status == "completed":
@@ -167,7 +167,7 @@ def mock_drive_export(episode_id: str, user=Depends(require_roles("owner", "edit
 
 
 @router.post("/{episode_id}/export/google-drive")
-async def google_drive_export(episode_id: str, user=Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+async def google_drive_export(episode_id: str, user=Depends(require_roles("owner", "editor")), membership=Depends(get_current_membership), db: Session = Depends(get_db)):
     from .google_drive import access_token_for
     from ...services.subtitles import render_srt
 

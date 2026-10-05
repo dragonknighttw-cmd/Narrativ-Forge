@@ -1,6 +1,7 @@
 """phase 4 foundation: tenants, invitations, tags, usage, billing, webhooks"""
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 revision = "0009_phase4_foundations"
 down_revision = "0008_storage_replicas"
@@ -8,6 +9,12 @@ branch_labels = None
 depends_on = None
 
 def upgrade() -> None:
+    # 0001_bootstrap builds the current ORM baseline, which already contains
+    # phase-4 tables. Keep this historical migration replay-safe.
+    bind = op.get_bind()
+    if inspect(bind).has_table("organizations"):
+        return
+
     op.create_table("organizations",
         sa.Column("id", sa.String(36), primary_key=True),
         sa.Column("name", sa.String(255), nullable=False),

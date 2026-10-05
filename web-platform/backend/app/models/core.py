@@ -297,6 +297,26 @@ class Asset(Base):
     )
 
 
+class StorageReplica(Base):
+    __tablename__ = "storage_replicas"
+    __table_args__ = (UniqueConstraint("asset_id", "provider", name="uq_storage_replica_asset_provider"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    asset_id: Mapped[str] = mapped_column(ForeignKey("assets.id", ondelete="CASCADE"), index=True)
+    provider: Mapped[str] = mapped_column(String(40), nullable=False)
+    object_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, default="queued")
+    checksum_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now, nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    asset: Mapped[Asset] = relationship(back_populates="storage_replicas")
+
+
 class Subtitle(Base):
     __tablename__ = "subtitles"
     __table_args__ = (UniqueConstraint("episode_id", "version", name="uq_subtitle_version_per_episode"),)

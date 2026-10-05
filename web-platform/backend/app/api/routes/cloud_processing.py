@@ -115,7 +115,6 @@ def create_whisper_token(
         "usage": usage,
         "warning": ratio >= settings.cloudflare_whisper_warning_threshold,
         "fallback_required": False,
-        "usage": usage,
     }
 
 

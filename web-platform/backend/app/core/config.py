@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     storage_provider: str = "local"
     storage_replica_provider: str = ""
     storage_replica_enabled: bool = False
+    cloudinary_cloud_name: str = ""
+    cloudinary_api_key: str = ""
+    cloudinary_api_secret: str = ""
+    cloudinary_folder: str = "narrativ-forge"
+    cloudinary_chunk_size_bytes: int = Field(default=20 * 1024 * 1024, ge=5 * 1024 * 1024, le=100 * 1024 * 1024)
     storj_access_key_id: str = ""
     storj_secret_access_key: str = ""
     storj_bucket_name: str = ""
@@ -75,20 +80,18 @@ class Settings(BaseSettings):
             raise RuntimeError("CORS_ORIGINS must contain at least one allowed origin in production")
         if not self.trusted_host_list:
             raise RuntimeError("TRUSTED_HOSTS must contain at least one allowed host in production")
-        if self.storage_provider.lower() not in {"storj", "b2"}:
-            raise RuntimeError("STORAGE_PROVIDER must be one of: storj, b2 in production")
-        if self.storage_provider.lower() == "storj":
+        if self.storage_provider.lower() not in {"cloudinary", "b2"}:
+            raise RuntimeError("STORAGE_PROVIDER must be one of: cloudinary, b2 in production")
+        if self.storage_provider.lower() == "cloudinary":
             required = {
-                "STORJ_ACCESS_KEY_ID": self.storj_access_key_id,
-                "STORJ_SECRET_ACCESS_KEY": self.storj_secret_access_key,
-                "STORJ_BUCKET_NAME": self.storj_bucket_name,
-                "STORJ_REGION": self.storj_region,
-                "STORJ_ENDPOINT_URL": self.storj_endpoint_url,
+                "CLOUDINARY_CLOUD_NAME": self.cloudinary_cloud_name,
+                "CLOUDINARY_API_KEY": self.cloudinary_api_key,
+                "CLOUDINARY_API_SECRET": self.cloudinary_api_secret,
             }
             missing = [name for name, value in required.items() if not value]
             if missing:
-                raise RuntimeError("Storj storage configuration missing: " + ", ".join(missing))
-        if self.storage_replica_enabled and self.storage_replica_provider.lower() not in {"storj", "b2"}:
+                raise RuntimeError("Cloudinary storage configuration missing: " + ", ".join(missing))
+        if self.storage_replica_enabled and self.storage_replica_provider.lower() not in {"cloudinary", "b2"}:
             raise RuntimeError("STORAGE_REPLICA_PROVIDER must be one of: storj, b2 when replication is enabled")
         if self.storage_replica_enabled and self.storage_replica_provider.lower() == self.storage_provider.lower():
             raise RuntimeError("STORAGE_REPLICA_PROVIDER must differ from STORAGE_PROVIDER")

@@ -70,14 +70,18 @@ class Settings(BaseSettings):
     def validate_runtime(self) -> None:
         if not self.is_production:
             return
-        if not self.session_secret or len(self.session_secret) < 32:
-            raise RuntimeError("SESSION_SECRET must be a strong secret (32+ characters) in production")
+        if not self.session_secret or len(self.session_secret) < 32 or self.session_secret in {"change-me", "change-me-in-production", "dev-secret", "secret"}:
+            raise RuntimeError("SESSION_SECRET must be a strong non-default secret (32+ characters) in production")
         if not self.session_cookie_secure:
             raise RuntimeError("SESSION_COOKIE_SECURE must be true in production")
         if not self.cors_origin_list:
             raise RuntimeError("CORS_ORIGINS must contain at least one allowed origin in production")
+        if any(origin == "*" for origin in self.cors_origin_list):
+            raise RuntimeError("CORS_ORIGINS must not use wildcard in production")
         if not self.trusted_host_list:
             raise RuntimeError("TRUSTED_HOSTS must contain at least one allowed host in production")
+        if "*" in self.trusted_host_list:
+            raise RuntimeError("TRUSTED_HOSTS must not use wildcard in production")
         if self.storage_provider.lower() not in {"cloudinary", "b2"}:
             raise RuntimeError("STORAGE_PROVIDER must be one of: cloudinary, b2 in production")
         if self.storage_provider.lower() == "cloudinary":

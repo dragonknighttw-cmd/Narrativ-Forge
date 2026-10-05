@@ -32,6 +32,30 @@ def _sign(payload: dict) -> str:
     return encoded + "." + _b64(signature)
 
 
+def _verify_signed_payload(token: str) -> dict:
+    parts = token.split(".")
+    if len(parts) != 2:
+        raise HTTPException(status_code=400, detail="Invalid Whisper usage key")
+    try:
+        encoded, supplied = parts
+        expected = hmac.new(
+            settings.cloudflare_whisper_shared_secret.encode(),
+            encoded.encode(),
+            hashlib.sha256,
+        ).digest()
+        supplied_bytes = base64.urlsafe_b64decode(supplied + "=" * (-len(supplied) % 4))
+        if not hmac.compare_digest(expected, supplied_bytes):
+            raise ValueError("signature mismatch")
+        payload = json.loads(base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode())
+    except (ValueError, TypeError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid Whisper usage key") from exc
+    if not isinstance(payload, dict) or payload.get("purpose") != "usage":
+        raise HTTPException(status_code=400, detail="Invalid Whisper usage key")
+    if int(payload.get("exp", 0)) <= int(time.time()):
+        raise HTTPException(status_code=400, detail="Whisper usage key expired")
+    return payload
+
+
 def _daily_usage(db: Session, organization_id: str) -> dict:
     today = datetime.now(timezone.utc).date()
     rows = db.query(UsageEvent).filter(
@@ -106,12 +130,21 @@ def create_whisper_token(
         "episode_id": episode.id,
         "exp": now + settings.cloudflare_whisper_token_ttl_seconds,
         "jti": str(uuid4()),
+        "max_audio_seconds": payload.estimated_audio_seconds,
     }
+    usage_key = _sign({
+        "purpose": "usage",
+        "sub": str(user["id"]),
+        "episode_id": episode.id,
+        "exp": claims["exp"],
+        "jti": claims["jti"],
+        "max_audio_seconds": payload.estimated_audio_seconds,
+    })
     return {
         "worker_url": settings.cloudflare_whisper_worker_url.rstrip("/"),
         "token": _sign(claims),
         "expires_at": claims["exp"],
-        "usage_key": claims["jti"],
+        "usage_key": usage_key,
         "usage": usage,
         "warning": ratio >= settings.cloudflare_whisper_warning_threshold,
         "fallback_required": False,
@@ -130,10 +163,15 @@ def whisper_usage(
 def record_whisper_usage(
     payload: WhisperUsageRequest,
     membership=Depends(get_current_membership),
-    _: dict = Depends(require_roles("owner", "editor")),
+    user: dict = Depends(require_roles("owner", "editor")),
     db: Session = Depends(get_db),
 ):
-    key = f"cloud-whisper:{payload.usage_key}"
+    usage_claims = _verify_signed_payload(payload.usage_key)
+    if usage_claims.get("sub") != str(user["id"]):
+        raise HTTPException(status_code=403, detail="Whisper usage key does not belong to the current user")
+    if payload.audio_seconds > int(usage_claims.get("max_audio_seconds", 0)):
+        raise HTTPException(status_code=400, detail="Recorded audio exceeds the signed Whisper estimate")
+    key = f"cloud-whisper:{usage_claims['jti']}"
     existing = db.query(UsageEvent).filter(UsageEvent.idempotency_key == key).first()
     if existing:
         return {"recorded": False, "usage": _daily_usage(db, membership.organization_id)}

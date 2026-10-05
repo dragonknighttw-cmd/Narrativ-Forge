@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from ..dependencies import get_current_user, require_roles, issue_session
 from ...db import get_db
+from ...workers.celery_app import get_celery
 from ...models import (
     BillingSubscription, Invitation, MagicLinkToken, Organization,
     OrganizationMembership, Tag, TagAssignment, UsageEvent,
@@ -318,3 +319,63 @@ def set_plan(plan: str, membership=Depends(current_membership), user=Depends(req
     org.plan = plan
     db.commit()
     return sub
+
+
+class WebhookCreate(BaseModel):
+    url: str
+    events: list[str] = []
+
+class NotificationCreate(BaseModel):
+    event_type: str
+    payload: dict = {}
+
+@router.post("/webhooks")
+def create_webhook(payload: WebhookCreate, membership=Depends(current_membership), db: Session = Depends(get_db)):
+    secret = secrets.token_urlsafe(32)
+    endpoint = WebhookEndpoint(
+        organization_id=membership.organization_id,
+        url=payload.url.strip(),
+        secret_hash=_token_hash(secret),
+        events_json=json.dumps(payload.events),
+    )
+    db.add(endpoint)
+    db.commit()
+    db.refresh(endpoint)
+    return {"id": endpoint.id, "url": endpoint.url, "events": payload.events, "secret": secret}
+
+@router.get("/webhooks")
+def list_webhooks(membership=Depends(current_membership), db: Session = Depends(get_db)):
+    rows = db.query(WebhookEndpoint).filter(WebhookEndpoint.organization_id == membership.organization_id).all()
+    return [{"id": r.id, "url": r.url, "events": json.loads(r.events_json or "[]"), "is_active": r.is_active, "created_at": r.created_at} for r in rows]
+
+@router.delete("/webhooks/{webhook_id}")
+def delete_webhook(webhook_id: str, membership=Depends(current_membership), user=Depends(require_roles("owner")), db: Session = Depends(get_db)):
+    row = db.query(WebhookEndpoint).filter(WebhookEndpoint.id == webhook_id, WebhookEndpoint.organization_id == membership.organization_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    row.is_active = False
+    db.commit()
+    return {"id": row.id, "is_active": False}
+
+@router.post("/notifications")
+def create_notification(payload: NotificationCreate, membership=Depends(current_membership), db: Session = Depends(get_db)):
+    event = NotificationEvent(
+        organization_id=membership.organization_id,
+        event_type=payload.event_type,
+        payload_json=json.dumps(payload.payload, separators=(",", ":")),
+    )
+    db.add(event)
+    db.commit()
+    db.refresh(event)
+    try:
+        get_celery().send_task("narrativ.deliver_notification", args=[event.id])
+    except Exception:
+        pass
+    return {"id": event.id, "status": event.status}
+
+@router.get("/notifications")
+def list_notifications(membership=Depends(current_membership), db: Session = Depends(get_db)):
+    rows = db.query(NotificationEvent).filter(
+        NotificationEvent.organization_id == membership.organization_id
+    ).order_by(NotificationEvent.created_at.desc()).limit(100).all()
+    return rows

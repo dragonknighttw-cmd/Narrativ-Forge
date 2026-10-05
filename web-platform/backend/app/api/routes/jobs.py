@@ -19,6 +19,7 @@ from ...middleware.idempotency import (
     validate_idempotency_key,
 )
 from ...services.processing import run_mock_job
+from ...workers.tasks import enqueue_real_job
 from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -164,9 +165,11 @@ def create_real_job(
     _meter_processing_job(db, membership.organization_id, job)
     if not claim:
         db.commit()
+        enqueue_real_job(job.id)
         return job
     stored_response = complete_idempotency(claim, jsonable_encoder(job), status_code=201)
     db.commit()
+    enqueue_real_job(job.id)
     return stored_response.response()
 
 

@@ -21,6 +21,8 @@ from ...middleware.idempotency import (
     request_fingerprint,
     validate_idempotency_key,
 )
+from ...workers.celery_app import get_celery
+from ...workers.tasks import enqueue_asset_replica
 from ...services.storage import (
     MultipartUploadAlreadyCompleted,
     StorageError,
@@ -521,6 +523,13 @@ def commit_upload(
     db.add(asset)
     db.commit()
     db.refresh(asset)
+    if settings.storage_replica_enabled and settings.storage_replica_provider:
+        try:
+            celery = get_celery(allow_missing=True)
+            if celery is not None:
+                enqueue_asset_replica(celery, asset.id)
+        except Exception:
+            logger.exception("storage_replica_enqueue_failed", extra={"asset_id": asset.id})
     return asset
 
 

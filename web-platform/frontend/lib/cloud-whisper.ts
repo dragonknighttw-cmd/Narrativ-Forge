@@ -39,12 +39,16 @@ async function loadFFmpeg(): Promise<FFmpegInstance> {
   if (ffmpegPromise) return ffmpegPromise;
   ffmpegPromise = (async () => {
     await loadScript("https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js");
-    const FFmpegCtor = (window as unknown as { FFmpeg?: { FFmpeg: new () => FFmpegInstance } }).FFmpeg?.FFmpeg;
-    if (!FFmpegCtor) throw new Error("ffmpeg.wasm runtime is unavailable");
+    await loadScript("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/umd/index.js");
+    const globals = window as unknown as { FFmpeg?: { FFmpeg: new () => FFmpegInstance }; FFmpegUtil?: { toBlobURL: (url: string, mime: string) => Promise<string> } };
+    const FFmpegCtor = globals.FFmpeg?.FFmpeg;
+    const toBlobURL = globals.FFmpegUtil?.toBlobURL;
+    if (!FFmpegCtor || !toBlobURL) throw new Error("ffmpeg.wasm runtime is unavailable");
     const ffmpeg = new FFmpegCtor();
+    const coreBase = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
     await ffmpeg.load({
-      coreURL: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js",
-      wasmURL: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.wasm",
+      coreURL: await toBlobURL(coreBase + "/ffmpeg-core.js", "text/javascript"),
+      wasmURL: await toBlobURL(coreBase + "/ffmpeg-core.wasm", "application/wasm"),
     });
     return ffmpeg;
   })();

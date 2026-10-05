@@ -14,6 +14,8 @@ depends_on = None
 
 
 def upgrade() -> None:
+    if op.get_bind().dialect.name != "postgresql":
+        return
     op.execute(
         """
         DO $$

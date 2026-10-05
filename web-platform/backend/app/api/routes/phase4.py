@@ -20,6 +20,7 @@ from ...models import (
 )
 from ...services.passwords import hash_password
 from ...core.config import settings
+from cryptography.fernet import Fernet
 
 router = APIRouter(prefix="/phase4", tags=["phase4"])
 
@@ -337,12 +338,13 @@ def create_webhook(payload: WebhookCreate, membership=Depends(current_membership
         organization_id=membership.organization_id,
         url=payload.url.strip(),
         secret_hash=_token_hash(secret),
+        secret_encrypted=Fernet(settings.oauth_encryption_key.encode()).encrypt(secret.encode()).decode() if settings.oauth_encryption_key else None,
         events_json=json.dumps(payload.events),
     )
     db.add(endpoint)
     db.commit()
     db.refresh(endpoint)
-    return {"id": endpoint.id, "url": endpoint.url, "events": payload.events, "secret": endpoint.secret_hash}
+    return {"id": endpoint.id, "url": endpoint.url, "events": payload.events, "secret": secret}
 
 @router.get("/webhooks")
 def list_webhooks(membership=Depends(current_membership), db: Session = Depends(get_db)):

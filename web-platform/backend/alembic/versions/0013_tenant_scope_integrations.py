@@ -18,7 +18,7 @@ def upgrade() -> None:
 
     op.add_column("google_drive_connections", sa.Column("organization_id", sa.String(36), nullable=True))
     op.create_index("ix_google_drive_connections_organization_id", "google_drive_connections", ["organization_id"])
-    op.create_foreign_key("fk_google_drive_connections_organization_id", "google_drive_connections", "organizations", ["id"], ["id"], ondelete="CASCADE")
+    op.create_foreign_key("fk_google_drive_connections_organization_id", "google_drive_connections", "organizations", ["organization_id"], ["id"], ondelete="CASCADE")
 
 def downgrade() -> None:
     op.drop_constraint("fk_google_drive_connections_organization_id", "google_drive_connections", type_="foreignkey")

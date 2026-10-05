@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "../../../lib/api";
 
-export default function MagicLinkPage() {
+function MagicLinkContent() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get("token") ?? "";
@@ -33,4 +33,12 @@ export default function MagicLinkPage() {
       {error && <button className="primary" onClick={() => router.replace("/login")}>Back to sign in</button>}
     </section>
   </main>;
+}
+
+export default function MagicLinkPage() {
+  return (
+    <Suspense fallback={<main className="login"><section className="login-card"><div className="brand-mark">NF</div><div className="eyebrow">NARRATIV FORGE</div><h1>Signing you in…</h1><p className="muted">Please wait while your secure session is created.</p></section></main>}>
+      <MagicLinkContent />
+    </Suspense>
+  );
 }

@@ -5,6 +5,10 @@ ENV VIRTUAL_ENV=/opt/venv
 RUN python -m venv "$VIRTUAL_ENV"
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
+RUN apt-get update \\
+    && apt-get install -y --no-install-recommends g++ pkg-config libicu-dev \\
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip setuptools \
     && pip install --no-cache-dir --upgrade -r requirements.txt

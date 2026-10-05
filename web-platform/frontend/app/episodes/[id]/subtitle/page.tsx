@@ -16,15 +16,17 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
   const [error, setError] = useState("");
   const [cloudFile, setCloudFile] = useState<File | null>(null);
   const [cloudProgress, setCloudProgress] = useState("");
+  const [cloudUsage, setCloudUsage] = useState<{ audio_minutes: number; estimated_neurons: number; usage_ratio: number; warning: boolean; fallback_required: boolean } | null>(null);
 
   async function load() {
     try {
       setError("");
-      const [episodeItem, subtitles] = await Promise.all([api.getEpisode(episodeId), api.listSubtitles(episodeId)]);
+      const [episodeItem, subtitles, usage] = await Promise.all([api.getEpisode(episodeId), api.listSubtitles(episodeId), api.getCloudWhisperUsage()]);
       setEpisode(episodeItem);
       const current = subtitles.find((item: Subtitle) => item.is_current) ?? subtitles[0] ?? null;
       setSubtitle(current);
       if (current) setPreset(current.preset);
+      setCloudUsage(usage);
     } catch (e) { setError(e instanceof Error ? e.message : "Failed to load subtitle studio"); }
   }
   useEffect(() => { load(); }, [episodeId]);
@@ -91,6 +93,10 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
       <div className="eyebrow">CLOUDFLARE CLOUD PROCESSING</div>
       <h2>Browser FFmpeg → Cloudflare Whisper</h2>
       <p className="muted">Video ကို browser ထဲမှာ audio ပြောင်းပြီး Whisper ကို Cloudflare Workers AI ဆီပို့ပါတယ်။ Render server မှာ FFmpeg/Whisper မ run ပါဘူး။</p>
+      {cloudUsage && <div className="muted">
+        Today: {cloudUsage.audio_minutes.toFixed(1)} audio-min · ~{Math.round(cloudUsage.estimated_neurons)} neurons ({Math.round(cloudUsage.usage_ratio * 100)}% safety budget).
+        {cloudUsage.fallback_required ? " Cloudflare safety budget reached — use Celery fallback." : cloudUsage.warning ? " 80% warning threshold reached." : ""}
+      </div>}
       <div className="stack-form">
         <input type="file" accept="video/*" onChange={e => setCloudFile(e.target.files?.[0] ?? null)} aria-label="Choose video for Cloudflare transcription" />
         <div className="inline-form">

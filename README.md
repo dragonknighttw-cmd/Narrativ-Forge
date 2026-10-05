@@ -201,9 +201,9 @@ Repository implementation:
 - `web-platform/backend/app/api/routes/cloud_processing.py` — signed token API
 - `web-platform/backend/app/api/routes/subtitles.py` — Cloud VTT import
 
-### Cloudflare setup still required
+### Cloudflare setup status
 
-The Worker source is committed, but the Worker deployment and its secret still need to be configured. After deployment, configure Render with:
+The Worker source is committed and the production Worker deployment has been verified successfully. GitHub Actions deploy run #4 completed the Worker deploy and `NARRATIV_SHARED_SECRET` configuration. After deployment, Render must use:
 
 ```text
 CLOUDFLARE_WHISPER_WORKER_URL=https://<worker>.workers.dev
@@ -257,7 +257,17 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] Alembic production migration fix
 - [x] Latest storage deployment verified live on Render
 
-### Cloudflare Whisper status\n\n- [x] Worker source + signed-token flow\n- [x] Browser ffmpeg.wasm extraction\n- [x] VTT import into Subtitle Studio\n- [x] Daily usage metering and 80%/95% guardrails\n- [ ] GitHub Actions Worker deployment with real Cloudflare credentials\n- [ ] Render Worker URL/shared-secret configuration\n- [ ] Real audio → Whisper → VTT → Subtitle Studio verification\n- [ ] Verify Celery fallback on a real quota-exhaustion/95% guard condition\n\nThe Whisper workstream is **not Done** until the remaining real-credential and end-to-end verification gates are passed.\n\n### Implemented in code but still needs production verification
+### Cloudflare Whisper status
+
+- [x] Worker source + signed-token flow
+- [x] Browser ffmpeg.wasm extraction
+- [x] VTT import into Subtitle Studio
+- [x] Daily usage metering and 80%/95% guardrails
+- [x] GitHub Actions Worker deployment with real Cloudflare credentials
+- [x] Worker shared secret configured in Cloudflare
+- [ ] Render Worker URL/shared-secret configuration verification
+- [ ] Real audio → Whisper → VTT → Subtitle Studio verification
+- [ ] Verify Celery fallback on a real quota-exhaustion/95% guard condition\n\nThe Whisper workstream is **not Done** until the remaining real-credential and end-to-end verification gates are passed.\n\n### Implemented in code but still needs production verification
 
 - [ ] Real B2 upload/download/delete against production credentials
 - [ ] Real Supabase Storage upload/download/delete against production credentials
@@ -295,7 +305,9 @@ SUPABASE_STORAGE_BUCKET=narrativ-forge
 
 Keep all secrets outside Git.
 
-### P0 — Cloudflare credentials + real test\n\nThe code is ready, but real verification is blocked until these GitHub Actions secrets are supplied by the project owner:\n\n```text\nCLOUDFLARE_API_TOKEN\nCLOUDFLARE_ACCOUNT_ID\nCLOUDFLARE_WHISPER_SHARED_SECRET\n```\n\nAfter deployment, the same shared secret and Worker URL must be configured in Render. Do not mark Whisper Offload done before the real audio/VTT/Subtitle Studio test passes.\n\n### P0 — long-running media worker
+### P0 — Cloudflare real end-to-end verification
+
+The GitHub Actions Cloudflare credentials are now working and the Worker deploy/secret configuration has been verified. The remaining gate is the real audio → Whisper → VTT → Subtitle Studio test, plus verification that the Render environment points at the deployed Worker with the same shared secret. Do not mark Whisper Offload done before that test passes.\n\n### P0 — long-running media worker
 
 Render Free can host the API web service, but it does not provide a free Background Worker.
 
@@ -556,7 +568,7 @@ This prevents the project documentation from drifting away from the actual code.
 The recommended execution order from the current state is:
 
 ```text
-1. Add/verify B2 + Supabase production secrets
+1. Verify B2 + Supabase production secrets in Render
         ↓
 2. Switch storage provider to hybrid
         ↓

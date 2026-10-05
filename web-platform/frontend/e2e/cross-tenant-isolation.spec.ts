@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, request as playwrightRequest } from "@playwright/test";
 
 const apiBase = process.env.E2E_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
 const ownerEmail = process.env.E2E_EMAIL;
@@ -33,7 +33,7 @@ test.describe("Cross-tenant isolation", () => {
     expect(tag.ok()).toBeTruthy();
     const tagId = (await tag.json()).id;
 
-    const secondContext = await request.newContext();
+    const secondContext = await playwrightRequest.newContext();
     try {
       const secondLogin = await secondContext.post(`${apiBase}/auth/login`, {
         data: { email: secondEmail, password: secondPassword },

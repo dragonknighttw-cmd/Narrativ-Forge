@@ -33,7 +33,7 @@ def test_postgres_concurrent_same_key_creates_one_job():
         db.add_all([user, series])
         db.flush()
         episode = Episode(
-            public_id=f"IDEM-{uuid4()}",
+            public_id=f"ID{uuid4().hex[:20]}",
             series_id=series.id,
             episode_number=1,
             title="Concurrent idempotency test",

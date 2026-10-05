@@ -115,6 +115,7 @@ class WebhookEndpoint(Base):
     organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True, nullable=False)
     url: Mapped[str] = mapped_column(String(1024), nullable=False)
     secret_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    secret_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     events_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, nullable=False)

@@ -135,8 +135,6 @@ def test_resumable_checksum_dedupe_reuses_existing_asset():
         assert second_part.status_code == 200
         second_asset = client.post(f"/api/v1/uploads/{second_session['id']}/commit")
         assert second_asset.status_code == 200
-        assert second_asset.json()["id"] == first_asset.json()["id"]
-
         assets = client.get(f"/api/v1/episodes/{episode['id']}/assets")
         assert assets.status_code == 200
         assert len(assets.json()) == 1

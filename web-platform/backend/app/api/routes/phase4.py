@@ -149,7 +149,7 @@ def create_invitation(
         "role": invitation.role,
         "expires_at": invitation.expires_at,
         "delivery": "pending",
-        "token": token,
+        "token": None if settings.is_production else token,
     }
 
 
@@ -201,7 +201,7 @@ def request_magic_link(payload: MagicLinkRequest, db: Session = Depends(get_db))
     ).update({"consumed_at": _now()})
     db.add(MagicLinkToken(email=email, token_hash=_token_hash(token), expires_at=_now() + timedelta(minutes=15)))
     db.commit()
-    return {"requested": True, "delivery": "pending", "token": token}
+    return {"requested": True, "delivery": "pending", "token": None if settings.is_production else token}
 
 
 @router.post("/magic-link/consume")
@@ -342,7 +342,7 @@ def create_webhook(payload: WebhookCreate, membership=Depends(current_membership
     db.add(endpoint)
     db.commit()
     db.refresh(endpoint)
-    return {"id": endpoint.id, "url": endpoint.url, "events": payload.events, "secret": secret}
+    return {"id": endpoint.id, "url": endpoint.url, "events": payload.events, "secret": endpoint.secret_hash}
 
 @router.get("/webhooks")
 def list_webhooks(membership=Depends(current_membership), db: Session = Depends(get_db)):

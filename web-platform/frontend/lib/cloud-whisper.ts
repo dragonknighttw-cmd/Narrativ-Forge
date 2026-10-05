@@ -85,7 +85,10 @@ export async function transcribeVideoWithCloudflare(
     });
     if (!response.ok) {
       let detail = "Cloudflare Whisper request failed";
-      try { detail = (await response.json() as { error?: string; detail?: string }).detail ?? (await response.clone().json() as { error?: string }).error ?? detail; } catch {}
+      try {
+        const body = await response.json() as { error?: string; detail?: string };
+        detail = body.detail ?? body.error ?? detail;
+      } catch {}
       throw new Error(detail);
     }
     onProgress?.("Cloud transcription complete");

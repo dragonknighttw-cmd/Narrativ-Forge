@@ -187,7 +187,7 @@ Browser
               └─ VTT + text → Narrativ API → Subtitle Studio
 ```
 
-Cloudflare Workers AI currently provides a 10,000-neuron/day free allocation. `@cf/openai/whisper` is currently listed at 41.14 neurons/audio-minute, so the raw allocation is roughly 243 audio minutes/day before other account/model constraints. This is a planning estimate, not a guaranteed minute quota. Cloudflare says limits reset daily at 00:00 UTC and requests fail after the daily free allocation is exhausted. Therefore this is **free within the daily allocation, not unlimited free inference**. citeturn1search0turn0search4
+Cloudflare Workers AI currently provides a 10,000-neuron/day free allocation. `@cf/openai/whisper` is currently listed at 41.14 neurons/audio-minute, so the raw allocation is roughly 243 audio minutes/day before other account/model constraints. This is a planning estimate, not a guaranteed minute quota. Cloudflare says limits reset daily at 00:00 UTC and requests fail after the daily free allocation is exhausted. Therefore this is **free within the daily allocation, not unlimited free inference**.
 
 Security:
 - Browser never receives the shared Worker secret.

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import logging
+import hashlib
+import hmac
+import json
 import subprocess
 import tempfile
 from pathlib import Path
@@ -15,7 +18,7 @@ from sqlalchemy.orm import Session
 from .. import db as app_db
 from ..core.config import settings
 from .. import metrics
-from ..models import Asset, FailedJob, ProcessingJob, StorageReplica
+from ..models import Asset, FailedJob, ProcessingJob, StorageReplica, NotificationEvent, WebhookEndpoint
 from ..services.audit import record_event
 from ..services.asset_gc import purge_deleted_assets
 from ..services.real_processing import run_real_job
@@ -188,6 +191,63 @@ def enqueue_asset_replica(celery_app, asset_id: str) -> bool:
 
 
 def register_tasks(celery_app):
+    @celery_app.task(
+        name="narrativ.deliver_notification",
+        bind=True,
+        autoretry_for=(Exception,),
+        retry_backoff=True,
+        retry_backoff_max=900,
+        retry_kwargs={"max_retries": 5},
+    )
+    def deliver_notification_task(self, notification_id: str) -> str:
+        import httpx
+        db = app_db.SessionLocal()
+        try:
+            event = db.get(NotificationEvent, notification_id)
+            if event is None:
+                return notification_id
+            endpoints = db.query(WebhookEndpoint).filter(
+                WebhookEndpoint.organization_id == event.organization_id,
+                WebhookEndpoint.is_active.is_(True),
+            ).all()
+            payload = event.payload_json.encode()
+            delivered = False
+            last_error = None
+            for endpoint in endpoints:
+                events = json.loads(endpoint.events_json or "[]")
+                if events and event.event_type not in events:
+                    continue
+                signature = hmac.new(
+                    bytes.fromhex(endpoint.secret_hash), payload, hashlib.sha256
+                ).hexdigest()
+                try:
+                    response = httpx.post(
+                        endpoint.url,
+                        content=payload,
+                        headers={
+                            "Content-Type": "application/json",
+                            "X-Narrativ-Event": event.event_type,
+                            "X-Narrativ-Signature": "sha256=" + signature,
+                            "X-Narrativ-Delivery": event.id,
+                        },
+                        timeout=10.0,
+                    )
+                    response.raise_for_status()
+                    delivered = True
+                except Exception as exc:
+                    last_error = str(exc)[:4000]
+            event.attempts = self.request.retries + 1
+            event.last_error = last_error
+            event.status = "delivered" if delivered else "failed"
+            if delivered:
+                event.delivered_at = _now()
+            db.commit()
+            if not delivered and endpoints:
+                raise RuntimeError(last_error or "Webhook delivery failed")
+            return notification_id
+        finally:
+            db.close()
+
     @celery_app.task(
         name="narrativ.replicate_asset",
         bind=True,

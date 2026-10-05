@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.api.dependencies import issue_session
 from app.db import engine, get_db
 from app.main import app
-from app.models import Episode, ProcessingJob, Series, User
+from app.models import Episode, Organization, OrganizationMembership, ProcessingJob, Series, User
 from app.services.passwords import hash_password
 
 
@@ -32,6 +32,10 @@ def test_postgres_concurrent_same_key_creates_one_job():
         series = Series(title="Idempotency concurrency test")
         db.add_all([user, series])
         db.flush()
+        organization = Organization(name="Idempotency Workspace", slug=f"idem-{uuid4().hex}", plan="trial")
+        db.add(organization)
+        db.flush()
+        db.add(OrganizationMembership(organization_id=organization.id, user_id=user.id, role="owner"))
         episode = Episode(
             public_id=f"ID{uuid4().hex[:20]}",
             series_id=series.id,
@@ -40,7 +44,7 @@ def test_postgres_concurrent_same_key_creates_one_job():
         )
         db.add(episode)
         db.commit()
-        user_id, user_email, episode_id, series_id = user.id, user.email, episode.id, series.id
+        user_id, user_email, episode_id, series_id, organization_id = user.id, user.email, episode.id, series.id, organization.id
 
     barrier = Barrier(2)
     previous_override = app.dependency_overrides.get(get_db)
@@ -99,5 +103,7 @@ def test_postgres_concurrent_same_key_creates_one_job():
             db.query(ProcessingJob).filter(ProcessingJob.episode_id == episode_id).delete()
             db.query(Episode).filter(Episode.id == episode_id).delete()
             db.query(Series).filter(Series.id == series_id).delete()
+            db.query(OrganizationMembership).filter(OrganizationMembership.organization_id == organization_id).delete()
+            db.query(Organization).filter(Organization.id == organization_id).delete()
             db.query(User).filter(User.id == user_id).delete()
             db.commit()

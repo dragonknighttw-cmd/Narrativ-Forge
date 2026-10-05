@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from ..core.config import settings
 from ..models import Asset, Episode, ProcessingJob, UploadSession
-from .storage import StorageError, build_object_key, get_storage, materialize_asset
+from .storage import StorageError, build_object_key, get_storage, materialize_asset, storage_provider_for_asset
 from .subtitles import generate_subtitle_for_episode
 
 logger = logging.getLogger(__name__)
@@ -279,9 +279,10 @@ def run_real_job(job_id: str, db: Session, *, already_claimed: bool = False) -> 
             version = max(asset_version, reserved_version) + 1
             output_key = build_object_key(episode.id, version, render_path.name, "processed_video")
             transcript_key = build_object_key(episode.id, version + 1, transcript_path.name, "transcript")
-            storage = get_storage()
-            stored_output = storage.upload_file(render_path, output_key, "video/mp4")
-            stored_transcript = storage.upload_file(transcript_path, transcript_key, "application/json")
+            output_provider = storage_provider_for_asset("video", render_path.stat().st_size, "video/mp4")
+            transcript_provider = storage_provider_for_asset("transcript", transcript_path.stat().st_size, "application/json")
+            stored_output = get_storage(output_provider).upload_file(render_path, output_key, "video/mp4")
+            stored_transcript = get_storage(transcript_provider).upload_file(transcript_path, transcript_key, "application/json")
 
             output_asset = Asset(
                 episode_id=episode.id,

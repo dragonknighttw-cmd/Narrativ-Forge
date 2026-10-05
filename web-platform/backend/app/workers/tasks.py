@@ -180,7 +180,7 @@ def enqueue_asset_replica(celery_app, asset_id: str) -> bool:
     if not settings.storage_replica_enabled or not settings.storage_replica_provider:
         return False
     try:
-        celery_app.send_task("narrativ.replicate_asset", args=[asset_id], queue="storage_replica")
+        celery_app.send_task("narrativ.replicate_asset", args=[asset_id])
         return True
     except Exception:
         logger.exception("storage_replica_enqueue_failed", extra={"asset_id": asset_id})

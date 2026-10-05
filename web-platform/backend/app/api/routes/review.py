@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 from ...db import get_db
 from ...models import Asset, Episode, ReviewRecord, Subtitle
 from ...services.audit import record_event
-from ..dependencies import get_current_user, require_roles
+from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["review"])
 
@@ -25,14 +25,14 @@ class ReviewUpdate(BaseModel):
 class RevisionRequest(BaseModel):
     reason: str = Field(min_length=1, max_length=1000)
 
-def _episode(db, episode_id, *, load_review_data=False):
+def _episode(db, episode_id, *, organization_id=None, load_review_data=False):
     query = db.query(Episode)
     if load_review_data:
         query = query.options(
             selectinload(Episode.assets),
             selectinload(Episode.subtitles),
         )
-    item = query.filter(Episode.id == episode_id).first()
+    item = query.filter(Episode.id == episode_id, *( [Episode.organization_id == organization_id] if organization_id else [] )).first()
     if not item:
         raise HTTPException(status_code=404, detail="Episode not found")
     return item
@@ -53,8 +53,8 @@ def _current_subtitle(db, episode_id):
     return db.query(Subtitle).filter(Subtitle.episode_id == episode_id, Subtitle.is_current.is_(True)).order_by(Subtitle.version.desc()).first()
 
 @router.get("/{episode_id}/review")
-def get_review(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    episode = _episode(db, episode_id, load_review_data=True)
+def get_review(episode_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    episode = _episode(db, episode_id, organization_id=membership.organization_id, load_review_data=True)
     subtitle = _current_episode_subtitle(episode)
     assets = _review_assets(episode)
     return {
@@ -72,8 +72,8 @@ def get_review(episode_id: str, _: dict = Depends(get_current_user), db: Session
     }
 
 @router.post("/{episode_id}/review")
-def save_review(episode_id: str, payload: ReviewUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    episode = _episode(db, episode_id)
+def save_review(episode_id: str, payload: ReviewUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    episode = _episode(db, episode_id, organization_id=membership.organization_id)
     if episode.status not in {"subtitle_review", "needs_approval", "rejected"}:
         raise HTTPException(status_code=409, detail="Episode is not in review workflow")
     subtitle = _current_subtitle(db, episode_id)
@@ -97,7 +97,7 @@ def save_review(episode_id: str, payload: ReviewUpdate, _: dict = Depends(requir
     return {"saved": True, "blocking_reasons": blockers, "ready": not blockers, "review": payload.model_dump()}
 
 @router.post("/{episode_id}/review/request-revision")
-def request_revision(episode_id: str, payload: RevisionRequest, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def request_revision(episode_id: str, payload: RevisionRequest, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     episode = _episode(db, episode_id)
     if episode.status not in {"subtitle_review", "needs_approval", "rejected"}:
         raise HTTPException(status_code=409, detail="Episode is not in review workflow")
@@ -112,7 +112,7 @@ def request_revision(episode_id: str, payload: RevisionRequest, _: dict = Depend
     return {"status": "rejected", "reason": payload.reason, "episode_id": episode.id}
 
 @router.post("/{episode_id}/review/approve")
-def approve_review(episode_id: str, payload: ReviewUpdate, user=Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def approve_review(episode_id: str, payload: ReviewUpdate, user=Depends(require_roles("owner", "editor")), membership=Depends(get_current_membership), db: Session = Depends(get_db)):
     episode = _episode(db, episode_id)
     if episode.status != "needs_approval":
         raise HTTPException(status_code=409, detail="Episode must be in needs_approval before final approval")

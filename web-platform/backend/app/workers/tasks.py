@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import ipaddress
 import socket
+import redis
 from urllib.parse import urlparse
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
@@ -32,6 +33,54 @@ from . import concurrency
 logger = logging.getLogger(__name__)
 INITIAL_RETRY_DELAY_SECONDS = 60
 MAX_RETRY_DELAY_SECONDS = 3600
+DISPATCH_LOCK_MIN_TTL_SECONDS = 60
+DISPATCH_LOCK_MAX_TTL_SECONDS = 86400
+
+
+def _dispatch_lock_key(job_id: str) -> str:
+    return f"narrativ:real-job-dispatch:{job_id}"
+
+
+def _release_dispatch_lock(job_id: str) -> None:
+    if not settings.redis_url:
+        return
+    try:
+        redis.Redis.from_url(settings.redis_url).delete(_dispatch_lock_key(job_id))
+    except Exception:
+        logger.exception("Failed to release real-job dispatch lock for job_id=%s", job_id)
+
+
+def enqueue_real_job(job_id: str, countdown: int = 0) -> bool:
+    """Publish a real-processing task once; DB state remains the source of truth."""
+    if not settings.redis_url:
+        logger.warning("Cannot dispatch real job without REDIS_URL: job_id=%s", job_id)
+        return False
+
+    from .celery_app import get_celery
+
+    celery = get_celery(allow_missing=True)
+    if celery is None:
+        return False
+
+    lock_ttl = max(
+        DISPATCH_LOCK_MIN_TTL_SECONDS,
+        min(DISPATCH_LOCK_MAX_TTL_SECONDS, int(countdown) + 300),
+    )
+    client = redis.Redis.from_url(settings.redis_url)
+    if not client.set(_dispatch_lock_key(job_id), "1", nx=True, ex=lock_ttl):
+        return False
+
+    try:
+        celery.send_task(
+            "narrativ.process_real_job",
+            args=[job_id],
+            countdown=max(0, int(countdown)),
+        )
+        return True
+    except Exception:
+        _release_dispatch_lock(job_id)
+        logger.exception("Failed to dispatch real job job_id=%s", job_id)
+        return False
 
 
 def _now() -> datetime:
@@ -382,6 +431,9 @@ def register_tasks(celery_app):
 
     @celery_app.task(name="narrativ.process_real_job")
     def process_real_job_task(job_id: str) -> str:
+        # The dispatch lock only prevents duplicate broker messages before the
+        # worker starts. DB claim state remains the final concurrency guard.
+        _release_dispatch_lock(job_id)
         with concurrency.processing_semaphore.acquire():
             db: Optional[Session] = None
             try:

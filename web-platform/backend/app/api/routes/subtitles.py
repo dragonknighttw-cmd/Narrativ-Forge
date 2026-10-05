@@ -164,16 +164,16 @@ def import_cloud_transcript(
         raise HTTPException(status_code=422, detail="Cloud transcript VTT is required")
 
     import re
-    blocks = re.split(r"\\n\\s*\\n", vtt.replace("\\r\\n", "\\n").replace("\\r", "\\n"))
+    blocks = re.split(r"\n\s*\n", vtt.replace("\r\n", "\n").replace("\r", "\n"))
     cues = []
-    timestamp = re.compile(r"(?P<start>\\d{2}:\\d{2}:\\d{2}\\.\\d{3})\\s*-->\\s*(?P<end>\\d{2}:\\d{2}:\\d{2}\\.\\d{3})")
+    timestamp = re.compile(r"(?P<start>\d{2}:\d{2}:\d{2}\.\d{3})\s*-->\s*(?P<end>\d{2}:\d{2}:\d{2}\.\d{3})")
     def seconds(value: str) -> float:
         hours, minutes, rest = value.split(":")
         sec, millis = rest.split(".")
         return int(hours) * 3600 + int(minutes) * 60 + int(sec) + int(millis) / 1000
 
     for block in blocks:
-        lines = [line.strip() for line in block.split("\\n") if line.strip()]
+        lines = [line.strip() for line in block.split("\n") if line.strip()]
         match = next((timestamp.search(line) for line in lines), None)
         if not match:
             continue

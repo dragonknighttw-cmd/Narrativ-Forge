@@ -446,20 +446,40 @@ def create_checkout(plan: str, membership=Depends(current_membership), user=Depe
         sub = BillingSubscription(organization_id=membership.organization_id)
         db.add(sub)
         db.flush()
+    if sub.external_subscription_id and sub.status in {"active", "trialing", "past_due", "incomplete"}:
+        raise HTTPException(status_code=409, detail="Workspace already has an active Stripe subscription")
     if not sub.external_customer_id:
         customer = stripe.Customer.create(email=user["email"], metadata={"organization_id": membership.organization_id})
         sub.external_customer_id = customer.id
         sub.provider = "stripe"
         db.commit()
     session = stripe.checkout.Session.create(
-        mode="subscription", customer=sub.external_customer_id,
+        mode="subscription",
+        customer=sub.external_customer_id,
+        client_reference_id=membership.organization_id,
         line_items=[{"price": price_id, "quantity": 1}],
-        success_url=f"{settings.cors_origin_list[0]}/settings/billing?checkout=success",
-        cancel_url=f"{settings.cors_origin_list[0]}/settings/billing?checkout=cancelled",
+        success_url=f"{settings.frontend_base_url}/settings/billing?checkout=success",
+        cancel_url=f"{settings.frontend_base_url}/settings/billing?checkout=cancelled",
         metadata={"organization_id": membership.organization_id, "plan": plan},
         subscription_data={"metadata": {"organization_id": membership.organization_id, "plan": plan}},
     )
     return {"id": session.id, "url": session.url, "plan": plan}
+
+@router.post("/billing/portal")
+def create_billing_portal(membership=Depends(current_membership), user=Depends(require_roles("owner")), db: Session = Depends(get_db)):
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Stripe billing is not configured")
+    sub = db.query(BillingSubscription).filter(BillingSubscription.organization_id == membership.organization_id).first()
+    if not sub or not sub.external_customer_id:
+        raise HTTPException(status_code=409, detail="Stripe customer is not provisioned")
+    import stripe
+    stripe.api_key = settings.stripe_secret_key
+    session = stripe.billing_portal.Session.create(
+        customer=sub.external_customer_id,
+        return_url=f"{settings.frontend_base_url}/settings/billing",
+    )
+    return {"url": session.url}
+
 
 @router.post("/billing/stripe/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
@@ -478,23 +498,47 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Stripe webhook event id is missing")
     if db.get(StripeWebhookEvent, event_id):
         return {"received": True, "duplicate": True}
+
     event_type = event["type"]
     obj = event["data"]["object"]
     customer_id = obj.get("customer")
-    subscription_id = obj.get("id") if event_type.startswith("customer.subscription.") else obj.get("subscription")
-    if customer_id:
-        sub = db.query(BillingSubscription).filter(
-            BillingSubscription.external_customer_id == customer_id
-        ).first()
-        if sub:
-            sub.provider = "stripe"
-            if subscription_id:
-                sub.external_subscription_id = subscription_id
-            if event_type in {"customer.subscription.deleted"}:
-                sub.status = "canceled"
-            elif event_type.startswith("customer.subscription."):
-                sub.status = obj.get("status", sub.status)
-            db.commit()
+    if event_type == "checkout.session.completed":
+        customer_id = obj.get("customer")
+    sub_id = obj.get("id") if event_type.startswith("customer.subscription.") else obj.get("subscription")
+    sub = db.query(BillingSubscription).filter(
+        BillingSubscription.external_customer_id == customer_id
+    ).first() if customer_id else None
+
+    if sub:
+        sub.provider = "stripe"
+        if sub_id:
+            sub.external_subscription_id = sub_id
+        if event_type == "checkout.session.completed":
+            metadata = obj.get("metadata") or {}
+            plan = metadata.get("plan")
+            if plan in {"pro", "business"}:
+                sub.plan = plan
+        elif event_type.startswith("customer.subscription."):
+            metadata = obj.get("metadata") or {}
+            plan = metadata.get("plan")
+            if plan in {"pro", "business"}:
+                sub.plan = plan
+            sub.status = "canceled" if event_type == "customer.subscription.deleted" else obj.get("status", sub.status)
+            if obj.get("current_period_start"):
+                sub.current_period_start = datetime.fromtimestamp(obj["current_period_start"], tz=timezone.utc)
+            if obj.get("current_period_end"):
+                sub.current_period_end = datetime.fromtimestamp(obj["current_period_end"], tz=timezone.utc)
+        elif event_type == "invoice.payment_failed":
+            sub.status = "past_due"
+        elif event_type == "invoice.paid":
+            if sub.status in {"past_due", "incomplete"}:
+                sub.status = "active"
+
+        org = db.get(Organization, sub.organization_id)
+        if org:
+            org.plan = "free" if sub.status == "canceled" else sub.plan
+        db.commit()
+
     db.add(StripeWebhookEvent(id=event_id, event_type=event_type))
     try:
         db.commit()

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 from sqlalchemy import func, update
@@ -38,9 +38,9 @@ def _episode_or_404(db: Session, episode_id: str) -> Episode:
 
 
 @router.get("/{episode_id}/scripts")
-def list_scripts(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def list_scripts(episode_id: str, limit: int = Query(default=50, ge=1, le=100), offset: int = Query(default=0, ge=0), _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
-    return db.query(Script).filter(Script.episode_id == episode_id).order_by(Script.version.desc()).all()
+    return db.query(Script).filter(Script.episode_id == episode_id).order_by(Script.version.desc()).offset(offset).limit(limit).all()
 
 
 @router.post("/{episode_id}/scripts", status_code=201)

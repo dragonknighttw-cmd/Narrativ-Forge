@@ -124,10 +124,11 @@ def create_real_job(
     request: Request,
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     user: dict = Depends(require_roles("owner", "editor")),
+    membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
     idempotency_key = validate_idempotency_key(idempotency_key)
-    episode = db.get(Episode, payload.episode_id)
+    episode = db.query(Episode).filter(Episode.id == payload.episode_id, Episode.organization_id == membership.organization_id).first()
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
     claim_or_response = begin_idempotency(
@@ -160,7 +161,9 @@ def create_real_job(
         job_id=claim.record.resource_id if claim else None,
         commit=claim is None,
     )
+    _meter_processing_job(db, membership.organization_id, job)
     if not claim:
+        db.commit()
         return job
     stored_response = complete_idempotency(claim, jsonable_encoder(job), status_code=201)
     db.commit()

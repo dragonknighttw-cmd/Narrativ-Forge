@@ -670,7 +670,11 @@ def test_full_production_integration_flow(tmp_path):
             json={"cues": [{"start": 0, "end": 2, "text": "မြန်မာစာ"}]},
         ).status_code == 200
         assert client.post(f"/api/v1/episodes/{episode['id']}/subtitles/approve").status_code == 200
-        assert client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "needs_approval"}).status_code == 200
+        current_episode = client.get(f"/api/v1/episodes/{episode['id']}").json()
+        assert client.patch(
+            f"/api/v1/episodes/{episode['id']}",
+            json={"status": "needs_approval", "expected_row_version": current_episode["row_version"]},
+        ).status_code == 200
         assert client.post(f"/api/v1/episodes/{episode['id']}/review/approve", json={
             "video_watched": True, "audio_checked": True,
             "subtitle_timing_checked": True, "thumbnail_present": True,
@@ -1020,14 +1024,16 @@ def test_export_state_compare_and_set_blocks_second_export_claim():
             "/api/v1/episodes",
             json={"series_id": series["id"], "episode_number": 1, "title": "Export CAS episode"},
         ).json()
-        moved = client.patch(
-            f"/api/v1/episodes/{episode['id']}",
-            json={"status": "approved", "expected_row_version": episode["row_version"]},
-        )
-        assert moved.status_code == 200
-
         from app.db import SessionLocal
+        from app.models import Episode
         from app.api.routes.export import _claim_export
+
+        db = SessionLocal()
+        row = db.get(Episode, episode["id"])
+        row.status = "approved"
+        row.current_step = "review"
+        db.commit()
+        db.close()
 
         db = SessionLocal()
         try:

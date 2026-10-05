@@ -90,6 +90,7 @@ class Season(Base):
 
 class Episode(Base):
     __tablename__ = "episodes"
+    organization_id: Mapped[str | None] = mapped_column(ForeignKey("organizations.id"), index=True, nullable=True)
     __table_args__ = (UniqueConstraint("season_id", "episode_number", name="uq_episode_number_per_season"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     public_id: Mapped[str] = mapped_column(String(40), unique=True, index=True)

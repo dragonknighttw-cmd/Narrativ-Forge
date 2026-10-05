@@ -158,7 +158,7 @@ services:
       - key: UPLOAD_DIR
         value: /var/lib/narrativ-forge/uploads
       - key: STORAGE_PROVIDER
-        value: b2
+        value: cloudinary
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY

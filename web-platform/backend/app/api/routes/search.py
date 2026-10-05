@@ -24,10 +24,12 @@ def global_search(
     pattern = f"%{term}%"
     results = []
 
+    candidate_limit = min(limit + offset, 200)
+
     idea_query = db.query(Idea).filter(
         or_(Idea.title.ilike(pattern), Idea.concept.ilike(pattern), Idea.hook.ilike(pattern))
     )
-    for item in idea_query.order_by(Idea.created_at.desc()).offset(offset).limit(limit).all():
+    for item in idea_query.order_by(Idea.created_at.desc()).limit(candidate_limit).all():
         results.append({
             "type": "idea",
             "id": item.id,
@@ -79,11 +81,12 @@ def global_search(
         })
 
     results.sort(key=lambda item: item["created_at"], reverse=True)
-    page = results[:limit]
+    total = idea_query.count() + series_query.count() + episode_query.count() + script_query.count()
+    page = results[offset:offset + limit]
     return {
         "query": term,
         "limit": limit,
         "offset": offset,
-        "total": len(results),
+        "total": total,
         "results": page,
     }

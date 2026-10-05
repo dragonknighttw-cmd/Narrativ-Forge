@@ -74,6 +74,7 @@ export const api = {
   recordUsage: (metric: string, quantity = 1, unit = "unit", idempotency_key?: string) => request("/phase4/usage", { method: "POST", body: JSON.stringify({ metric, quantity, unit, idempotency_key }) }),
   getUsage: () => request<{ period_start: string; totals: Record<string, number> }>("/phase4/usage"),
   getBilling: () => request("/phase4/billing"),
+  createCheckout: (plan: "pro" | "business") => request<{ id: string; url: string; plan: string }>("/phase4/billing/checkout?plan=" + encodeURIComponent(plan), { method: "POST" }),
   setPlan: (plan: string) => request("/phase4/billing/plan?plan=" + encodeURIComponent(plan), { method: "POST" }),
   createWebhook: (url: string, events: string[] = []) => request<{ id: string; url: string; events: string[]; secret: string }>("/phase4/webhooks", { method: "POST", body: JSON.stringify({ url, events }) }),
   listWebhooks: () => request<Array<{ id: string; url: string; events: string[]; is_active: boolean }>>("/phase4/webhooks"),

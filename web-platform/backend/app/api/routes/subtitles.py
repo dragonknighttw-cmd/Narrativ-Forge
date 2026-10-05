@@ -12,7 +12,7 @@ from ...db import get_db
 from ...models import Asset, Episode, Subtitle
 from ...services.storage import StorageError, materialize_asset
 from ...services.subtitles import load_transcript, normalize_burmese_text, preset_config, render_srt, render_vtt, validate_cues
-from ..dependencies import get_current_user, require_roles
+from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["subtitles"])
 subtitle_router = APIRouter(prefix="/subtitles", tags=["subtitles"])
@@ -31,8 +31,8 @@ class SubtitleUpdate(BaseModel):
 class GenerateSubtitle(BaseModel):
     preset: str = "burmese_default"
 
-def _episode_or_404(db: Session, episode_id: str):
-    episode = db.get(Episode, episode_id)
+def _episode_or_404(db: Session, episode_id: str, organization_id: str | None = None):
+    episode = db.query(Episode).filter(Episode.id == episode_id, *( [Episode.organization_id == organization_id] if organization_id else [] )).first()
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
     return episode
@@ -57,13 +57,13 @@ def _serialize(item: Subtitle):
     }
 
 @router.get("/{episode_id}/subtitles")
-def list_subtitles(episode_id: str, limit: int = Query(default=50, ge=1, le=100), offset: int = Query(default=0, ge=0), _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    _episode_or_404(db, episode_id)
+def list_subtitles(episode_id: str, limit: int = Query(default=50, ge=1, le=100), offset: int = Query(default=0, ge=0), membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    _episode_or_404(db, episode_id, membership.organization_id)
     query = db.query(Subtitle).filter(Subtitle.episode_id == episode_id).order_by(Subtitle.version.desc()).offset(offset).limit(limit)
     return [_serialize(x) for x in query.all()]
 
 @router.post("/{episode_id}/subtitles/generate", status_code=201)
-def generate_subtitle(episode_id: str, payload: GenerateSubtitle, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def generate_subtitle(episode_id: str, payload: GenerateSubtitle, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
     if payload.preset not in ("burmese_default", "burmese_compact"):
         raise HTTPException(status_code=422, detail="Unsupported subtitle preset")
@@ -90,7 +90,7 @@ def generate_subtitle(episode_id: str, payload: GenerateSubtitle, _: dict = Depe
     return _serialize(item)
 
 @subtitle_router.post("/{subtitle_id}/versions", status_code=201)
-def create_subtitle_version(subtitle_id: str, payload: SubtitleUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def create_subtitle_version(subtitle_id: str, payload: SubtitleUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     source = db.get(Subtitle, subtitle_id)
     if not source:
         raise HTTPException(status_code=404, detail="Subtitle not found")
@@ -121,8 +121,8 @@ def create_subtitle_version(subtitle_id: str, payload: SubtitleUpdate, _: dict =
     return _serialize(item)
 
 @subtitle_router.patch("/{subtitle_id}")
-def update_subtitle(subtitle_id: str, payload: SubtitleUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(Subtitle, subtitle_id)
+def update_subtitle(subtitle_id: str, payload: SubtitleUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    item = db.query(Subtitle).join(Episode, Subtitle.episode_id == Episode.id).filter(Subtitle.id == subtitle_id, Episode.organization_id == membership.organization_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Subtitle not found")
     if item.status == "approved":
@@ -148,7 +148,7 @@ def update_subtitle(subtitle_id: str, payload: SubtitleUpdate, _: dict = Depends
     return _serialize(item)
 
 @router.post("/{episode_id}/subtitles/validate")
-def validate_subtitles(episode_id: str, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def validate_subtitles(episode_id: str, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
     item = db.query(Subtitle).filter(Subtitle.episode_id == episode_id, Subtitle.is_current.is_(True)).order_by(Subtitle.version.desc()).first()
     if not item:
@@ -160,7 +160,7 @@ def validate_subtitles(episode_id: str, _: dict = Depends(require_roles("owner",
     return {"valid": not errors, "errors": errors, "subtitle_id": item.id}
 
 @router.post("/{episode_id}/subtitles/approve")
-def approve_subtitles(episode_id: str, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def approve_subtitles(episode_id: str, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
     episode = _episode_or_404(db, episode_id)
     item = db.query(Subtitle).filter(Subtitle.episode_id == episode_id, Subtitle.is_current.is_(True)).order_by(Subtitle.version.desc()).first()
     if not item:
@@ -178,7 +178,7 @@ def approve_subtitles(episode_id: str, _: dict = Depends(require_roles("owner", 
     return _serialize(item)
 
 @subtitle_router.get("/{subtitle_id}/export")
-def export_subtitle(subtitle_id: str, format: str = Query(default="srt"), _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def export_subtitle(subtitle_id: str, format: str = Query(default="srt"), membership=Depends(get_current_membership), db: Session = Depends(get_db)):
     item = db.get(Subtitle, subtitle_id)
     if not item:
         raise HTTPException(status_code=404, detail="Subtitle not found")

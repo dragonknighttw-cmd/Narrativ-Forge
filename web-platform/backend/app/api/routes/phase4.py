@@ -6,7 +6,7 @@ import re
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, Request
 from pydantic import BaseModel, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -380,3 +380,35 @@ def list_notifications(membership=Depends(current_membership), db: Session = Dep
         NotificationEvent.organization_id == membership.organization_id
     ).order_by(NotificationEvent.created_at.desc()).limit(100).all()
     return rows
+
+
+@router.post("/billing/stripe/webhook")
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+    if not settings.stripe_webhook_secret:
+        raise HTTPException(status_code=503, detail="Stripe webhook is not configured")
+    try:
+        import stripe
+        payload = await request.body()
+        signature = request.headers.get("stripe-signature", "")
+        event = stripe.Webhook.construct_event(payload, signature, settings.stripe_webhook_secret)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid Stripe webhook") from exc
+
+    event_type = event["type"]
+    obj = event["data"]["object"]
+    customer_id = obj.get("customer")
+    subscription_id = obj.get("id") if event_type.startswith("customer.subscription.") else obj.get("subscription")
+    if customer_id:
+        sub = db.query(BillingSubscription).filter(
+            BillingSubscription.external_customer_id == customer_id
+        ).first()
+        if sub:
+            sub.provider = "stripe"
+            if subscription_id:
+                sub.external_subscription_id = subscription_id
+            if event_type in {"customer.subscription.deleted"}:
+                sub.status = "canceled"
+            elif event_type.startswith("customer.subscription."):
+                sub.status = obj.get("status", sub.status)
+            db.commit()
+    return {"received": True}

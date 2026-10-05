@@ -50,6 +50,7 @@ class IdempotencyRecord(Base):
 
 class Idea(Base):
     __tablename__ = "ideas"
+    organization_id: Mapped[str | None] = mapped_column(ForeignKey("organizations.id"), index=True, nullable=True)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     title: Mapped[str] = mapped_column(String(255))
     concept: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -62,6 +63,7 @@ class Idea(Base):
 
 class Series(Base):
     __tablename__ = "series"
+    organization_id: Mapped[str | None] = mapped_column(ForeignKey("organizations.id"), index=True, nullable=True)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     title: Mapped[str] = mapped_column(String(255))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

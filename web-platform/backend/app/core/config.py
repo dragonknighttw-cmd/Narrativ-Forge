@@ -73,8 +73,8 @@ class Settings(BaseSettings):
             raise RuntimeError("CORS_ORIGINS must contain at least one allowed origin in production")
         if not self.trusted_host_list:
             raise RuntimeError("TRUSTED_HOSTS must contain at least one allowed host in production")
-        if self.storage_provider.lower() != "storj":
-            raise RuntimeError("STORAGE_PROVIDER must be storj in production")
+        if self.storage_provider.lower() not in {"storj", "b2"}:
+            raise RuntimeError("STORAGE_PROVIDER must be one of: storj, b2 in production")
         if self.storage_provider.lower() == "storj":
             required = {
                 "STORJ_ACCESS_KEY_ID": self.storj_access_key_id,
@@ -86,6 +86,16 @@ class Settings(BaseSettings):
             missing = [name for name, value in required.items() if not value]
             if missing:
                 raise RuntimeError("Storj storage configuration missing: " + ", ".join(missing))
+        if self.storage_provider.lower() == "b2":
+            required = {
+                "B2_APPLICATION_KEY_ID": self.b2_application_key_id,
+                "B2_APPLICATION_KEY": self.b2_application_key,
+                "B2_BUCKET_NAME": self.b2_bucket_name,
+                "B2_REGION": self.b2_region,
+            }
+            missing = [name for name, value in required.items() if not value]
+            if missing:
+                raise RuntimeError("B2 storage configuration missing: " + ", ".join(missing))
 
 
 settings = Settings()

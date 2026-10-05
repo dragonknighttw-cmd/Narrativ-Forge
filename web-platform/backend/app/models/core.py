@@ -361,6 +361,7 @@ class GoogleDriveConnection(Base):
     __tablename__ = "google_drive_connections"
     __table_args__ = (UniqueConstraint("user_email", name="uq_google_drive_user"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str | None] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True, nullable=True)
     user_email: Mapped[str] = mapped_column(String(255), index=True)
     refresh_token_encrypted: Mapped[str] = mapped_column(Text)
     access_token_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -389,6 +390,7 @@ class ReviewRecord(Base):
 
 class HookLibrary(Base):
     __tablename__ = "hook_library"
+    organization_id: Mapped[str | None] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True, nullable=True)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     hook_text: Mapped[str] = mapped_column(Text)
     hook_type: Mapped[str] = mapped_column(String(40))
@@ -473,6 +475,7 @@ class SocialAnalyticsRecord(Base):
 
 class AuditEvent(Base):
     __tablename__ = "audit_events"
+    organization_id: Mapped[str | None] = mapped_column(ForeignKey("organizations.id", ondelete="SET NULL"), index=True, nullable=True)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     actor_email: Mapped[str] = mapped_column(String(255), index=True)
     action: Mapped[str] = mapped_column(String(80), index=True)

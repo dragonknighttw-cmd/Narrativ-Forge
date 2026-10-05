@@ -640,8 +640,13 @@ class SupabaseStorageProvider:
 
     def _url(self, action: str, object_key: str = "") -> str:
         from urllib.parse import quote
+
         path = quote(_safe_object_key(object_key), safe="/") if object_key else ""
-        return f"{self.url}/storage/v1/object/{action}/{self.bucket}/{path}".rstrip("/")
+        if action:
+            base = f"{self.url}/storage/v1/object/{action}/{self.bucket}"
+        else:
+            base = f"{self.url}/storage/v1/object/{self.bucket}"
+        return f"{base}/{path}" if path else base
 
     def upload_file(self, source: Path, object_key: str, content_type: str) -> StoredObject:
         key = _safe_object_key(object_key)

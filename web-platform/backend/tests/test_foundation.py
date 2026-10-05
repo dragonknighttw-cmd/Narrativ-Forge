@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from cryptography.fernet import Fernet
 import pytest
 from uuid import uuid4
 from sqlalchemy import create_engine
@@ -834,7 +835,7 @@ def test_upload_persists_storage_object_metadata(tmp_path):
 
 @pytest.mark.integration
 @pytest.mark.security
-def test_production_storage_gate_requires_storj_configuration(monkeypatch):
+def test_production_storage_gate_requires_b2_configuration(monkeypatch):
     from app.core.config import Settings
 
     settings_obj = Settings(
@@ -844,14 +845,14 @@ def test_production_storage_gate_requires_storj_configuration(monkeypatch):
         session_cookie_secure=True,
         cors_origins="https://app.example.com",
         trusted_hosts="api.example.com",
-        oauth_encryption_key="y" * 32,
-        storage_provider="storj",
+        oauth_encryption_key=Fernet.generate_key().decode(),
+        storage_provider="hybrid",
     )
     try:
         settings_obj.validate_runtime()
         assert False, "expected missing Storj configuration to be rejected"
     except RuntimeError as exc:
-        assert "Storj storage configuration missing" in str(exc)
+        assert "B2_APPLICATION_KEY_ID" in str(exc)
 
 
 @pytest.mark.integration

@@ -644,6 +644,134 @@ class StorjStorageProvider(S3CompatibleStorageProvider):
             signed_url_expiry_seconds=settings.storj_signed_url_expiry_seconds,
         )
 
+class CloudinaryStorageProvider:
+    name = "cloudinary"
+
+    def __init__(self):
+        if not all([settings.cloudinary_cloud_name, settings.cloudinary_api_key, settings.cloudinary_api_secret]):
+            raise StorageError("Cloudinary storage is not configured")
+        try:
+            import cloudinary
+            import cloudinary.uploader
+            import cloudinary.api
+        except ImportError as exc:
+            raise StorageError("cloudinary package is required for Cloudinary storage") from exc
+        cloudinary.config(
+            cloud_name=settings.cloudinary_cloud_name,
+            api_key=settings.cloudinary_api_key,
+            api_secret=settings.cloudinary_api_secret,
+            secure=True,
+        )
+        self.cloudinary = cloudinary
+        self.chunk_size = settings.cloudinary_chunk_size_bytes
+
+    @staticmethod
+    def _resource_type(content_type: str) -> str:
+        return "video" if content_type.startswith(("video/", "audio/")) else "raw"
+
+    def upload_file(self, source: Path, object_key: str, content_type: str) -> StoredObject:
+        key = _safe_object_key(object_key)
+        resource_type = self._resource_type(content_type)
+        try:
+            import cloudinary.uploader
+            if source.stat().st_size > 100 * 1024 * 1024:
+                result = cloudinary.uploader.upload_large(
+                    str(source),
+                    resource_type=resource_type,
+                    public_id=key,
+                    chunk_size=self.chunk_size,
+                )
+            else:
+                result = cloudinary.uploader.upload(
+                    str(source),
+                    resource_type=resource_type,
+                    public_id=key,
+                )
+        except Exception as exc:
+            raise StorageError("Cloudinary upload failed") from exc
+        return StoredObject(
+            provider=self.name,
+            object_key=result.get("public_id", key),
+            size_bytes=source.stat().st_size,
+            checksum_sha256=sha256_file(source),
+        )
+
+    def download_file(self, object_key: str, destination: Path) -> StoredObject:
+        key = _safe_object_key(object_key)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            import cloudinary.api
+            resource = cloudinary.api.resource(key, resource_type="video", type="upload")
+            url = resource.get("secure_url")
+            if not url:
+                resource = cloudinary.api.resource(key, resource_type="raw", type="upload")
+                url = resource.get("secure_url")
+            if not url:
+                raise StorageError("Cloudinary asset URL missing")
+            import urllib.request
+            urllib.request.urlretrieve(url, destination)
+        except Exception as exc:
+            raise StorageError("Cloudinary download failed") from exc
+        checksum = sha256_file(destination)
+        return StoredObject(provider=self.name, object_key=key, size_bytes=destination.stat().st_size, checksum_sha256=checksum)
+
+    def delete(self, object_key: str) -> None:
+        key = _safe_object_key(object_key)
+        try:
+            import cloudinary.uploader
+            for resource_type in ("video", "raw"):
+                try:
+                    cloudinary.uploader.destroy(key, resource_type=resource_type, invalidate=True)
+                except Exception:
+                    pass
+        except Exception as exc:
+            raise StorageError("Cloudinary delete failed") from exc
+
+    def exists(self, object_key: str) -> bool:
+        key = _safe_object_key(object_key)
+        try:
+            import cloudinary.api
+            for resource_type in ("video", "raw"):
+                try:
+                    cloudinary.api.resource(key, resource_type=resource_type, type="upload")
+                    return True
+                except Exception:
+                    continue
+        except Exception:
+            return False
+        return False
+
+    def download_url(self, object_key: str) -> str | None:
+        key = _safe_object_key(object_key)
+        try:
+            import cloudinary.utils
+            for resource_type in ("video", "raw"):
+                try:
+                    return cloudinary.utils.cloudinary_url(
+                        key, resource_type=resource_type, type="upload", secure=True
+                    )[0]
+                except Exception:
+                    continue
+        except Exception:
+            return None
+        return None
+
+    def initiate_multipart_upload(self, object_key: str, content_type: str, upload_token: str) -> str:
+        raise StorageError("Cloudinary multipart sessions are managed by upload_large; use server-side file upload")
+
+    def upload_part(self, upload_id: str, object_key: str, part_number: int, body: bytes, is_last: bool) -> str:
+        raise StorageError("Cloudinary does not expose this storage abstraction's multipart-part API")
+
+    def list_multipart_parts(self, upload_id: str, object_key: str, upload_token: str | None = None, expected_size: int | None = None) -> list[dict]:
+        raise StorageError("Cloudinary multipart sessions are managed by upload_large")
+
+    def complete_multipart_upload(self, upload_id: str, object_key: str, parts: list[dict], expected_size: int, chunk_size: int, upload_token: str) -> StoredObject:
+        raise StorageError("Cloudinary multipart sessions are managed by upload_large")
+
+    def abort_multipart_upload(self, upload_id: str, object_key: str) -> None:
+        raise StorageError("Cloudinary multipart sessions are managed by upload_large")
+
+
 def get_storage(provider: str | None = None) -> StorageProvider:
     selected = (provider or settings.storage_provider).lower()
     if selected == "local":
@@ -652,6 +780,8 @@ def get_storage(provider: str | None = None) -> StorageProvider:
         return StorjStorageProvider()
     if selected == "b2":
         return B2StorageProvider()
+    if selected == "cloudinary":
+        return CloudinaryStorageProvider()
     raise StorageError(f"Unsupported storage provider: {selected}")
 
 

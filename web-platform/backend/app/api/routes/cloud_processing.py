@@ -84,7 +84,7 @@ def _daily_usage(db: Session, organization_id: str) -> dict:
 
 class WhisperTokenRequest(BaseModel):
     episode_id: str
-    estimated_audio_seconds: int = Field(default=0, ge=0, le=86400)
+    estimated_audio_seconds: int = Field(default=1, ge=1, le=86400)
 
 
 class WhisperUsageRequest(BaseModel):

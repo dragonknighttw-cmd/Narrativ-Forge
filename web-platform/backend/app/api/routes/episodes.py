@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ...db import get_db
 from ...models import Episode, Season, Series
-from ..dependencies import get_current_user, require_roles
+from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["episodes"])
 
@@ -68,8 +68,8 @@ def generated_public_id(db: Session) -> str:
     count = db.query(Episode).filter(Episode.public_id.like(prefix + "%")).count()
     return f"{prefix}{count + 1:04d}"
 
-def validate_structure(db: Session, series_id: str, season_id: str | None):
-    series = db.get(Series, series_id)
+def validate_structure(db: Session, series_id: str, season_id: str | None, organization_id: str | None = None):
+    series = db.query(Series).filter(Series.id == series_id, *( [Series.organization_id == organization_id] if organization_id else [] )).first()
     if not series:
         raise HTTPException(status_code=404, detail="Series not found")
     if season_id:
@@ -78,33 +78,33 @@ def validate_structure(db: Session, series_id: str, season_id: str | None):
             raise HTTPException(status_code=400, detail="Season does not belong to this series")
 
 @router.get("")
-def list_episodes(_: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.query(Episode).order_by(Episode.created_at.desc()).all()
+def list_episodes(membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    return db.query(Episode).filter(Episode.organization_id == membership.organization_id).order_by(Episode.created_at.desc()).all()
 
 @router.post("", status_code=201)
-def create_episode(payload: EpisodeCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    validate_structure(db, payload.series_id, payload.season_id)
+def create_episode(payload: EpisodeCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    validate_structure(db, payload.series_id, payload.season_id, membership.organization_id)
     if payload.season_id and db.query(Episode).filter(Episode.season_id == payload.season_id, Episode.episode_number == payload.episode_number).first():
         raise HTTPException(status_code=409, detail="Episode number already exists in this season")
     public_id = payload.public_id or generated_public_id(db)
     if db.query(Episode).filter(Episode.public_id == public_id).first():
         raise HTTPException(status_code=409, detail="Public ID already exists")
-    item = Episode(public_id=public_id, **payload.model_dump(exclude={"public_id"}))
+    item = Episode(organization_id=membership.organization_id, public_id=public_id, **payload.model_dump(exclude={"public_id"}))
     db.add(item)
     db.commit()
     db.refresh(item)
     return item
 
 @router.get("/{episode_id}")
-def get_episode(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    item = db.get(Episode, episode_id)
+def get_episode(episode_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    item = db.query(Episode).filter(Episode.id == episode_id, Episode.organization_id == membership.organization_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Episode not found")
     return item
 
 @router.patch("/{episode_id}")
-def update_episode(episode_id: str, payload: EpisodeUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(Episode, episode_id)
+def update_episode(episode_id: str, payload: EpisodeUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    item = db.query(Episode).filter(Episode.id == episode_id, Episode.organization_id == membership.organization_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Episode not found")
 
@@ -117,7 +117,7 @@ def update_episode(episode_id: str, payload: EpisodeUpdate, _: dict = Depends(re
         if status != item.status and status not in STATUS_TRANSITIONS.get(item.status, set()):
             raise HTTPException(status_code=409, detail=f"Invalid status transition: {item.status} -> {status}")
     season_id = data.get("season_id", item.season_id)
-    validate_structure(db, item.series_id, season_id)
+    validate_structure(db, item.series_id, season_id, membership.organization_id)
     number = data.get("episode_number", item.episode_number)
     if season_id and db.query(Episode).filter(
         Episode.id != item.id,

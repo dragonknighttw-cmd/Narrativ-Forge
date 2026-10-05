@@ -12,14 +12,14 @@ def upgrade() -> None:
     bind = op.get_bind()
     if bind.dialect.name == "postgresql":
         bind.execute(sa.text("""
-            DO $
+            DO $nf$
             BEGIN
               IF to_regprocedure('public.rls_auto_enable()') IS NOT NULL THEN
                 EXECUTE 'REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM PUBLIC';
                 EXECUTE 'REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM anon';
                 EXECUTE 'REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM authenticated';
               END IF;
-            END $;
+            END $nf$;
         """))
         bind.execute(sa.text("DROP INDEX IF EXISTS public.ix_organizations_slug"))
         bind.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_invitations_organization_id ON public.invitations (organization_id)"))

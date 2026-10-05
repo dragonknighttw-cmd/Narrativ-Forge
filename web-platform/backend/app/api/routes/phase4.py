@@ -481,6 +481,18 @@ def create_billing_portal(membership=Depends(current_membership), user=Depends(r
     return {"url": session.url}
 
 
+def _stripe_plan(obj: dict) -> str | None:
+    metadata = obj.get("metadata") or {}
+    if metadata.get("plan") in {"pro", "business"}:
+        return metadata["plan"]
+    price_ids = {settings.stripe_price_pro: "pro", settings.stripe_price_business: "business"}
+    items = ((obj.get("items") or {}).get("data") or [])
+    for item in items:
+        price_id = ((item.get("price") or {}).get("id"))
+        if price_id in price_ids:
+            return price_ids[price_id]
+    return None
+
 @router.post("/billing/stripe/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     if not settings.stripe_webhook_secret:
@@ -514,9 +526,8 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         if sub_id:
             sub.external_subscription_id = sub_id
         if event_type == "checkout.session.completed":
-            metadata = obj.get("metadata") or {}
-            plan = metadata.get("plan")
-            if plan in {"pro", "business"}:
+            plan = _stripe_plan(obj)
+            if plan:
                 sub.plan = plan
         elif event_type.startswith("customer.subscription."):
             metadata = obj.get("metadata") or {}

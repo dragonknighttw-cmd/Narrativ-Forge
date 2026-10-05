@@ -5,8 +5,8 @@ ENV VIRTUAL_ENV=/opt/venv
 RUN python -m venv "$VIRTUAL_ENV"
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-RUN apt-get update \\
-    && apt-get install -y --no-install-recommends g++ pkg-config libicu-dev \\
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends g++ pkg-config libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
@@ -17,7 +17,7 @@ FROM python:3.12-slim AS runtime
 
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends ffmpeg ca-certificates \
+    && apt-get install -y --no-install-recommends ffmpeg ca-certificates libicu-dev \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/local/lib/python3.12/site-packages/* \
     && groupadd --system app \

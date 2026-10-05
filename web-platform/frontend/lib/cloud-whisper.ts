@@ -60,6 +60,7 @@ export async function transcribeVideoWithCloudflare(
   file: File,
   getToken: (estimatedAudioSeconds: number) => Promise<{ worker_url: string; token: string; usage_key: string }>,
   onProgress?: (message: string) => void,
+  recordUsage?: (usageKey: string, audioSeconds: number) => Promise<unknown>,
 ): Promise<CloudWhisperResult> {
   if (file.size <= 0) throw new Error("Choose a non-empty video file");
   onProgress?.("Loading ffmpeg.wasm…");
@@ -76,7 +77,8 @@ export async function transcribeVideoWithCloudflare(
       throw new Error("Extracted audio is larger than 50 MB. Use a shorter source or lower the audio bitrate.");
     }
 
-    const estimatedAudioSeconds = Math.max(1, Math.round(Math.max(0, audio.byteLength - 44) / 32000));\n    const { worker_url, token, usage_key } = await getToken(estimatedAudioSeconds);
+    const estimatedAudioSeconds = Math.max(1, Math.round(Math.max(0, audio.byteLength - 44) / 32000));
+    const { worker_url, token, usage_key } = await getToken(estimatedAudioSeconds);
     onProgress?.("Sending audio to Cloudflare Whisper…");
     const response = await fetch(worker_url, {
       method: "POST",
@@ -87,7 +89,8 @@ export async function transcribeVideoWithCloudflare(
       },
       body: audio,
     });
-    await recordUsage?.(usage_key, estimatedAudioSeconds);\n    if (!response.ok) {
+    await recordUsage?.(usage_key, estimatedAudioSeconds);
+    if (!response.ok) {
       let detail = "Cloudflare Whisper request failed";
       try {
         const body = await response.json() as { error?: string; detail?: string };

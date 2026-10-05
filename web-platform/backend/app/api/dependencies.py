@@ -7,7 +7,7 @@ from fastapi import Cookie, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import User
+from ..models import OrganizationMembership, User
 
 from ..core.config import settings
 
@@ -64,4 +64,15 @@ def require_roles(*roles: str):
             raise HTTPException(status_code=403, detail="Permission denied")
         return user
     return dependency
-\n\ndef get_current_membership(user=Depends(get_current_user), db: Session = Depends(get_db)):\n    membership = (\n        db.query(OrganizationMembership)\n        .filter(OrganizationMembership.user_id == user["id"])\n        .order_by(OrganizationMembership.created_at)\n        .first()\n    )\n    if not membership:\n        raise HTTPException(status_code=403, detail="Workspace membership required")\n    return membership\n
+
+
+def get_current_membership(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    membership = (
+        db.query(OrganizationMembership)
+        .filter(OrganizationMembership.user_id == user["id"])
+        .order_by(OrganizationMembership.created_at)
+        .first()
+    )
+    if not membership:
+        raise HTTPException(status_code=403, detail="Workspace membership required")
+    return membership

@@ -76,6 +76,11 @@ export const api = {
   getBilling: () => request("/phase4/billing"),
   setPlan: (plan: string) => request("/phase4/billing/plan?plan=" + encodeURIComponent(plan), { method: "POST" }),
   createWebhook: (url: string, events: string[] = []) => request<{ id: string; url: string; events: string[]; secret: string }>("/phase4/webhooks", { method: "POST", body: JSON.stringify({ url, events }) }),
+  listWebhooks: () => request<Array<{ id: string; url: string; events: string[]; is_active: boolean }>>("/phase4/webhooks"),
+  deleteWebhook: (id: string) => request<{ id: string; is_active: boolean }>(`/phase4/webhooks/${id}`, { method: "DELETE" }),
+  createNotification: (event_type: string, payload: Record<string, unknown> = {}) => request<{ id: string; status: string }>("/phase4/notifications", { method: "POST", body: JSON.stringify({ event_type, payload }) }),
+  listNotifications: () => request<Array<{ id: string; event_type: string; status: string; attempts: number; created_at: string }>>("/phase4/notifications"),
+
 
   listIdeas: () => request<Idea[]>("/ideas"),
   createIdea: (data: { title: string; concept?: string; category?: string; hook?: string; content_warning?: string }) => request<Idea>("/ideas", { method: "POST", body: JSON.stringify(data) }),

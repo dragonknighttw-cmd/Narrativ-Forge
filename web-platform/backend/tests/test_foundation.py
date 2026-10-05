@@ -715,7 +715,11 @@ def test_approval_and_export_create_audit_events(tmp_path):
         subtitle = client.post(f"/api/v1/episodes/{episode['id']}/subtitles/generate", json={"preset": "burmese_default"}).json()
         assert client.patch(f"/api/v1/subtitles/{subtitle['id']}", json={"cues": [{"start": 0, "end": 2, "text": "မြန်မာစာ"}]}).status_code == 200
         assert client.post(f"/api/v1/episodes/{episode['id']}/subtitles/approve").status_code == 200
-        assert client.patch(f"/api/v1/episodes/{episode['id']}", json={"status": "needs_approval"}).status_code == 200
+        current_episode = client.get(f"/api/v1/episodes/{episode['id']}").json()
+        assert client.patch(
+            f"/api/v1/episodes/{episode['id']}",
+            json={"status": "needs_approval", "expected_row_version": current_episode["row_version"]},
+        ).status_code == 200
         assert client.post(f"/api/v1/episodes/{episode['id']}/review/approve", json={
             "video_watched": True, "audio_checked": True,
             "subtitle_timing_checked": True, "thumbnail_present": True,
@@ -1028,14 +1032,14 @@ def test_export_state_compare_and_set_blocks_second_export_claim():
         from app.models import Episode
         from app.api.routes.export import _claim_export
 
-        db = SessionLocal()
+        db = TestingSession()
         row = db.get(Episode, episode["id"])
         row.status = "approved"
         row.current_step = "review"
         db.commit()
         db.close()
 
-        db = SessionLocal()
+        db = TestingSession()
         try:
             _claim_export(db, episode["id"], expected_status="approved")
             with pytest.raises(Exception) as exc_info:

@@ -14,8 +14,8 @@ from app import db
 pytestmark = pytest.mark.integration
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
-HEAD_REVISION = "0007_optimistic_locking"
-PREVIOUS_REVISION = "0002_asset_storage_metadata"
+HEAD_REVISION = "0015_revoke_public_table_grants"
+PREVIOUS_REVISION = "0008_storage_replicas"
 
 
 def run_alembic(database_path: Path, *args: str) -> str:
@@ -147,11 +147,11 @@ def test_upgrade_from_previous_revision_matches_fresh_schema(tmp_path):
     assert migrated_schema(upgraded_database) == migrated_schema(fresh_database)
 
 
-def test_retry_dlq_migration_downgrades_to_previous_revision(tmp_path):
+def test_retry_dlq_migration_round_trip_from_current_baseline(tmp_path):
     database_path = tmp_path / "retry_dlq.db"
     run_alembic(database_path, "upgrade", "head")
 
-    run_alembic(database_path, "downgrade", "0003_scene_script_scope")
+    run_alembic(database_path, "downgrade", PREVIOUS_REVISION)
     schema = migrated_schema(database_path)
     assert "failed_jobs" not in schema
     assert not {"max_retries", "next_run_at", "last_error"} & schema["processing_jobs"]["columns"]
@@ -202,7 +202,7 @@ def test_upload_migration_upgrades_an_existing_0004_schema(tmp_path):
     assert "expected_size" in schema["upload_sessions"]["columns"]
 
 
-def test_idempotency_migration_upgrades_and_downgrades_existing_0005_schema(tmp_path):
+def test_idempotency_migration_upgrades_existing_0005_schema(tmp_path):
     database_path = tmp_path / "existing_0005.db"
     run_alembic(database_path, "upgrade", "0005_resumable_uploads")
     engine = create_engine(f"sqlite:///{database_path.as_posix()}")

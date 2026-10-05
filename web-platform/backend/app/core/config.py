@@ -28,12 +28,6 @@ class Settings(BaseSettings):
     cloudinary_api_secret: str = ""
     cloudinary_folder: str = "narrativ-forge"
     cloudinary_chunk_size_bytes: int = Field(default=20 * 1024 * 1024, ge=5 * 1024 * 1024, le=100 * 1024 * 1024)
-    storj_access_key_id: str = ""
-    storj_secret_access_key: str = ""
-    storj_bucket_name: str = ""
-    storj_region: str = "global"
-    storj_endpoint_url: str = "https://gateway.storjshare.io"
-    storj_signed_url_expiry_seconds: int = 900
     asset_retention_days: int = 30
     temp_file_retention_hours: int = 24
     # Legacy B2 settings remain readable for data migration/legacy asset access.
@@ -104,16 +98,6 @@ class Settings(BaseSettings):
             missing = [name for name, value in required.items() if not value]
             if missing:
                 raise RuntimeError("Cloudinary replica configuration missing: " + ", ".join(missing))
-        if self.storage_replica_enabled and self.storage_replica_provider.lower() == "b2":
-            required = {
-                "B2_APPLICATION_KEY_ID": self.b2_application_key_id,
-                "B2_APPLICATION_KEY": self.b2_application_key,
-                "B2_BUCKET_NAME": self.b2_bucket_name,
-                "B2_REGION": self.b2_region,
-            }
-            missing = [name for name, value in required.items() if not value]
-            if missing:
-                raise RuntimeError("B2 replica configuration missing: " + ", ".join(missing))
         if self.storage_provider.lower() == "b2":
             required = {
                 "B2_APPLICATION_KEY_ID": self.b2_application_key_id,

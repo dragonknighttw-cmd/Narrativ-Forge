@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     upload_session_ttl_seconds: int = Field(default=86400, ge=3600, le=604800)
     idempotency_ttl_seconds: int = Field(default=86400, ge=60, le=2592000)
     storage_provider: str = "local"
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
+    supabase_storage_bucket: str = "narrativ-forge"
+    supabase_signed_url_expiry_seconds: int = 900
     storage_replica_provider: str = ""
     storage_replica_enabled: bool = False
     cloudinary_cloud_name: str = ""
@@ -102,8 +106,24 @@ class Settings(BaseSettings):
             raise RuntimeError("TRUSTED_HOSTS must contain at least one allowed host in production")
         if "*" in self.trusted_host_list:
             raise RuntimeError("TRUSTED_HOSTS must not use wildcard in production")
-        if self.storage_provider.lower() not in {"cloudinary", "b2"}:
-            raise RuntimeError("STORAGE_PROVIDER must be one of: cloudinary, b2 in production")
+        if self.storage_provider.lower() not in {"cloudinary", "b2", "hybrid"}:
+            raise RuntimeError("STORAGE_PROVIDER must be one of: cloudinary, b2, hybrid in production")
+        if self.storage_provider.lower() == "hybrid":
+            required = {
+                "CLOUDINARY_CLOUD_NAME": self.cloudinary_cloud_name,
+                "CLOUDINARY_API_KEY": self.cloudinary_api_key,
+                "CLOUDINARY_API_SECRET": self.cloudinary_api_secret,
+                "B2_APPLICATION_KEY_ID": self.b2_application_key_id,
+                "B2_APPLICATION_KEY": self.b2_application_key,
+                "B2_BUCKET_NAME": self.b2_bucket_name,
+                "B2_REGION": self.b2_region,
+                "SUPABASE_URL": self.supabase_url,
+                "SUPABASE_SERVICE_ROLE_KEY": self.supabase_service_role_key,
+                "SUPABASE_STORAGE_BUCKET": self.supabase_storage_bucket,
+            }
+            missing = [name for name, value in required.items() if not value]
+            if missing:
+                raise RuntimeError("Hybrid storage configuration missing: " + ", ".join(missing))
         if self.storage_provider.lower() == "cloudinary":
             required = {
                 "CLOUDINARY_CLOUD_NAME": self.cloudinary_cloud_name,

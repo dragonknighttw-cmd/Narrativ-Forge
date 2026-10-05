@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     worker_max_concurrency: int = Field(default=1, ge=1)
     single_user_mode: bool = False
     single_user_email: str = ""
+    cloudflare_whisper_worker_url: str = ""
+    cloudflare_whisper_shared_secret: str = ""
+    cloudflare_whisper_token_ttl_seconds: int = 300
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

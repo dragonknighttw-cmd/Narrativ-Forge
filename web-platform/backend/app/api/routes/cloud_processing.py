@@ -90,14 +90,15 @@ def create_whisper_token(
     ) * settings.cloudflare_whisper_neurons_per_audio_minute
     ratio = projected_neurons / float(settings.cloudflare_whisper_daily_neuron_budget or 1)
     if ratio >= settings.cloudflare_whisper_fallback_threshold:
-        raise HTTPException(
-            status_code=429,
-            detail={
-                "message": "Cloudflare Whisper daily safety budget is near exhaustion; use Celery fallback.",
-                "fallback_required": True,
-                "usage": usage,
-            },
-        )
+        return {
+            "worker_url": "",
+            "token": "",
+            "expires_at": 0,
+            "usage_key": "",
+            "warning": True,
+            "fallback_required": True,
+            "usage": usage,
+        }
 
     now = int(time.time())
     claims = {

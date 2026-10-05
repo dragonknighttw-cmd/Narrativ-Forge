@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     cloudflare_whisper_worker_url: str = ""
     cloudflare_whisper_shared_secret: str = ""
     cloudflare_whisper_token_ttl_seconds: int = 300
+    cloudflare_whisper_daily_neuron_budget: int = 10000
+    cloudflare_whisper_warning_threshold: float = 0.80
+    cloudflare_whisper_fallback_threshold: float = 0.95
+    cloudflare_whisper_neurons_per_audio_minute: float = 41.14
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

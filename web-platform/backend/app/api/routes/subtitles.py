@@ -57,9 +57,10 @@ def _serialize(item: Subtitle):
     }
 
 @router.get("/{episode_id}/subtitles")
-def list_subtitles(episode_id: str, _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def list_subtitles(episode_id: str, limit: int = Query(default=50, ge=1, le=100), offset: int = Query(default=0, ge=0), _: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     _episode_or_404(db, episode_id)
-    return [_serialize(x) for x in db.query(Subtitle).filter(Subtitle.episode_id == episode_id).order_by(Subtitle.version.desc()).all()]
+    query = db.query(Subtitle).filter(Subtitle.episode_id == episode_id).order_by(Subtitle.version.desc()).offset(offset).limit(limit)
+    return [_serialize(x) for x in query.all()]
 
 @router.post("/{episode_id}/subtitles/generate", status_code=201)
 def generate_subtitle(episode_id: str, payload: GenerateSubtitle, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):

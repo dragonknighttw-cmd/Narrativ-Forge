@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     upload_session_ttl_seconds: int = Field(default=86400, ge=3600, le=604800)
     idempotency_ttl_seconds: int = Field(default=86400, ge=60, le=2592000)
     storage_provider: str = "local"
+    storage_replica_provider: str = ""
+    storage_replica_enabled: bool = False
     storj_access_key_id: str = ""
     storj_secret_access_key: str = ""
     storj_bucket_name: str = ""
@@ -86,6 +88,31 @@ class Settings(BaseSettings):
             missing = [name for name, value in required.items() if not value]
             if missing:
                 raise RuntimeError("Storj storage configuration missing: " + ", ".join(missing))
+        if self.storage_replica_enabled and self.storage_replica_provider.lower() not in {"storj", "b2"}:
+            raise RuntimeError("STORAGE_REPLICA_PROVIDER must be one of: storj, b2 when replication is enabled")
+        if self.storage_replica_enabled and self.storage_replica_provider.lower() == self.storage_provider.lower():
+            raise RuntimeError("STORAGE_REPLICA_PROVIDER must differ from STORAGE_PROVIDER")
+        if self.storage_replica_enabled and self.storage_replica_provider.lower() == "storj":
+            required = {
+                "STORJ_ACCESS_KEY_ID": self.storj_access_key_id,
+                "STORJ_SECRET_ACCESS_KEY": self.storj_secret_access_key,
+                "STORJ_BUCKET_NAME": self.storj_bucket_name,
+                "STORJ_REGION": self.storj_region,
+                "STORJ_ENDPOINT_URL": self.storj_endpoint_url,
+            }
+            missing = [name for name, value in required.items() if not value]
+            if missing:
+                raise RuntimeError("Storj replica configuration missing: " + ", ".join(missing))
+        if self.storage_replica_enabled and self.storage_replica_provider.lower() == "b2":
+            required = {
+                "B2_APPLICATION_KEY_ID": self.b2_application_key_id,
+                "B2_APPLICATION_KEY": self.b2_application_key,
+                "B2_BUCKET_NAME": self.b2_bucket_name,
+                "B2_REGION": self.b2_region,
+            }
+            missing = [name for name, value in required.items() if not value]
+            if missing:
+                raise RuntimeError("B2 replica configuration missing: " + ", ".join(missing))
         if self.storage_provider.lower() == "b2":
             required = {
                 "B2_APPLICATION_KEY_ID": self.b2_application_key_id,

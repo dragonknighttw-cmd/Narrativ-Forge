@@ -187,7 +187,7 @@ Browser
               └─ VTT + text → Narrativ API → Subtitle Studio
 ```
 
-Cloudflare Workers AI currently provides a 10,000-neuron/day free allocation. Whisper is available in the model catalog and is priced by audio minute beyond the free allocation. Therefore this is **free within the daily allocation, not unlimited free inference**.
+Cloudflare Workers AI currently provides a 10,000-neuron/day free allocation. `@cf/openai/whisper` is currently listed at 41.14 neurons/audio-minute, so the raw allocation is roughly 243 audio minutes/day before other account/model constraints. This is a planning estimate, not a guaranteed minute quota. Cloudflare says limits reset daily at 00:00 UTC and requests fail after the daily free allocation is exhausted. Therefore this is **free within the daily allocation, not unlimited free inference**. citeturn1search0turn0search4
 
 Security:
 - Browser never receives the shared Worker secret.
@@ -242,7 +242,7 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] Export idempotency/status transition foundation
 - [x] Production log / social preparation / analytics foundation
 - [x] Hook Library backend foundation
-- [x] Usage metering foundation
+- [x] Usage metering foundation\n- [x] Cloudflare Whisper daily usage guard (80% warning / 95% fallback guardrail)
 - [x] Organization/tenant scope foundation
 - [x] Webhook + notification foundation
 - [x] Stripe billing/webhook foundation
@@ -257,7 +257,7 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] Alembic production migration fix
 - [x] Latest storage deployment verified live on Render
 
-### Implemented in code but still needs production verification
+### Cloudflare Whisper status\n\n- [x] Worker source + signed-token flow\n- [x] Browser ffmpeg.wasm extraction\n- [x] VTT import into Subtitle Studio\n- [x] Daily usage metering and 80%/95% guardrails\n- [ ] GitHub Actions Worker deployment with real Cloudflare credentials\n- [ ] Render Worker URL/shared-secret configuration\n- [ ] Real audio → Whisper → VTT → Subtitle Studio verification\n- [ ] Verify Celery fallback on a real quota-exhaustion/95% guard condition\n\nThe Whisper workstream is **not Done** until the remaining real-credential and end-to-end verification gates are passed.\n\n### Implemented in code but still needs production verification
 
 - [ ] Real B2 upload/download/delete against production credentials
 - [ ] Real Supabase Storage upload/download/delete against production credentials
@@ -295,7 +295,7 @@ SUPABASE_STORAGE_BUCKET=narrativ-forge
 
 Keep all secrets outside Git.
 
-### P0 — long-running media worker
+### P0 — Cloudflare credentials + real test\n\nThe code is ready, but real verification is blocked until these GitHub Actions secrets are supplied by the project owner:\n\n```text\nCLOUDFLARE_API_TOKEN\nCLOUDFLARE_ACCOUNT_ID\nCLOUDFLARE_WHISPER_SHARED_SECRET\n```\n\nAfter deployment, the same shared secret and Worker URL must be configured in Render. Do not mark Whisper Offload done before the real audio/VTT/Subtitle Studio test passes.\n\n### P0 — long-running media worker
 
 Render Free can host the API web service, but it does not provide a free Background Worker.
 
@@ -310,7 +310,7 @@ Celery + FFmpeg + Whisper
         = requires a real worker runtime
 ```
 
-The worker code, Celery configuration, tasks, and worker Dockerfile are kept in the repository so the architecture is ready. **Do not create a paid Render worker without explicit approval.**
+The worker code, Celery configuration, tasks, and worker Dockerfile are kept in the repository so the architecture is ready. Celery is **not obsolete**: it remains the long-running fallback and the runtime for scheduled/batch processing. The current Render Free service does not host that worker. **Do not create a paid Render worker without explicit approval.**
 
 For a genuinely production-grade video-processing system, a dedicated worker host/runtime is still required.
 

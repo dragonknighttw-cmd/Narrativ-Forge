@@ -19,6 +19,11 @@ def upgrade() -> None:
             ondelete="SET NULL",
         )
 
+    bind = op.get_bind()
+    bind.execute(sa.text(
+        "UPDATE audit_events SET organization_id = (SELECT om.organization_id FROM organization_memberships om JOIN users u ON u.id = om.user_id WHERE u.email = audit_events.actor_email ORDER BY om.created_at LIMIT 1) WHERE organization_id IS NULL"
+    ))
+
     with op.batch_alter_table("hook_library") as batch:
         batch.add_column(sa.Column("organization_id", sa.String(36), nullable=True))
         batch.create_index("ix_hook_library_organization_id", ["organization_id"])

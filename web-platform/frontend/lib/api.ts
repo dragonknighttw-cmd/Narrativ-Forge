@@ -112,6 +112,8 @@ export const api = {
   listAssets: (episodeId: string) => request<Asset[]>(`/episodes/${episodeId}/assets`),
   updateAsset: (assetId: string, data: Partial<Asset>) => request<Asset>(`/assets/${assetId}`, { method: "PATCH", body: JSON.stringify(data) }),
   listJobs: () => request<ProcessingJob[]>(`/jobs`),
+  createCloudWhisperToken: (episodeId: string) => request<{ worker_url: string; token: string; expires_at: number }>(`/cloud-processing/whisper-token`, { method: "POST", body: JSON.stringify({ episode_id: episodeId }) }),
+  importCloudTranscript: (episodeId: string, vtt: string, preset = "burmese_default") => request<Subtitle>(`/episodes/${episodeId}/subtitles/import-cloud-transcript`, { method: "POST", body: JSON.stringify({ vtt, preset }) }),
   createMockJob: (episodeId: string) => idempotentRequest<ProcessingJob>(`nf-idempotency:jobs:mock:${episodeId}`, `/jobs/mock`, { method: "POST", body: JSON.stringify({ episode_id: episodeId }) }),
   createRealJob: (episodeId: string) => idempotentRequest<ProcessingJob>(`nf-idempotency:jobs:real:${episodeId}`, `/jobs/real`, { method: "POST", body: JSON.stringify({ episode_id: episodeId }) }),
   retryJob: (jobId: string) => request<ProcessingJob>(`/jobs/${jobId}/retry`, { method: "POST" }),

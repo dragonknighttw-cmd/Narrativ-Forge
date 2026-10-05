@@ -117,7 +117,7 @@ Narrativ-Forge/
 | Raw video/audio/large media | Backblaze B2 | Backblaze |
 | Final exports | User-owned Drive | Google Drive |
 | Error monitoring | Sentry SDK integration | Sentry |
-| Long-running worker | Celery + FFmpeg + Whisper | **not hosted on Render Free yet** |
+| Cloud transcription | Browser ffmpeg.wasm + Cloudflare Workers AI | primary free path |\n| Long-running worker | Celery + FFmpeg + Whisper | optional fallback; not hosted on Render Free |
 
 ### Current deployment endpoints
 
@@ -176,7 +176,44 @@ B2 uploads explicitly request server-side encryption.
 
 ---
 
-## 5. Cloud processing architecture\n\nThe primary free processing path now moves heavy media work away from Render:\n\n```text\nBrowser\n  └─ ffmpeg.wasm → extract 16 kHz mono audio\n        └─ Cloudflare Worker → Workers AI @cf/openai/whisper\n              └─ VTT + text → Narrativ API → Subtitle Studio\n```\n\nCloudflare Workers AI currently provides a 10,000-neuron/day free allocation. Whisper is available in the model catalog and is priced by audio minute beyond the free allocation. Therefore this is **free within the daily allocation**, not unlimited free compute. citeturn0search1turn0search0\n\nSecurity:\n- Browser never receives the shared Worker secret.\n- Backend mints a short-lived signed token scoped to the episode.\n- Worker verifies the token and allowed origin before invoking Whisper.\n- Extracted audio is limited to 50 MB per request.\n\nRepository implementation:\n- `web-platform/cloudflare/whisper-worker/` — Worker source + Wrangler config\n- `web-platform/frontend/lib/cloud-whisper.ts` — browser ffmpeg/Whisper client\n- `web-platform/backend/app/api/routes/cloud_processing.py` — signed token API\n- `web-platform/backend/app/api/routes/subtitles.py` — Cloud VTT import\n\n### Cloudflare setup still required\n\nThe Worker source is committed, but deployment requires a Wrangler/Cloudflare Workers upload and one secret that cannot safely be committed. After deployment, configure Render with:\n\n```text\nCLOUDFLARE_WHISPER_WORKER_URL=https://<worker>.workers.dev\nCLOUDFLARE_WHISPER_SHARED_SECRET=<same secret used by the Worker>\nCLOUDFLARE_WHISPER_TOKEN_TTL_SECONDS=300\n```\n\nThe Worker can be deployed without a custom domain using the Cloudflare `workers.dev` subdomain.\n\n## 6. Current implementation status
+## 5. Cloud processing architecture
+
+The primary free processing path moves heavy media work away from Render:
+
+```text
+Browser
+  └─ ffmpeg.wasm → extract 16 kHz mono audio
+        └─ Cloudflare Worker → Workers AI @cf/openai/whisper
+              └─ VTT + text → Narrativ API → Subtitle Studio
+```
+
+Cloudflare Workers AI currently provides a 10,000-neuron/day free allocation. Whisper is available in the model catalog and is priced by audio minute beyond the free allocation. Therefore this is **free within the daily allocation, not unlimited free inference**.
+
+Security:
+- Browser never receives the shared Worker secret.
+- Backend mints a short-lived signed token scoped to the episode.
+- Worker verifies the token and allowed origin before invoking Whisper.
+- Extracted audio is limited to 50 MB per request.
+
+Repository implementation:
+- `web-platform/cloudflare/whisper-worker/` — Worker source + Wrangler config
+- `web-platform/frontend/lib/cloud-whisper.ts` — browser ffmpeg/Whisper client
+- `web-platform/backend/app/api/routes/cloud_processing.py` — signed token API
+- `web-platform/backend/app/api/routes/subtitles.py` — Cloud VTT import
+
+### Cloudflare setup still required
+
+The Worker source is committed, but the Worker deployment and its secret still need to be configured. After deployment, configure Render with:
+
+```text
+CLOUDFLARE_WHISPER_WORKER_URL=https://<worker>.workers.dev
+CLOUDFLARE_WHISPER_SHARED_SECRET=<same secret used by the Worker>
+CLOUDFLARE_WHISPER_TOKEN_TTL_SECONDS=300
+```
+
+The Worker can use the Cloudflare `workers.dev` subdomain; no custom domain is required.
+
+## 6. Current implementation status
 
 ### Completed / implemented
 

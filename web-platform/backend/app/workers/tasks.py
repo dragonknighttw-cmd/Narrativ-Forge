@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .. import db as app_db
+from ..core.config import settings
 from .. import metrics
 from ..models import Asset, FailedJob, ProcessingJob, StorageReplica
 from ..services.audit import record_event

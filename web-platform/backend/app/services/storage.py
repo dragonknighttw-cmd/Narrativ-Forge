@@ -990,7 +990,9 @@ def get_storage(provider: str | None = None) -> StorageProvider:
 
 
 def storage_provider_for_asset(asset_type: str, size_bytes: int, content_type: str | None = None) -> str:
-    """Choose durable storage by media role; never put raw video/audio in Cloudinary."""
+    """Choose durable storage by media role; local mode remains deterministic for development and CI."""
+    if settings.storage_provider.lower() == "local":
+        return "local"
     kind = (asset_type or "").lower()
     mime = (content_type or "").lower()
     if kind in {"video", "audio"} or mime.startswith(("video/", "audio/")):

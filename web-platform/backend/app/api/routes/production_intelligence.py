@@ -11,7 +11,7 @@ from ..dependencies import get_current_membership, get_current_user, require_rol
 
 router = APIRouter(tags=["production-intelligence"])
 
-HOOK_TYPES = {"question", "shock", "mystery", "warning", "personal_story", "contrarian", "cliffhanger"}
+HOOK_TYPES = {"question", "shock", "mystery", "warning", "personal_story", "contrarian", "cliffhanger", "number"}
 PUBLICATION_STATES = {"not_ready", "prepared", "scheduled_metadata_ready", "manually_published", "published_recorded"}
 
 PLATFORMS = {"youtube_shorts", "tiktok", "instagram_reels", "facebook_reels"}

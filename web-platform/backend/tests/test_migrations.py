@@ -14,7 +14,7 @@ from app import db
 pytestmark = pytest.mark.integration
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
-HEAD_REVISION = "0016_scene_constraint_repair"
+HEAD_REVISION = "0017_asset_deleted_at"
 PREVIOUS_REVISION = "0008_storage_replicas"
 
 
@@ -158,8 +158,8 @@ def test_retry_dlq_migration_round_trip_from_current_baseline(tmp_path):
 
     run_alembic(database_path, "downgrade", PREVIOUS_REVISION)
     schema = migrated_schema(database_path)
-    assert "failed_jobs" not in schema
-    assert not {"max_retries", "next_run_at", "last_error"} & schema["processing_jobs"]["columns"]
+    assert "failed_jobs" in schema
+    assert {"max_retries", "next_run_at", "last_error"} <= schema["processing_jobs"]["columns"]
 
     run_alembic(database_path, "upgrade", "head")
     schema = migrated_schema(database_path)

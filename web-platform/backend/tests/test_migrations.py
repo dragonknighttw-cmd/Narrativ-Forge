@@ -26,10 +26,15 @@ def run_alembic(database_path: Path, *args: str) -> str:
         [sys.executable, "-m", "alembic", *args],
         cwd=BACKEND_ROOT,
         env=env,
-        check=True,
+        check=False,
         capture_output=True,
         text=True,
     )
+    if result.returncode:
+        raise AssertionError(
+            f"alembic {' '.join(args)} failed with {result.returncode}\n"
+            f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+        )
     return result.stdout + result.stderr
 
 

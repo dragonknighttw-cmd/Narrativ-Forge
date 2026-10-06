@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 import tempfile
@@ -301,6 +302,7 @@ def soft_delete_asset(asset_id: str, membership=Depends(get_current_membership),
     if not item:
         raise HTTPException(status_code=404, detail="Asset not found")
     item.status = "deleted"
+    item.deleted_at = datetime.now(timezone.utc)
     item.is_final = False
     db.commit()
     db.refresh(item)

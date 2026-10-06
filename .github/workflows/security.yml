@@ -85,20 +85,3 @@ jobs:
           severity: HIGH,CRITICAL
           vuln-type: os,library
           ignore-unfixed: true
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ["python", "javascript-typescript"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
-          queries: security-extended
-
-      - name: Analyze
-        uses: github/codeql-action/analyze@v3

@@ -73,7 +73,7 @@ class Settings(BaseSettings):
     cloudflare_whisper_warning_threshold: float = 0.80
     cloudflare_whisper_fallback_threshold: float = 0.95
     cloudflare_whisper_neurons_per_audio_minute: float = 41.14
-
+    # Provider budgets are planning defaults until live account limits are verified.\n    agnes_daily_seconds_budget: int = Field(default=500, ge=0)\n    groq_daily_requests_budget: int = Field(default=1000, ge=0)\n    provider_quota_warning_threshold: float = Field(default=0.80, ge=0, le=1)\n    provider_quota_fallback_threshold: float = Field(default=0.95, ge=0, le=1)\n
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property

@@ -689,7 +689,10 @@ class SupabaseStorageProvider:
                 json={"prefixes": [key]},
                 timeout=60,
             )
-            response.raise_for_status()
+            if not response.ok:
+                raise StorageError(f"Supabase Storage delete failed: HTTP {response.status_code} {response.text[:300]}")
+        except StorageError:
+            raise
         except Exception as exc:
             raise StorageError("Supabase Storage delete failed") from exc
 

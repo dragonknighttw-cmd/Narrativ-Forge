@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from sqlalchemy import select
 from ..models.core import UploadSession
@@ -55,7 +56,7 @@ def purge_stale_local_multipart_uploads(
 ) -> int:
     """Remove expired local multipart staging directories that are no longer active in DB."""
     now = now or datetime.now(timezone.utc)
-    root = (settings.upload_dir and __import__("pathlib").Path(settings.upload_dir) / ".multipart")
+    root = Path(settings.upload_dir) / ".multipart"
     if not root or not root.exists():
         return 0
 
@@ -75,7 +76,6 @@ def purge_stale_local_multipart_uploads(
             continue
         if directory.name in active_ids:
             continue
-        metadata = directory / "metadata.json"
         try:
             modified_at = datetime.fromtimestamp(directory.stat().st_mtime, timezone.utc)
             if modified_at > now - timedelta(hours=settings.temp_file_retention_hours):

@@ -272,6 +272,8 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - [x] Supabase security advisor reviewed and public table grants hardened
 - [x] Hybrid storage and Whisper guardrail regression tests
 - [x] Operational runbooks for stuck jobs, secret rotation, and database restore
+- [x] Alembic revision identifiers kept within PostgreSQL version-table length limits
+- [x] Resumable-upload E2E test corrected to extract the upload session ID from the actual chunk URL
 
 ### Cloudflare Whisper status
 

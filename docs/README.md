@@ -1,6 +1,6 @@
 # Narrativ Forge Docs
 
-Reconciled documentation for the implementation, target roadmap, and production-readiness state.
+Reconciled documentation for the implementation, target roadmap, production-readiness state, manual validation, and UI system.
 
 ## Source hierarchy
 1. `roadmap.md` — desired product / master target.
@@ -15,5 +15,7 @@ Reconciled documentation for the implementation, target roadmap, and production-
 - [04-current-vs-target.md](./04-current-vs-target.md)
 - [05-execution-roadmap.md](./05-execution-roadmap.md)
 - [06-future-reserve.md](./06-future-reserve.md)
+- [07-ui-design.md](./07-ui-design.md)
+- [08-manual-mode.md](./08-manual-mode.md)
 
 **Rule:** code existing is not enough for production Done; real integration/runtime/security/DR verification must pass.

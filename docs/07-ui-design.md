@@ -58,3 +58,9 @@ Target: **33 components**
 ## Implementation rule
 
 These counts are target coverage, not proof of completion. Applicable loading, empty, error, success, permission, responsive, and accessibility states must also be reviewed.
+
+
+## Expanded Auto Production UI
+The original 26-screen baseline is superseded as a provisional target by the requirements in 09. Candidate additions include Story Upload, Episode Split Review, SEO Optimization, Hook Library, Thumbnail Selection, A/B Test, Series Bible, Continuity Check, Trending Topics, Sound Design, Emotional Arc, Pacing Analysis, Cross-Platform Export, Series Calendar, Voice Profile, Music Library, Video Generation Queue, Provider Status, Watermark Check, and Batch Generation.
+
+Before implementation, consolidate duplicate concepts into tabs/panels where appropriate and publish a new final screen count. Every new screen must support relevant loading, empty, error, success, permission, responsive, and accessibility states.

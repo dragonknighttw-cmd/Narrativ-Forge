@@ -1,4 +1,5 @@
 import pytest
+from cryptography.fernet import Fernet
 
 from app.core.config import Settings, settings
 from app.main import app
@@ -24,6 +25,9 @@ def production_settings(**overrides) -> Settings:
         "b2_application_key": "key-secret",
         "b2_bucket_name": "bucket",
         "b2_region": "us-west-002",
+        "oauth_encryption_key": Fernet.generate_key().decode(),
+        "smtp_host": "smtp.example.com",
+        "smtp_from_email": "noreply@example.com",
     }
     values.update(overrides)
     return Settings(**values)

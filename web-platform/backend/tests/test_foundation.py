@@ -592,7 +592,7 @@ def test_google_drive_export_failure_is_resumable(monkeypatch, tmp_path):
         })
         assert approved.status_code == 200
 
-        async def fake_access_token(email, db):
+        async def fake_access_token(email, organization_id, db):
             return "fake-token"
 
         class FakeResponse:

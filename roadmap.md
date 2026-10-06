@@ -1326,3 +1326,38 @@ The reconciled documentation is now split under `docs/`:
 `docs/05-execution-roadmap.md` is the current execution queue.
 
 Do not mark a feature production-ready merely because code exists; real integration, runtime, security, and recovery verification must pass.
+
+
+---
+
+## 📚 Add-On Reconciliation — 2026-10-06
+
+The additional Auto Production requirements have been merged into the reconciled plan. Detailed specification: `docs/09-auto-production-expansion.md`.
+
+### Newly added target areas
+- Story Upload + AI Episode Splitter
+- 8-type Hook Engineering + Hook Library + A/B flow
+- SEO Optimization + Keyword/Trend adapters
+- Retention, Pacing, Emotional Arc and Engagement systems
+- Auto Thumbnail pipeline + Visual Variety
+- Sound Design + emotion-based BGM matching
+- Character/Voice consistency + Series Bible + Continuity Checker
+- Cross-platform export preparation
+- Batch Generation + Series Calendar
+- Feedback Loop + Title/Hook/Thumbnail A/B testing
+- Video Generation Provider Adapter + fallback + quota tracking
+- Watermark/commercial-use policy checks
+- Expanded data tables and production screens
+
+### Important planning rule
+The new provider numbers/free-tier claims are treated as **unverified candidate assumptions** until checked against live provider terms, API access, quotas, commercial-use rules, watermark behavior and quality.
+
+### Revised execution principle
+Do not jump directly into all new features. First make the repository green and complete real infrastructure verification. Then build the expanded Auto Production pipeline incrementally with schema → API/service → worker → UI → tests → real integration verification.
+
+### Revised Source of Truth
+`roadmap.md` = desired final system.
+`README.md` = actual repository state.
+`docs/04-current-vs-target.md` = current vs target status.
+`docs/05-execution-roadmap.md` = current execution order.
+`docs/09-auto-production-expansion.md` = detailed Add-On target specification.

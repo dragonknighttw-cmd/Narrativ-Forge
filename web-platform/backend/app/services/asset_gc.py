@@ -4,6 +4,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
+from ..models.core import UploadSession
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
@@ -44,3 +45,44 @@ def purge_deleted_assets(db: Session, *, now: datetime | None = None, limit: int
     if purged:
         db.commit()
     return purged
+
+
+def purge_stale_local_multipart_uploads(
+    db: Session,
+    *,
+    now: datetime | None = None,
+    limit: int = 100,
+) -> int:
+    """Remove expired local multipart staging directories that are no longer active in DB."""
+    now = now or datetime.now(timezone.utc)
+    root = (settings.upload_dir and __import__("pathlib").Path(settings.upload_dir) / ".multipart")
+    if not root or not root.exists():
+        return 0
+
+    active_ids = {
+        row[0]
+        for row in db.execute(
+            select(UploadSession.provider_upload_id).where(
+                UploadSession.status == "active",
+                UploadSession.expires_at > now,
+                UploadSession.provider_upload_id.is_not(None),
+            )
+        ).all()
+    }
+    removed = 0
+    for directory in sorted(root.iterdir(), key=lambda item: item.stat().st_mtime if item.exists() else 0):
+        if removed >= limit or not directory.is_dir():
+            continue
+        if directory.name in active_ids:
+            continue
+        metadata = directory / "metadata.json"
+        try:
+            modified_at = datetime.fromtimestamp(directory.stat().st_mtime, timezone.utc)
+            if modified_at > now - timedelta(hours=settings.temp_file_retention_hours):
+                continue
+            import shutil
+            shutil.rmtree(directory)
+            removed += 1
+        except OSError:
+            logger.exception("multipart_gc_cleanup_failed", extra={"path": str(directory)})
+    return removed

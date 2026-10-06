@@ -145,3 +145,19 @@ These are not considered DONE merely because the numbers/specification are writt
 The detailed single source for these items is `docs/10-runtime-and-storage-lifecycle-plan.md`.
 
 The previous idea of maintaining a separate copied `worker/` application is superseded: local workers must run the repository's actual `web-platform/backend` worker code so local and future paid runtimes do not drift.
+
+
+## Coding progress — post-infrastructure freeze
+
+The live Local Worker gate is intentionally **paused** and remains VERIFY/TODO until the user can run the Home/Office worker test later.
+
+Meanwhile, non-worker-dependent foundations have been advanced:
+
+| Capability | Code status | Verification status |
+|---|---|---|
+| Hook library documented types | Number hook added to API validation | Unit test added; CI verification pending |
+| Evidence-backed hook recommendations | Recommendation endpoint with minimum 5 published samples and multi-signal score | Unit/API verification pending |
+| Provider quota budgeting | Agnes 500 sec/day + Groq 1,000 req/day planning budgets, idempotent reservations, warning/fallback thresholds | Unit test added; live provider limits still VERIFY |
+| Storage lifecycle | Retention/GC foundation exists | Real cleanup/emergency drill remains VERIFY |
+
+Important: these coding additions do **not** mark Agnes/Groq production integrations or Local Worker runtime as DONE. Live provider limits and real worker execution remain separate verification gates.

@@ -95,17 +95,16 @@ def test_real_worker_dispatches_queued_jobs_without_running_them(testing_db, mon
             return None
 
     monkeypatch.setattr(real_worker, "get_celery", lambda: DummyCelery())
+    monkeypatch.setattr(
+        real_worker,
+        "enqueue_real_job",
+        lambda job_id: calls.setdefault("enqueued", []).append(job_id) or True,
+    )
     dispatched_db = Session()
     try:
         dispatched = real_worker.run_once(dispatched_db)
         assert dispatched == 2
-        assert {
-            (name, tuple(args), tuple(sorted(kwargs.items())))
-            for name, args, kwargs in calls["messages"]
-        } == {
-            ("narrativ.process_real_job", (job_id,), ()),
-            ("narrativ.process_real_job", (due_job_id,), ()),
-        }
+        assert set(calls["enqueued"]) == {job_id, due_job_id}
         assert dispatched_db.get(ProcessingJob, job_id).status == "queued"
         assert dispatched_db.get(ProcessingJob, future_job_id).status == "queued"
     finally:
@@ -129,9 +128,9 @@ def test_dispatch_failure_leaves_job_queued_for_next_poll(testing_db, monkeypatc
             raise RuntimeError("broker unavailable")
 
     monkeypatch.setattr(real_worker, "get_celery", lambda: FailingCelery())
+    monkeypatch.setattr(real_worker, "enqueue_real_job", lambda _job_id: False)
     dispatch_db = Session()
-    with pytest.raises(RuntimeError, match="broker unavailable"):
-        real_worker.run_once(dispatch_db)
+    assert real_worker.run_once(dispatch_db) == 0
     dispatch_db.close()
 
     verify_db = Session()
@@ -144,6 +143,7 @@ def test_dispatch_failure_leaves_job_queued_for_next_poll(testing_db, monkeypatc
             assert args == [job_id]
 
     monkeypatch.setattr(real_worker, "get_celery", lambda: AvailableCelery())
+    monkeypatch.setattr(real_worker, "enqueue_real_job", lambda _job_id: True)
     next_poll_db = Session()
     try:
         assert real_worker.run_once(next_poll_db) == 1
@@ -550,6 +550,7 @@ def test_concurrent_postgresql_manual_retry_only_transitions_once():
     seed.commit()
     episode = Episode(
         public_id=f"TST-MANUAL-CONCURRENT-{uuid4().hex[:8]}",
+        organization_id=organization.id,
         series_id=series.id,
         episode_number=1,
         title="concurrent manual retry",
@@ -722,7 +723,8 @@ def test_manual_real_retry_preserves_identity_and_budget(testing_db):
     db.commit()
     job_id = job.id
 
-    retried = retry_job(job_id, {}, db)
+    membership = SimpleNamespace(organization_id=episode.organization_id)
+    retried = retry_job(job_id, membership, {}, db)
     assert retried.id == job_id
     assert retried.retry_count == 1
     assert retried.status == "queued"
@@ -730,7 +732,7 @@ def test_manual_real_retry_preserves_identity_and_budget(testing_db):
     assert retried.last_error is None
     assert db.query(ProcessingJob).filter_by(episode_id=episode.id).count() == 1
     with pytest.raises(Exception):
-        retry_job(job_id, {}, db)
+        retry_job(job_id, membership, {}, db)
     db.close()
 
 
@@ -755,7 +757,8 @@ def test_manual_exhausted_retry_resets_budget_and_resolves_dlq(testing_db):
     db.commit()
     job_id = job.id
 
-    retried = retry_job(job_id, {}, db)
+    membership = SimpleNamespace(organization_id=episode.organization_id)
+    retried = retry_job(job_id, membership, {}, db)
     assert retried.id == job_id
     assert retried.retry_count == 0
     assert retried.status == "queued"

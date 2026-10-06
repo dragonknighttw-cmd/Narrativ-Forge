@@ -17,10 +17,14 @@ from app.services.storage import storage_provider_for_asset
         ("image", 60 * 1024 * 1024, "image/png", "b2"),
     ],
 )
-def test_hybrid_storage_routing(asset_type, size_bytes, content_type, expected):
+def test_hybrid_storage_routing(asset_type, size_bytes, content_type, expected, monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "storage_provider", "hybrid")
     assert storage_provider_for_asset(asset_type, size_bytes, content_type) == expected
 
 
-def test_media_mime_type_overrides_generic_asset_type():
+def test_media_mime_type_overrides_generic_asset_type(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "storage_provider", "hybrid")
     assert storage_provider_for_asset("asset", 1 * 1024 * 1024, "video/mp4") == "b2"
     assert storage_provider_for_asset("asset", 1 * 1024 * 1024, "audio/mpeg") == "b2"

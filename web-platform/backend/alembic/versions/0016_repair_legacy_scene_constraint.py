@@ -49,3 +49,7 @@ def downgrade() -> None:
     if "uq_scene_number_per_script" in constraints:
         with op.batch_alter_table("scenes") as batch:
             batch.drop_constraint("uq_scene_number_per_script", type="unique")
+            batch.create_unique_constraint(
+                "uq_scene_number_per_episode",
+                ["episode_id", "scene_number"],
+            )

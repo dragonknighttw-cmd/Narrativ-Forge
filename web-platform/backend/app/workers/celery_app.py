@@ -20,9 +20,9 @@ def make_celery(broker_url: Optional[str] = None) -> Celery:
 
     app = Celery("narrativ", broker=broker)
     app.conf.beat_schedule = {
-        "purge-deleted-assets": {
-            "task": "narrativ.purge_deleted_assets",
-            "schedule": 3600.0,
+        "purge-storage-lifecycle": {
+            "task": "narrativ.purge_storage_lifecycle",
+            "schedule": 21600.0,
         },
     }
     # Minimal, safe configuration

@@ -39,6 +39,7 @@ def test_postgres_concurrent_same_key_creates_one_job():
         episode = Episode(
             public_id=f"ID{uuid4().hex[:20]}",
             series_id=series.id,
+            organization_id=organization.id,
             episode_number=1,
             title="Concurrent idempotency test",
         )

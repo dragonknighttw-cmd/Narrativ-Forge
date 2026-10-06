@@ -71,3 +71,36 @@ This is a target behavior and must be verified end-to-end before being marked DO
 ## Conclusion
 
 Narrativ Forge is **not starting from zero**. Most core workflow code is already present. Immediate work is to turn implementation into verified production capability, then close only target gaps that matter.
+
+
+## Expanded requirements — current status
+
+All items below are **TODO** unless separately proven by repository/runtime evidence:
+
+- Story ingestion + AI episode splitter — TODO
+- Hook engineering + hook library + 3-candidate A/B flow — TODO
+- SEO metadata generation — TODO
+- Retention/pacing/emotional-arc analysis — TODO
+- Thumbnail auto-generation/selection — TODO
+- Sound design/BGM matching — TODO
+- Series Bible + continuity checker — TODO
+- Trending-topic adapter — TODO
+- Cross-platform export preparation — TODO
+- Engagement triggers — TODO
+- Series trailer — TODO
+- Batch generation — TODO
+- Subtitle translation — RESERVE / later
+- Series calendar — TODO
+- Title/hook/thumbnail A/B testing — TODO
+- Voice profiles — TODO
+- Video-generation provider adapter/fallback — TODO
+- Watermark policy check — TODO
+
+### Provider note
+The proposed Agnes/Kling/Magic Hour stack is a candidate, not a verified production integration. Free limits, API access, commercial terms, watermark behavior, quality and failure semantics must be verified live before marking it DONE.
+
+### Expanded data targets
+The new tables listed in `docs/09-auto-production-expansion.md` are target schema, not completion evidence.
+
+### UI baseline change
+The original 26-screen count is no longer the final target. The new screens in 09 must be deduplicated into standalone screens vs tabs/panels, then a new baseline count established.

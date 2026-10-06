@@ -4,7 +4,9 @@ from app.services.storage import SupabaseStorageProvider, storage_provider_for_a
 
 
 @pytest.mark.unit
-def test_storage_provider_routes_media_and_small_assets():
+def test_storage_provider_routes_media_and_small_assets(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "storage_provider", "hybrid")
     assert storage_provider_for_asset("video", 1_000, "video/mp4") == "b2"
     assert storage_provider_for_asset("audio", 1_000, "audio/wav") == "b2"
     assert storage_provider_for_asset("thumbnail", 1_000, "image/jpeg") == "cloudinary"

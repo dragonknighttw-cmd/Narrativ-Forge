@@ -683,8 +683,8 @@ class SupabaseStorageProvider:
     def delete(self, object_key: str) -> None:
         key = _safe_object_key(object_key)
         try:
-            response = requests.post(
-                f"{self.url}/storage/v1/object/remove/{self.bucket}",
+            response = requests.delete(
+                f"{self.url}/storage/v1/object/{self.bucket}",
                 headers={**self.headers, "Content-Type": "application/json"},
                 json={"prefixes": [key]},
                 timeout=60,

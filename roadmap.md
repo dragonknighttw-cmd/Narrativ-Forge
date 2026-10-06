@@ -1308,21 +1308,21 @@ ui-testing.md	UI Testing Guide
 
 The master roadmap remains the **target/source of truth for what Narrativ Forge is intended to become**. The repository README remains the source for actual implementation/deployment state.
 
-The reconciled documentation is now split under `narratic/docs/`:
+The reconciled documentation is now split under `docs/`:
 
-- `narratic/docs/README.md` — documentation map
-- `narratic/docs/01-product.md` — product definition and boundaries
-- `narratic/docs/02-stack.md` — stack and constraints
-- `narratic/docs/03-architecture.md` — architecture
-- `narratic/docs/04-current-vs-target.md` — implementation vs target reconciliation
-- `narratic/docs/05-execution-roadmap.md` — remaining work and release order
-- `narratic/docs/06-future-reserve.md` — deferred scope
+- `docs/README.md` — documentation map
+- `docs/01-product.md` — product definition and boundaries
+- `docs/02-stack.md` — stack and constraints
+- `docs/03-architecture.md` — architecture
+- `docs/04-current-vs-target.md` — implementation vs target reconciliation
+- `docs/05-execution-roadmap.md` — remaining work and release order
+- `docs/06-future-reserve.md` — deferred scope
 
 ### Documentation rule
 
 `roadmap.md` describes the **desired final system**.  
 `README.md` describes the **actual repository state**.  
-`narratic/docs/04-current-vs-target.md` reconciles the two.  
-`narratic/docs/05-execution-roadmap.md` is the current execution queue.
+`docs/04-current-vs-target.md` reconciles the two.  
+`docs/05-execution-roadmap.md` is the current execution queue.
 
 Do not mark a feature production-ready merely because code exists; real integration, runtime, security, and recovery verification must pass.

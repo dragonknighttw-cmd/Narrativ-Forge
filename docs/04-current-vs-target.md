@@ -114,3 +114,18 @@ The original 26-screen count is no longer the final target. The new screens in 0
 - Historical stale runs are being cancelled by the new concurrency policy where GitHub applies it; older pre-policy runs may still need manual cancellation.
 
 Therefore repository health is currently **CodeQL GREEN / Security GREEN / CI verification pending**.
+
+
+## Explicit remaining requirements — capacity, performance, and UI
+
+The following items are intentionally kept explicit so they are not lost during feature expansion:
+
+| Requirement | Target / baseline | Status |
+|---|---|---|
+| **Agnes daily-limit calculation** | 500 sec/day ÷ ~25 sec/video = **20 videos/day** theoretical capacity | TODO/VERIFY |
+| **Processing target** | **15–30 min/video** MVP target on the real worker path | TODO/VERIFY |
+| **Groq daily-limit tracking** | **1,000 req/day** conservative planning baseline; live account/model limit must be verified | TODO/VERIFY |
+| **Design System** | Colors, Typography, Spacing + semantic/responsive/accessibility rules implemented and audited | TODO/VERIFY |
+| **Component Library** | **33 components** implemented with required variants/states and accessibility coverage | TODO/VERIFY |
+
+These are not considered DONE merely because the numbers/specification are written in documentation. Real implementation, runtime measurement, or UI audit is required as applicable.

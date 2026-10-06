@@ -15,7 +15,7 @@ def test_gc_purges_old_deleted_assets(tmp_path, db_session, monkeypatch):
     series = Series(title="GC test series")
     db_session.add(series)
     db_session.flush()
-    episode = Episode(series_id=series.id, episode_number=1, title="GC test episode")
+    episode = Episode(series_id=series.id, public_id="gc-test-episode", episode_number=1, title="GC test episode")
     db_session.add(episode)
     db_session.flush()
     asset = Asset(
@@ -24,10 +24,13 @@ def test_gc_purges_old_deleted_assets(tmp_path, db_session, monkeypatch):
         local_path=str(tmp_path / "asset.bin"),
         object_key="asset.bin",
         original_filename="asset.bin",
+        mime_type="application/octet-stream",
+        file_size_bytes=1,
+        version=1,
         asset_type="video",
         status="deleted",
     )
-    asset.updated_at = datetime.now(timezone.utc) - timedelta(days=31)
+    asset.deleted_at = datetime.now(timezone.utc) - timedelta(days=31)
     db_session.add(asset)
     db_session.commit()
     (tmp_path / "asset.bin").write_bytes(b"x")

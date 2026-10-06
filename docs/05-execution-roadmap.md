@@ -27,6 +27,24 @@
 - Verify all quality gates and workflow transitions.
 - Verify production log + analytics feedback loop.
 
+## Feedback loop
+
+```
+Manual Data → Hook Library → Auto Defaults → Human Approve
+```
+
+### Rule
+Do not optimize from one video's views alone.
+
+Wait until at least **5–10 content pieces** exist, then compare:
+- Hook performance.
+- Retention/engagement signals.
+- Production effort/time.
+- Subtitle style results.
+- Other available content-quality signals.
+
+The purpose is to turn manual production data into better defaults while keeping human approval in the loop.
+
 ## P1 — Security / operations
 - Final dependency/security scan.
 - Artifact/container scan where applicable.

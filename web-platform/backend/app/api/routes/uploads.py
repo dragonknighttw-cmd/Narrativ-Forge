@@ -322,7 +322,7 @@ async def upload_chunk(
     user: dict = Depends(require_roles("owner", "editor")),
     db: Session = Depends(get_db),
 ):
-    session = _owned_session(db, upload_id, user["id"], lock=True)
+    session = _owned_session(db, upload_id, user["id"], membership.organization_id, lock=True)
     _require_active(db, session)
     if not session.provider_upload_id:
         raise HTTPException(status_code=500, detail="Upload session storage state is incomplete")

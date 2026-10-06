@@ -697,15 +697,15 @@ The GitHub Actions e2e workflow requires the repository secret `BOOTSTRAP_ADMIN_
 
 ### Reconciled project docs
 
-The target roadmap and implementation state are reconciled in `narratic/docs/`:
+The target roadmap and implementation state are reconciled in `docs/`:
 
-- `narratic/docs/README.md`
-- `narratic/docs/01-product.md`
-- `narratic/docs/02-stack.md`
-- `narratic/docs/03-architecture.md`
-- `narratic/docs/04-current-vs-target.md`
-- `narratic/docs/05-execution-roadmap.md`
-- `narratic/docs/06-future-reserve.md`
+- `docs/README.md`
+- `docs/01-product.md`
+- `docs/02-stack.md`
+- `docs/03-architecture.md`
+- `docs/04-current-vs-target.md`
+- `docs/05-execution-roadmap.md`
+- `docs/06-future-reserve.md`
 
 Use `04-current-vs-target.md` to distinguish implemented code from unverified production integrations, and `05-execution-roadmap.md` for the current release sequence.
 

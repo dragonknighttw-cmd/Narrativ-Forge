@@ -114,3 +114,36 @@ Before calling the expanded product production-ready, also close these five trac
 5. **Component Library:** implement and audit the **33-component target** from docs/07-ui-design.md, including required variants and loading/empty/error/success/disabled/permission/responsive/accessibility states.
 
 These five items are explicit roadmap requirements and must remain visible in the remaining-work list until verified.
+
+
+## P0 — Worker runtime strategy (free-first)
+
+The production worker host is intentionally separated from the Render Web Service.
+
+### Current plan
+
+1. **Now:** use one or two Windows PCs as Celery worker hosts.
+2. Both PCs run the repository's existing `web-platform/backend` worker code; do not fork a separate worker application.
+3. Home PC may host the single Celery Beat instance; Office PC is a worker only by default.
+4. Upstash Redis remains the shared broker/queue.
+5. FFmpeg runs locally; Cloudflare Whisper remains the default transcription path.
+6. Verify queue → worker → FFmpeg → DB/storage → retry/DLQ → failover before marking the worker runtime DONE.
+
+### Paid migration reserve
+
+When local processing becomes the bottleneck, the same worker contract may move to:
+- Render Background Worker (paid), or
+- a paid VPS / other verified always-on host.
+
+This is a host migration, not an application rewrite. No paid worker should be provisioned while the project remains free-only without explicit approval.
+
+### Storage lifecycle gate
+
+Before production-ready status:
+- usage monitoring exists for local/B2/Supabase/Cloudinary/Drive,
+- 80/90/95% thresholds are defined,
+- retention cleanup is reference-safe,
+- raw/intermediate cleanup never deletes the only approved final output,
+- cleanup and emergency procedures are tested.
+
+Detailed operational plan: `docs/10-runtime-and-storage-lifecycle-plan.md`.

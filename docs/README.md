@@ -19,3 +19,8 @@ Reconciled documentation for the implementation, target roadmap, production-read
 - [08-manual-mode.md](./08-manual-mode.md)
 
 **Rule:** code existing is not enough for production Done; real integration/runtime/security/DR verification must pass.
+
+- [09-auto-production-expansion.md](./09-auto-production-expansion.md)
+
+## Reconciliation rule
+The Add-On requirements are now part of the target plan. Their detailed specification lives in 09; 04 and 05 classify and schedule what is actually remaining.

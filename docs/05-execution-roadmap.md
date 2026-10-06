@@ -101,3 +101,16 @@ Do not build all new tables/screens blindly. For each capability: schema → API
 
 ## Revised release order
 Repository Green → Real Infrastructure Verification → Core Workflow E2E → Expanded Auto Production → UX/A11y/Security Hardening → Business/Legal → Release Gate.
+
+
+## Explicit capacity / performance / UI completion checklist
+
+Before calling the expanded product production-ready, also close these five tracked items:
+
+1. **Agnes daily-limit calculation:** use the current MVP planning baseline of **500 sec/day ÷ ~25 sec/video = 20 videos/day**, then verify the real provider quota and enforce it in the generation queue.
+2. **Processing target:** benchmark the real worker path and meet the MVP target of **15–30 minutes/video** under representative processing conditions.
+3. **Groq daily limit:** use **1,000 requests/day** as the conservative planning baseline, verify the live account/model limit, and implement request-budget tracking plus fallback behavior.
+4. **Design System:** implement Colors, Typography, Spacing, semantic states, responsive rules, and accessibility tokens in the actual UI, then audit them.
+5. **Component Library:** implement and audit the **33-component target** from docs/07-ui-design.md, including required variants and loading/empty/error/success/disabled/permission/responsive/accessibility states.
+
+These five items are explicit roadmap requirements and must remain visible in the remaining-work list until verified.

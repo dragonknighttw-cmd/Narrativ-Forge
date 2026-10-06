@@ -206,7 +206,7 @@ def phase2_verification(
                 client = redis.Redis.from_url(settings.redis_url, socket_connect_timeout=5, socket_timeout=5)
                 results["redis"] = _ok({"ping": bool(client.ping())})
         except Exception as exc:
-            results["redis"] = {"status": "error", "error": type(exc).__name__ + ": " + str(exc)[:300]}
+            results["redis"] = {"status": "error", "error": type(exc).__name__ + ": " + str(exc)[:300], "url_prefix": (settings.redis_url or "")[:12]}
 
         for provider in ("cloudinary", "supabase", "b2"):
             configured = {

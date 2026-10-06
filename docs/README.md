@@ -37,3 +37,5 @@ Do not create competing Local Worker or Storage master plans.
 The Add-On requirements are part of the target plan. Their detailed specification lives in 09; 04 and 05 classify and schedule what is actually remaining.
 
 The runtime/storage plan in 10 does not replace product, architecture, or feature requirements. It defines how processing infrastructure can move from free local compute to paid compute later without an application rewrite.
+
+- **11-release-readiness-checklist.md** — Phase 8 production hardening and Phase 9 release-candidate / production-ready gates.

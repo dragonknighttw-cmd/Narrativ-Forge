@@ -482,6 +482,7 @@ def test_concurrent_postgresql_failure_handlers_consume_one_retry():
     episode = Episode(
         public_id=f"TST-CONCURRENT-{uuid4().hex[:8]}",
         series_id=series.id,
+        organization_id=organization.id,
         episode_number=1,
         title="concurrent retry",
     )
@@ -530,7 +531,14 @@ def test_concurrent_postgresql_manual_retry_only_transitions_once():
 
     Session = sessionmaker(bind=app_db.engine)
     seed = Session()
-    series = Series(title="Concurrent manual retry test")
+    organization = Organization(
+        name="Concurrent manual retry workspace",
+        slug=f"manual-retry-{uuid4().hex}",
+        plan="trial",
+    )
+    seed.add(organization)
+    seed.flush()
+    series = Series(title="Concurrent manual retry test", organization_id=organization.id)
     seed.add(series)
     seed.commit()
     episode = Episode(
@@ -557,7 +565,7 @@ def test_concurrent_postgresql_manual_retry_only_transitions_once():
         try:
             barrier.wait(timeout=5)
             try:
-                retry_job(job_id, SimpleNamespace(organization_id=series.organization_id), None, session)
+                retry_job(job_id, SimpleNamespace(organization_id=organization.id), None, session)
                 return "queued"
             except Exception as exc:
                 if getattr(exc, "status_code", None) == 409:

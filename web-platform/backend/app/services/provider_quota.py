@@ -92,6 +92,13 @@ def reserve_provider_quota(
         select(UsageEvent).where(UsageEvent.idempotency_key == idempotency_key)
     )
     if existing is not None:
+        if (
+            existing.organization_id != organization_id
+            or existing.metric != metric
+            or existing.period_start != period
+            or existing.unit != unit
+        ):
+            raise ValueError("Idempotency key is already bound to a different provider quota reservation")
         return get_provider_quota(db, organization_id, provider, now=now)
 
     # Serialize reservations per organization on PostgreSQL. SQLite remains

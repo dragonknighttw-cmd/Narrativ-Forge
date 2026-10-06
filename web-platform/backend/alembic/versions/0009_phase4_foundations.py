@@ -18,7 +18,7 @@ def upgrade() -> None:
     op.create_table("organizations",
         sa.Column("id", sa.String(36), primary_key=True),
         sa.Column("name", sa.String(255), nullable=False),
-        sa.Column("slug", sa.String(120), nullable=False, unique=True),
+        sa.Column("slug", sa.String(120), nullable=False),
         sa.Column("plan", sa.String(40), nullable=False, server_default="trial"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
@@ -93,7 +93,7 @@ def upgrade() -> None:
 
     op.create_table("billing_subscriptions",
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("organization_id", sa.String(36), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, unique=True),
+        sa.Column("organization_id", sa.String(36), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False),
         sa.Column("provider", sa.String(30), nullable=False, server_default="manual"),
         sa.Column("external_customer_id", sa.String(255), nullable=True),
         sa.Column("external_subscription_id", sa.String(255), nullable=True),
@@ -103,6 +103,7 @@ def upgrade() -> None:
         sa.Column("current_period_end", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.UniqueConstraint("organization_id", name="uq_billing_subscription_org"),
     )
     op.create_table("webhook_endpoints",
         sa.Column("id", sa.String(36), primary_key=True),

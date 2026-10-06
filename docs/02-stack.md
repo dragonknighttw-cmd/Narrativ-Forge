@@ -54,3 +54,16 @@ The current plan prefers cloud/free-tier APIs so the production machine does not
 
 ## Important
 The roadmap lists possible providers; the repository README decides actual implementation/deployment state. Real credentials and live tests are required before calling an integration production-ready.
+
+
+## Explicit capacity-planning requirements
+
+These numbers are planning baselines and must be verified against the live provider/account before production:
+
+- **Agnes video-generation daily limit:** plan around **500 seconds/day**.
+- **MVP video duration assumption:** ~25 seconds/video.
+- **Agnes theoretical daily capacity:** 500 ÷ 25 = **20 videos/day**.
+- The production queue must track daily quota, reserved/used seconds, remaining budget, failed/retry seconds, and reset time.
+- **Groq daily-limit baseline:** use **1,000 requests/day** conservatively until the actual account/model limit is verified.
+- Groq usage tracking must include requests used, remaining budget, retries, reset time, and fallback activation.
+- Do not treat either number as a permanent provider guarantee.

@@ -34,6 +34,8 @@ def test_login_rate_limit_counts_failed_attempts_only(monkeypatch):
     app.dependency_overrides[get_db] = lambda: FakeDB()
     monkeypatch.setattr(settings, "single_user_mode", False)
     try:
+        from app import main
+        main._rate_windows.clear()
         client = create_test_client(app)
         responses = [
             client.post("/api/v1/auth/login", json={"email": "unknown@example.com", "password": "bad"})

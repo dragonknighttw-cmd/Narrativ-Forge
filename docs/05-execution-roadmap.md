@@ -161,3 +161,13 @@ Current coding-first progress:
 
 The deferred Local Worker gate remains separate:
 **Local Worker → real FFmpeg → Queue → DB → Storage → Retry/DLQ → Failover**.
+
+
+## Coding-First Progress — Phases 7–9
+
+While live-worker and credential-gated verification remains paused, the implementation track continues:
+- Phase 7: semantic design tokens, accessible reusable UI primitives, focus states, 44px touch targets, reduced-motion handling.
+- Phase 8: release hardening checklist remains required for production; tenant isolation, idempotency, retry/DLQ, observability, backup/restore and performance are verification gates, not code-only DONE claims.
+- Phase 9: release candidate checklist is defined around green CI/security, production infrastructure verification, rollback readiness, human approval/export safety, and unresolved external gates.
+
+No Phase 8/9 production-ready claim is made until live verification gates pass.

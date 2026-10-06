@@ -13,7 +13,6 @@ class Settings(BaseSettings):
     sentry_dsn: SecretStr = SecretStr("")
     session_cookie_name: str = "nf_session"
     session_cookie_secure: bool = False
-    phase2_verify_token: SecretStr = SecretStr("")
     session_ttl_seconds: int = 60 * 60 * 8
     cors_origins: str = "http://localhost:3000"
     trusted_hosts: str = "localhost,127.0.0.1"

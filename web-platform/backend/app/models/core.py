@@ -287,6 +287,7 @@ class Asset(Base):
     is_final: Mapped[bool] = mapped_column(default=False)
     status: Mapped[str] = mapped_column(String(40), default="uploaded")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     episode: Mapped[Episode] = relationship(back_populates="assets")
     scene: Mapped[Scene | None] = relationship(back_populates="assets")

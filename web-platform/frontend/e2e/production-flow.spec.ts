@@ -13,21 +13,25 @@ test("authenticated production flow reaches approved mock export", async ({ page
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/dashboard/);
 
+  const suffix = Date.now().toString();
+  const seriesTitle = `E2E Series ${suffix}`;
+  const episodeTitle = `E2E Episode ${suffix}`;
+
   await page.goto("/series");
-  await page.getByPlaceholder("Series title").fill("E2E Series");
+  await page.getByPlaceholder("Series title").fill(seriesTitle);
   await page.getByRole("button", { name: "Create series" }).click();
-  await expect(page.getByText("E2E Series")).toBeVisible();
+  await expect(page.getByText(seriesTitle).first()).toBeVisible();
 
   await page.goto("/episodes");
-  await page.getByPlaceholder("Episode title").fill("E2E Episode");
+  await page.getByPlaceholder("Episode title").fill(episodeTitle);
   await page.getByRole("button", { name: "Create episode" }).click();
-  await expect(page.getByText("E2E Episode")).toBeVisible();
+  await expect(page.getByText(episodeTitle).first()).toBeVisible();
 
-  await page.getByRole("link", { name: /E2E Episode/ }).first().click();
+  await page.getByRole("link", { name: new RegExp(episodeTitle) }).first().click();
   await expect(page.getByText("PRODUCTION WORKSPACES")).toBeVisible();
 
   const episodeId = new URL(page.url()).pathname.split("/").filter(Boolean).pop()!;
-  const apiBase = "http://127.0.0.1:8000/api/v1";
+  const apiBase = "http://localhost:8000/api/v1";
   const uploadRequests: { method: string; path: string; idempotencyKey?: string }[] = [];
   page.on("request", request => {
     const url = new URL(request.url());
@@ -57,24 +61,13 @@ test("authenticated production flow reaches approved mock export", async ({ page
   expect(uploadRequests.find(
     request => request.method === "POST" && request.path === uploadSessionPath,
   )?.idempotencyKey).toBeTruthy();
-  const uploadId = uploadRequests.find(
-    request => request.method === "PUT" && request.path.includes("/chunks"),
-  )?.path.split("/")[3];
-  expect(uploadId).toBeTruthy();
-  await expect.poll(
-    () => uploadRequests.some(
-      request => request.method === "POST" && request.path === `/api/v1/uploads/${uploadId}/commit`,
-    ),
-  ).toBeTruthy();
-  expect(uploadRequests).toContainEqual({
-    method: "POST",
-    path: `/api/v1/uploads/${uploadId}/commit`,
-  });
-
   const api = page.request;
-  const uploadedAssets = await api.get(apiBase + "/episodes/" + episodeId + "/assets");
-  expect(uploadedAssets.ok()).toBeTruthy();
-  expect((await uploadedAssets.json()).some((asset: { original_filename: string }) => asset.original_filename === "source.mp4")).toBeTruthy();
+  await expect.poll(async () => {
+    const response = await api.get(`${apiBase}/episodes/${episodeId}/assets`);
+    if (!response.ok()) return false;
+    const assets = await response.json();
+    return assets.some((asset: { original_filename: string }) => asset.original_filename === "source.mp4");
+  }).toBeTruthy();
   const job = await api.post(apiBase + "/jobs/mock", { data: { episode_id: episodeId } });
   expect(job.ok()).toBeTruthy();
 

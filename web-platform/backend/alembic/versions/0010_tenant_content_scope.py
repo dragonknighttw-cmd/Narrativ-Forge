@@ -50,8 +50,19 @@ def upgrade() -> None:
     bind.execute(sa.text("UPDATE episodes SET organization_id = :org_id WHERE organization_id IS NULL"), {"org_id": LEGACY_ORG_ID})
 
 def downgrade() -> None:
+    bind = op.get_bind()
     for table in ("episodes", "series", "ideas"):
+        inspector = inspect(bind)
+        columns = {column["name"] for column in inspector.get_columns(table)}
+        if "organization_id" not in columns:
+            continue
+        foreign_keys = {fk.get("name") for fk in inspector.get_foreign_keys(table)}
+        indexes = {index.get("name") for index in inspector.get_indexes(table)}
         with op.batch_alter_table(table) as batch:
-            batch.drop_constraint(f"fk_{table}_organization_id", type_="foreignkey")
-            batch.drop_index(f"ix_{table}_organization_id")
+            fk_name = f"fk_{table}_organization_id"
+            if fk_name in foreign_keys:
+                batch.drop_constraint(fk_name, type_="foreignkey")
+            index_name = f"ix_{table}_organization_id"
+            if index_name in indexes:
+                batch.drop_index(index_name)
             batch.drop_column("organization_id")

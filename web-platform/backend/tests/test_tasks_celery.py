@@ -557,7 +557,7 @@ def test_concurrent_postgresql_manual_retry_only_transitions_once():
         try:
             barrier.wait(timeout=5)
             try:
-                retry_job(job_id, SimpleNamespace(organization_id=organization.id), None, session)
+                retry_job(job_id, SimpleNamespace(organization_id=series.organization_id), None, session)
                 return "queued"
             except Exception as exc:
                 if getattr(exc, "status_code", None) == 409:

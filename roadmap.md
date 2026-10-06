@@ -1300,3 +1300,29 @@ ui-accessibility.md	A11y Guide
 ui-responsive.md	Responsive Guide
 ui-testing.md	UI Testing Guide
 ဒီ roadmap.md သည် Narrativ Forge ရဲ့ Single Source of Truth ဖြစ်သည်။
+
+
+---
+
+## 📚 Reconciled Documentation
+
+The master roadmap remains the **target/source of truth for what Narrativ Forge is intended to become**. The repository README remains the source for actual implementation/deployment state.
+
+The reconciled documentation is now split under `narratic/docs/`:
+
+- `narratic/docs/README.md` — documentation map
+- `narratic/docs/01-product.md` — product definition and boundaries
+- `narratic/docs/02-stack.md` — stack and constraints
+- `narratic/docs/03-architecture.md` — architecture
+- `narratic/docs/04-current-vs-target.md` — implementation vs target reconciliation
+- `narratic/docs/05-execution-roadmap.md` — remaining work and release order
+- `narratic/docs/06-future-reserve.md` — deferred scope
+
+### Documentation rule
+
+`roadmap.md` describes the **desired final system**.  
+`README.md` describes the **actual repository state**.  
+`narratic/docs/04-current-vs-target.md` reconciles the two.  
+`narratic/docs/05-execution-roadmap.md` is the current execution queue.
+
+Do not mark a feature production-ready merely because code exists; real integration, runtime, security, and recovery verification must pass.

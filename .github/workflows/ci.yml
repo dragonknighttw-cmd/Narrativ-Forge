@@ -121,15 +121,15 @@ jobs:
         run: |
           mkdir -p storage/uploads
           test -n "$BOOTSTRAP_ADMIN_PASSWORD" || { echo "BOOTSTRAP_ADMIN_PASSWORD GitHub Secret is required"; exit 1; }
-          CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000 DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python -m alembic upgrade head
+          CORS_ORIGINS=http://localhost:3000 DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python -m alembic upgrade head
           BOOTSTRAP_ADMIN_EMAIL=admin@narrativ.local DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python scripts/bootstrap_admin.py
-          CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000 PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &
+          CORS_ORIGINS=http://localhost:3000 PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &
           python - <<'PY'
           import time
           import urllib.request
           for _ in range(30):
               try:
-                  urllib.request.urlopen("http://127.0.0.1:8000/api/v1/health", timeout=2)
+                  urllib.request.urlopen("http://localhost:8000/api/v1/health", timeout=2)
                   break
               except Exception:
                   time.sleep(1)
@@ -145,12 +145,12 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Build frontend with CI API URL
         env:
-          NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000/api/v1
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
         run: npm run build
       - name: Start frontend
         run: |
-          NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run start > /tmp/narrativ-frontend.log 2>&1 &
-          node -e "const http=require('http'); let n=0; const f=()=>http.get('http://127.0.0.1:3000/login',r=>{if(r.statusCode===200)process.exit(0);setTimeout(f,1000)}).on('error',()=>{if(++n>30)process.exit(1);setTimeout(f,1000)});f()"
+          NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npm run start > /tmp/narrativ-frontend.log 2>&1 &
+          node -e "const http=require('http'); let n=0; const f=()=>http.get('http://localhost:3000/login',r=>{if(r.statusCode===200)process.exit(0);setTimeout(f,1000)}).on('error',()=>{if(++n>30)process.exit(1);setTimeout(f,1000)});f()"
       - name: Run E2E tests
         env:
           E2E_ADMIN_EMAIL: admin@narrativ.local

@@ -25,7 +25,7 @@ from cryptography.fernet import Fernet
 from .. import metrics
 from ..models import Asset, FailedJob, ProcessingJob, StorageReplica, NotificationEvent, WebhookEndpoint
 from ..services.audit import record_event
-from ..services.asset_gc import purge_deleted_assets
+from ..services.asset_gc import purge_deleted_assets, purge_stale_local_multipart_uploads
 from ..services.real_processing import run_real_job
 from ..services.storage import StorageError, get_storage
 from . import concurrency
@@ -497,6 +497,17 @@ def register_tasks(celery_app):
                     db.close()
 
 
+
+    @celery_app.task(name="narrativ.purge_storage_lifecycle")
+    def purge_storage_lifecycle_task():
+        db = app_db.SessionLocal()
+        try:
+            return {
+                "deleted_assets": purge_deleted_assets(db),
+                "stale_multipart_uploads": purge_stale_local_multipart_uploads(db),
+            }
+        finally:
+            db.close()
 
     @celery_app.task(name="narrativ.purge_deleted_assets")
     def purge_deleted_assets_task():

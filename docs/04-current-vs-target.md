@@ -161,3 +161,11 @@ Meanwhile, non-worker-dependent foundations have been advanced:
 | Storage lifecycle | Retention/GC foundation exists | Real cleanup/emergency drill remains VERIFY |
 
 Important: these coding additions do **not** mark Agnes/Groq production integrations or Local Worker runtime as DONE. Live provider limits and real worker execution remain separate verification gates.
+
+
+## Coding-First Progress — Phases 7–9
+
+- Design system foundation: **DONE (coding foundation)** — semantic color/type/spacing/radius/shadow tokens, reusable primitives, visible focus states, touch targets, reduced-motion support.
+- Full 33-component audit: **TODO/VERIFY** — foundation exists, but every component and state still needs screen-level QA.
+- Production hardening: **VERIFY/TODO** — security, rate limits, idempotency, tenant isolation, retry/DLQ, observability, performance and backup/restore remain release gates.
+- Release readiness: **VERIFY** — CI/security must be green on the final release SHA and all external/live gates must be explicitly signed off.

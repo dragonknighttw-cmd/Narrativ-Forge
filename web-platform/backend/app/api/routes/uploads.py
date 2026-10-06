@@ -298,6 +298,7 @@ def create_upload_session(
 def get_upload_session(
     upload_id: str,
     user: dict = Depends(require_roles("owner", "editor")),
+    membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
     session = _owned_session(db, upload_id, user["id"], membership.organization_id, lock=True)
@@ -320,6 +321,7 @@ async def upload_chunk(
     part_number: int = Query(ge=1, le=MAX_MULTIPART_PARTS),
     offset: int = Query(ge=0),
     user: dict = Depends(require_roles("owner", "editor")),
+    membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
     session = _owned_session(db, upload_id, user["id"], membership.organization_id, lock=True)
@@ -411,9 +413,10 @@ async def upload_chunk(
 def commit_upload(
     upload_id: str,
     user: dict = Depends(require_roles("owner", "editor")),
+    membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
-    session = _owned_session(db, upload_id, user["id"], lock=True)
+    session = _owned_session(db, upload_id, user["id"], membership.organization_id, lock=True)
     if session.status == "committed":
         return _asset_for_session(db, session)
     _require_active(db, session)
@@ -540,9 +543,10 @@ def commit_upload(
 def abort_upload(
     upload_id: str,
     user: dict = Depends(require_roles("owner", "editor")),
+    membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
-    session = _owned_session(db, upload_id, user["id"], lock=True)
+    session = _owned_session(db, upload_id, user["id"], membership.organization_id, lock=True)
     if session.status == "aborted":
         return {"id": session.id, "status": session.status}
     if session.status == "committed":

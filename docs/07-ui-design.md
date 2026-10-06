@@ -73,3 +73,8 @@ The Design System and Component Library are tracked as implementation work, not 
 - **Design System — TODO/VERIFY:** Colors, Typography, Spacing, semantic states, responsive rules, and accessibility rules must be implemented in actual UI code and audited.
 - **Component Library — TODO/VERIFY:** the **33-component target** must exist as reusable components/variants and cover applicable loading, empty, error, success, disabled, permission, responsive, keyboard, and screen-reader states.
 - A documented target count is not proof of completion.
+
+
+## Implementation Foundation
+
+The frontend now has a semantic design-token layer and reusable accessible primitives in `components/ui-primitives.tsx`: Stack, Row, Card, Button, TextInput, Badge, and Alert. Global CSS includes focus-visible treatment, minimum 44px interactive targets for primitives, semantic tones, and reduced-motion handling. These are the base layer for the documented 33-component library; they do not replace the remaining component/state audit.

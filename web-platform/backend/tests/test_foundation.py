@@ -843,6 +843,8 @@ def test_production_storage_gate_requires_b2_configuration(monkeypatch):
         database_url="sqlite:///./gate.db",
         session_secret="x" * 40,
         session_cookie_secure=True,
+        single_user_mode=True,
+        single_user_email="owner@example.com",
         cors_origins="https://app.example.com",
         trusted_hosts="api.example.com",
         oauth_encryption_key=Fernet.generate_key().decode(),

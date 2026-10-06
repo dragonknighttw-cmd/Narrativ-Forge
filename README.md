@@ -695,5 +695,19 @@ The GitHub Actions e2e workflow requires the repository secret `BOOTSTRAP_ADMIN_
 
 ## 17. Reference documents
 
-Project planning and remediation documents are maintained alongside this repository/project context. When implementation changes, the README above should be updated to reflect the **actual code and deployment state**, while the planning documents remain the broader roadmap/audit source.
+### Reconciled project docs
+
+The target roadmap and implementation state are reconciled in `narratic/docs/`:
+
+- `narratic/docs/README.md`
+- `narratic/docs/01-product.md`
+- `narratic/docs/02-stack.md`
+- `narratic/docs/03-architecture.md`
+- `narratic/docs/04-current-vs-target.md`
+- `narratic/docs/05-execution-roadmap.md`
+- `narratic/docs/06-future-reserve.md`
+
+Use `04-current-vs-target.md` to distinguish implemented code from unverified production integrations, and `05-execution-roadmap.md` for the current release sequence.
+
+Project planning/remediation documents remain the broader planning source; this README continues to represent actual repository state.
 

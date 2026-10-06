@@ -147,3 +147,17 @@ Before production-ready status:
 - cleanup and emergency procedures are tested.
 
 Detailed operational plan: `docs/10-runtime-and-storage-lifecycle-plan.md`.
+
+
+## Phase work while Local Worker gate is paused
+
+The Local Worker runtime gate is intentionally deferred until the user's Home/Office machine test window. It must not block implementation work that can be completed and tested without a live worker.
+
+Current coding-first progress:
+1. Hook library now accepts all 8 documented hook families, including **Number**.
+2. Evidence-backed hook recommendations are available after the required **5 published samples**, using completion, views, and shares rather than one-video optimization.
+3. Provider quota budgeting primitives are implemented for the current planning baselines: **Agnes 500 sec/day** and **Groq 1,000 requests/day**, with idempotent reservation plus warning/fallback thresholds.
+4. These provider budgets remain VERIFY until live account/model limits and actual provider adapters are connected.
+
+The deferred Local Worker gate remains separate:
+**Local Worker → real FFmpeg → Queue → DB → Storage → Retry/DLQ → Failover**.

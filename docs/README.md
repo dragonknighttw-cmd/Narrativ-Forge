@@ -6,7 +6,7 @@ Reconciled documentation for the implementation, target roadmap, and production-
 1. `roadmap.md` — desired product / master target.
 2. `README.md` — actual repository implementation and deployment state.
 3. `web-platform/docs/` — implementation-specific technical/runbook docs.
-4. `narratic/docs/` — reconciled target/current/remaining documentation.
+4. `docs/` — reconciled target/current/remaining documentation.
 
 ## Documents
 - [01-product.md](./01-product.md)

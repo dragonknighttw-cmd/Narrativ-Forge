@@ -94,6 +94,70 @@ def update_hook(hook_id: str, payload: HookUpdate, _: dict = Depends(require_rol
     return serialize_hook(item)
 
 
+@router.get("/hooks/recommendations")
+def recommend_hooks(membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    """Return evidence-backed hook recommendations after enough production data exists."""
+    logs = (
+        db.query(ManualProductionLog)
+        .join(Episode, ManualProductionLog.episode_id == Episode.id)
+        .filter(
+            Episode.organization_id == membership.organization_id,
+            ManualProductionLog.published.is_(True),
+        )
+        .all()
+    )
+    if len(logs) < 5:
+        return {
+            "ready": False,
+            "minimum_samples": 5,
+            "sample_count": len(logs),
+            "recommendations": [],
+        }
+
+    rows = (
+        db.query(
+            HookLibrary,
+            func.count(ManualProductionLog.id),
+            func.coalesce(func.avg(ManualProductionLog.completion_rate), 0),
+            func.coalesce(func.avg(ManualProductionLog.views), 0),
+            func.coalesce(func.avg(ManualProductionLog.shares), 0),
+        )
+        .join(ManualProductionLog, ManualProductionLog.hook_type == HookLibrary.hook_type)
+        .join(Episode, ManualProductionLog.episode_id == Episode.id)
+        .filter(
+            Episode.organization_id == membership.organization_id,
+            ManualProductionLog.published.is_(True),
+        )
+        .group_by(HookLibrary.id)
+        .having(func.count(ManualProductionLog.id) >= 2)
+        .all()
+    )
+
+    recommendations = []
+    for hook, sample_count, completion_avg, views_avg, shares_avg in rows:
+        score = (
+            float(completion_avg) * 0.5
+            + min(float(views_avg) / 10000.0, 1.0) * 0.3
+            + min(float(shares_avg) / 100.0, 1.0) * 0.2
+        )
+        recommendations.append({
+            **serialize_hook(hook),
+            "evidence_sample_count": sample_count,
+            "evidence_score": round(score, 4),
+            "evidence_completion_average": round(float(completion_avg), 4),
+            "evidence_views_average": round(float(views_avg), 2),
+            "evidence_shares_average": round(float(shares_avg), 2),
+        })
+
+    recommendations.sort(key=lambda item: item["evidence_score"], reverse=True)
+    return {
+        "ready": True,
+        "minimum_samples": 5,
+        "sample_count": len(logs),
+        "recommendations": recommendations[:10],
+    }
+
+
 def serialize_log(item: ManualProductionLog):
     return {column.name: getattr(item, column.name) for column in ManualProductionLog.__table__.columns}
 

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const apiBase = process.env.E2E_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
+const apiBase = process.env.E2E_API_BASE_URL ?? "http://localhost:8000/api/v1";
 const email = process.env.E2E_EMAIL;
 const password = process.env.E2E_PASSWORD;
 

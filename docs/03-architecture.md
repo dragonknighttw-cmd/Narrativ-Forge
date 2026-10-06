@@ -64,3 +64,32 @@ LoRA is a **target/reserve capability**, not proof that the current repository a
 README reports the core content workflow, scripts/scenes/assets, processing/Celery foundation, subtitles, review/approval, storage routing, Drive foundation, analytics/log foundations, billing foundation, tenant scope, webhooks, and security hardening implemented.
 
 The remaining gap is primarily **real integration/runtime verification**, plus explicit UI/data/business gaps listed in current-vs-target.
+
+
+## Expanded Auto Production pipeline
+
+Target pipeline:
+
+```
+Story Upload
+  ↓
+AI Analysis / Episode Split
+  ↓
+User Approve / Modify
+  ↓
+Script → Voice → Image → Video → Subtitle
+  ↓
+Hook → SEO → Thumbnail → Retention/Continuity Checks
+  ↓
+User Review / Selective Regeneration
+  ↓
+Final Approval
+  ↓
+Google Drive Export
+  ↓
+Analytics / Feedback Loop
+```
+
+Video generation providers must sit behind an adapter/fallback layer. Provider limits, commercial terms, watermark rules, quality, and retry semantics must be verified before production use.
+
+Detailed target: `docs/09-auto-production-expansion.md`.

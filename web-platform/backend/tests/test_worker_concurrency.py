@@ -1,7 +1,9 @@
 import multiprocessing
 import os
+import time
 from threading import Event, Lock
 from types import SimpleNamespace
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -194,36 +196,42 @@ def test_processing_semaphore_is_shared_across_prefork_processes(monkeypatch):
                 process.join(timeout=5)
 
 
-def _hold_processing_slot(entered, release):
+def _hold_processing_slot(entered_path, release_path):
     with concurrency.processing_semaphore.acquire():
-        entered.set()
-        release.wait(timeout=10)
+        Path(entered_path).touch()
+        deadline = time.monotonic() + 10
+        while not Path(release_path).exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
 
 
 @pytest.mark.skipif(os.name != "posix", reason="Celery production prefork uses POSIX file locks")
-def test_processing_slot_is_released_when_prefork_child_is_killed(monkeypatch):
+def test_processing_slot_is_released_when_prefork_child_is_killed(tmp_path, monkeypatch):
     context = multiprocessing.get_context("fork")
     monkeypatch.setattr(concurrency, "processing_semaphore", concurrency.ProcessingSemaphore(1))
-    holder_entered = context.Event()
-    holder_release = context.Event()
-    waiter_entered = context.Event()
-    waiter_release = context.Event()
-    holder = context.Process(target=_hold_processing_slot, args=(holder_entered, holder_release))
-    waiter = context.Process(target=_hold_processing_slot, args=(waiter_entered, waiter_release))
+    holder_entered = tmp_path / "holder-entered"
+    waiter_entered = tmp_path / "waiter-entered"
+    release = tmp_path / "release"
+    holder = context.Process(target=_hold_processing_slot, args=(holder_entered, release))
+    waiter = context.Process(target=_hold_processing_slot, args=(waiter_entered, release))
     try:
         holder.start()
-        assert holder_entered.wait(timeout=5)
+        deadline = time.monotonic() + 5
+        while not holder_entered.exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert holder_entered.exists()
         waiter.start()
         holder.terminate()
         holder.join(timeout=5)
         assert holder.exitcode is not None
-        assert waiter_entered.wait(timeout=5)
-        waiter_release.set()
+        deadline = time.monotonic() + 5
+        while not waiter_entered.exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert waiter_entered.exists()
+        release.touch()
         waiter.join(timeout=5)
         assert waiter.exitcode == 0
     finally:
-        holder_release.set()
-        waiter_release.set()
+        release.touch()
         for process in (holder, waiter):
             if process.is_alive():
                 process.terminate()

@@ -104,3 +104,13 @@ The new tables listed in `docs/09-auto-production-expansion.md` are target schem
 
 ### UI baseline change
 The original 26-screen count is no longer the final target. The new screens in 09 must be deduplicated into standalone screens vs tabs/panels, then a new baseline count established.
+
+
+## CI / Actions health (2026-10-06)
+
+- CodeQL latest run for repaired commit: **GREEN**.
+- Security latest run for repaired commit: **GREEN**.
+- CI latest run for repaired commit: **QUEUED**, blocked behind historical in-progress CI runs.
+- Historical stale runs are being cancelled by the new concurrency policy where GitHub applies it; older pre-policy runs may still need manual cancellation.
+
+Therefore repository health is currently **CodeQL GREEN / Security GREEN / CI verification pending**.

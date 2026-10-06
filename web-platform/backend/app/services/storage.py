@@ -654,7 +654,7 @@ class SupabaseStorageProvider:
         try:
             with source.open("rb") as handle:
                 response = requests.post(
-                    self._url(""),
+                    self._url("", key),
                     headers={**self.headers, "Content-Type": content_type, "x-upsert": "true"},
                     data=handle,
                     timeout=300,
@@ -668,7 +668,7 @@ class SupabaseStorageProvider:
         key = _safe_object_key(object_key)
         destination.parent.mkdir(parents=True, exist_ok=True)
         try:
-            response = requests.get(self._url(""), headers=self.headers, timeout=300, stream=True)
+            response = requests.get(self._url("", key), headers=self.headers, timeout=300, stream=True)
             response.raise_for_status()
             with destination.open("wb") as handle:
                 for chunk in response.iter_content(chunk_size=1024 * 1024):

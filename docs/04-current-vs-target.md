@@ -129,3 +129,19 @@ The following items are intentionally kept explicit so they are not lost during 
 | **Component Library** | **33 components** implemented with required variants/states and accessibility coverage | TODO/VERIFY |
 
 These are not considered DONE merely because the numbers/specification are written in documentation. Real implementation, runtime measurement, or UI audit is required as applicable.
+
+
+## Runtime / storage strategy status
+
+| Area | Current decision | Status |
+|---|---|---|
+| Free local worker | One/two Windows PCs running the repository worker | PLAN / VERIFY |
+| Paid worker | Render Background Worker or paid VPS reserved for later | RESERVE |
+| Worker migration | Same Celery/Redis/DB/storage contract | PLAN |
+| Storage cleanup | Reference-safe retention strategy defined | PLAN / TODO |
+| Storage monitoring | 80/90/95% thresholds defined; implementation/verification remains | TODO |
+| Local/B2/Cloudinary cleanup | Retention and safety rules defined; real jobs/tests remain | TODO/VERIFY |
+
+The detailed single source for these items is `docs/10-runtime-and-storage-lifecycle-plan.md`.
+
+The previous idea of maintaining a separate copied `worker/` application is superseded: local workers must run the repository's actual `web-platform/backend` worker code so local and future paid runtimes do not drift.

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from ...db import get_db
 from ...models import Episode, HookLibrary, ManualProductionLog, SocialAnalyticsRecord, SocialPublication
@@ -127,6 +127,10 @@ def recommend_hooks(membership=Depends(get_current_membership), db: Session = De
         .filter(
             Episode.organization_id == membership.organization_id,
             ManualProductionLog.published.is_(True),
+            or_(
+                HookLibrary.organization_id == membership.organization_id,
+                HookLibrary.organization_id.is_(None),
+            ),
         )
         .group_by(HookLibrary.id)
         .having(func.count(ManualProductionLog.id) >= 2)

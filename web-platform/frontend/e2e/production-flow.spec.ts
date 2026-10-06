@@ -58,7 +58,7 @@ test("authenticated production flow reaches approved mock export", async ({ page
     request => request.method === "POST" && request.path === uploadSessionPath,
   )?.idempotencyKey).toBeTruthy();
   const uploadId = uploadRequests.find(
-    request => request.method === "PUT" && request.path.includes("/chunks?"),
+    request => request.method === "PUT" && request.path.includes("/chunks"),
   )?.path.split("/")[3];
   expect(uploadId).toBeTruthy();
   await expect.poll(

@@ -14,7 +14,7 @@ from app import db
 pytestmark = pytest.mark.integration
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
-HEAD_REVISION = "0016_repair_legacy_scene_constraint"
+HEAD_REVISION = "0016_scene_constraint_repair"
 PREVIOUS_REVISION = "0008_storage_replicas"
 
 

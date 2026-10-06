@@ -71,19 +71,33 @@ def upgrade() -> None:
             ), {"organization_id": membership[0], "id": connection_id})
 
 def downgrade() -> None:
-    with op.batch_alter_table("google_drive_connections") as batch:
-        batch.drop_constraint("uq_google_drive_org_user", type_="unique")
-        batch.drop_constraint("fk_google_drive_connections_organization_id", type_="foreignkey")
-        batch.drop_index("ix_google_drive_connections_organization_id")
-        batch.drop_column("organization_id")
-        batch.create_unique_constraint("uq_google_drive_user", ["user_email"])
+    bind = op.get_bind()
 
-    with op.batch_alter_table("hook_library") as batch:
-        batch.drop_constraint("fk_hook_library_organization_id", type_="foreignkey")
-        batch.drop_index("ix_hook_library_organization_id")
-        batch.drop_column("organization_id")
+    def drop_tenant_scope(table_name: str, *, unique_name: str | None = None, unique_columns: list[str] | None = None) -> None:
+        inspector = sa.inspect(bind)
+        columns = {column["name"] for column in inspector.get_columns(table_name)}
+        if "organization_id" not in columns:
+            return
+        foreign_keys = {fk.get("name") for fk in inspector.get_foreign_keys(table_name)}
+        indexes = {index.get("name") for index in inspector.get_indexes(table_name)}
+        uniques = {constraint.get("name") for constraint in inspector.get_unique_constraints(table_name)}
+        with op.batch_alter_table(table_name) as batch:
+            if unique_name and unique_name in uniques:
+                batch.drop_constraint(unique_name, type_="unique")
+            fk_name = f"fk_{table_name}_organization_id"
+            if fk_name in foreign_keys:
+                batch.drop_constraint(fk_name, type_="foreignkey")
+            index_name = f"ix_{table_name}_organization_id"
+            if index_name in indexes:
+                batch.drop_index(index_name)
+            batch.drop_column("organization_id")
+            if unique_columns and unique_name and unique_name not in uniques:
+                batch.create_unique_constraint(unique_name, unique_columns)
 
-    with op.batch_alter_table("audit_events") as batch:
-        batch.drop_constraint("fk_audit_events_organization_id", type_="foreignkey")
-        batch.drop_index("ix_audit_events_organization_id")
-        batch.drop_column("organization_id")
+    drop_tenant_scope(
+        "google_drive_connections",
+        unique_name="uq_google_drive_org_user",
+        unique_columns=["user_email"],
+    )
+    drop_tenant_scope("hook_library")
+    drop_tenant_scope("audit_events")

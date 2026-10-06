@@ -9,8 +9,8 @@ from app.services.provider_quota import (
 )
 
 
-def test_provider_quota_reservation_and_idempotency(testing_db):
-    db = testing_db()
+def test_provider_quota_reservation_and_idempotency(db_session):
+    db = db_session
     from app.models import Organization
 
     org = Organization(name="quota", slug="quota-test")
@@ -43,8 +43,8 @@ def test_provider_quota_reservation_and_idempotency(testing_db):
     db.close()
 
 
-def test_provider_quota_rejects_over_budget(testing_db, monkeypatch):
-    db = testing_db()
+def test_provider_quota_rejects_over_budget(db_session, monkeypatch):
+    db = db_session
     from app.models import Organization
 
     org = Organization(name="quota2", slug="quota-test-2")

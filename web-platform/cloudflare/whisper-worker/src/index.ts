@@ -76,7 +76,7 @@ export default {
     }
 
     try {
-      const result = await env.AI.run("@cf/openai/whisper", { audio: body });
+      const result = await env.AI.run("@cf/openai/whisper", { audio: [...new Uint8Array(body)] });
       return Response.json({
         provider: "cloudflare_workers_ai",
         model: "@cf/openai/whisper",

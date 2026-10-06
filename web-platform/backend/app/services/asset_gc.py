@@ -19,8 +19,8 @@ def purge_deleted_assets(db: Session, *, now: datetime | None = None, limit: int
     assets = list(
         db.scalars(
             select(Asset)
-            .where(Asset.status == "deleted", Asset.updated_at < cutoff)
-            .order_by(Asset.updated_at.asc())
+            .where(Asset.status == "deleted", Asset.deleted_at.is_not(None), Asset.deleted_at < cutoff)
+            .order_by(Asset.deleted_at.asc())
             .limit(limit)
         )
     )

@@ -148,3 +148,29 @@ Human approval remains mandatory before final export.
 Release target includes Story ingestion, Episode splitter, Hook library, SEO generation, Thumbnail generation, A/B testing, Series Bible, Continuity checker, Trend integration, Cross-platform preparation/export, Feedback loop, Provider fallback, Watermark policy check, Batch generation, and Series calendar.
 
 All must pass applicable security, quota, failure/retry, audit, and human-approval requirements or be explicitly moved to reserve.
+
+
+## Explicit capacity and performance requirements
+
+### Agnes daily-limit calculation
+- Planning baseline: **500 seconds/day**.
+- MVP generated video assumption: **~25 seconds/video**.
+- Theoretical capacity: **20 videos/day**.
+- This is a planning baseline only. Verify current provider/account limits, API access, commercial-use terms, watermark behavior, rate limits, and retry semantics before production.
+- Daily-limit-aware generation must reserve/consume quota, track used/remaining seconds, account for failed/retried jobs, and pause/reschedule when the verified limit is exhausted.
+
+### Groq daily-limit tracking
+- Conservative planning baseline: **1,000 requests/day**.
+- Track requests used, remaining budget, retries, reset time, and fallback activation.
+- Verify the live account/model limit before production; 1,000 is not a permanent provider guarantee.
+
+### Processing target
+- MVP target: **15–30 minutes per video** from processing dispatch to production-ready output.
+- Verify this on the real Celery/worker + media-processing path with representative inputs and realistic load.
+
+### Design System
+- Explicit completion target: Colors, Typography, Spacing, semantic states, responsive rules, and accessibility rules implemented in actual UI code and audited.
+
+### Component Library
+- Explicit completion target: **33 reusable components** from docs/07-ui-design.md, including required variants and applicable loading/empty/error/success/disabled/permission/responsive/accessibility states.
+- Documentation of the 33-component target does not count as implementation completion.

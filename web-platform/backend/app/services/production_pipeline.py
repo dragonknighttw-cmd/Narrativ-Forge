@@ -219,6 +219,44 @@ def rank_ab_outcomes(outcomes: list[ABOutcome]) -> list[ABOutcome]:
     return sorted(outcomes, key=lambda item: (-score_ab_outcome(item), item.variant_key))
 
 
+@dataclass(frozen=True)
+class TrailerSegment:
+    scene_number: int
+    text: str
+    duration_seconds: int
+
+
+def build_series_trailer_plan(
+    scenes: list[dict],
+    *,
+    max_duration_seconds: int = 30,
+    max_segments: int = 6,
+) -> list[TrailerSegment]:
+    if max_duration_seconds < 1 or max_segments < 1:
+        raise ValueError("Trailer limits must be positive")
+    candidates = sorted(
+        [scene for scene in scenes if isinstance(scene, dict)],
+        key=lambda scene: (
+            0 if str(scene.get("purpose", "")).lower() == "hook" else 1,
+            int(scene.get("scene_number") or 999999),
+        ),
+    )
+    result: list[TrailerSegment] = []
+    remaining = max_duration_seconds
+    for scene in candidates[:max_segments]:
+        text = " ".join(str(scene.get("dialogue") or scene.get("description") or "").split()).strip()
+        if not text or remaining <= 0:
+            continue
+        duration = min(max(1, int(scene.get("duration_seconds") or 5)), remaining)
+        result.append(TrailerSegment(
+            scene_number=int(scene.get("scene_number") or len(result) + 1),
+            text=text[:300],
+            duration_seconds=duration,
+        ))
+        remaining -= duration
+    return result
+
+
 def assess_production_readiness(
     *,
     script: str,

@@ -275,7 +275,7 @@ def download_asset(asset_id: str, membership=Depends(get_current_membership), db
 
 @asset_router.patch("/{asset_id}")
 def update_asset(asset_id: str, payload: AssetUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(Asset, asset_id)
+    item = db.query(Asset).join(Episode, Asset.episode_id == Episode.id).filter(Asset.id == asset_id, Episode.organization_id == membership.organization_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Asset not found")
     values = payload.model_dump(exclude_unset=True)
@@ -298,7 +298,7 @@ def update_asset(asset_id: str, payload: AssetUpdate, membership=Depends(get_cur
 
 @asset_router.delete("/{asset_id}")
 def soft_delete_asset(asset_id: str, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(Asset, asset_id)
+    item = db.query(Asset).join(Episode, Asset.episode_id == Episode.id).filter(Asset.id == asset_id, Episode.organization_id == membership.organization_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Asset not found")
     item.status = "deleted"

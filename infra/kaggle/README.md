@@ -25,3 +25,15 @@ Safety:
 Production gate:
 queued -> Kaggle session -> atomic claim -> FFmpeg -> storage -> DB completion -> retry/DLQ -> recovery
 must pass with a real media job before Kaggle is marked production-ready.
+
+## Dispatcher
+
+The repository also contains `.github/workflows/kaggle-worker.yml`.
+It checks the production queue every 10 minutes and launches the private Kaggle kernel only when a queued real-processing job exists and the previous kernel is not active.
+GitHub setup:
+- Repository secret `KAGGLE_DISPATCH_DATABASE_URL`
+- Repository secret `KAGGLE_API_TOKEN`
+- Repository variable `KAGGLE_KERNEL_ID` in the form `username/narrativ-forge-worker`
+
+The GitHub dispatcher is only an orchestrator. The actual FFmpeg/Whisper work runs inside Kaggle.
+Local Windows worker remains the emergency/manual fallback and uses the same database queue.

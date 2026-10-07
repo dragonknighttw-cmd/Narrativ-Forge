@@ -77,6 +77,16 @@ def _hash_upload_token(upload_token: str) -> str:
     return hashlib.sha256(upload_token.encode("utf-8")).hexdigest()
 
 
+def _ensure_within_root(path: Path, root: Path) -> Path:
+    resolved_root = root.resolve()
+    resolved_path = path.resolve()
+    try:
+        resolved_path.relative_to(resolved_root)
+    except ValueError as exc:
+        raise StorageError("Resolved path escapes storage root") from exc
+    return resolved_path
+
+
 def _cloudinary_download_url(url: str) -> str:
     parsed = urlparse(url)
     hostname = (parsed.hostname or "").lower()
@@ -158,7 +168,7 @@ class LocalStorageProvider:
         return path
 
     def upload_file(self, source: Path, object_key: str, content_type: str) -> StoredObject:
-        destination = self._path(object_key)
+        destination = _ensure_within_root(self._path(object_key), self.base_path)
         shutil.copy2(source, destination)
         return StoredObject(
             provider=self.name,
@@ -169,7 +179,7 @@ class LocalStorageProvider:
         )
 
     def download_file(self, object_key: str, destination: Path) -> StoredObject:
-        source = self._path(object_key)
+        source = _ensure_within_root(self._path(object_key), self.base_path)
         if not source.is_file():
             raise StorageError("Storage object not found")
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -196,7 +206,7 @@ class LocalStorageProvider:
         if not upload_token:
             raise StorageError("Multipart upload token is required")
         upload_id = str(uuid4())
-        directory = self._multipart_path(upload_id)
+        directory = _ensure_within_root(self._multipart_path(upload_id), self.multipart_path)
         directory.mkdir(parents=True, exist_ok=False)
         try:
             self._write_multipart_metadata(
@@ -216,10 +226,14 @@ class LocalStorageProvider:
         if not body or len(body) > 5 * 1024 * 1024 * 1024:
             raise StorageError("Invalid multipart part size")
         directory, metadata = self._multipart_metadata(upload_id, object_key)
+        directory = _ensure_within_root(directory, self.multipart_path)
         if metadata.get("status") != "active":
             raise StorageError("Multipart upload is not active")
-        part_path = directory / f"part-{part_number:05d}"
-        temporary_path = directory / f".{part_path.name}.{uuid4().hex}.tmp"
+        part_path = _ensure_within_root(directory / f"part-{part_number:05d}", self.multipart_path)
+        temporary_path = _ensure_within_root(
+            directory / f".{part_path.name}.{uuid4().hex}.tmp",
+            self.multipart_path,
+        )
         try:
             temporary_path.write_bytes(body)
             temporary_path.replace(part_path)

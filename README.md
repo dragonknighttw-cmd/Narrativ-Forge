@@ -754,3 +754,33 @@ Formal phases 07–12 have been hardened on `main` across review/approval, expor
 - **31–36:** Yjs collaboration → realtime events → quota enforcement → enterprise controls → onboarding/support → final launch gate.
 
 Live credentials, external OAuth, Stripe/SMTP accounts, real worker capacity, real media, backup/restore drills, and third-party API limits remain environment-level verification gates.
+
+
+## Coding-track update — Batch 18–36 foundations — 2026-10-07
+
+The coding track has now prebuilt the dependency-light foundations for the next scale batches.
+
+### Batch 18–24
+- [x] 18 — Provider-neutral multi-platform publishing contract, platform metadata validation, deterministic idempotency key, publish ledger foundation.
+- [x] 19 — Trend connector contract, TTL cache, rate-limit/failure fallback.
+- [x] 20 — Experiment lifecycle primitives, allocation validation, guarded winner selection with Wilson lower-bound confidence logic.
+- [x] 21 — AI evaluation cases, provider quality/latency/cost ranking, stable evaluation fingerprints.
+- [x] 22 — Timeline validation plus deterministic EDL/NLE manifest foundation.
+- [x] 23 — Reference-safe storage lifecycle policy and DR target contracts.
+- [x] 24 — Alert rules, incident event contract, compliance gate.
+
+### Batch 25–36 prebuilt foundations
+- [x] 25 — Character/style profile contracts.
+- [x] 26 — Episode scoring model foundation.
+- [x] 27 — Burmese subtitle evaluation case/fingerprint + quality scoring foundation.
+- [x] 28 — Dependency-aware selective regeneration planning.
+- [x] 29 — Quota-aware batch planning.
+- [x] 30 — Human review learning event aggregation.
+- [x] 31 — Collaboration presence contract foundation.
+- [x] 32 — Realtime-oriented presence model foundation.
+- [x] 33 — Usage quota enforcement contract.
+- [x] 34 — Enterprise resource-policy validation foundation.
+- [x] 35 — Demo tenant/sample seed foundation.
+- [x] 36 — Launch-gate evaluation contract.
+
+These are coding foundations and unit-tested contracts. They do not claim live platform publishing, live trend APIs, real A/B traffic, NLE application import, backup/restore, OAuth, Stripe, SMTP, or external pen-test completion.

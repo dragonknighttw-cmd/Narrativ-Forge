@@ -44,3 +44,34 @@ def test_login_rate_limit_counts_failed_attempts_only(monkeypatch):
         assert responses[-1].status_code == 429
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+
+def test_user_listing_is_scoped_to_current_organization(db_session):
+    from app.models import Organization, OrganizationMembership, User
+
+    org_a = Organization(name="A", slug="security-a")
+    org_b = Organization(name="B", slug="security-b")
+    db_session.add_all([org_a, org_b])
+    db_session.flush()
+
+    user_a = User(email="a@example.com", password_hash="x", role="editor", is_active=True)
+    user_b = User(email="b@example.com", password_hash="x", role="viewer", is_active=True)
+    db_session.add_all([user_a, user_b])
+    db_session.flush()
+    db_session.add_all([
+        OrganizationMembership(organization_id=org_a.id, user_id=user_a.id, role="owner"),
+        OrganizationMembership(organization_id=org_a.id, user_id=user_b.id, role="viewer"),
+    ])
+    db_session.commit()
+
+    membership = db_session.query(OrganizationMembership).filter_by(
+        organization_id=org_a.id, user_id=user_a.id
+    ).one()
+
+    rows = auth.users(
+        user={"id": user_a.id, "email": user_a.email, "role": "owner"},
+        membership=membership,
+        db=db_session,
+    )
+    assert {row["email"] for row in rows} == {"a@example.com", "b@example.com"}
+    assert all(row["email"] != "someone-from-org-b@example.com" for row in rows)

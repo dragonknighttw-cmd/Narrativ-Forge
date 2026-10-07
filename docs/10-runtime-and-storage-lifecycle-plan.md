@@ -312,3 +312,8 @@ This does not replace the required live cleanup/emergency drill. The production 
 A free-first ephemeral worker path is now implemented as a coding foundation: GitHub Actions checks the production queue, launches a private Kaggle kernel only when work is queued, and the Kaggle session atomically claims one `real_processing` job before running the existing FFmpeg/Whisper/storage pipeline. PostgreSQL remains the source of truth. The Local Windows Worker remains the fallback and is not removed.
 
 This is NOT production-verified yet. The live gate still requires a real queued media job proving Kaggle launch → atomic claim → FFmpeg → storage → DB completion → retry/DLQ/recovery. Kaggle's documented CPU/GPU notebook maximum is currently 12 hours, so the architecture treats the session as ephemeral rather than a permanent worker.
+
+
+### Ephemeral worker recovery hardening
+
+The shared worker path now recovers stale `running` real-processing jobs after the configured processing timeout plus grace period. Recovery re-enters the existing retry/DLQ logic instead of treating a dead Kaggle/local session as success. This makes Kaggle session loss compatible with the same queue recovery model used by the Local Worker.

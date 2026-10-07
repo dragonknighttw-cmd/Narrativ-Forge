@@ -21,15 +21,15 @@ class StorageUsage:
             return 1.0
         return max(0.0, min(1.0, self.used_bytes / self.capacity_bytes))
 
-    @property
-    def state(self) -> str:
-        if self.ratio >= 0.95:
+    def state(self, thresholds: StorageThresholds = StorageThresholds()) -> str:
+        if self.ratio >= thresholds.emergency:
             return "emergency"
-        if self.ratio >= 0.90:
+        if self.ratio >= thresholds.critical:
             return "critical"
-        if self.ratio >= 0.80:
+        if self.ratio >= thresholds.warning:
             return "warning"
         return "normal"
+
 
 
 def classify_storage_usage(used_bytes: int, capacity_bytes: int, thresholds: StorageThresholds = StorageThresholds()) -> StorageUsage:

@@ -246,3 +246,28 @@ Additional defects found during the code audit were fixed:
 - Regression coverage was added for missing magic-link tokens, Unicode filename key sanitization, and local storage upload/download/delete round-trip.
 
 These fixes are coding-track changes. Fresh CI/security evidence on the resulting SHA is still required before marking automated release gates green.
+
+
+## Dual-PC Local Worker status — 2026-10-07
+
+**TARGET / CODING FOUNDATION:** The Home + Office Windows architecture is now documented as the free-first local fallback.
+
+Completed at documentation/design level:
+- Home = heavy worker + single Beat owner.
+- Office = light reserve worker with no Beat.
+- Upstash Redis = shared TLS broker.
+- Heavy/light queue ownership is explicitly separated.
+- Stale worker lease recovery is already present in the shared worker code path.
+- Local Worker remains compatible with the Kaggle ephemeral worker path.
+
+Still VERIFY/live:
+- Actual Home Windows worker startup.
+- Actual Office Windows worker startup and RAM measurement.
+- Real queue routing on both machines.
+- Real FFmpeg processing on Home.
+- Real Cloudflare Whisper integration from a worker.
+- Real retry/DLQ/stale-worker recovery.
+- Real two-PC failover behavior.
+- Real storage cleanup under the local disk limit.
+
+This is intentionally not marked DONE until the user runs the real worker environment.

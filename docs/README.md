@@ -25,7 +25,6 @@ This directory contains supporting documentation for the Narrativ Forge master r
 - [10-runtime-and-storage-lifecycle-plan.md](./10-runtime-and-storage-lifecycle-plan.md) — runtime/storage lifecycle detail.
 - [11-release-readiness-checklist.md](./11-release-readiness-checklist.md) — release-readiness detail.
 - [21-master-completion-matrix.md](./21-master-completion-matrix.md) — detailed completion/evidence matrix.
-- [production-readiness.md](./production-readiness.md) — legacy production-readiness detail; reconcile before removal.
 
 ## Governance
 

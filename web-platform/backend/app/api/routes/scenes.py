@@ -50,7 +50,7 @@ def list_scenes(episode_id: str, membership=Depends(get_current_membership), db:
 
 @router.post("/{episode_id}/scenes", status_code=201)
 def create_scene(episode_id: str, payload: SceneCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    _episode_or_404(db, episode_id)
+    _episode_or_404(db, episode_id, membership.organization_id)
     _validate_script(db, episode_id, payload.script_id)
     if db.query(Scene).filter(Scene.episode_id == episode_id, Scene.scene_number == payload.scene_number).first():
         raise HTTPException(status_code=409, detail="Scene number already exists")
@@ -81,7 +81,7 @@ def update_scene(scene_id: str, payload: SceneUpdate, membership=Depends(get_cur
 
 @router.post("/{episode_id}/scenes/reorder")
 def reorder_scenes(episode_id: str, scene_ids: list[str], membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    _episode_or_404(db, episode_id)
+    _episode_or_404(db, episode_id, membership.organization_id)
     scenes = db.query(Scene).filter(Scene.episode_id == episode_id).all()
     by_id = {scene.id: scene for scene in scenes}
     if len(scene_ids) != len(scenes) or set(scene_ids) != set(by_id):

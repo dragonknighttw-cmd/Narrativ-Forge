@@ -742,3 +742,15 @@ Project planning/remediation documents remain the broader planning source; this 
 - [x] 17 — Burmese-first translation request/validation foundation
 
 External platform/trend/translation integrations and real trailer rendering remain verification/integration gates.
+
+
+## Current implementation checkpoint — Phase 07–12
+
+Formal phases 07–12 have been hardened on `main` across review/approval, export/publishing, search/analytics, production hardening, business/collaboration foundations, and scale/advanced foundations. The codebase also contains the Expanded Auto Production workstreams 13–17.
+
+### Preplanned next coding batches
+- **18–24:** publishing adapters → live trend providers → experimentation → AI evaluation/routing → NLE export → storage/DR → SRE/compliance completion.
+- **25–30:** character/style intelligence → hook recommendation → Burmese subtitle quality → selective regeneration → quota-aware batch scheduler → review-learning loop.
+- **31–36:** Yjs collaboration → realtime events → quota enforcement → enterprise controls → onboarding/support → final launch gate.
+
+Live credentials, external OAuth, Stripe/SMTP accounts, real worker capacity, real media, backup/restore drills, and third-party API limits remain environment-level verification gates.

@@ -4,6 +4,7 @@ import hashlib
 import json
 import shutil
 import requests
+from urllib.parse import urlparse
 from dataclasses import dataclass
 from pathlib import Path
 from math import ceil
@@ -69,7 +70,21 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _safe_object_key(object_key: str) -> str:
+
+def _hash_upload_token(upload_token: str) -> str:
+    if not upload_token:
+        raise StorageError("Multipart upload token is required")
+    return hashlib.sha256(upload_token.encode("utf-8")).hexdigest()
+
+
+def _cloudinary_download_url(url: str) -> str:
+    parsed = urlparse(url)
+    hostname = (parsed.hostname or "").lower()
+    if parsed.scheme != "https" or hostname != "res.cloudinary.com":
+        raise StorageError("Cloudinary returned an unexpected download host")
+    return url
+
+def _safe_object_key(object_key: str) :
     normalized = object_key.replace("\\", "/").lstrip("/")
     parts = [part for part in normalized.split("/") if part not in {"", ".", ".."}]
     if not parts:
@@ -186,7 +201,7 @@ class LocalStorageProvider:
         try:
             self._write_multipart_metadata(
                 directory,
-                {"object_key": key, "upload_token": upload_token, "status": "active"},
+                {"object_key": key, "upload_token_hash": _hash_upload_token(upload_token), "status": "active"},
             )
         except StorageError:
             shutil.rmtree(directory, ignore_errors=True)
@@ -227,7 +242,7 @@ class LocalStorageProvider:
             if (
                 metadata.get("status") == "completed"
                 and upload_token
-                and metadata.get("upload_token") == upload_token
+                and metadata.get("upload_token_hash") == _hash_upload_token(upload_token)
                 and expected_size is not None
                 and destination.is_file()
                 and destination.stat().st_size == expected_size
@@ -268,7 +283,7 @@ class LocalStorageProvider:
     ) -> StoredObject:
         key = _safe_object_key(object_key)
         directory, metadata = self._multipart_metadata(upload_id, key)
-        if metadata.get("upload_token") != upload_token:
+        if metadata.get("upload_token_hash") != _hash_upload_token(upload_token):
             raise StorageError("Multipart upload token mismatch")
         destination = self._path(key)
         if metadata.get("status") == "completed":
@@ -321,7 +336,7 @@ class LocalStorageProvider:
             temporary.unlink(missing_ok=True)
         self._write_multipart_metadata(
             directory,
-            {"object_key": key, "upload_token": upload_token, "status": "completed"},
+            {"object_key": key, "upload_token_hash": _hash_upload_token(upload_token), "status": "completed"},
         )
         self._remove_multipart_parts(directory)
         return StoredObject(
@@ -779,7 +794,7 @@ class SupabaseStorageProvider:
 
     def list_multipart_parts(self, upload_id: str, object_key: str, upload_token: str | None = None, expected_size: int | None = None) -> list[dict]:
         directory, metadata = self._meta(upload_id, object_key)
-        if upload_token and metadata.get("upload_token") != upload_token:
+        if upload_token and metadata.get("upload_token_hash") != _hash_upload_token(upload_token):
             raise StorageError("Multipart upload token mismatch")
         parts = []
         for path in directory.glob("part-*"):
@@ -870,8 +885,13 @@ class CloudinaryStorageProvider:
         key = _safe_object_key(object_key)
         destination.parent.mkdir(parents=True, exist_ok=True)
         try:
-            import urllib.request
-            urllib.request.urlretrieve(self.download_url(key), str(destination))
+            import download_url = _cloudinary_download_url(self.download_url(key))
+            response = requests.get(download_url, timeout=300, stream=True)
+            response.raise_for_status()
+            with destination.open("wb") as handle:
+                for chunk in response.iter_content(chunk_size=1024 * 1024):
+                    if chunk:
+                        handle.write(chunk)
         except Exception as exc:
             raise StorageError("Cloudinary download failed") from exc
         return StoredObject(provider=self.name, object_key=key, size_bytes=destination.stat().st_size, checksum_sha256=sha256_file(destination))

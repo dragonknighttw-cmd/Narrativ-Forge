@@ -180,7 +180,7 @@ class LocalStorageProvider:
         return path
 
     def upload_file(self, source: Path, object_key: str, content_type: str) -> StoredObject:
-        destination = _ensure_within_root(self._path(object_key), self.base_path)
+        destination = _ensure_within_root(self._path(object_key), self.root)
         shutil.copy2(source, destination)
         return StoredObject(
             provider=self.name,
@@ -191,7 +191,7 @@ class LocalStorageProvider:
         )
 
     def download_file(self, object_key: str, destination: Path) -> StoredObject:
-        source = _ensure_within_root(self._path(object_key), self.base_path)
+        source = _ensure_within_root(self._path(object_key), self.root)
         if not source.is_file():
             raise StorageError("Storage object not found")
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -218,7 +218,7 @@ class LocalStorageProvider:
         if not upload_token:
             raise StorageError("Multipart upload token is required")
         upload_id = str(uuid4())
-        directory = _ensure_within_root(self._multipart_path(upload_id), self.multipart_path)
+        directory = _ensure_within_root(self._multipart_path(upload_id), self.multipart_root)
         directory.mkdir(parents=True, exist_ok=False)
         try:
             self._write_multipart_metadata(
@@ -238,13 +238,13 @@ class LocalStorageProvider:
         if not body or len(body) > 5 * 1024 * 1024 * 1024:
             raise StorageError("Invalid multipart part size")
         directory, metadata = self._multipart_metadata(upload_id, object_key)
-        directory = _ensure_within_root(directory, self.multipart_path)
+        directory = _ensure_within_root(directory, self.multipart_root)
         if metadata.get("status") != "active":
             raise StorageError("Multipart upload is not active")
-        part_path = _ensure_within_root(directory / f"part-{part_number:05d}", self.multipart_path)
+        part_path = _ensure_within_root(directory / f"part-{part_number:05d}", self.multipart_root)
         temporary_path = _ensure_within_root(
             directory / f".{part_path.name}.{uuid4().hex}.tmp",
-            self.multipart_path,
+            self.multipart_root,
         )
         try:
             temporary_path.write_bytes(body)

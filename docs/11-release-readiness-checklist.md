@@ -126,3 +126,9 @@ Newly implemented foundations are covered by tests for Auto Production duration 
 
 Release status remains unchanged: these are code/test completions, not live production evidence. RC/Production Ready still requires the unchecked worker, external integration, recovery, benchmark, and production E2E gates to pass with real evidence.
 \n\n## Latest coding-track update — 2026-10-07\n\nAdditional release-hardening foundations now include:\n- Auto Mode normalization helper consistency.\n- Magic-link expiry timezone compatibility.\n- Production readiness gate combining quality and continuity checks.\n- Expanded accessible UI primitives and semantic token alignment.\n\nNo live release gate was checked as a result. The newest code SHA still requires fresh CI/security evidence, and all user-owned worker, external integration, recovery, benchmark, and production-E2E gates remain unchecked.
+
+## Latest coding-track audit — 2026-10-07
+
+- Missing magic-link token handling is fail-closed with a controlled 401.
+- Storage filename key sanitization and local storage root consistency were hardened and regression-tested.
+- Automated release gates remain unchecked until fresh CI/security evidence is available for the resulting SHA.

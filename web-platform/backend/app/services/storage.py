@@ -942,7 +942,7 @@ class CloudinaryStorageProvider:
         metadata = json.loads((directory / "metadata.json").read_text(encoding="utf-8"))
         if metadata.get("object_key") != _safe_object_key(object_key):
             raise StorageError("Multipart upload object key mismatch")
-        if upload_token and metadata.get("upload_token") != upload_token:
+        if upload_token and metadata.get("upload_token_hash") != _hash_upload_token(upload_token):
             raise StorageError("Multipart upload token mismatch")
         result = []
         for path in sorted(directory.glob("part-*")):
@@ -952,7 +952,7 @@ class CloudinaryStorageProvider:
     def complete_multipart_upload(self, upload_id: str, object_key: str, parts: list[dict], expected_size: int, chunk_size: int, upload_token: str) -> StoredObject:
         directory = self._multipart_dir(upload_id)
         metadata = json.loads((directory / "metadata.json").read_text(encoding="utf-8"))
-        if metadata.get("object_key") != _safe_object_key(object_key) or metadata.get("upload_token") != upload_token:
+        if metadata.get("object_key") != _safe_object_key(object_key) or metadata.get("upload_token_hash") != _hash_upload_token(upload_token):
             raise StorageError("Multipart upload authorization failed")
         expected_count = ceil(expected_size / chunk_size)
         if len(parts) != expected_count:

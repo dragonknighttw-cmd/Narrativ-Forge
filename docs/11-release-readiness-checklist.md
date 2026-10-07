@@ -118,3 +118,10 @@ For each release candidate:
 4. Do not delete or rewrite approved output artifacts during application rollback.
 5. Re-run health/auth/read-only checks after rollback.
 6. Record any migration that is not safely reversible and use the documented forward-fix path rather than destructive downgrade.
+
+
+## Coding-track update — 2026-10-07 (continued)
+
+Newly implemented foundations are covered by tests for Auto Production duration normalization, hook families, provider fallback behavior, SEO/thumbnail/platform preparation, batch scheduling, storage deletion safety, and magic-link failure paths. UI token alignment and tenant-scoped scene regeneration were also hardened.
+
+Release status remains unchanged: these are code/test completions, not live production evidence. RC/Production Ready still requires the unchecked worker, external integration, recovery, benchmark, and production E2E gates to pass with real evidence.

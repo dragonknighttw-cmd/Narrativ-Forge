@@ -8,6 +8,48 @@ Private, invite-only Burmese short-form video production workspace.
 
 ---
 
+
+
+## Documentation map and completeness status — 2026-10-07
+
+Read this section first when returning to the project:
+
+1. **`README.md`** — current implementation, infrastructure, what is verified, what is blocked, and the current coding/verification state.
+2. **`roadmap.md`** — the single authoritative requirements/plan/status/release-gate document. It now contains the consolidated requirement-completeness register so requirements do not disappear when supporting docs are cleaned up.
+3. **`docs/07-ui-design.md`** — the canonical detailed UI/design-system reference: actual frontend tools, colors, typography, spacing, card/layout patterns, component/state rules, screen inventory, and implementation-vs-audit status.
+4. **`docs/21-master-completion-matrix.md`** — audit/evidence matrix, not another roadmap.
+5. **`docs/09-auto-production-expansion.md`** — retained as detailed Auto Production source until final consolidation/removal.
+6. **`docs/10-runtime-and-storage-lifecycle-plan.md`** and focused `infra/*` runbooks — implementation/operations detail only.
+
+There is **no `tool.md`** in the repository. UI is not currently defined by a separate tool-specific MD; `docs/07-ui-design.md` is the UI document, while the actual runtime design system lives in `web-platform/frontend/app/globals.css` and `web-platform/frontend/components/ui-primitives.tsx`.
+
+### What is actually finished vs what is still needed
+
+**Implemented/foundation:** core product workflow, auth/security foundations, tenant scoping foundations, script/scene/assets, resumable uploads, processing/Celery foundations, Burmese subtitle pipeline, review/approval, Drive export foundations, hybrid storage, analytics/logging foundations, AI provider routing, orchestration, Auto Production 13–17 coding foundations, semantic UI primitives/tokens, quota/retention/notification/audit/release-gate contracts.
+
+**Still requires real evidence:** real worker/media processing, queue/retry/DLQ/failover drills, real B2/Supabase/Cloudinary lifecycle, real Cloudflare Whisper E2E/fallback, Google OAuth/Drive E2E/recovery, SMTP delivery, Stripe lifecycle, Sentry event/alerts, backup/restore, production auth/tenant E2E, load/performance benchmark, security/container scan evidence, accessibility/responsive audit, legal/compliance review, and final pen-test.
+
+**Still needs product/UI completion or audit:** story ingestion/episode split approval flow, complete hook/SEO/retention/thumbnail/sound/Series Bible/continuity/batch/calendar surfaces, full analytics learning loop, full 33-component adoption, screen-by-screen state coverage, and the final deduplicated screen inventory.
+
+### UI quick reference
+
+- Stack: Next.js 16 + React 19 + TypeScript.
+- Icons: lucide-react.
+- E2E: Playwright.
+- Styling: native CSS custom properties; no Tailwind/shadcn/MUI/Chakra runtime dependency.
+- Fonts: Inter + Noto Sans Myanmar.
+- Canvas: `#0b0d10`.
+- Surface: `#12161b`.
+- Elevated: `#181d23`.
+- Brand: `#d8ff4f`.
+- Semantic: success `#63d38a`, warning `#f2c14e`, danger `#ff6b6b`, info `#65b9ff`.
+- Default card: 12px radius, 1px border, 20px padding.
+- AppShell: ~250px sidebar + ~84px topbar + ~1400px content max-width.
+- 44px minimum interactive target.
+- Reduced-motion support is implemented.
+- Full screen/state/accessibility adoption is **not yet verified**.
+
+
 ## 1. What Narrativ Forge is
 
 Narrativ Forge is a production workflow application for Burmese short-form video content:

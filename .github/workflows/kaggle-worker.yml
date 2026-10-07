@@ -1,0 +1,34 @@
+name: Kaggle Ephemeral Worker Dispatcher
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kaggle-ephemeral-dispatcher
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dispatcher dependencies
+        run: pip install psycopg2-binary kaggle
+      - name: Launch one Kaggle session when work is queued
+        env:
+          DATABASE_URL: ${{ secrets.KAGGLE_DISPATCH_DATABASE_URL }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          KAGGLE_KERNEL_ID: ${{ vars.KAGGLE_KERNEL_ID }}
+        run: |
+          test -n "$DATABASE_URL" || { echo "Missing KAGGLE_DISPATCH_DATABASE_URL"; exit 1; }
+          test -n "$KAGGLE_API_TOKEN" || { echo "Missing KAGGLE_API_TOKEN"; exit 1; }
+          test -n "$KAGGLE_KERNEL_ID" || { echo "Missing KAGGLE_KERNEL_ID repository variable"; exit 1; }
+          python infra/kaggle/dispatch.py

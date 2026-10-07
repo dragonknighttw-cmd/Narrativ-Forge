@@ -791,6 +791,8 @@ def test_storage_abstraction_upload_download_delete_and_asset_metadata(tmp_path,
     assert key.startswith(f"episodes/{episode_id}/assets/v3/video/")
     with pytest.raises(StorageError):
         build_object_key("not-a-uuid", 3, "source.mp4", "video")
+    unicode_key = build_object_key(episode_id, 3, "မြန်မာ video.mp4", "video")
+    assert unicode_key.endswith("/video/_________video.mp4")
     stored = provider.upload_file(source, key, "video/mp4")
 
     assert stored.provider == "local"

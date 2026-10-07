@@ -10,15 +10,51 @@ from ..db import SessionLocal
 from ..models import FailedJob, ProcessingJob
 from ..observability import configure_logging, initialize_sentry
 from .celery_app import get_celery
-from .tasks import enqueue_real_job, publish_dead_letter
+from .tasks import enqueue_real_job, publish_dead_letter, handle_attempt_failure
 
 logger = logging.getLogger(__name__)
 POLL_INTERVAL_SECONDS = 5
 BATCH_SIZE = 5
 
 
+
+def recover_stale_real_jobs(db: Session) -> int:
+    cutoff = datetime.now(timezone.utc).timestamp() - (
+        settings.processing_timeout_seconds
+        + settings.processing_timeout_grace_seconds
+        + 120
+    )
+    stale = (
+        db.query(ProcessingJob)
+        .filter(
+            ProcessingJob.job_type == "real_processing",
+            ProcessingJob.status == "running",
+            ProcessingJob.started_at.is_not(None),
+        )
+        .all()
+    )
+    recovered = 0
+    for job in stale:
+        started_at = job.started_at
+        if started_at is None:
+            continue
+        started_ts = started_at.replace(tzinfo=timezone.utc).timestamp() if started_at.tzinfo is None else started_at.timestamp()
+        if started_ts > cutoff:
+            continue
+        outcome, _ = handle_attempt_failure(
+            db,
+            job.id,
+            started_at,
+            "Worker lease expired; job was requeued/recovered.",
+        )
+        if outcome in {"scheduled", "exhausted"}:
+            recovered += 1
+    return recovered
+
+
 def run_once(db: Session) -> int:
     celery = get_celery()
+    recover_stale_real_jobs(db)
     now = datetime.now(timezone.utc)
     jobs = (
         db.query(ProcessingJob)

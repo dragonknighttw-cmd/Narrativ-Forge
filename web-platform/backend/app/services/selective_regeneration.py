@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..models import Episode, Scene, Script
 from .ai_adapter import get_ai_adapter
+from .auto_mode import normalize_content_plan
 
 
 def regenerate_scene(
@@ -41,12 +42,16 @@ def regenerate_scene(
         category="selective_regeneration",
     )
 
-    replacement = plan.scenes[0] if plan.scenes else {
-        "purpose": target.purpose,
-        "description": target.description,
-        "dialogue": target.dialogue,
-        "duration_seconds": target.duration_seconds,
-    }
+    normalized = normalize_content_plan(plan, episode.target_duration_seconds)
+    replacement = next(
+        (item for item in normalized.scenes if item.get("scene_number") == 1),
+        {
+            "purpose": target.purpose,
+            "description": target.description,
+            "dialogue": target.dialogue,
+            "duration_seconds": target.duration_seconds,
+        },
+    )
 
     db.query(Script).filter(
         Script.episode_id == episode.id,

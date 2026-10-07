@@ -786,7 +786,11 @@ def test_storage_abstraction_upload_download_delete_and_asset_metadata(tmp_path,
     provider = LocalStorageProvider(str(tmp_path / "storage"))
     source = tmp_path / "source.bin"
     source.write_bytes(b"storage-fixture")
-    key = build_object_key(str(uuid4()), 3, "source.mp4", "video")
+    episode_id = str(uuid4())
+    key = build_object_key(episode_id, 3, "source.mp4", "video")
+    assert key.startswith(f"episodes/{episode_id}/assets/v3/video/")
+    with pytest.raises(Exception):
+        build_object_key("not-a-uuid", 3, "source.mp4", "video")
     stored = provider.upload_file(source, key, "video/mp4")
 
     assert stored.provider == "local"
@@ -810,7 +814,7 @@ def test_storage_object_key_validation_rejects_unsafe_keys():
     from app.services.storage import StorageError, _safe_object_key
 
     assert _safe_object_key("episodes/abc/assets/v1/video/source.mp4") == "episodes/abc/assets/v1/video/source.mp4"
-    for unsafe in ("/absolute/path", r"episodes\\escape", "episodes//empty", "episodes/./dot", "episodes/../parent", "episodes/unsafe key"):
+    for unsafe in ("/absolute/path", r"episodes\\escape", "episodes//empty", "episodes/./dot", "episodes/../parent", "episodes/unsafe key", "episodes/unsafe@key"):
         with pytest.raises(StorageError):
             _safe_object_key(unsafe)
 

@@ -100,7 +100,9 @@ def _safe_object_key(object_key: str) -> str:
         raise StorageError("Invalid storage object key")
     if "\\" in object_key:
         raise StorageError("Invalid storage object key")
-    normalized = object_key.strip("/")
+    if object_key.startswith("/") or object_key.endswith("/"):
+        raise StorageError("Invalid storage object key")
+    normalized = object_key
     if not normalized:
         raise StorageError("Invalid storage object key")
     parts = normalized.split("/")

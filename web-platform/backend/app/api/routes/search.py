@@ -80,7 +80,18 @@ def global_search(
             "created_at": item.created_at,
         })
 
-    results.sort(key=lambda item: item["created_at"], reverse=True)
+    normalized = term.casefold()
+    def relevance(item):
+        title = str(item.get("title") or "").casefold()
+        snippet = str(item.get("snippet") or "").casefold()
+        exact = 0 if normalized == title else 1
+        prefix = 0 if title.startswith(normalized) else 1
+        contains_title = 0 if normalized in title else 1
+        contains_body = 0 if normalized in snippet else 1
+        created = item["created_at"].timestamp() if item.get("created_at") else 0
+        return (exact, prefix, contains_title, contains_body, -created)
+
+    results.sort(key=relevance)
     total = idea_query.count() + series_query.count() + episode_query.count() + script_query.count()
     page = results[offset:offset + limit]
     return {

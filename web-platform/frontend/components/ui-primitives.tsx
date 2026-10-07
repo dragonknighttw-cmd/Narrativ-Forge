@@ -47,7 +47,7 @@ export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea className="ds-textarea" {...props} />;
 }
 
-export function Checkbox({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
+export function Checkbox({ label, ...props }: InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
   return (
     <label className="ds-row">
       <input className="ds-checkbox" {...props} type="checkbox" />

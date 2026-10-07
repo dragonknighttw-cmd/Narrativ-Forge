@@ -731,3 +731,14 @@ Use `04-current-vs-target.md` to distinguish implemented code from unverified pr
 
 Project planning/remediation documents remain the broader planning source; this README continues to represent actual repository state.
 
+
+
+### Expanded Auto Production 13–17 coding status
+
+- [x] 13 — Cross-platform export variant planning + validation foundation
+- [x] 14 — Trend adapter contract + expiry-aware ranking foundation
+- [x] 15 — A/B outcome scoring/ranking foundation
+- [x] 16 — Series trailer planning foundation
+- [x] 17 — Burmese-first translation request/validation foundation
+
+External platform/trend/translation integrations and real trailer rendering remain verification/integration gates.

@@ -1338,3 +1338,227 @@ After every major milestone, and at minimum after Phases **03, 06, 09, and 12**:
 8. Confirm no requirement was lost.
 
 This checkpoint is mandatory so the project never returns to fragmented planning.
+
+
+---
+
+# Requirement Completeness Register — 2026-10-07
+
+This register is part of the master roadmap. It exists to prevent requirements from being lost when legacy/supporting documents are consolidated. It does not create a second roadmap.
+
+## A. Source-of-truth reconciliation
+
+The roadmap has been checked against:
+- Final Master Plan v4.0 / implementation packet
+- Comprehensive Remediation Plan
+- Burmese remaining-work master checklist
+- Auto Production expansion specification
+- Current-vs-target and completion matrix
+- UI/design specifications
+- runtime/storage/release-readiness documents
+- legacy `narratic/docs/*` product documents
+- current frontend package, design tokens, primitives, and app structure
+
+No requirement is considered complete merely because code exists. Status remains **CODE-DONE**, **FOUNDATION**, **VERIFY**, **USER/LIVE**, **TODO**, or **RESERVE** according to evidence.
+
+## B. Product and content intelligence requirements that must remain visible
+
+### Story ingestion and episode planning
+- Full story/story-idea ingestion.
+- AI-assisted episode split proposal: episode count, duration, scenes, characters, emotional arc, cliffhangers, and publish schedule.
+- Human approval/modification before generation.
+- Story ingestion job and episode split plan records.
+- Expanded flow: Story Upload → AI Analysis → Episode Split Review → User Approve/Modify → Script.
+
+### Hook engineering
+- Eight hook families: Question, Shock, Mystery, Warning, Personal Story, Contrarian, Cliffhanger, Number.
+- Hook library fields include hook text/type/topic/emotion/usage/performance/default state.
+- Candidate workflow: generate three candidates → human selection → measure performance → promote only after evidence.
+- First-10-second structure: 0:00–0:03 Hook → 0:03–0:05 Pattern Interrupt → 0:05–0:10 Context → 0:10+ Content.
+- Default changes require multi-content evidence; never promote from a single video.
+
+### Discovery / SEO
+- Title optimization.
+- Keyword-aware title/caption.
+- Hashtag groups.
+- Caption structure.
+- Keyword research adapter.
+- Posting-time recommendation.
+- SEO metadata is persisted separately from free-form copy.
+
+### Retention / emotional pacing
+- Emotional arc model.
+- Curious → Tense → Satisfied + Curious pattern where appropriate.
+- Cliffhanger/recap triggers.
+- Question/poll/follow/share/save engagement triggers.
+- Pacing/retention analysis.
+- Approved content must not be silently altered; warnings should be surfaced when a recommendation conflicts with approved content.
+
+### Thumbnail / visual selection
+- Generate 10 candidate frames.
+- Reduce to 5 usable candidates.
+- Human selects the final thumbnail.
+- Candidate variety should cover close-up, wide, text overlay, stock/illustrative, and animation-style options where applicable.
+
+### Sound / subtitle styling
+- Sound-design workflow: logo intro, hook impact, whoosh, climax/tension music, soft outro, emotion-based BGM.
+- Subtitle style requirements include hook/normal/important emphasis and animation guidance.
+- Music library and commercial-use metadata remain explicit.
+
+### Character / voice / Series Bible
+- Main-character consistency target.
+- Stable voice profiles.
+- Background/temporary character prompt templates and voice pools.
+- LoRA visual consistency is not considered done until training → storage → generation → consistency verification is evidenced.
+- Series Bible fields: series_id, title, genre, characters, world_setting, tone, visual_style, continuity_rules.
+- Continuity checks: character, timeline, location, props.
+
+### Batch and calendar
+- Five-episode batch planning.
+- Human approval before batch generation.
+- Daily-limit-aware scheduling.
+- Weekly queue.
+- Calendar dates/times/scheduling metadata.
+- Collision validation.
+
+## C. Platform/export requirements
+
+Preparation only; no direct social publishing is part of the product boundary.
+
+- TikTok: 9:16, target duration ≤ 3 min.
+- YouTube Shorts: 9:16, target duration ≤ 60 sec.
+- Facebook Reels: 9:16, target duration ≤ 90 sec.
+- Instagram Reels: 9:16, target duration ≤ 90 sec.
+- Master export remains available.
+- Platform metadata validation and preparation are idempotent.
+- Actual publication is recorded only from user/provider evidence.
+
+## D. Provider abstraction and commercial-use checks
+
+Video generation remains adapter-based:
+`VideoGenerationAdapter → Provider → Job → Asset → Quality/Watermark Check`.
+
+Provider-specific capabilities, limits, API/auth behavior, commercial terms, watermark behavior, quality, rate limits, retry semantics, and fallback behavior require live verification before being marked production-ready.
+
+Watermark/commercial-use policy must:
+- record provider/license evidence,
+- block unsafe commercial use,
+- never bypass or remove provider watermarks by circumvention.
+
+## E. Performance and quota targets
+
+- MVP processing target: **15–30 minutes** for representative content.
+- Optimized target: **7–15 minutes**.
+- Agnes/Groq/free-provider numbers are planning baselines only until live limits are verified.
+- Quota accounting tracks used/remaining/retries/reset/fallback.
+- Failed/retry jobs count toward provider quota where the provider bills/limits them that way.
+- Queue scheduling must be quota-aware and prevent over-allocation.
+
+## F. Subtitle quality requirements
+
+- Burmese/Zawgyi normalization.
+- Zawgyi detection target: **>95% detection quality** for the agreed evaluation set.
+- Subtitle correction history.
+- Correction metrics.
+- Training/evaluation export for subtitle quality cases.
+- Reading-speed and timing validation.
+- Approved subtitle versions immutable.
+- Burmese quality regressions require a fixed evaluation corpus and regression tests.
+
+## G. Analytics and learning loop
+
+Required loop:
+Manual Data → Hook Library → Auto Defaults → Human Approve → Performance Data → Rule Refinement.
+
+- Manual/social analytics import boundary.
+- Compare title, hook, and thumbnail performance.
+- Multi-signal experiment evidence.
+- A/B outcome scoring and winner selection with guardrails.
+- Do not alter defaults from one video; use evidence windows appropriate to the experiment (for example 5–10 content pieces when the rule requires it).
+- Analytics must remain attributable to the publication/version that produced the result.
+
+## H. Storage, privacy, and recovery
+
+- Archive/cold-storage execution, not only a planning contract.
+- Retention and deletion jobs must be observable and safe.
+- User/data deletion pipeline: DB PII purge, storage purge, required audit-log treatment/anonymization, and verification evidence.
+- Backup creation plus restore drill.
+- Recovery must include database records and referenced media.
+- Rollback must preserve approved output artifacts and record irreversible migrations.
+
+## I. Production infrastructure verification
+
+Final release evidence must cover:
+- managed PostgreSQL health and migration head;
+- managed Redis health and TLS configuration;
+- DNS/HTTPS;
+- exact CORS/trusted-host configuration;
+- protected environment/secrets configuration;
+- API readiness;
+- real worker runtime;
+- queue → worker → FFmpeg/Whisper → DB/storage;
+- retry/DLQ/duplicate-dispatch recovery;
+- monitoring/alerts;
+- rollback and smoke/full-content verification.
+
+## J. Testing and quality gates
+
+The release evidence set must include:
+- backend unit/integration tests;
+- frontend typecheck/build;
+- frontend Vitest/unit coverage where the project adopts it;
+- full browser E2E;
+- cross-tenant E2E;
+- representative media/worker E2E;
+- load/performance benchmark;
+- dependency/security/container scanning;
+- accessibility automated + manual audit;
+- responsive desktop/tablet/mobile audit;
+- security review / pen-test before final production sign-off.
+
+## K. UI/design-system completeness
+
+The canonical UI design specification is `docs/07-ui-design.md`. The README contains the current UI implementation summary; the roadmap owns requirements and status.
+
+The UI specification must document:
+- actual stack/tooling used;
+- color tokens and semantic state mapping;
+- typography and Burmese font strategy;
+- spacing/radius/shadow tokens;
+- desktop grid and responsive breakpoints;
+- AppShell/sidebar/topbar/content layout;
+- card/KPI/list/table/form/modal/tab patterns;
+- button/input/badge/alert/progress/loading/empty/error primitives;
+- focus/keyboard/screen-reader/touch-target rules;
+- reduced-motion behavior;
+- screen inventory and state matrix;
+- what is implemented vs target vs still needing audit.
+
+Current implementation tooling:
+- Next.js 16 + React 19 + TypeScript.
+- `lucide-react` for icons.
+- Playwright for browser E2E.
+- Native CSS design tokens and reusable React primitives; no Tailwind, shadcn/ui, Material UI, Chakra, or Figma-generated runtime dependency is currently declared in `package.json`.
+- Inter + Noto Sans Myanmar are the current font stack.
+
+## L. Screen-count reconciliation
+
+There are three different historical counts and they must not be conflated:
+1. **23 original MVP screens** from the Final Master Plan.
+2. **26-screen design-system baseline** from `docs/07-ui-design.md`.
+3. **Expanded Auto Production candidate screens** from the Auto Production specification.
+
+The final implementation must publish one canonical screen inventory after deduplicating tabs/panels that do not need standalone routes. Until that audit is complete, screen coverage remains **FOUNDATION/VERIFY**, not “26 screens complete”.
+
+## M. Legacy-document consolidation rule
+
+Legacy documents may be removed only after their unique requirements are represented in this roadmap, README, UI specification, completion matrix, or focused operational runbook.
+
+Do not maintain competing roadmaps. Supporting docs should contain implementation-specific detail, not alternate status or conflicting provider architecture.
+
+## N. Final two-pass audit requirement
+
+Before calling the documentation set complete:
+1. Pass 1: requirement-by-requirement reconciliation against every source.
+2. Pass 2: independent reverse check from the consolidated roadmap back against every source and repository directory, specifically searching for orphaned requirements, duplicate/conflicting documents, stale provider names, stale status claims, missing UI states, and unrepresented screens/components.
+3. Only after both passes pass may legacy duplicates be deleted.

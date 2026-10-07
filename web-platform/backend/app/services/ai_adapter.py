@@ -93,12 +93,12 @@ class OpenAICompatibleAdapter:
                   "duration_seconds. Target about 180 seconds. Idea: " + idea.strip() +
                   "\nCategory: " + (category or "general"))
         response = httpx.post(
-            f"{self.provider.base_url.rstrip("/")}/chat/completions",
+            self.provider.base_url.rstrip("/") + "/chat/completions",
             headers={"Authorization": f"Bearer {self.provider.api_key}", "Content-Type": "application/json"},
             json={"model": self.provider.model, "messages": [
                 {"role": "system", "content": "You are a Burmese short-form video production planner. Output JSON only."},
                 {"role": "user", "content": prompt},
-            ], "temperature": 0.4, "response_format": {"type": "json_object"}},
+            ], "temperature": 0.4},
             timeout=settings.ai_provider_timeout_seconds,
         )
         response.raise_for_status()

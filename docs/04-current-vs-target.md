@@ -108,12 +108,11 @@ The original 26-screen count is no longer the final target. The new screens in 0
 
 ## CI / Actions health (2026-10-06)
 
-- CodeQL latest run for repaired commit: **GREEN**.
-- Security latest run for repaired commit: **GREEN**.
-- CI latest run for repaired commit: **QUEUED**, blocked behind historical in-progress CI runs.
-- Historical stale runs are being cancelled by the new concurrency policy where GitHub applies it; older pre-policy runs may still need manual cancellation.
+- CodeQL/Security/CI were previously green on the repaired code path, but the current docs-only HEAD is not a fresh code-triggered verification run.
+- Docs-only commits intentionally do not trigger CI/CodeQL/Security under the current workflow path.
+- Treat the last verified code SHA as the evidence baseline; re-run the full suite on the next code-changing release SHA.
 
-Therefore repository health is currently **CodeQL GREEN / Security GREEN / CI verification pending**.
+Therefore repository health is currently **code-path previously verified; next release SHA requires fresh CI/security verification**.
 
 
 ## Explicit remaining requirements — capacity, performance, and UI
@@ -169,3 +168,39 @@ Important: these coding additions do **not** mark Agnes/Groq production integrat
 - Full 33-component audit: **TODO/VERIFY** — foundation exists, but every component and state still needs screen-level QA.
 - Production hardening: **VERIFY/TODO** — security, rate limits, idempotency, tenant isolation, retry/DLQ, observability, performance and backup/restore remain release gates.
 - Release readiness: **VERIFY** — CI/security must be green on the final release SHA and all external/live gates must be explicitly signed off.
+
+
+## Remaining work ownership — 2026-10-07
+
+### USER / LIVE-ENVIRONMENT GATES
+
+These require the user's machine, credentials, provider console, or explicit account approval and are intentionally not marked DONE by code alone:
+
+1. **Local Worker runtime:** run the repository worker on Home/Office Windows PC(s) with real FFmpeg and the shared Upstash Redis queue.
+2. **Worker E2E:** prove Queue → Worker → FFmpeg → DB → Storage → Retry/DLQ → Failover with a real job.
+3. **Production auth E2E:** run the real production login/session flow and verify cross-tenant isolation.
+4. **Google Drive:** provide/authorize OAuth callback credentials and run real export, idempotent re-export, and partial-upload recovery.
+5. **SMTP:** provide production SMTP credentials and prove invitation/magic-link delivery to a real mailbox.
+6. **Stripe:** provide production/test credentials + webhook endpoint and run API/webhook lifecycle verification.
+7. **Sentry:** provide DSN/config and prove a real production event + alert path.
+8. **Backup/restore:** execute the provider-supported backup/restore drill where provider tooling/account permissions are required.
+9. **Live AI quotas:** verify actual Agnes/Groq account/model limits and approve the provider usage policy.
+10. **Performance:** run the representative 15–30 min/video benchmark on the real worker/media path.
+
+### ASSISTANT / CODE + DOCS TRACK
+
+The assistant can continue without waiting for those live gates:
+
+- Finish and harden provider adapters, quota guards, fallback/error semantics, and tests.
+- Complete selective regeneration/versioning tests and content-extension behavior where code paths are available.
+- Finish storage lifecycle cleanup/monitoring code, safety checks, and test coverage.
+- Complete magic-link/auth implementation tests and production-safe error handling.
+- Audit security, tenant isolation, idempotency, retry/DLQ, and observability code paths.
+- Expand the design system into the 33-component audit and screen-level accessibility/responsive states.
+- Build Auto Production foundations in schema → API/service → worker job → UI → tests order, without claiming live worker DONE.
+- Maintain docs/04, docs/05, docs/10, and docs/11 as the status/runbook source of truth.
+- Re-run/fix CI after every code-changing batch and only promote status from TODO/VERIFY when evidence exists.
+
+### RELEASE BLOCKERS
+
+Production Ready remains blocked by the live gates above. Code completeness is not a substitute for worker runtime, external credentials, recovery drills, or production E2E evidence.

@@ -84,7 +84,7 @@ def _cloudinary_download_url(url: str) -> str:
         raise StorageError("Cloudinary returned an unexpected download host")
     return url
 
-def _safe_object_key(object_key: str) :
+def _safe_object_key(object_key: str) -> str:
     normalized = object_key.replace("\\", "/").lstrip("/")
     parts = [part for part in normalized.split("/") if part not in {"", ".", ".."}]
     if not parts:
@@ -473,7 +473,7 @@ class S3CompatibleStorageProvider:
                 Bucket=self.bucket,
                 Key=key,
                 ContentType=content_type,
-                Metadata={"nf-upload-session": upload_token},
+                Metadata={"nf-upload-session-hash": _hash_upload_token(upload_token)},
                 ServerSideEncryption="AES256",
             )
             return response["UploadId"]
@@ -548,7 +548,7 @@ class S3CompatibleStorageProvider:
                 return None
             raise StorageError("B2 multipart object lookup failed") from exc
         metadata = head.get("Metadata") or {}
-        if metadata.get("nf-upload-session") != upload_token or head.get("ContentLength") != expected_size:
+        if metadata.get("nf-upload-session-hash") != _hash_upload_token(upload_token) or head.get("ContentLength") != expected_size:
             raise StorageError("B2 object does not match this upload session")
         try:
             response = self.client.get_object(Bucket=self.bucket, Key=key)
@@ -812,7 +812,7 @@ class SupabaseStorageProvider:
 
     def complete_multipart_upload(self, upload_id: str, object_key: str, parts: list[dict], expected_size: int, chunk_size: int, upload_token: str) -> StoredObject:
         directory, metadata = self._meta(upload_id, object_key)
-        if metadata.get("upload_token") != upload_token:
+        if metadata.get("upload_token_hash") != _hash_upload_token(upload_token):
             raise StorageError("Multipart upload token mismatch")
         expected_parts = ceil(expected_size / chunk_size)
         available = {part["PartNumber"]: part for part in self.list_multipart_parts(upload_id, object_key)}
@@ -885,7 +885,7 @@ class CloudinaryStorageProvider:
         key = _safe_object_key(object_key)
         destination.parent.mkdir(parents=True, exist_ok=True)
         try:
-            import download_url = _cloudinary_download_url(self.download_url(key))
+            download_url = _cloudinary_download_url(self.download_url(key))
             response = requests.get(download_url, timeout=300, stream=True)
             response.raise_for_status()
             with destination.open("wb") as handle:
@@ -928,7 +928,7 @@ class CloudinaryStorageProvider:
         upload_id = str(uuid4())
         directory = self._multipart_dir(upload_id)
         directory.mkdir(parents=True, exist_ok=False)
-        (directory / "metadata.json").write_text(json.dumps({"object_key": _safe_object_key(object_key), "upload_token": upload_token, "content_type": content_type}), encoding="utf-8")
+        (directory / "metadata.json").write_text(json.dumps({"object_key": _safe_object_key(object_key), "upload_token_hash": _hash_upload_token(upload_token), "content_type": content_type}), encoding="utf-8")
         return upload_id
     def upload_part(self, upload_id: str, object_key: str, part_number: int, body: bytes, is_last: bool) -> str:
         directory = self._multipart_dir(upload_id)

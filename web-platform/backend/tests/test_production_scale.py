@@ -50,7 +50,7 @@ def test_publish_contract_validates_and_is_idempotent_by_key():
 
 def test_trend_cache_and_expiry_contract():
     cache = TrendCache(ttl_seconds=10)
-    cache.put("x", [])
+    cache.put("x", [], now=0)
     assert cache.get("x", now=1) is not None
     assert cache.get("x", now=11) is None
 

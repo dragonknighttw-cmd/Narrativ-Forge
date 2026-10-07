@@ -233,3 +233,5 @@ Completed in the current coding pass:
 - Fixed UI primitive token references and explicit input prop typing.
 
 These remain coding-track completions only. Real provider limits, worker runtime, external delivery, recovery drills, and production E2E remain VERIFY/live gates.
+
+- Added Series Bible/continuity, script quality/pacing, and provider-registry foundations with tests.

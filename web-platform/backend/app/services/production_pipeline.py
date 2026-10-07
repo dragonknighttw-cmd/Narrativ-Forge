@@ -257,6 +257,49 @@ def build_series_trailer_plan(
     return result
 
 
+@dataclass(frozen=True)
+class TranslationRequest:
+    source_text: str
+    source_language: str = "my"
+    target_language: str = "en"
+    preserve_line_breaks: bool = True
+
+
+class TranslationProvider(Protocol):
+    def translate(self, request: TranslationRequest) -> str:
+        ...
+
+
+def build_translation_request(source_text: str, target_language: str, *, source_language: str = "my") -> TranslationRequest:
+    text = str(source_text or "").strip()
+    target = str(target_language or "").strip().lower()
+    source = str(source_language or "my").strip().lower()
+    if not text:
+        raise ValueError("source_text must not be empty")
+    if not target:
+        raise ValueError("target_language must not be empty")
+    if target == source:
+        raise ValueError("target_language must differ from source_language")
+    return TranslationRequest(
+        source_text=text,
+        source_language=source,
+        target_language=target,
+        preserve_line_breaks=True,
+    )
+
+
+def validate_translation_result(request: TranslationRequest, translated_text: str) -> str:
+    result = str(translated_text or "").strip()
+    if not result:
+        raise ValueError("translation result must not be empty")
+    if request.preserve_line_breaks:
+        source_breaks = request.source_text.count("\n")
+        result_breaks = result.count("\n")
+        if source_breaks and result_breaks != source_breaks:
+            raise ValueError("translation changed the source line-break structure")
+    return result
+
+
 def assess_production_readiness(
     *,
     script: str,

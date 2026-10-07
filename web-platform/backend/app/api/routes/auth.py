@@ -176,10 +176,12 @@ def consume_magic_link(token: str, response: Response, db: Session = Depends(get
         )
         .first()
     )
+    if not record:
+        raise HTTPException(status_code=401, detail="Magic link is invalid or expired")
     expires_at = record.expires_at
     if expires_at is not None and expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
-    if not record or expires_at is None or expires_at <= datetime.now(timezone.utc):
+    if expires_at is None or expires_at <= datetime.now(timezone.utc):
         raise HTTPException(status_code=401, detail="Magic link is invalid or expired")
 
     user = db.query(User).filter(User.email == record.email, User.is_active.is_(True)).first()

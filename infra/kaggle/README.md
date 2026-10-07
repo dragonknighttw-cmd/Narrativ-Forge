@@ -37,3 +37,5 @@ GitHub setup:
 
 The GitHub dispatcher is only an orchestrator. The actual FFmpeg/Whisper work runs inside Kaggle.
 Local Windows worker remains the emergency/manual fallback and uses the same database queue.
+
+Kaggle authentication for the dispatcher uses the documented `KAGGLE_API_TOKEN` environment variable. The GitHub workflow keeps that token in GitHub Actions Secrets, not in the repository. 

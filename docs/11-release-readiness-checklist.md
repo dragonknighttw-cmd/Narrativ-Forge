@@ -97,3 +97,24 @@ A release may be labelled **Production Ready** only after the real worker runtim
 - Documentation synchronization and release-checklist maintenance.
 
 **Release rule:** do not convert any unchecked live gate to `[x]` merely because its code path exists. Evidence must come from the actual runtime/account/environment.
+
+
+## Coding-track completion note — 2026-10-07
+
+The checklist's code-side foundation has been advanced without falsely checking live gates:
+
+- Organization scoping was hardened for Auto Mode and owner user listing.
+- Cross-tenant regression coverage was added for user listing.
+- Provider quota/idempotency tests are present.
+- Design-system controls and feedback/loading primitives were expanded.
+- Live worker, external credential, recovery, production E2E, and final performance gates remain unchecked until real evidence exists.
+
+### Rollback readiness
+
+For each release candidate:
+1. Keep the last verified production SHA recorded before the candidate.
+2. Apply database migrations before enabling code paths that require them.
+3. If deployment health fails, roll back application code to the last verified SHA.
+4. Do not delete or rewrite approved output artifacts during application rollback.
+5. Re-run health/auth/read-only checks after rollback.
+6. Record any migration that is not safely reversible and use the documented forward-fix path rather than destructive downgrade.

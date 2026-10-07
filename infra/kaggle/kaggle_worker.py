@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import stat
 import subprocess
 from pathlib import Path
 
@@ -22,8 +23,17 @@ def main() -> None:
     database_url = secret("DATABASE_URL")
     if ROOT.exists():
         subprocess.run(["rm", "-rf", str(ROOT)], check=True)
-    clone_url = f"https://x-access-token:{token}@github.com/{REPO}.git"
-    subprocess.run(["git", "clone", "--depth", "1", clone_url, str(ROOT)], check=True, stdout=subprocess.DEVNULL)
+    askpass = Path("/kaggle/working/git-askpass.sh")
+    askpass.write_text("#!/bin/sh\ncase \"$1\" in\n*Username*) echo x-access-token ;;\n*) echo \"$GIT_PASSWORD\" ;;\nesac\n", encoding="utf-8")
+    askpass.chmod(askpass.stat().st_mode | stat.S_IXUSR)
+    clone_env = os.environ.copy()
+    clone_env["GIT_ASKPASS"] = str(askpass)
+    clone_env["GIT_PASSWORD"] = token
+    clone_env["GIT_TERMINAL_PROMPT"] = "0"
+    try:
+        subprocess.run(["git", "clone", "--depth", "1", f"https://github.com/{REPO}.git", str(ROOT)], check=True, stdout=subprocess.DEVNULL, env=clone_env)
+    finally:
+        askpass.unlink(missing_ok=True)
     backend = ROOT / "web-platform" / "backend"
     env = os.environ.copy()
     env["DATABASE_URL"] = database_url

@@ -1361,3 +1361,10 @@ Do not jump directly into all new features. First make the repository green and 
 `docs/04-current-vs-target.md` = current vs target status.
 `docs/05-execution-roadmap.md` = current execution order.
 `docs/09-auto-production-expansion.md` = detailed Add-On target specification.
+
+
+## Master reconciliation — 2026-10-07
+
+The repository roadmap, prior master/remediation plans, formal Phases 01–12, Expanded Auto Production 13–17, and Batches 18–36 are reconciled in **docs/21-master-completion-matrix.md**.
+
+That matrix is the execution status map: code/foundation work may be completed autonomously, while real worker, credentials, provider accounts, production recovery, E2E, performance, accessibility, legal, and pen-test gates remain explicitly evidence-bound.

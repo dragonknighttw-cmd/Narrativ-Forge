@@ -82,3 +82,23 @@
   .ds-spinner, .ds-skeleton { animation: none; }
   .ds-progress > span { transition: none; }
 }
+
+
+.ds-table-wrap { width:100%; overflow:auto; }
+.ds-table { width:100%; border-collapse:collapse; }
+.ds-table th, .ds-table td { padding:var(--space-3); border-bottom:1px solid var(--color-border-default); text-align:left; }
+.ds-tabs { display:flex; gap:var(--space-2); border-bottom:1px solid var(--color-border-default); overflow:auto; }
+.ds-tab { border:0; border-bottom:2px solid transparent; background:transparent; color:var(--color-text-secondary); padding:var(--space-3); min-height:44px; cursor:pointer; }
+.ds-tab[data-active="true"] { color:var(--color-text-primary); border-bottom-color:var(--color-brand); }
+.ds-modal-backdrop { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; padding:var(--space-5); background:rgb(0 0 0 / .72); }
+.ds-modal { width:min(640px,100%); max-height:90vh; overflow:auto; background:var(--color-bg-surface); border:1px solid var(--color-border-default); border-radius:var(--radius-xl); box-shadow:var(--shadow-md); padding:var(--space-5); }
+.ds-modal-header { display:flex; align-items:center; justify-content:space-between; gap:var(--space-4); margin-bottom:var(--space-4); }
+.ds-modal-header h2 { margin:0; }
+.ds-tooltip { position:relative; display:inline-flex; }
+.ds-tooltip:hover::after, .ds-tooltip:focus-within::after { content:attr(data-tooltip); position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%); width:max-content; max-width:260px; padding:6px 8px; border-radius:var(--radius-sm); background:var(--color-bg-elevated); border:1px solid var(--color-border-default); color:var(--color-text-primary); font-size:12px; z-index:20; }
+.ds-divider { border:0; border-top:1px solid var(--color-border-default); width:100%; }
+.ds-status { display:inline-flex; align-items:center; gap:var(--space-2); font-size:13px; }
+.ds-status > span { width:9px; height:9px; border-radius:50%; background:var(--color-text-muted); }
+.ds-status[data-tone="success"] > span { background:var(--color-success); }
+.ds-status[data-tone="warning"] > span { background:var(--color-warning); }
+.ds-status[data-tone="danger"] > span { background:var(--color-danger); }

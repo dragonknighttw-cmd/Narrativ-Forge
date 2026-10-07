@@ -354,3 +354,22 @@ These are implementation checkpoints. Live external-service verification remains
 36. Final production launch gate and external pen-test remediation.
 
 No real credentials or external account secrets will be added while preparing these batches.
+
+
+## Batch 18–24 implementation checkpoint — 2026-10-07
+
+Coding foundations now committed on main:
+- 18 publishing adapters: platform-neutral metadata validation and idempotent publish contracts.
+- 19 trend providers: connector protocol, TTL cache, rate-limit/failure fallback.
+- 20 experimentation: allocation guards, outcome ingestion primitives, confidence-aware winner selection.
+- 21 AI evaluation: deterministic evaluation case fingerprints and provider quality/latency/cost ranking.
+- 22 NLE export: timeline validation, deterministic EDL and NLE manifest contracts.
+- 23 storage/DR: reference-safe lifecycle policy and RPO/RTO target validation.
+- 24 SRE/compliance: alert evaluation, incident event and compliance gate contracts.
+
+## Batch 25–36 prebuild checkpoint — 2026-10-07
+
+Dependency-light foundations are also prebuilt for:
+25 character/style profiles; 26 episode scoring; 27 Burmese subtitle evaluation; 28 dependency-aware regeneration; 29 quota-aware batch scheduling; 30 review-learning aggregation; 31/32 collaboration presence/realtime foundation; 33 quota enforcement; 34 enterprise policies; 35 demo seed/onboarding foundation; 36 launch-gate evaluation.
+
+All of these remain code-level foundations. Live external integrations and production evidence remain separate verification gates.

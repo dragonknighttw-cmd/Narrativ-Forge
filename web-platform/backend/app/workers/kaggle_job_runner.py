@@ -9,6 +9,7 @@ from ..db import SessionLocal
 from ..models import ProcessingJob
 from ..services.real_processing import run_real_job
 from .tasks import handle_attempt_failure
+from .real_worker import recover_stale_real_jobs
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ def _now() -> datetime:
 def claim_next_job() -> tuple[str, datetime] | None:
     db = SessionLocal()
     try:
+        recover_stale_real_jobs(db)
         now = _now()
         job = (
             db.query(ProcessingJob)

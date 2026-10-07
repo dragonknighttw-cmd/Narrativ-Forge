@@ -96,10 +96,19 @@ def _cloudinary_download_url(url: str) -> str:
     return url
 
 def _safe_object_key(object_key: str) -> str:
-    normalized = object_key.replace("\\", "/").lstrip("/")
-    parts = [part for part in normalized.split("/") if part not in {"", ".", ".."}]
-    if not parts:
+    if not object_key:
         raise StorageError("Invalid storage object key")
+    if "\\" in object_key:
+        raise StorageError("Invalid storage object key")
+    normalized = object_key.strip("/")
+    if not normalized:
+        raise StorageError("Invalid storage object key")
+    parts = normalized.split("/")
+    for part in parts:
+        if part in {"", ".", ".."}:
+            raise StorageError("Invalid storage object key")
+        if not re.fullmatch(r"[A-Za-z0-9._-]+", part):
+            raise StorageError("Invalid storage object key")
     return "/".join(parts)
 
 
@@ -1064,7 +1073,14 @@ def _safe_key_component(value: str, field_name: str) -> str:
 
 
 def build_object_key(episode_id: str, version: int, filename: str, asset_type: str) -> str:
-    safe_episode_id = _safe_key_component(episode_id, "episode id")
-    safe_asset_type = _safe_key_component(asset_type, "asset type")
+    try:
+        safe_episode_id = str(UUID(str(episode_id)))
+    except (ValueError, TypeError) as exc:
+        raise StorageError("Invalid episode identifier for storage key") from exc
+
+    safe_asset_type = (asset_type or "").strip().lower()
+    if not re.fullmatch(r"[a-z0-9_-]+", safe_asset_type):
+        raise StorageError("Invalid asset type for storage key")
+
     safe = Path(filename).name.replace(" ", "_")
     return f"episodes/{safe_episode_id}/assets/v{version}/{safe_asset_type}/{safe}"

@@ -197,6 +197,28 @@ class ProductionReadiness:
     ready_for_review: bool
 
 
+@dataclass(frozen=True)
+class ABOutcome:
+    variant_key: str
+    impressions: int
+    views: int
+    completions: int
+    shares: int = 0
+
+
+def score_ab_outcome(outcome: ABOutcome) -> float:
+    if outcome.impressions <= 0:
+        return 0.0
+    view_rate = outcome.views / outcome.impressions
+    completion_rate = outcome.completions / max(outcome.views, 1)
+    share_rate = outcome.shares / max(outcome.views, 1)
+    return (view_rate * 0.45) + (completion_rate * 0.45) + (share_rate * 0.10)
+
+
+def rank_ab_outcomes(outcomes: list[ABOutcome]) -> list[ABOutcome]:
+    return sorted(outcomes, key=lambda item: (-score_ab_outcome(item), item.variant_key))
+
+
 def assess_production_readiness(
     *,
     script: str,

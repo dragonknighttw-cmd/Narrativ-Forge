@@ -218,3 +218,18 @@ The following additional code-level work has now been applied while the real-wor
 - Reduced-motion and keyboard/focus behavior remain part of the design-system foundation.
 
 These are **coding-track completions**, not live production verification. Screen-level UI wiring, full automated CI evidence for the newest SHA, real worker runtime, and external credential gates remain separate.
+
+
+## Coding-track update — 2026-10-07 (continued)
+
+Completed in the current coding pass:
+- Auto Mode now normalizes provider output to the episode target duration (bounded 150–210 seconds) and preserves scene sequencing.
+- Selective scene regeneration reuses the same duration normalization and is organization-scoped.
+- Added deterministic Auto Production foundations for SEO metadata, thumbnails, sound/BGM policy, platform export preparation, batch scheduling, and A/B variants.
+- Added eight-family hook engineering foundation.
+- Added provider fallback execution semantics with retryable/non-retryable classification.
+- Added storage threshold classification and final/approved/only-copy deletion protection.
+- Added magic-link security/failure-path tests and broader production-foundation tests.
+- Fixed UI primitive token references and explicit input prop typing.
+
+These remain coding-track completions only. Real provider limits, worker runtime, external delivery, recovery drills, and production E2E remain VERIFY/live gates.

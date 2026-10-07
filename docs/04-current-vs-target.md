@@ -236,3 +236,13 @@ These remain coding-track completions only. Real provider limits, worker runtime
 
 - Added Series Bible/continuity, script quality/pacing, and provider-registry foundations with tests.
 \n\n## Coding-track update — 2026-10-07 (latest)\n\nAdditional code-side work completed in this pass:\n- Fixed Auto Mode normalization helper call mismatch.\n- Hardened magic-link expiry handling for timezone-naive SQLite test values.\n- Added a production-readiness gate combining content quality and continuity blockers.\n- Expanded the reusable UI primitive library with Table, Tabs/Tab, Modal, Tooltip, Divider, and StatusDot.\n- Aligned extended UI primitive CSS to the semantic design tokens.\n\nThese changes remain coding-track evidence only. Fresh CI on the newest code SHA is still required because connector-created commits do not themselves provide a workflow-run result in the available verification path.
+
+## Coding-track update — 2026-10-07 (storage/auth hardening)
+
+Additional defects found during the code audit were fixed:
+- Magic-link consume now returns a controlled 401 for a missing/unknown token instead of dereferencing a null record.
+- Storage object-key filenames are sanitized to the same ASCII-safe key contract used by storage providers, preventing Unicode/path characters from producing provider-rejected keys.
+- Local storage upload/download/multipart paths now consistently use the provider's initialized root and multipart_root.
+- Regression coverage was added for missing magic-link tokens, Unicode filename key sanitization, and local storage upload/download/delete round-trip.
+
+These fixes are coding-track changes. Fresh CI/security evidence on the resulting SHA is still required before marking automated release gates green.

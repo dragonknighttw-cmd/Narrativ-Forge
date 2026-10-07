@@ -791,3 +791,19 @@ These are coding foundations and unit-tested contracts. They do not claim live p
 The repository roadmap, prior master/remediation plans, formal Phases 01–12, Expanded Auto Production 13–17, and Batches 18–36 are reconciled in **docs/21-master-completion-matrix.md**.
 
 That matrix is the execution status map: code/foundation work may be completed autonomously, while real worker, credentials, provider accounts, production recovery, E2E, performance, accessibility, legal, and pen-test gates remain explicitly evidence-bound.
+
+
+## Code-completion checkpoint — 2026-10-07
+
+The latest autonomous code pass adds shared completion contracts for:
+- all required workflow UI states and blocking-state semantics;
+- immutable content-version creation/retention;
+- dependency-aware selective regeneration;
+- token-bucket rate limiting and quota decisions;
+- storage archive/delete planning with 80/90/95% thresholds;
+- alert evaluation and secret-safe audit metadata;
+- realtime presence leases and deterministic notification keys;
+- legal release blockers and release-evidence gating;
+- the production E2E evidence sequence.
+
+These are code-level contracts only. Real providers, worker runtime, media processing, OAuth/Drive, SMTP, Stripe, Sentry, backup/restore, accessibility, load/security scans, legal documents, and external penetration testing remain verification/user gates.

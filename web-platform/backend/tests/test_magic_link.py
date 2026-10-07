@@ -47,3 +47,10 @@ def test_magic_link_delivery_failure_returns_503(monkeypatch, db_session):
         auth.request_magic_link(auth.MagicLinkRequest(email=user.email), db_session)
     assert getattr(exc.value, "status_code", None) == 503
     assert db_session.query(MagicLinkToken).count() == 0
+
+
+def test_magic_link_missing_token_returns_401(db_session):
+    response = type("Response", (), {"set_cookie": lambda *args, **kwargs: None})()
+    with pytest.raises(Exception) as exc:
+        auth.consume_magic_link("missing-token", response, db_session)
+    assert getattr(exc.value, "status_code", None) == 401

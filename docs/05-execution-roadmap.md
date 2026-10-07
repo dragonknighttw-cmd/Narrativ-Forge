@@ -312,3 +312,15 @@ The sequential coding foundations are now implemented on `main`:
 - **17 Translation:** Burmese-first translation request/validation contract with line-break preservation.
 
 These are **coding foundations**, not claims that external platform APIs, live trend providers, translation providers, or real trailer rendering are production-verified. Those integrations remain provider/credential/live-media gates.
+
+
+## Phase 07–12 coding checkpoint — 2026-10-07
+
+- **07 Review & Approval:** organization-scoped review access, approval blockers, approved-subtitle gate, audit event on approval.
+- **08 Export & Publishing:** approved-artifact preflight before export claim, compare-and-set export state, idempotent provider records, Mock Drive and Google Drive paths.
+- **09 Search & Analytics:** organization-scoped global search, deterministic relevance ranking, usage/event foundations.
+- **10 Production Hardening:** Redis/DB readiness endpoint, worker dispatch lock, bounded retries, DLQ handling, storage replication, production runbook, runtime secret validation.
+- **11 Business & Collaboration:** organizations, memberships, invitations, magic links, usage metering, Stripe checkout/portal/webhook foundations, webhook delivery, notifications.
+- **12 Scale & Advanced:** provider routing, parallel task orchestration, cross-platform variants, trend/A-B/trailer/translation foundations, storage lifecycle and advanced worker controls.
+
+These are implementation checkpoints. Live external-service verification remains a separate final gate.

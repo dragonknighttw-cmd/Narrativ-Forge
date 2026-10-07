@@ -83,7 +83,7 @@ def get_export(episode_id: str, membership=Depends(get_current_membership), db: 
 
 @router.get("/{episode_id}/export/history")
 def export_history(episode_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):
-    _episode(db, episode_id)
+    _episode(db, episode_id, membership.organization_id)
     records = db.query(ExportRecord).filter(
         ExportRecord.episode_id == episode_id
     ).order_by(ExportRecord.created_at.desc()).all()
@@ -103,7 +103,7 @@ def export_history(episode_id: str, membership=Depends(get_current_membership), 
 
 @router.post("/{episode_id}/export/mock-drive")
 def mock_drive_export(episode_id: str, user=Depends(require_roles("owner", "editor")), membership=Depends(get_current_membership), db: Session = Depends(get_db)):
-    episode = _episode(db, episode_id)
+    episode = _episode(db, episode_id, membership.organization_id)
     record = _record(db, episode_id, "mock_drive")
     if record and record.status == "completed":
         return {"status": "completed", "id": record.id, "manifest": _manifest(record)}
@@ -111,7 +111,7 @@ def mock_drive_export(episode_id: str, user=Depends(require_roles("owner", "edit
         raise HTTPException(status_code=409, detail="Episode must be approved before Drive export")
 
     _claim_export(db, episode_id, expected_status="approved")
-    episode = _episode(db, episode_id)
+    episode = _episode(db, episode_id, membership.organization_id)
 
     subtitle = db.query(Subtitle).filter(
         Subtitle.episode_id == episode_id,
@@ -171,7 +171,7 @@ async def google_drive_export(episode_id: str, user=Depends(require_roles("owner
     from .google_drive import access_token_for
     from ...services.subtitles import render_srt
 
-    episode = _episode(db, episode_id)
+    episode = _episode(db, episode_id, membership.organization_id)
     record = _record(db, episode_id, "google_drive")
     retrying_failed_export = bool(record and record.status == "failed" and episode.status == "failed")
     if record and record.status == "completed":
@@ -184,7 +184,7 @@ async def google_drive_export(episode_id: str, user=Depends(require_roles("owner
         episode_id,
         expected_status="failed" if retrying_failed_export else "approved",
     )
-    episode = _episode(db, episode_id)
+    episode = _episode(db, episode_id, membership.organization_id)
 
     subtitle = db.query(Subtitle).filter(
         Subtitle.episode_id == episode_id,

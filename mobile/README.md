@@ -1,5 +1,5 @@
-# Narrativ Forge Mobile
+# Legacy Path
 
-Reserved workspace for the future mobile/tablet client.
+Mobile scope is deferred/reserved and recorded in `ROADMAP.md`, `UI_DESIGN_SYSTEM.md`, and archive provenance.
 
-No mobile framework is committed yet. The master plan places mobile/tablet audit in the hardening phase, so this directory stays intentionally lightweight during the web-platform foundation phase.
+Canonical documents are authoritative.

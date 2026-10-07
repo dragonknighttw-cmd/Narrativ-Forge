@@ -82,14 +82,50 @@ def build_sound_plan(category: str | None = None) -> dict:
     }
 
 
+PLATFORM_EXPORT_LIMITS = {
+    "tiktok": {"aspect_ratio": "9:16", "max_duration_seconds": 600},
+    "youtube_shorts": {"aspect_ratio": "9:16", "max_duration_seconds": 180},
+    "facebook_reels": {"aspect_ratio": "9:16", "max_duration_seconds": 180},
+}
+
+
 def build_cross_platform_export_plan(duration_seconds: int = 180) -> dict:
     duration = max(1, int(duration_seconds))
-    return {
-        "tiktok": {"aspect_ratio": "9:16", "max_duration_seconds": duration},
-        "youtube_shorts": {"aspect_ratio": "9:16", "max_duration_seconds": duration},
-        "facebook_reels": {"aspect_ratio": "9:16", "max_duration_seconds": duration},
-        "master": {"aspect_ratio": "9:16", "resolution": "1080x1920", "duration_seconds": duration},
+    plan = {
+        platform: {
+            "aspect_ratio": spec["aspect_ratio"],
+            "max_duration_seconds": min(duration, spec["max_duration_seconds"]),
+            "source_duration_seconds": duration,
+            "requires_trim": duration > spec["max_duration_seconds"],
+        }
+        for platform, spec in PLATFORM_EXPORT_LIMITS.items()
     }
+    plan["master"] = {
+        "aspect_ratio": "9:16",
+        "resolution": "1080x1920",
+        "duration_seconds": duration,
+    }
+    return plan
+
+
+def validate_cross_platform_export_plan(plan: dict) -> list[str]:
+    errors = []
+    for platform, spec in PLATFORM_EXPORT_LIMITS.items():
+        item = plan.get(platform)
+        if not isinstance(item, dict):
+            errors.append(f"missing:{platform}")
+            continue
+        if item.get("aspect_ratio") != spec["aspect_ratio"]:
+            errors.append(f"{platform}:aspect_ratio")
+        duration = int(item.get("max_duration_seconds") or 0)
+        if duration < 1 or duration > spec["max_duration_seconds"]:
+            errors.append(f"{platform}:duration")
+    master = plan.get("master") or {}
+    if master.get("aspect_ratio") != "9:16":
+        errors.append("master:aspect_ratio")
+    if master.get("resolution") != "1080x1920":
+        errors.append("master:resolution")
+    return errors
 
 
 def build_production_metadata(title: str, topic: str, hook: str, keywords: list[str] | None = None, category: str | None = None) -> ProductionMetadata:

@@ -38,3 +38,8 @@ When a requirement is discovered in a supporting document:
 4. Remove obsolete or duplicated roadmap content only after reconciliation.
 
 The roadmap's release rule remains: **code existing is not production evidence**. Real credentials, real media, worker execution, external integrations, backups/restores, security evidence, accessibility, legal review, and other live gates must be verified explicitly.
+
+
+## UI and tooling rule
+
+There is no `tool.md`. The canonical UI/design-system document is `docs/07-ui-design.md`. It records the actual frontend tooling and visual system; the source implementation is in `web-platform/frontend/app/globals.css` and `web-platform/frontend/components/ui-primitives.tsx`. Do not create a competing UI roadmap or tool-specific design document unless a genuinely new implementation concern requires it.

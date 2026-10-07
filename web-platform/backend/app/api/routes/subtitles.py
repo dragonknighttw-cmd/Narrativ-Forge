@@ -64,7 +64,7 @@ def list_subtitles(episode_id: str, limit: int = Query(default=50, ge=1, le=100)
 
 @router.post("/{episode_id}/subtitles/generate", status_code=201)
 def generate_subtitle(episode_id: str, payload: GenerateSubtitle, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    _episode_or_404(db, episode_id)
+    _episode_or_404(db, episode_id, membership.organization_id)
     if payload.preset not in ("burmese_default", "burmese_compact"):
         raise HTTPException(status_code=422, detail="Unsupported subtitle preset")
     transcript = db.query(Asset).filter(
@@ -91,7 +91,7 @@ def generate_subtitle(episode_id: str, payload: GenerateSubtitle, membership=Dep
 
 @subtitle_router.post("/{subtitle_id}/versions", status_code=201)
 def create_subtitle_version(subtitle_id: str, payload: SubtitleUpdate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    source = db.get(Subtitle, subtitle_id)
+    source = db.query(Subtitle).join(Episode, Subtitle.episode_id == Episode.id).filter(Subtitle.id == subtitle_id, Episode.organization_id == membership.organization_id).first()
     if not source:
         raise HTTPException(status_code=404, detail="Subtitle not found")
     values = payload.model_dump(exclude_unset=True)
@@ -210,7 +210,7 @@ def import_cloud_transcript(
 
 @router.post("/{episode_id}/subtitles/validate")
 def validate_subtitles(episode_id: str, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    _episode_or_404(db, episode_id)
+    _episode_or_404(db, episode_id, membership.organization_id)
     item = db.query(Subtitle).filter(Subtitle.episode_id == episode_id, Subtitle.is_current.is_(True)).order_by(Subtitle.version.desc()).first()
     if not item:
         raise HTTPException(status_code=404, detail="Current subtitle not found")
@@ -222,7 +222,7 @@ def validate_subtitles(episode_id: str, membership=Depends(get_current_membershi
 
 @router.post("/{episode_id}/subtitles/approve")
 def approve_subtitles(episode_id: str, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    episode = _episode_or_404(db, episode_id)
+    episode = _episode_or_404(db, episode_id, membership.organization_id)
     item = db.query(Subtitle).filter(Subtitle.episode_id == episode_id, Subtitle.is_current.is_(True)).order_by(Subtitle.version.desc()).first()
     if not item:
         raise HTTPException(status_code=404, detail="Current subtitle not found")
@@ -240,7 +240,7 @@ def approve_subtitles(episode_id: str, membership=Depends(get_current_membership
 
 @subtitle_router.get("/{subtitle_id}/export")
 def export_subtitle(subtitle_id: str, format: str = Query(default="srt"), membership=Depends(get_current_membership), db: Session = Depends(get_db)):
-    item = db.get(Subtitle, subtitle_id)
+    item = db.query(Subtitle).join(Episode, Subtitle.episode_id == Episode.id).filter(Subtitle.id == subtitle_id, Episode.organization_id == membership.organization_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Subtitle not found")
     if format not in ("srt", "vtt"):

@@ -107,11 +107,19 @@ def invite(
 @router.get("/users")
 def users(
     user=Depends(require_roles("owner")),
+    membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
+    rows = (
+        db.query(User, OrganizationMembership.role)
+        .join(OrganizationMembership, OrganizationMembership.user_id == User.id)
+        .filter(OrganizationMembership.organization_id == membership.organization_id)
+        .order_by(User.email)
+        .all()
+    )
     return [
-        {"id": item.id, "email": item.email, "role": item.role, "is_active": item.is_active}
-        for item in db.query(User).order_by(User.email).all()
+        {"id": item.id, "email": item.email, "role": org_role, "is_active": item.is_active}
+        for item, org_role in rows
     ]
 
 

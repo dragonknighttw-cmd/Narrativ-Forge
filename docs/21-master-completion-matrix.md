@@ -314,3 +314,19 @@ The following are hard blockers until real evidence exists:
 8. Then execute the consolidated live gate in one verification window:
    worker → real media → storage → Whisper → subtitles → review → approval → Drive → SMTP → Stripe → Sentry → backup/restore → E2E → load/security/a11y → final audit.
 \n\n## Code-completion checkpoint\n\nThe repository now contains `app/services/code_completion.py` and `tests/test_code_completion.py` covering the remaining reusable code-only contracts for UI state coverage, immutable content versions, selective regeneration, rate limiting, quota decisions, storage cleanup/thresholds, alert rules, audit redaction, presence leases, notification identity, legal release blockers, release evidence, and the production E2E evidence sequence.\n\nThese contracts do not count as live verification. Provider accounts, workers, real media, browser E2E, deployment infrastructure, legal documents, backups/restores, and external security testing remain explicit verification/user gates.\n
+
+---
+
+## Documentation completeness / consolidation audit — 2026-10-07
+
+- [x] Root `roadmap.md` is the single requirements/status/release-gate source.
+- [x] Root `README.md` summarizes current implementation, verified state, blockers, and canonical documentation.
+- [x] `docs/07-ui-design.md` is the canonical detailed UI/design-system document.
+- [x] UI tooling is explicitly documented: Next.js, React, TypeScript, lucide-react, Playwright, native CSS tokens/primitives, Inter, Noto Sans Myanmar.
+- [x] UI visual tokens, card/layout patterns, responsive rules, accessibility rules, and state matrix are documented.
+- [x] 23 original MVP screens vs 26-screen design baseline vs expanded Auto Production candidates are explicitly reconciled as separate historical/target counts.
+- [x] Story ingestion/episode split, eight hook families, first-10-second structure, SEO/posting-time logic, retention/emotional arc, thumbnail candidate workflow, sound design, Series Bible/continuity, batch/calendar, provider watermark/commercial-use policy, subtitle correction/evaluation, analytics learning loop, storage/privacy recovery, and production verification requirements are represented in the master roadmap.
+- [x] Legacy duplicate roadmap/UI/product documents under `narratic/docs/` were removed after reconciliation.
+- [x] Stale duplicate roadmap/future-reserve/production-readiness documents under `docs/` were removed after their useful requirements were reconciled.
+- [ ] Final live verification gates remain open until real environment evidence exists.
+- [ ] Final screen-by-screen UI adoption/accessibility/responsive audit remains open.

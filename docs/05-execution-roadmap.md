@@ -324,3 +324,33 @@ These are **coding foundations**, not claims that external platform APIs, live t
 - **12 Scale & Advanced:** provider routing, parallel task orchestration, cross-platform variants, trend/A-B/trailer/translation foundations, storage lifecycle and advanced worker controls.
 
 These are implementation checkpoints. Live external-service verification remains a separate final gate.
+
+
+## Next coding sequence — preplanned after Phase 12
+
+### Batch 18–24: Production Intelligence & Scale
+18. **Multi-platform publishing adapters** — provider-neutral publish contracts, idempotent publish attempts, platform-specific metadata validation.
+19. **Live trend providers** — pluggable connectors, cache/TTL, source attribution, rate-limit/backoff and graceful degradation.
+20. **Experimentation engine** — variant registry, experiment lifecycle, allocation rules, outcome ingestion, winner selection with confidence/guardrails.
+21. **AI quality/evaluation system** — Burmese script/subtitle evaluation sets, provider quality scores, regression tests, cost/latency tracking, automatic provider routing by capability.
+22. **NLE/advanced export** — EDL/FCPXML/Premiere XML contracts, timeline validation, asset mapping, deterministic export manifests.
+23. **Storage lifecycle & disaster recovery** — archive/cold-storage policies, retention jobs, restore drills, RPO/RTO evidence and cost controls.
+24. **SRE/compliance completion** — alert thresholds, incident automation, access review, deletion verification, privacy/DMCA operational workflow, final security audit evidence.
+
+### Batch 25–30: Product Intelligence
+25. Character/style bible automation.
+26. Hook recommendation and episode scoring.
+27. Burmese subtitle quality model + Zawgyi/Unicode evaluation corpus.
+28. Selective regeneration with dependency-aware invalidation.
+29. Batch production scheduler with quota-aware parallelism.
+30. Human-in-the-loop quality learning from review decisions.
+
+### Batch 31–36: Collaboration & Commercial Scale
+31. Yjs collaborative script editing.
+32. Realtime job/review notifications and presence.
+33. Usage quotas and plan enforcement at every metered operation.
+34. Enterprise tenant controls and resource-level policy administration.
+35. Onboarding/demo tenant + support/ticket workflow.
+36. Final production launch gate and external pen-test remediation.
+
+No real credentials or external account secrets will be added while preparing these batches.

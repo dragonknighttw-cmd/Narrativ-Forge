@@ -171,3 +171,47 @@ While live-worker and credential-gated verification remains paused, the implemen
 - Phase 9: release candidate checklist is defined around green CI/security, production infrastructure verification, rollback readiness, human approval/export safety, and unresolved external gates.
 
 No Phase 8/9 production-ready claim is made until live verification gates pass.
+
+
+## Ownership split — 2026-10-07
+
+### USER: live / credential / machine work
+
+| Item | Why user action is required | Done condition |
+|---|---|---|
+| Local Home/Office worker | Requires an always-on local Windows machine with FFmpeg and repo dependencies | Real Celery worker consumes a real job |
+| Queue → FFmpeg → DB/storage E2E | Must execute against the real local worker | Real output + DB state + artifact lifecycle verified |
+| Retry/DLQ + failover | Requires killing/failing a real worker during processing | Retry and failover observed without data loss |
+| Production auth + tenant E2E | Needs the real production environment/session/browser context | Login, session and tenant isolation pass |
+| Google OAuth/Drive | Needs OAuth client/consent and callback credentials | Export + re-export + partial recovery pass |
+| SMTP delivery | Needs a real SMTP provider/mailbox | Invitation + magic-link email received and consumed |
+| Stripe lifecycle | Needs Stripe account/webhook configuration | API + webhook + retry/idempotency pass |
+| Sentry event/alerts | Needs DSN and alert configuration | Real event received and alert path verified |
+| Backup/restore drill | Depends on provider permissions/tooling | Backup restored into a safe target and validated |
+| Agnes/Groq live limits | Depends on provider account/model quotas | Live limits recorded and enforced |
+| 15–30 min/video benchmark | Requires real worker + representative media | Benchmark meets target or has documented capacity decision |
+
+### ASSISTANT: coding / test / documentation work
+
+The assistant should continue these without waiting for the user gates:
+
+1. Harden and test provider quota guards, adapter fallback, and failure semantics.
+2. Finish selective regeneration/versioning and content-extension test coverage.
+3. Finish storage lifecycle cleanup, monitoring, safety checks, and tests.
+4. Complete magic-link/auth tests and production-safe failure handling.
+5. Expand tenant-isolation, idempotency, retry/DLQ, security, and observability test coverage.
+6. Continue the 33-component design-system/UI audit with responsive, loading, empty, error, success, disabled, permission, focus, and accessibility states.
+7. Continue Auto Production foundations in schema → API/service → worker → UI → tests order.
+8. Keep docs 04/05/10/11 synchronized after each meaningful implementation batch.
+9. Re-run CI/security on each code-changing release candidate and fix failures before calling the code batch complete.
+
+### Current verified infrastructure baseline
+
+- **B2:** real upload/download/checksum/delete round-trip passed.
+- **Supabase Storage:** real upload/download/delete round-trip passed.
+- **Cloudinary:** real upload/download/delete round-trip passed.
+- **Cloudflare Whisper:** real audio → Whisper → VTT path passed.
+- **Redis:** real temporary SET → GET → DEL passed.
+- **Production backend/Postgres:** live deployment and migration path verified.
+
+These prove infrastructure components individually; they do **not** replace the still-pending end-to-end worker runtime/failover gate.

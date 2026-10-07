@@ -45,7 +45,7 @@ def list_scripts(episode_id: str, limit: int = Query(default=50, ge=1, le=100), 
 
 @router.post("/{episode_id}/scripts", status_code=201)
 def create_script(episode_id: str, payload: ScriptCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    _episode_or_404(db, episode_id)
+    _episode_or_404(db, episode_id, membership.organization_id)
     latest = db.query(func.max(Script.version)).filter(Script.episode_id == episode_id).scalar() or 0
     db.query(Script).filter(Script.episode_id == episode_id, Script.is_current.is_(True)).update({Script.is_current: False})
     item = Script(episode_id=episode_id, version=latest + 1, **payload.model_dump())
@@ -99,7 +99,7 @@ def update_script(script_id: str, payload: ScriptUpdate, membership=Depends(get_
 
 @router.post("/{episode_id}/scripts/versions", status_code=201)
 def create_script_version(episode_id: str, payload: ScriptVersionCreate, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    _episode_or_404(db, episode_id)
+    _episode_or_404(db, episode_id, membership.organization_id)
     latest = db.query(func.max(Script.version)).filter(Script.episode_id == episode_id).scalar() or 0
     db.query(Script).filter(Script.episode_id == episode_id, Script.is_current.is_(True)).update({Script.is_current: False})
     item = Script(episode_id=episode_id, version=latest + 1, title=payload.title, content=payload.content, status="draft", is_current=True)

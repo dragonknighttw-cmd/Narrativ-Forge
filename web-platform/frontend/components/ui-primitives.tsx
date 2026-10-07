@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, PropsWithChildren } from "react";
+import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, PropsWithChildren, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
 type Tone = "neutral" | "success" | "warning" | "danger";
 type Variant = "secondary" | "primary" | "danger";
@@ -39,18 +39,18 @@ export function Alert({
 }
 
 
-export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select className="ds-select" {...props} />;
 }
 
-export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea className="ds-textarea" {...props} />;
 }
 
 export function Checkbox({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
   return (
     <label className="ds-row">
-      <input className="ds-checkbox" type="checkbox" {...props} />
+      <input className="ds-checkbox" {...props} type="checkbox" />
       {label ? <span>{label}</span> : null}
     </label>
   );
@@ -59,7 +59,7 @@ export function Checkbox({ label, ...props }: React.InputHTMLAttributes<HTMLInpu
 export function Switch({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
   return (
     <label className="ds-switch">
-      <input type="checkbox" role="switch" {...props} />
+      <input role="switch" {...props} type="checkbox" />
       {label ? <span>{label}</span> : null}
     </label>
   );

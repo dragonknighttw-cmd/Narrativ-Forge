@@ -298,3 +298,10 @@ This document remains the authoritative runtime/storage plan. The current split 
 - Keep worker code, Celery delivery semantics, storage lifecycle code, cleanup safety, tests, and runbooks hardened.
 - Keep retention rules reference-safe and protect the only approved final output.
 - Keep this plan synchronized with the release checklist; no code-only change can mark the real worker or cleanup drill DONE.
+
+
+## Coding-track progress — 2026-10-07
+
+Storage lifecycle coding now includes explicit threshold classification (80/90/95%) and a deletion-safety primitive that refuses to delete final, approved, or only-copy assets. Local multipart cleanup remains retention-aware and preserves active upload sessions.
+
+This does not replace the required live cleanup/emergency drill. The production Definition of Done still requires real worker execution and real storage lifecycle verification.

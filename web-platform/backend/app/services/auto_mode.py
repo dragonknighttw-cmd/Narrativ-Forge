@@ -85,7 +85,7 @@ def create_auto_plan(
     idea: str,
     category: str | None = None,
 ) -> tuple[Script, list[Scene]]:
-    plan = _normalize_content_plan(
+    plan = normalize_content_plan(
         get_ai_adapter().create_content_plan(idea=idea, category=category),
         episode.target_duration_seconds,
     )

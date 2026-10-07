@@ -76,6 +76,13 @@ class Settings(BaseSettings):
     # Provider budgets are planning defaults until live account limits are verified.
     agnes_daily_seconds_budget: int = Field(default=500, ge=0)
     groq_daily_requests_budget: int = Field(default=1000, ge=0)
+    groq_api_key: str = ""
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+    groq_model: str = "llama-3.3-70b-versatile"
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+    ai_provider_timeout_seconds: float = Field(default=45.0, ge=1, le=300)
     provider_quota_warning_threshold: float = Field(default=0.80, ge=0, le=1)
     provider_quota_fallback_threshold: float = Field(default=0.95, ge=0, le=1)
 

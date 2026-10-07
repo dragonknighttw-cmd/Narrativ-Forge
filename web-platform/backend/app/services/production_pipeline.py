@@ -125,3 +125,30 @@ def build_ab_variants(hooks: list[str], thumbnail_texts: list[str]) -> list[ABVa
         ABVariant(key=f"variant-{index + 1}", hook=hooks[index], thumbnail_text=thumbnail_texts[index])
         for index in range(count)
     ]
+
+
+@dataclass(frozen=True)
+class ProductionReadiness:
+    quality_score: float
+    quality_issues: tuple[str, ...]
+    continuity_issues: tuple[str, ...]
+    ready_for_review: bool
+
+
+def assess_production_readiness(
+    *,
+    script: str,
+    scene_durations: list[int | None],
+    target_seconds: int = 180,
+    continuity_issues: list[str] | None = None,
+) -> ProductionReadiness:
+    from .content_quality import assess_content
+
+    quality = assess_content(script, scene_durations, target_seconds)
+    continuity = tuple(continuity_issues or ())
+    return ProductionReadiness(
+        quality_score=quality.score,
+        quality_issues=quality.issues,
+        continuity_issues=continuity,
+        ready_for_review=quality.score >= 80 and not continuity,
+    )

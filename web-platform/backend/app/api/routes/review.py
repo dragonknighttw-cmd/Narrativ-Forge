@@ -98,7 +98,7 @@ def save_review(episode_id: str, payload: ReviewUpdate, membership=Depends(get_c
 
 @router.post("/{episode_id}/review/request-revision")
 def request_revision(episode_id: str, payload: RevisionRequest, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    episode = _episode(db, episode_id)
+    episode = _episode(db, episode_id, organization_id=membership.organization_id)
     if episode.status not in {"subtitle_review", "needs_approval", "rejected"}:
         raise HTTPException(status_code=409, detail="Episode is not in review workflow")
     record = db.query(ReviewRecord).filter(ReviewRecord.episode_id == episode_id).first()
@@ -113,7 +113,7 @@ def request_revision(episode_id: str, payload: RevisionRequest, membership=Depen
 
 @router.post("/{episode_id}/review/approve")
 def approve_review(episode_id: str, payload: ReviewUpdate, user=Depends(require_roles("owner", "editor")), membership=Depends(get_current_membership), db: Session = Depends(get_db)):
-    episode = _episode(db, episode_id)
+    episode = _episode(db, episode_id, organization_id=membership.organization_id)
     if episode.status != "needs_approval":
         raise HTTPException(status_code=409, detail="Episode must be in needs_approval before final approval")
     blockers = []

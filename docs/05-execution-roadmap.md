@@ -373,3 +373,10 @@ Dependency-light foundations are also prebuilt for:
 25 character/style profiles; 26 episode scoring; 27 Burmese subtitle evaluation; 28 dependency-aware regeneration; 29 quota-aware batch scheduling; 30 review-learning aggregation; 31/32 collaboration presence/realtime foundation; 33 quota enforcement; 34 enterprise policies; 35 demo seed/onboarding foundation; 36 launch-gate evaluation.
 
 All of these remain code-level foundations. Live external integrations and production evidence remain separate verification gates.
+
+
+## Reconciliation checkpoint — 2026-10-07
+
+The latest coding pass adds reconciled foundations for resumable uploads, version retention, story ingestion/splitting, eight hook families, SEO metadata, retention/pacing analysis, thumbnail selection, sound design, Series Bible/continuity, batch/calendar planning, Burmese-first translation, video-provider/watermark policy, and the master completion matrix at `docs/21-master-completion-matrix.md`.
+
+These additions are code-level foundations. They do not replace live verification of workers, real media, external providers, credentials, production recovery, E2E, load, accessibility, legal, or pen-test gates.

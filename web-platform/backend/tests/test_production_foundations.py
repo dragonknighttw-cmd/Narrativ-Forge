@@ -11,6 +11,7 @@ from app.services.production_pipeline import (
     build_production_metadata,
     build_thumbnail_plan,
     plan_batch,
+    assess_production_readiness,
 )
 from app.services.storage_lifecycle import can_delete_asset, classify_storage_usage
 
@@ -82,3 +83,20 @@ def test_storage_cleanup_protects_final_approved_and_only_copy():
     assert not can_delete_asset(is_final=False, is_approved=True, is_only_copy=False, retention_expired=True)
     assert classify_storage_usage(80, 100).state() == "warning"
     assert classify_storage_usage(95, 100).state() == "emergency"
+
+
+def test_production_readiness_blocks_continuity_issues():
+    ready = assess_production_readiness(
+        script=" ".join(["script"] * 100),
+        scene_durations=[30, 30, 30, 30, 30, 30],
+        target_seconds=180,
+    )
+    assert ready.ready_for_review is True
+
+    blocked = assess_production_readiness(
+        script=" ".join(["script"] * 100),
+        scene_durations=[30, 30, 30, 30, 30, 30],
+        target_seconds=180,
+        continuity_issues=["missing recurring element"],
+    )
+    assert blocked.ready_for_review is False

@@ -215,3 +215,19 @@ The assistant should continue these without waiting for the user gates:
 - **Production backend/Postgres:** live deployment and migration path verified.
 
 These prove infrastructure components individually; they do **not** replace the still-pending end-to-end worker runtime/failover gate.
+
+
+## Coding-track progress — 2026-10-07 (continued)
+
+The paused Local Worker gate is not blocking the coding track. The current implementation pass added:
+1. Production-sized Auto Mode plan normalization.
+2. Selective regeneration normalization and tenant scope enforcement.
+3. SEO/thumbnail/sound/platform-export planning primitives.
+4. Batch/calendar and A/B testing foundations.
+5. Eight-family hook engineering foundation.
+6. Provider fallback and retryable-error primitives.
+7. Storage threshold and cleanup-safety primitives.
+8. Magic-link and production-foundation test coverage.
+9. UI design-token alignment fixes.
+
+Live worker, external provider, OAuth/Drive, SMTP, Stripe, Sentry, backup/restore, and benchmark gates remain assigned to live verification.

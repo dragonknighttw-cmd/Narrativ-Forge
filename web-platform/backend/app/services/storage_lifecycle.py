@@ -9,6 +9,13 @@ class StorageThresholds:
     critical: float = 0.90
     emergency: float = 0.95
 
+    def __post_init__(self) -> None:
+        values = (self.warning, self.critical, self.emergency)
+        if any(value < 0 or value > 1 for value in values):
+            raise ValueError("storage thresholds must be between 0 and 1")
+        if not self.warning <= self.critical <= self.emergency:
+            raise ValueError("storage thresholds must be ordered warning <= critical <= emergency")
+
 
 @dataclass(frozen=True)
 class StorageUsage:

@@ -107,3 +107,30 @@ def test_storage_thresholds_must_be_ordered():
         StorageThresholds(warning=0.90, critical=0.80, emergency=0.95)
     with pytest.raises(ValueError):
         StorageThresholds(warning=-0.1, critical=0.80, emergency=0.95)
+
+
+def test_provider_fallback_records_all_failures():
+    def first():
+        raise TimeoutError("first timeout")
+
+    def second():
+        raise RuntimeError("service unavailable")
+
+    with pytest.raises(RuntimeError, match="All providers failed"):
+        run_with_fallback([("primary", first), ("backup", second)])
+
+
+def test_provider_fallback_does_not_call_backup_for_invalid_request():
+    calls = []
+
+    def invalid():
+        calls.append("primary")
+        raise ValueError("invalid request")
+
+    def backup():
+        calls.append("backup")
+        return "unexpected"
+
+    with pytest.raises(ProviderNonRetryableError):
+        run_with_fallback([("primary", invalid), ("backup", backup)])
+    assert calls == ["primary"]

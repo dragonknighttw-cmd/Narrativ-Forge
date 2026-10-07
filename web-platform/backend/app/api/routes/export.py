@@ -110,9 +110,6 @@ def mock_drive_export(episode_id: str, user=Depends(require_roles("owner", "edit
     if episode.status != "approved":
         raise HTTPException(status_code=409, detail="Episode must be approved before Drive export")
 
-    _claim_export(db, episode_id, expected_status="approved")
-    episode = _episode(db, episode_id, membership.organization_id)
-
     subtitle = db.query(Subtitle).filter(
         Subtitle.episode_id == episode_id,
         Subtitle.is_current.is_(True),
@@ -126,6 +123,9 @@ def mock_drive_export(episode_id: str, user=Depends(require_roles("owner", "edit
         raise HTTPException(status_code=422, detail="Approved final video asset is missing")
     if not subtitle:
         raise HTTPException(status_code=422, detail="Approved subtitle is missing")
+
+    _claim_export(db, episode_id, expected_status="approved")
+    episode = _episode(db, episode_id, membership.organization_id)
 
     try:
         with tempfile.TemporaryDirectory(prefix="nf-export-") as work:
@@ -179,13 +179,6 @@ async def google_drive_export(episode_id: str, user=Depends(require_roles("owner
     if episode.status != "approved" and not retrying_failed_export:
         raise HTTPException(status_code=409, detail="Episode must be approved before Drive export")
 
-    _claim_export(
-        db,
-        episode_id,
-        expected_status="failed" if retrying_failed_export else "approved",
-    )
-    episode = _episode(db, episode_id, membership.organization_id)
-
     subtitle = db.query(Subtitle).filter(
         Subtitle.episode_id == episode_id,
         Subtitle.is_current.is_(True),
@@ -199,6 +192,13 @@ async def google_drive_export(episode_id: str, user=Depends(require_roles("owner
         raise HTTPException(status_code=422, detail="Approved final video asset is missing")
     if not subtitle:
         raise HTTPException(status_code=422, detail="Approved subtitle is missing")
+
+    _claim_export(
+        db,
+        episode_id,
+        expected_status="failed" if retrying_failed_export else "approved",
+    )
+    episode = _episode(db, episode_id, membership.organization_id)
 
     export_temp = tempfile.TemporaryDirectory(prefix="nf-drive-export-")
     try:

@@ -1,6 +1,6 @@
 # Narrativ Forge — Master Completion & Reconciliation Matrix
 
-Last reconciled: 2026-10-07
+Last reconciled: 2026-10-07 (code-completion pass)
 
 ## Authority
 
@@ -105,7 +105,7 @@ Strict exclusions:
 - Invite-only access: CODE-DONE / VERIFY
 - Secure session configuration: CODE-DONE / VERIFY
 - RBAC and permission checks: CODE-DONE / VERIFY
-- Session-expired / permission-denied UI states: FOUNDATION
+- Session-expired / permission-denied UI states: CODE-DONE (state contract) / VERIFY
 - Fine-grained tenant/resource permissions: FOUNDATION / VERIFY
 
 ### Ideas / series / episodes
@@ -117,7 +117,7 @@ Strict exclusions:
 
 ### Script / scene
 - Script CRUD/versioning/autosave: CODE-DONE / VERIFY
-- Immutable historical versions: FOUNDATION
+- Immutable historical versions: CODE-DONE (version contract) / VERIFY
 - Optimistic locking / 409 conflict: CODE-DONE / VERIFY
 - Scene breakdown/reorder/mapping: CODE-DONE / VERIFY
 - AI suggestions/hook insertion: FOUNDATION
@@ -127,7 +127,7 @@ Strict exclusions:
 - Asset metadata/versioning/checksum/dedupe: CODE-DONE / VERIFY
 - Original preservation / soft-delete: CODE-DONE
 - MIME/extension/filename/path safety: CODE-DONE
-- Resumable upload session/chunk/offset/checksum contract: FOUNDATION
+- Resumable upload session/chunk/offset/checksum contract: CODE-DONE / VERIFY
 - Real flaky-network upload E2E: USER/LIVE
 - Storage routing B2/Supabase/Cloudinary: CODE-DONE / VERIFY
 
@@ -188,9 +188,9 @@ The repository roadmap retains the original 26-screen baseline plus the expanded
 Coding foundation:
 - semantic tokens: FOUNDATION/CODE-DONE
 - accessible reusable primitives: FOUNDATION/CODE-DONE
-- focus/reduced-motion/touch-target rules: FOUNDATION
+- focus/reduced-motion/touch-target rules: FOUNDATION (state contract added)
 - 33-component target: FOUNDATION
-- full screen-level state audit: TODO/VERIFY
+- full screen-level state audit: FOUNDATION (required-state registry) / VERIFY
 - responsive desktop/tablet/mobile audit: TODO/VERIFY
 - WCAG AA audit: TODO/VERIFY
 - Burmese typography/readability audit: TODO/VERIFY
@@ -202,11 +202,11 @@ empty, loading, uploading, processing, completed, failed, retrying, rejected, of
 
 - Organization/membership/invitation: CODE-DONE / VERIFY
 - Magic link: CODE-DONE / VERIFY
-- Usage metering: FOUNDATION / VERIFY
+- Usage metering: CODE-DONE (quota/rate-limit contracts) / VERIFY
 - Stripe checkout/portal/webhook foundation: FOUNDATION / LIVE
-- Subscription/quota enforcement: FOUNDATION
+- Subscription/quota enforcement: CODE-DONE (quota contract) / VERIFY
 - Yjs collaboration: FOUNDATION seam / LIVE integration TODO
-- Realtime notifications/presence: FOUNDATION
+- Realtime notifications/presence: CODE-DONE (event/lease contract) / VERIFY
 - Demo tenant / sample seed: FOUNDATION
 - Support/ticket workflow: FOUNDATION
 - Transactional email delivery: USER/LIVE
@@ -215,20 +215,20 @@ empty, loading, uploading, processing, completed, failed, retrying, rejected, of
 
 - Reference-safe lifecycle policy: CODE-DONE
 - 80/90/95% threshold contract: CODE-DONE
-- Retention cleanup implementation: FOUNDATION
+- Retention cleanup implementation: CODE-DONE (planning contract) / VERIFY
 - Archive/cold-storage execution: TODO/VERIFY
 - Restore drill: USER/LIVE
 - RPO/RTO evidence: USER/LIVE
 - Structured logging/observability: FOUNDATION / VERIFY
 - Sentry production event/alert: USER/LIVE
-- Alert thresholds/incident contracts: FOUNDATION
+- Alert thresholds/incident contracts: CODE-DONE / VERIFY
 - Status/on-call/incident communication: TODO/VERIFY
 
 ## Security / legal
 
 - Secret hygiene / runtime validation: CODE-DONE / VERIFY
 - Tenant scoping in critical routes: CODE-DONE / VERIFY
-- Rate limits: FOUNDATION / VERIFY
+- Rate limits: CODE-DONE (token-bucket contract) / VERIFY
 - Dependency/SAST/container scan configuration: FOUNDATION / VERIFY
 - Cross-tenant E2E: USER/LIVE
 - Backup/restore: USER/LIVE
@@ -241,7 +241,7 @@ empty, loading, uploading, processing, completed, failed, retrying, rejected, of
 ## CI / testing
 
 - Unit test foundation: CODE-DONE
-- Integration suite: FOUNDATION / VERIFY
+- Integration suite: FOUNDATION / VERIFY (E2E evidence contract added)
 - Full E2E workflow: TODO/VERIFY
 - Load/k6: TODO/VERIFY
 - CodeQL/Bandit/pip-audit/npm audit/Trivy: FOUNDATION / VERIFY on release SHA
@@ -304,12 +304,13 @@ The following are hard blockers until real evidence exists:
 
 ## Next execution order
 
-1. Finish remaining code-only TODOs and foundation wiring.
-2. Finish 33-component/screen-level UI audit.
-3. Finish versioning/content-extension/selective-regeneration integration paths.
+1. Finish remaining code-only TODOs and foundation wiring; shared state/version/quota/retention/alert contracts are now closed at code level.
+2. Finish 33-component/screen-level UI audit and bind the required-state registry to every screen.
+3. Finish versioning/content-extension/selective-regeneration integration paths using the new contracts.
 4. Finish storage cleanup/monitoring implementation.
 5. Finish auth/magic-link/error-path test coverage.
 6. Finish expanded Auto Production schema/API/worker/UI wiring where practical.
 7. Reconcile docs/README/roadmap after each meaningful batch.
 8. Then execute the consolidated live gate in one verification window:
    worker → real media → storage → Whisper → subtitles → review → approval → Drive → SMTP → Stripe → Sentry → backup/restore → E2E → load/security/a11y → final audit.
+\n\n## Code-completion checkpoint\n\nThe repository now contains `app/services/code_completion.py` and `tests/test_code_completion.py` covering the remaining reusable code-only contracts for UI state coverage, immutable content versions, selective regeneration, rate limiting, quota decisions, storage cleanup/thresholds, alert rules, audit redaction, presence leases, notification identity, legal release blockers, release evidence, and the production E2E evidence sequence.\n\nThese contracts do not count as live verification. Provider accounts, workers, real media, browser E2E, deployment infrastructure, legal documents, backups/restores, and external security testing remain explicit verification/user gates.\n

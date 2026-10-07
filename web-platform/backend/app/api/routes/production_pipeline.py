@@ -6,13 +6,15 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ...db import get_db
-from ...models import Episode
+from ...models import Episode, Scene, Script
 from ...services.hook_engineering import generate_hook_candidates
+from ...services.series_continuity import build_series_bible, check_continuity
 from ...services.production_pipeline import (
     build_ab_variants,
     build_cross_platform_export_plan,
     build_production_metadata,
     plan_batch,
+    assess_production_readiness,
 )
 from ..dependencies import get_current_membership, require_roles
 
@@ -110,6 +112,60 @@ def ab_variants(
     _: dict = Depends(require_roles("owner", "editor")),
 ):
     return [item.__dict__ for item in build_ab_variants(payload.hooks, payload.thumbnail_texts)]
+
+
+@router.get("/episodes/{episode_id}/readiness")
+def episode_readiness(
+    episode_id: str,
+    membership=Depends(get_current_membership),
+    db: Session = Depends(get_db),
+):
+    episode = db.query(Episode).filter(
+        Episode.id == episode_id,
+        Episode.organization_id == membership.organization_id,
+    ).first()
+    if not episode:
+        raise HTTPException(status_code=404, detail="Episode not found")
+
+    script = db.query(Script).filter(
+        Script.episode_id == episode.id,
+        Script.is_current.is_(True),
+    ).first()
+    if not script:
+        return {
+            "episode_id": episode.id,
+            "ready_for_review": False,
+            "quality_score": 0,
+            "quality_issues": ["current_script_missing"],
+            "continuity_issues": [],
+        }
+
+    scenes = db.query(Scene).filter(
+        Scene.script_id == script.id,
+    ).order_by(Scene.scene_number.asc()).all()
+    bible = build_series_bible(
+        episode.series.title if episode.series else "",
+        episode.series.description if episode.series else "",
+    )
+    continuity = check_continuity(
+        bible,
+        title=episode.title,
+        synopsis=episode.synopsis or script.content,
+    )
+    readiness = assess_production_readiness(
+        script=script.content,
+        scene_durations=[scene.duration_seconds for scene in scenes],
+        target_seconds=episode.target_duration_seconds,
+        continuity_issues=[issue.message for issue in continuity],
+    )
+    return {
+        "episode_id": episode.id,
+        "script_id": script.id,
+        "quality_score": readiness.quality_score,
+        "quality_issues": readiness.quality_issues,
+        "continuity_issues": readiness.continuity_issues,
+        "ready_for_review": readiness.ready_for_review,
+    }
 
 
 @router.get("/episodes/{episode_id}/exports")

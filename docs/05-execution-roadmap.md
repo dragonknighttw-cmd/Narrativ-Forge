@@ -245,3 +245,39 @@ While the live Local Worker gate remains paused, the coding track continued with
 A free-first ephemeral worker path is now implemented as a coding foundation: GitHub Actions checks the production queue, launches a private Kaggle kernel only when work is queued, and the Kaggle session atomically claims one `real_processing` job before running the existing FFmpeg/Whisper/storage pipeline. PostgreSQL remains the source of truth. The Local Windows Worker remains the fallback and is not removed.
 
 This is NOT production-verified yet. The live gate still requires a real queued media job proving Kaggle launch → atomic claim → FFmpeg → storage → DB completion → retry/DLQ/recovery. Kaggle's documented CPU/GPU notebook maximum is currently 12 hours, so the architecture treats the session as ephemeral rather than a permanent worker.
+
+
+## Dual-PC Local Worker execution track — 2026-10-07
+
+The Local Worker gate is now defined as a concrete two-machine fallback:
+
+### Home PC
+1. Install/verify Python and repository dependencies.
+2. Prepare FFmpeg.
+3. Configure Upstash Redis TLS and production environment secrets locally.
+4. Start the repository Celery worker with concurrency 1 and `heavy_queue` ownership.
+5. Start exactly one Celery Beat process.
+6. Run Home FFmpeg + Cloudflare Whisper smoke tests.
+
+### Office PC
+1. Measure RAM/CPU before choosing the 4 GB or 8 GB profile.
+2. Create a separate Windows venv.
+3. Install only light-worker dependencies.
+4. Configure the same Upstash broker and required backend/storage credentials.
+5. Start the repository Celery worker with concurrency 1 and `light_queue` ownership.
+6. Do not start Beat.
+
+### Required live tests
+- Heavy task → Home only.
+- Light task → Office only.
+- Both workers online simultaneously.
+- Home offline while light work continues.
+- Office offline while heavy work continues.
+- Worker process termination → stale lease → retry/DLQ recovery.
+- Real media job → FFmpeg/Whisper → DB/storage completion.
+- Storage cleanup and local-space threshold test.
+
+### Safety note
+The dual-PC routing shown in the architecture is a target contract. Before live testing, the actual repository task names/routes must be mapped to `heavy_queue` and `light_queue`; do not create duplicate task modules just to match the diagram.
+
+The local Windows path is a fallback to Kaggle, not a replacement for the existing ephemeral-worker coding foundation.

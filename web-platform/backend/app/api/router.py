@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from .routes import search, auto_mode, assets, auth, episodes, health, ideas, jobs, scenes, scripts, series, subtitles, review, export, google_drive, production_intelligence, audit, uploads, phase4, hooks, cloud_processing
+from .routes import search, auto_mode, assets, auth, episodes, health, ideas, jobs, scenes, scripts, series, subtitles, review, export, google_drive, production_intelligence, production_pipeline, audit, uploads, phase4, hooks, cloud_processing
 
 api_router = APIRouter()
 api_router.include_router(health.router)
@@ -22,6 +22,7 @@ api_router.include_router(review.router)
 api_router.include_router(export.router)
 api_router.include_router(google_drive.router)
 api_router.include_router(production_intelligence.router)
+api_router.include_router(production_pipeline.router)
 api_router.include_router(audit.router)
 api_router.include_router(hooks.router)
 api_router.include_router(cloud_processing.router)

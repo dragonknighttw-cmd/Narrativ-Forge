@@ -37,3 +37,55 @@ export function Alert({
 }: PropsWithChildren<{ tone?: Tone }>) {
   return <div className="ds-alert" data-tone={tone} role={tone === "danger" ? "alert" : undefined}>{children}</div>;
 }
+
+
+export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select className="ds-select" {...props} />;
+}
+
+export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea className="ds-textarea" {...props} />;
+}
+
+export function Checkbox({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
+  return (
+    <label className="ds-row">
+      <input className="ds-checkbox" type="checkbox" {...props} />
+      {label ? <span>{label}</span> : null}
+    </label>
+  );
+}
+
+export function Switch({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
+  return (
+    <label className="ds-switch">
+      <input type="checkbox" role="switch" {...props} />
+      {label ? <span>{label}</span> : null}
+    </label>
+  );
+}
+
+export function Spinner({ label = "Loading" }: { label?: string }) {
+  return <span className="ds-spinner" role="status" aria-label={label} />;
+}
+
+export function Progress({ value, label = "Progress" }: { value: number; label?: string }) {
+  const bounded = Math.max(0, Math.min(100, value));
+  return (
+    <div className="ds-progress" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={bounded}>
+      <span style={{ width: `${bounded}%` }} />
+    </div>
+  );
+}
+
+export function Skeleton({ className = "" }: { className?: string }) {
+  return <div className={`ds-skeleton ${className}`} aria-hidden="true" />;
+}
+
+export function EmptyState({ title, children }: PropsWithChildren<{ title: string }>) {
+  return <section className="ds-empty" aria-label={title}><strong>{title}</strong>{children ? <div>{children}</div> : null}</section>;
+}
+
+export function VisuallyHidden({ children }: PropsWithChildren) {
+  return <span className="ds-visually-hidden">{children}</span>;
+}

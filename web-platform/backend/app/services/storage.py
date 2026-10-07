@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import requests
 from urllib.parse import urlparse
@@ -1054,6 +1055,16 @@ def materialize_asset(asset, destination_dir: Path) -> Path:
     return destination
 
 
+def _safe_key_component(value: str, field_name: str) -> str:
+    component = re.sub(r"[^A-Za-z0-9._-]", "_", (value or "").strip())
+    component = component.strip("._-")
+    if not component:
+        raise StorageError(f"Invalid {field_name}")
+    return component
+
+
 def build_object_key(episode_id: str, version: int, filename: str, asset_type: str) -> str:
+    safe_episode_id = _safe_key_component(episode_id, "episode id")
+    safe_asset_type = _safe_key_component(asset_type, "asset type")
     safe = Path(filename).name.replace(" ", "_")
-    return f"episodes/{episode_id}/assets/v{version}/{asset_type}/{safe}"
+    return f"episodes/{safe_episode_id}/assets/v{version}/{safe_asset_type}/{safe}"

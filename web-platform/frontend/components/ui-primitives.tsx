@@ -89,3 +89,42 @@ export function EmptyState({ title, children }: PropsWithChildren<{ title: strin
 export function VisuallyHidden({ children }: PropsWithChildren) {
   return <span className="ds-visually-hidden">{children}</span>;
 }
+
+
+export function Table({ children, ...props }: PropsWithChildren<HTMLAttributes<HTMLTableElement>>) {
+  return <div className="ds-table-wrap"><table className="ds-table" {...props}>{children}</table></div>;
+}
+
+export function Tabs({ children, ...props }: PropsWithChildren<HTMLAttributes<HTMLDivElement>>) {
+  return <div className="ds-tabs" role="tablist" {...props}>{children}</div>;
+}
+
+export function Tab({ children, active = false, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { active?: boolean }) {
+  return <button type="button" className="ds-tab" role="tab" aria-selected={active} data-active={active} {...props}>{children}</button>;
+}
+
+export function Modal({ title, children, onClose }: PropsWithChildren<{ title: string; onClose?: () => void }>) {
+  return (
+    <div className="ds-modal-backdrop" role="presentation">
+      <section className="ds-modal" role="dialog" aria-modal="true" aria-labelledby="ds-modal-title">
+        <header className="ds-modal-header">
+          <h2 id="ds-modal-title">{title}</h2>
+          {onClose ? <button type="button" className="ds-button" onClick={onClose} aria-label="Close dialog">×</button> : null}
+        </header>
+        {children}
+      </section>
+    </div>
+  );
+}
+
+export function Tooltip({ label, children }: PropsWithChildren<{ label: string }>) {
+  return <span className="ds-tooltip" data-tooltip={label}>{children}</span>;
+}
+
+export function Divider({ ...props }: HTMLAttributes<HTMLHRElement>) {
+  return <hr className="ds-divider" {...props} />;
+}
+
+export function StatusDot({ tone = "neutral", label }: { tone?: Tone; label: string }) {
+  return <span className="ds-status" data-tone={tone}><span aria-hidden="true" />{label}</span>;
+}

@@ -1019,6 +1019,11 @@ def test_auto_mode_creates_script_versions_and_requires_source_video():
         purposes = {scene.get("purpose", "").lower() for scene in scenes}
         assert any("hook" in purpose for purpose in purposes), f"expected a hook scene, got {purposes}"
 
+        readiness = client.get(f"/api/v1/production/episodes/{episode_id}/readiness")
+        assert readiness.status_code == 200
+        assert "quality_score" in readiness.json()
+        assert "continuity_issues" in readiness.json()
+
         second = client.post(f"/api/v1/auto/episodes/{episode_id}/plan", json={"idea": "ဒုတိယအကြောင်းအရာ"})
         assert second.status_code == 200
         assert second.json()["script"]["version"] == 2

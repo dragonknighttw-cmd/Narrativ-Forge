@@ -317,3 +317,130 @@ This is NOT production-verified yet. The live gate still requires a real queued 
 ### Ephemeral worker recovery hardening
 
 The shared worker path now recovers stale `running` real-processing jobs after the configured processing timeout plus grace period. Recovery re-enters the existing retry/DLQ logic instead of treating a dead Kaggle/local session as success. This makes Kaggle session loss compatible with the same queue recovery model used by the Local Worker.
+
+
+## 17. Dual-PC Local Worker Architecture — 2026-10-07
+
+This section is the authoritative operational definition for the **Home + Office Windows worker fallback**. It complements the Kaggle ephemeral worker path; it does not replace it.
+
+### 17.1 Constraints
+
+- No payment/card dependency.
+- No Docker.
+- No WSL.
+- Windows-native worker execution.
+- Home PC is the primary heavy worker and the only Beat scheduler.
+- Office PC is a reserve light worker; Beat is disabled there.
+- Upstash Redis is the shared TLS broker (`rediss://`).
+- Neon/PostgreSQL remains the source of truth for job state.
+- B2 remains the raw/intermediate media store; Google Drive remains the approved final-output destination.
+- Local disk is treated as temporary working space and must be cleaned aggressively.
+
+### 17.2 Roles
+
+**Home PC — Primary Heavy Worker**
+- Target: 16 GB RAM, SSD, integrated Intel graphics.
+- Celery worker concurrency: 1.
+- Runs heavy FFmpeg/media tasks and may run local Whisper only when explicitly enabled.
+- Runs the single Beat scheduler.
+- Owns the `heavy_queue` and scheduler/maintenance work.
+
+**Office PC — Reserve Light Worker**
+- RAM must be measured before activation (4 GB or 8 GB).
+- Celery worker concurrency: 1.
+- Runs only lightweight HTTP/API/DB/export/cleanup tasks by default.
+- Does not run Beat.
+- Does not require local Whisper.
+- FFmpeg is not part of the default office-worker dependency set; if later enabled on an 8 GB machine, it must be benchmarked separately and must not steal heavy-queue ownership.
+
+### 17.3 Queue ownership contract
+
+Target routing is:
+- `heavy_queue` → Home worker only.
+- `light_queue` → Office worker only.
+- `beat_queue` / scheduled maintenance → Home Beat only.
+
+Representative heavy work: audio extraction, transcription, video assembly, subtitle generation, and processing orchestration.
+
+Representative light work: Drive export, thumbnail/API generation, metadata updates, cleanup, health checks, and analytics updates.
+
+**Important:** the queue names and task names in the user's dual-PC setup are an operational target, not proof that the current repository has every task registered under those exact names. The repository's canonical Celery task definitions/routes remain authoritative until this routing is implemented and live-tested.
+
+### 17.4 Worker runtime contract
+
+Both machines must use the repository's canonical Celery application and task implementations rather than maintaining a second independent worker codebase. Windows launchers may differ by machine, but task logic must not fork.
+
+Required reliability semantics remain:
+- prefetch multiplier = 1
+- late acknowledgements
+- reject/requeue on worker loss
+- bounded concurrency = 1 for these Windows workers
+- explicit task timeouts appropriate to media jobs
+- stale worker lease recovery before new work is claimed
+- existing retry/DLQ handling remains the source of truth
+
+### 17.5 Home worker layout
+
+The proposed `D:\Project\...\Narrativ-Forge\worker\` layout is acceptable as a local convenience, but the repository remains the source of truth. Recommended local folders are:
+
+```text
+worker/
+  venv/
+  logs/
+  ffmpeg/        # optional bundled binaries
+  models/        # only if local Whisper is enabled
+  .env           # never commit/share
+```
+
+The `worker.py`, `tasks.py`, and `beat.py` files should not become a second application. Prefer thin launch/configuration wrappers around the repository worker package.
+
+### 17.6 Office worker layout
+
+```text
+D:\Project\Narrativ-Forge-Worker\
+  venv/
+  logs/
+  .env           # never commit/share
+```
+
+The office machine should install only the dependencies required by the light task set. Do not copy production secrets into source files or commit `.env`.
+
+### 17.7 Local Whisper and disk-budget reconciliation
+
+The architecture keeps **Cloudflare Whisper as the default transcription path**. Local `openai-whisper` + PyTorch is an optional Home-PC fallback, not a mandatory baseline.
+
+Reason: the stated ~200 MB local-space constraint is incompatible with a full Python/PyTorch/OpenAI-Whisper installation plus a downloaded `small` model. Therefore:
+- Home can enable local Whisper when disk capacity is sufficient.
+- If the strict ~200 MB budget must remain, use Cloudflare Whisper and do not install local Whisper.
+- Office does not install local Whisper.
+
+Dependency versions written in an operational note are illustrative only; the repository lock/requirements files remain authoritative.
+
+### 17.8 Failover behavior
+
+- Home offline → `heavy_queue` remains queued; Office does not consume it by default.
+- Office offline → `light_queue` remains queued; Home does not consume it by default.
+- Both offline → jobs remain durable in the broker/database until a worker returns.
+- A worker process dying after claiming a job must rely on the existing stale-lease + retry/DLQ recovery path.
+
+This is intentional queue ownership, not automatic cross-machine task migration. If true cross-role failover is later desired, it must be designed and tested explicitly rather than silently allowing a 4 GB machine to consume heavy media jobs.
+
+### 17.9 Local worker Definition of Done
+
+- [ ] Home worker starts with the repository Celery app.
+- [ ] Home Beat starts exactly once.
+- [ ] Office light worker starts with the same repository codebase.
+- [ ] Heavy task routing reaches Home only.
+- [ ] Light task routing reaches Office only.
+- [ ] Both workers can be online simultaneously.
+- [ ] Home FFmpeg smoke test passes.
+- [ ] Cloudflare Whisper smoke test passes; local Whisper fallback is optional.
+- [ ] Office Drive/export/API smoke test passes.
+- [ ] Worker logs contain no secrets.
+- [ ] Worker-loss/stale-lease recovery is verified.
+- [ ] Retry and DLQ behavior is verified.
+- [ ] Home → Office separation remains safe when one machine is offline.
+- [ ] Storage cleanup and local disk thresholds are verified.
+- [ ] Real media job proves queue → worker → FFmpeg/Whisper → DB/storage → completion.
+
+Production Ready still requires the end-to-end runtime evidence above; documentation or launcher files alone do not satisfy the gate.

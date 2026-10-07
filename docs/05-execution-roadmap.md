@@ -231,3 +231,5 @@ The paused Local Worker gate is not blocking the coding track. The current imple
 9. UI design-token alignment fixes.
 
 Live worker, external provider, OAuth/Drive, SMTP, Stripe, Sentry, backup/restore, and benchmark gates remain assigned to live verification.
+
+- Auto Production coding track now also contains Series Bible/continuity, quality/pacing assessment, and provider adapter registry foundations; real provider execution remains a live verification item.

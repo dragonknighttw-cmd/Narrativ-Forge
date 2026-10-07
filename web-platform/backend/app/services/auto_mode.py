@@ -10,7 +10,7 @@ TARGET_MIN_SECONDS = 150
 TARGET_MAX_SECONDS = 210
 
 
-def _normalize_content_plan(plan: ContentPlan, target_duration_seconds: int = 180) -> ContentPlan:
+def normalize_content_plan(plan: ContentPlan, target_duration_seconds: int = 180) -> ContentPlan:
     """Make provider output safe for the short-form target without inventing a new provider."""
     target = max(TARGET_MIN_SECONDS, min(TARGET_MAX_SECONDS, int(target_duration_seconds or 180)))
     source_scenes = list(plan.scenes)

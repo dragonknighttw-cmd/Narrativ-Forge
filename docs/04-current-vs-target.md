@@ -204,3 +204,17 @@ The assistant can continue without waiting for those live gates:
 ### RELEASE BLOCKERS
 
 Production Ready remains blocked by the live gates above. Code completeness is not a substitute for worker runtime, external credentials, recovery drills, or production E2E evidence.
+
+
+## Coding track completion update — 2026-10-07
+
+The following additional code-level work has now been applied while the real-worker gate remains paused:
+
+- Auto Mode episode lookup is organization-scoped through the current membership.
+- Owner user listing is organization-scoped; cross-tenant users are excluded.
+- Cross-tenant user-listing regression coverage was added.
+- Provider quota reservation/idempotency coverage exists for the planning budgets.
+- Design-system primitives were expanded with Select, Textarea, Checkbox, Switch, Spinner, Progress, Skeleton, EmptyState, and visually-hidden accessibility support.
+- Reduced-motion and keyboard/focus behavior remain part of the design-system foundation.
+
+These are **coding-track completions**, not live production verification. Screen-level UI wiring, full automated CI evidence for the newest SHA, real worker runtime, and external credential gates remain separate.

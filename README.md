@@ -784,3 +784,10 @@ The coding track has now prebuilt the dependency-light foundations for the next 
 - [x] 36 — Launch-gate evaluation contract.
 
 These are coding foundations and unit-tested contracts. They do not claim live platform publishing, live trend APIs, real A/B traffic, NLE application import, backup/restore, OAuth, Stripe, SMTP, or external pen-test completion.
+
+
+## Master reconciliation — 2026-10-07
+
+The repository roadmap, prior master/remediation plans, formal Phases 01–12, Expanded Auto Production 13–17, and Batches 18–36 are reconciled in **docs/21-master-completion-matrix.md**.
+
+That matrix is the execution status map: code/foundation work may be completed autonomously, while real worker, credentials, provider accounts, production recovery, E2E, performance, accessibility, legal, and pen-test gates remain explicitly evidence-bound.

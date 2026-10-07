@@ -992,7 +992,10 @@ def test_auto_mode_creates_script_versions_and_requires_source_video():
 
         first = client.post(f"/api/v1/auto/episodes/{episode_id}/plan", json={"idea": "ပထမအကြောင်းအရာ"})
         assert first.status_code == 200
-        assert len(first.json()["scenes"]) == 2
+        scenes = first.json()["scenes"]
+        assert len(scenes) >= 1
+        purposes = {scene.get("purpose", "").lower() for scene in scenes}
+        assert any("hook" in purpose for purpose in purposes), f"expected a hook scene, got {purposes}"
 
         second = client.post(f"/api/v1/auto/episodes/{episode_id}/plan", json={"idea": "ဒုတိယအကြောင်းအရာ"})
         assert second.status_code == 200

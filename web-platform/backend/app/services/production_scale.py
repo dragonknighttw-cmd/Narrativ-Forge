@@ -37,12 +37,12 @@ class PublishResult:
     error: str | None = None
 
 
-class PublishingAdapter(Protocol):
+class PublishingPreparationAdapter(Protocol):
     platform: str
 
     def validate_metadata(self, metadata: PlatformMetadata) -> list[str]: ...
 
-    def publish(self, *, idempotency_key: str, media_url: str, metadata: PlatformMetadata) -> PublishResult: ...
+    def prepare(self, *, idempotency_key: str, media_url: str, metadata: PlatformMetadata) -> PublishResult: ...
 
 
 PLATFORM_TITLE_LIMITS = {"tiktok": 2200, "youtube_shorts": 100, "facebook_reels": 255}
@@ -68,8 +68,8 @@ def build_publish_attempt_key(episode_id: str, platform: str, variant: str = "ma
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-class IdempotentPublishLedger:
-    """In-memory contract used by adapters; production storage should persist this key."""
+class IdempotentPreparationLedger:
+    """In-memory preparation contract; it never calls a social platform API."""
 
     def __init__(self) -> None:
         self._results: dict[str, PublishResult] = {}

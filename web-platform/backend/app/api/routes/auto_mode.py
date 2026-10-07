@@ -6,7 +6,7 @@ from ...db import get_db
 from ...models import Asset, Episode, ProcessingJob
 from ...services.auto_mode import create_auto_plan
 from ...services.selective_regeneration import regenerate_scene
-from ..dependencies import require_roles
+from ..dependencies import get_current_membership, require_roles
 
 router = APIRouter(prefix="/auto", tags=["auto-mode"])
 
@@ -17,8 +17,8 @@ class AutoPlanRequest(BaseModel):
 
 
 @router.post("/episodes/{episode_id}/plan")
-def auto_plan(episode_id: str, payload: AutoPlanRequest, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    episode = db.get(Episode, episode_id)
+def auto_plan(episode_id: str, payload: AutoPlanRequest, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    episode = db.query(Episode).filter(Episode.id == episode_id, Episode.organization_id == membership.organization_id).first()
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
     script, scenes = create_auto_plan(db, episode, payload.idea, payload.category)
@@ -47,8 +47,8 @@ def auto_plan(episode_id: str, payload: AutoPlanRequest, _: dict = Depends(requi
 
 
 @router.post("/episodes/{episode_id}/run")
-def run_auto_mode(episode_id: str, payload: AutoPlanRequest, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    episode = db.get(Episode, episode_id)
+def run_auto_mode(episode_id: str, payload: AutoPlanRequest, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    episode = db.query(Episode).filter(Episode.id == episode_id, Episode.organization_id == membership.organization_id).first()
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
     active = db.query(ProcessingJob).filter(

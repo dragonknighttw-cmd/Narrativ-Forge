@@ -34,7 +34,7 @@ class ProviderRegistry:
 
 
 DEFAULT_CAPABILITIES = {
-    "script": ("groq", "agnes"),
+    "script": ("groq", "openai", "agnes"),
     "video": ("agnes", "kling", "magic_hour"),
     "transcription": ("cloudflare_whisper", "local_whisper"),
     "voice": ("edge_tts",),

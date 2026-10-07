@@ -32,11 +32,11 @@ class UploadSession:
             raise ValueError("offset_mismatch")
         if not data:
             raise ValueError("empty_chunk")
+        if self.offset + len(data) > self.size_bytes:
+            raise ValueError("upload_exceeds_declared_size")
         self.state = UploadState.UPLOADING
         self.chunks[offset] = data
         self.offset += len(data)
-        if self.offset > self.size_bytes:
-            raise ValueError("upload_exceeds_declared_size")
         return self.offset
 
     def finalize(self, checksum: str | None = None) -> str:
@@ -205,7 +205,7 @@ def check_continuity(*, expected_characters: set[str], actual_characters: set[st
     issues: list[ContinuityIssue] = []
     for name in sorted(actual_characters - expected_characters):
         issues.append(ContinuityIssue("character", f"unexpected_character:{name}"))
-    for name in sorted(actual_characters - expected_characters):
+    for name in sorted(actual_locations - expected_locations):
         issues.append(ContinuityIssue("location", f"unexpected_location:{name}"))
     for name in sorted(expected_characters - actual_characters):
         issues.append(ContinuityIssue("character", f"missing_character:{name}"))

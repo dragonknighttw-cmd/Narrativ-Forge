@@ -282,3 +282,19 @@ Other docs remain authoritative for their own domains:
 ## 16. Release rule
 
 Production-ready is NOT declared until the real worker runtime, processing path, retry/DLQ behavior, and storage lifecycle safety tests pass.
+
+
+## Current execution ownership — 2026-10-07
+
+This document remains the authoritative runtime/storage plan. The current split is:
+
+### User gate
+- Run the real Home/Office Windows worker with repository code + FFmpeg.
+- Prove queue → worker → FFmpeg → DB/storage → retry/DLQ → failover.
+- Execute the real storage cleanup/emergency drill after the worker path is available.
+- Approve any paid worker migration only when the documented migration gates are met.
+
+### Assistant track
+- Keep worker code, Celery delivery semantics, storage lifecycle code, cleanup safety, tests, and runbooks hardened.
+- Keep retention rules reference-safe and protect the only approved final output.
+- Keep this plan synchronized with the release checklist; no code-only change can mark the real worker or cleanup drill DONE.

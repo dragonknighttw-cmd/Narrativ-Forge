@@ -1,6 +1,9 @@
 from app.services.orchestration import AgentTask, build_parallel_plan, default_episode_plan
 
 
+pytestmark = pytest.mark.unit
+
+
 def test_parallel_plan_groups_independent_tasks():
     plan = default_episode_plan()
     assert [tuple(task.name for task in stage) for stage in plan.stages] == [

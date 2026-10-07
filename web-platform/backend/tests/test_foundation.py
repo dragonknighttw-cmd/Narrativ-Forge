@@ -781,7 +781,7 @@ def test_production_rbac_invite_and_role_authority():
 
 @pytest.mark.unit
 def test_storage_abstraction_upload_download_delete_and_asset_metadata(tmp_path, monkeypatch):
-    from app.services.storage import LocalStorageProvider, build_object_key, sha256_file
+    from app.services.storage import LocalStorageProvider, StorageError, build_object_key, sha256_file
 
     provider = LocalStorageProvider(str(tmp_path / "storage"))
     source = tmp_path / "source.bin"
@@ -789,7 +789,7 @@ def test_storage_abstraction_upload_download_delete_and_asset_metadata(tmp_path,
     episode_id = str(uuid4())
     key = build_object_key(episode_id, 3, "source.mp4", "video")
     assert key.startswith(f"episodes/{episode_id}/assets/v3/video/")
-    with pytest.raises(Exception):
+    with pytest.raises(StorageError):
         build_object_key("not-a-uuid", 3, "source.mp4", "video")
     stored = provider.upload_file(source, key, "video/mp4")
 

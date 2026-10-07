@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import requests
 from urllib.parse import urlparse
@@ -1041,5 +1042,14 @@ def materialize_asset(asset, destination_dir: Path) -> Path:
 
 
 def build_object_key(episode_id: str, version: int, filename: str, asset_type: str) -> str:
+    try:
+        safe_episode_id = str(UUID(str(episode_id)))
+    except (ValueError, TypeError) as exc:
+        raise StorageError("Invalid episode identifier for storage key") from exc
+
+    safe_asset_type = (asset_type or "").strip().lower()
+    if not re.fullmatch(r"[a-z0-9_-]+", safe_asset_type):
+        raise StorageError("Invalid asset type for storage key")
+
     safe = Path(filename).name.replace(" ", "_")
-    return f"episodes/{episode_id}/assets/v{version}/{asset_type}/{safe}"
+    return f"episodes/{safe_episode_id}/assets/v{version}/{safe_asset_type}/{safe}"

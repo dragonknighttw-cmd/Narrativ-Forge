@@ -39,3 +39,16 @@ The Add-On requirements are part of the target plan. Their detailed specificatio
 The runtime/storage plan in 10 does not replace product, architecture, or feature requirements. It defines how processing infrastructure can move from free local compute to paid compute later without an application rewrite.
 
 - **11-release-readiness-checklist.md** — Phase 8 production hardening and Phase 9 release-candidate / production-ready gates.
+
+
+## Runtime deployment clarification — 2026-10-07
+
+The runtime/storage source of truth now includes a **Dual-PC Windows Local Worker Architecture** inside `docs/10-runtime-and-storage-lifecycle-plan.md` §17:
+
+- Home PC = primary heavy worker + single Beat.
+- Office PC = reserve light worker, no Beat.
+- Upstash Redis = shared TLS broker.
+- Kaggle = free-first ephemeral worker path.
+- Local Windows workers = fallback when Kaggle is unavailable or unsuitable.
+
+The local-worker plan is intentionally a runtime fallback, not a second application codebase. Production Ready still requires real worker execution and recovery evidence.

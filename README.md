@@ -271,15 +271,16 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - New AI/orchestration tests are explicitly included in the `unit` CI marker set.
 - Production/live verification remains separate from code completion; no live credential or real-media gate is being falsely marked complete.
 
-### Next coding sequence
+### Next execution sequence
 
-1. Phase 07 — Review & Approval hardening.
-2. Phase 08 — Export & Publishing Preparation hardening.
-3. Phase 09 — Search & Analytics hardening.
-4. Phase 10 — Production Hardening / CI / security / observability.
-5. Phase 11 — Business & Collaboration foundations.
-6. Phase 12 — Scale & Advanced foundations.
-7. Expanded Auto Production workstreams 13–17: cross-platform variants, trend adapter, A/B execution, series trailer planning, and Burmese-first translation adapter.
+The coding track has advanced through the Phase 07–12 hardening/foundation work and Auto Production workstreams 13–17 foundations. The next priority is **verification and evidence**, not another blind feature-building pass:
+
+1. Reconcile and freeze the master requirement set.
+2. Run the consolidated live integration gates: worker/media, storage, Whisper, Drive, SMTP, Stripe, Sentry, Redis/PostgreSQL, backup/restore.
+3. Run production E2E, cross-tenant E2E, load/performance, security/container scans, accessibility, and responsive audits.
+4. Complete the UI screen/state/component adoption audit.
+5. Complete the remaining Auto Production product surfaces that are still TODO/FOUNDATION.
+6. Perform the final documentation/roadmap checkpoint and only then call the release state Production Ready if all required evidence is green.
 
 ## 6. Current implementation status
 

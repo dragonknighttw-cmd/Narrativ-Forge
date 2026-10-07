@@ -97,10 +97,14 @@ def regenerate_episode_scene(
     episode_id: str,
     scene_number: int,
     payload: SceneRegenerationRequest,
+    membership=Depends(get_current_membership),
     _: dict = Depends(require_roles("owner", "editor")),
     db: Session = Depends(get_db),
 ):
-    episode = db.get(Episode, episode_id)
+    episode = db.query(Episode).filter(
+        Episode.id == episode_id,
+        Episode.organization_id == membership.organization_id,
+    ).first()
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
     try:

@@ -271,3 +271,10 @@ Still VERIFY/live:
 - Real storage cleanup under the local disk limit.
 
 This is intentionally not marked DONE until the user runs the real worker environment.
+
+
+## Reconciliation checkpoint — 2026-10-07
+
+The latest coding pass adds reconciled foundations for resumable uploads, version retention, story ingestion/splitting, eight hook families, SEO metadata, retention/pacing analysis, thumbnail selection, sound design, Series Bible/continuity, batch/calendar planning, Burmese-first translation, video-provider/watermark policy, and the master completion matrix at `docs/21-master-completion-matrix.md`.
+
+These additions are code-level foundations. They do not replace live verification of workers, real media, external providers, credentials, production recovery, E2E, load, accessibility, legal, or pen-test gates.

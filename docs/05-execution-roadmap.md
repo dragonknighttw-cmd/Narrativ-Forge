@@ -281,3 +281,21 @@ The Local Worker gate is now defined as a concrete two-machine fallback:
 The dual-PC routing shown in the architecture is a target contract. Before live testing, the actual repository task names/routes must be mapped to `heavy_queue` and `light_queue`; do not create duplicate task modules just to match the diagram.
 
 The local Windows path is a fallback to Kaggle, not a replacement for the existing ephemeral-worker coding foundation.
+
+
+## Coding-track checkpoint — 2026-10-07
+
+Formal execution remains **12 phases**. The Expanded Auto Production section contains **17 workstreams**, not 17 additional phases.
+
+Current implementation has reached the Phase 01–06 code batch on `main`, plus prior Auto Production foundations including story structure, Series Bible/continuity, hook engineering, quality/pacing assessment, SEO/thumbnail/sound planning, cross-platform export planning, batch/calendar primitives, A/B variant planning, selective regeneration, quota/fallback primitives, and provider orchestration.
+
+The next sequential coding track is:
+1. Phase 07 — Review & Approval hardening.
+2. Phase 08 — Export & Publishing Preparation hardening.
+3. Phase 09 — Search & Analytics hardening.
+4. Phase 10 — Production Hardening / CI / security / observability.
+5. Phase 11 — Business & Collaboration foundations.
+6. Phase 12 — Scale & Advanced foundations.
+7. Expanded Auto Production workstreams 13–17 — cross-platform execution variants, trend adapter, A/B execution/measurement, series trailer planning/execution, and Burmese-first translation adapter.
+
+Code completion and live verification remain separate gates. Real worker, real-media, OAuth/Drive, SMTP, Stripe, Sentry, backup/restore, and live provider-limit verification must not be marked complete without evidence.

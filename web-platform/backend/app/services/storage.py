@@ -770,7 +770,7 @@ class SupabaseStorageProvider:
         (directory / "metadata.json").write_text(json.dumps({
             "object_key": _safe_object_key(object_key),
             "content_type": content_type,
-            "upload_token": upload_token,
+            "upload_token_hash": _hash_upload_token(upload_token),
             "status": "active",
         }), encoding="utf-8")
         return upload_id

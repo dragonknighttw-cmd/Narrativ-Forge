@@ -13,7 +13,7 @@ from app.services.production_pipeline import (
     plan_batch,
     assess_production_readiness,
 )
-from app.services.storage_lifecycle import can_delete_asset, classify_storage_usage
+from app.services.storage_lifecycle import can_delete_asset, classify_storage_usage, StorageThresholds
 
 
 def test_auto_plan_is_normalized_to_target_duration():
@@ -100,3 +100,10 @@ def test_production_readiness_blocks_continuity_issues():
         continuity_issues=["missing recurring element"],
     )
     assert blocked.ready_for_review is False
+
+
+def test_storage_thresholds_must_be_ordered():
+    with pytest.raises(ValueError):
+        StorageThresholds(warning=0.90, critical=0.80, emergency=0.95)
+    with pytest.raises(ValueError):
+        StorageThresholds(warning=-0.1, critical=0.80, emergency=0.95)

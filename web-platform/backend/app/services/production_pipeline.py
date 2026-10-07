@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import re
+from typing import Protocol
 
 
 HOOK_TYPES = (
@@ -126,6 +127,31 @@ def validate_cross_platform_export_plan(plan: dict) -> list[str]:
     if master.get("resolution") != "1080x1920":
         errors.append("master:resolution")
     return errors
+
+
+@dataclass(frozen=True)
+class TrendSignal:
+    topic: str
+    score: float
+    source: str
+    observed_at: datetime
+    expires_at: datetime | None = None
+
+
+class TrendProvider(Protocol):
+    def fetch(self, topic: str | None = None) -> list[TrendSignal]:
+        ...
+
+
+def rank_trend_signals(signals: list[TrendSignal], *, now: datetime | None = None, limit: int = 10) -> list[TrendSignal]:
+    if limit < 1:
+        raise ValueError("limit must be >= 1")
+    current = now or datetime.now(timezone.utc)
+    eligible = [
+        signal for signal in signals
+        if signal.expires_at is None or signal.expires_at > current
+    ]
+    return sorted(eligible, key=lambda signal: (-signal.score, signal.topic.lower(), signal.source))[:limit]
 
 
 def build_production_metadata(title: str, topic: str, hook: str, keywords: list[str] | None = None, category: str | None = None) -> ProductionMetadata:

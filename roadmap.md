@@ -1,1386 +1,1340 @@
 # Narrativ Forge — Master Roadmap
 
-> **Single Source of Truth** — Project Overview, Tools, Roadmap, UI, Manual Guide, Future Reserve
+> **Single Source of Truth for planned work**
 >
-> **Last updated:** 2026-10-06
+> **Last updated:** 2026-10-07
+>
+> This document is the authoritative execution roadmap. Product requirements, future capabilities, hardening work, business/compliance work, scale work, and live-release gates are consolidated here so implementation never depends on several competing roadmaps.
+>
+> **Status rule:** code existing is not the same as production-ready. A production claim requires fresh evidence at the applicable live/integration gate.
 
 ---
 
-## 📌 အပိုင်း ၀: Project Overview
-
-### ၀.၁ Narrativ Forge ဆိုတာ ဘာလဲ?
-
-**Narrativ Forge** သည်—
-
-- Private
-- Invite-only
-- Standalone
-- Burmese Short-Form Video Production System
-- Manual + Auto Mode နှစ်မျိုးပါ
-- Human Review + Approval ပါ
-- Google Drive Export လုပ်နိုင်
-
-### ၀.၂ အဓိက သဘောတရား
-
-> **Manual က production data ထုတ်ပေးမယ်။ Auto က အဲဒီ data နဲ့ workflow ကို မြန်အောင်လုပ်မယ်။ Human က quality ကို အတည်ပြုမယ်။ Google Drive က approved output ကို သိမ်းမယ်။**
-
-### ၀.၃ Primary Output
-
-```text
-Vertical short-form video
-Target: 3 minutes
-Aspect ratio: 9:16
-Target resolution: 1080 × 1920
-Language: Burmese
-Subtitle: Burmese
-Output package: Video + subtitles + transcript + script + metadata + thumbnail
-၀.၄ Audience
-Burmese-speaking viewers
-
-Psychology / Life lessons / Motivation
-
-TikTok / Shorts / Reels users
-
-၀.၅ Business Direction
-Brand deals
-
-Affiliate marketing
-
-Later: AI-assisted video production service
-
-၀.၆ မပါဝင်သည့်အရာများ (Strict Boundaries)
-❌ Logixa Flow integration
-
-❌ Aether Bridge integration
-
-❌ Public registration
-
-❌ Public profiles
-
-❌ Public video browsing
-
-❌ Public comments
-
-❌ TikTok/YouTube/Facebook တိုက်ရိုက် publish
-
-❌ External downstream delivery
-
-❌ Google Drive ကို workflow database အဖြစ် သုံးခြင်း
-
-📌 အပိုင်း ၁: Constraints (မသုံးတဲ့အရာ)
-၁.၁ Constraint ရဲ့ အကြောင်းရင်း
-Constraint	အကြောင်းရင်း
-No R2	Card လိုတယ်
-No AWS S3	Card လိုတယ်
-No Docker	Local Space မရှိ
-No WSL	Local Space မရှိ
-No Ollama	Local Space မရှိ
-No LM Studio	Local Space မရှိ
-No Paid Services	ပိုက်ဆံ မကုန်ရ
-၁.၂ အစားထိုး နည်းလမ်း
-မသုံးတာ	အစားထိုး
-Cloudflare R2	Backblaze B2 + Supabase
-Docker	GitHub Codespaces
-WSL	GitHub Codespaces
-Ollama	Groq API / Cloudflare Workers AI
-LM Studio	Groq API
-📌 အပိုင်း ၂: Tools Stack အပြည့်အစုံ
-Legend
-သင်္ကေတ	အဓိပ္ပာယ်
-✅	သုံးနေပြီ
-🔄	သုံးမယ် (planned)
-🟢	အရံ (reserve)
-❌	မသုံး (Constraint)
-⚠️	စစ်ရမယ်
-၂.၁ Development Tools
-Tool	Status	ဘာအတွက်	မှတ်ချက်
-GitHub	✅	Code Storage	—
-VS Code	✅	Code Editor	Local ရှိပြီး
-Git	✅	Version Control	—
-GitHub Codespaces	🔄	Cloud Dev Env	Docker အစားထိုး
-Gitpod	🟢	Cloud Dev Env	Alternative
-Postman / Insomnia	🟢	API Test	—
-Continue.dev	🟢	AI Coding	—
-❌ Docker	❌	—	Space မရှိ
-❌ WSL	❌	—	Space မရှိ
-၂.၂ Frontend
-Tool	Status	ဘာအတွက်
-Next.js	✅	Framework
-React	✅	UI Library
-Tailwind CSS	✅	Styling
-TypeScript	✅	Type Safety
-shadcn/ui	🔄	Component Library
-Radix UI	🟢	Accessible Components
-TanStack Query	🔄	Data Fetching
-Zustand	🟢	State Management
-Framer Motion	🟢	Animation
-၂.၃ Frontend Hosting
-Tool	Status	ဘာအတွက်
-Netlify	✅	Hosting
-Vercel	🟢	Alternative
-Cloudflare Pages	🟢	Alternative
-၂.၄ Backend
-Tool	Status	ဘာအတွက်
-FastAPI	✅	API Framework
-SQLAlchemy	✅	ORM
-Alembic	✅	Migrations
-Pydantic	✅	Validation
-Uvicorn	✅	ASGI Server
-Celery	✅	Task Queue
-Redis	✅	Queue / Cache
-၂.၅ Backend Hosting
-Tool	Status	ဘာအတွက်
-Render (Web Service)	✅	API Hosting
-Render (Worker)	⚠️	Free/Paid စစ်ရမယ်
-Fly.io	🟢	Alternative
-Cloud Run	🟢	Alternative
-၂.၆ Database
-Tool	Status	ဘာအတွက်
-Neon PostgreSQL	✅	Production DB
-SQLite	✅	Local Dev
-Redis	✅	Cache / Queue
-Supabase (PostgreSQL)	🟢	Alternative
-၂.၇ Storage
-Tool	Status	ဘာအတွက်	Size Limit
-Cloudinary	✅	Images / Preview	≤ 10 MB
-Supabase Storage	✅	SRT / Manifest	≤ 50 MB
-Backblaze B2	✅	Raw Video / Audio	Unlimited
-Google Drive	✅	Final Export	15 GB Free
-❌ Cloudflare R2	❌	—	Card လိုတယ်
-❌ AWS S3	❌	—	Card လိုတယ်
-၂.၈ Export
-Tool	Status	ဘာအတွက်
-Google Drive API	✅	File Upload
-Google OAuth 2.0	✅	Auth
-Scope: drive.file	✅	Narrow Scope
-၂.၉ Edge / AI
-Tool	Status	ဘာအတွက်
-Cloudflare Worker	✅	Edge Compute
-Cloudflare WAF	✅	Security
-Cloudflare Workers AI	✅	Whisper + LLM
-Cloudflare D1	🟢	Edge DB
-Cloudflare KV	🟢	Edge Storage
-၂.၁၀ AI / LLM (Cloud Only)
-Tool	Status	Free Tier	Card
-Groq	🔄	14,400 req/day	❌
-Cloudflare Workers AI	✅	10,000 neurons/day	❌
-Google AI Studio (Gemini)	🔄	Free Tier	❌
-OpenRouter	🟢	Free Models	❌
-Mistral	🟢	Free Mode	❌
-NVIDIA NIM	🟢	40 RPM	❌
-Hugging Face	🟢	~1000 req/month	❌
-❌ Ollama	❌	—	Space လိုတယ်
-❌ LM Studio	❌	—	Space လိုတယ်
-❌ Together AI	❌	—	Free Tier မရှိ
-၂.၁၁ AI / ML (Manual Mode)
-Tool	Status	ဘာအတွက်
-ChatGPT	🔄	Script
-Claude	🔄	Script
-Fliki	🔄	TTS
-Edge-TTS	✅	TTS Fallback
-Pollinations	🔄	Image
-Leonardo.Ai	🟢	Image Alternative
-Suno	🟢	BGM
-Udio	🟢	BGM Alternative
-၂.၁၂ Video Processing
-Tool	Status	ဘာအတွက်
-ffmpeg.wasm	✅	Client-side
-FFmpeg (Server)	✅	Fallback
-ffprobe	✅	Media Info
-CapCut	🔄	Manual Edit
-၂.၁၃ Queue / Job
-Tool	Status	ဘာအတွက်
-Celery	✅	Task Queue
-Redis	✅	Broker
-Upstash Redis	🟢	Alternative
-၂.၁၄ Monitoring
-Tool	Status	ဘာအတွက်	Priority
-Sentry	✅	Error Tracking	🔴 လိုတယ်
-UptimeRobot	✅	Uptime	🔴 လိုတယ်
-Umami Cloud	🟢	Web Analytics	🟡 နောက်မှ
-Pydantic Logfire	🟢	FastAPI Monitor	🟡 နောက်မှ
-Axiom	🟢	Log Aggregation	🟡 နောက်မှ
-PostHog	🟢	Product Analytics	🟡 နောက်မှ
-Rule: ၅ ခု → ၂ ခုပဲ (Sentry + UptimeRobot)
-
-၂.၁၅ Email
-Tool	Status	ဘာအတွက်
-Resend	✅	Transactional Email
-SendGrid	🟢	Alternative
-၂.၁၆ Payment
-Tool	Status	ဘာအတွက်
-Stripe	🔄	Subscription
-Paddle	🟢	Alternative
-၂.၁၇ CI/CD
-Tool	Status	ဘာအတွက်
-GitHub Actions	✅	CI/CD
-Netlify CI	✅	Frontend Deploy
-Render CI	✅	Backend Deploy
-၂.၁၈ Security
-Tool	Status	ဘာအတွက်
-CodeQL	✅	Static Analysis
-Trivy	✅	Container Scan
-pip-audit	✅	Python Deps
-npm audit	✅	Node Deps
-Dependabot	🟢	Auto Updates
-၂.၁၉ Testing
-Tool	Status	ဘာအတွက်
-Playwright	✅	E2E Test
-pytest	✅	Backend Test
-Vitest	🟢	Frontend Test
-၂.၂၀ Design
-Tool	Status	ဘာအတွက်
-Figma	🔄	UI Design
-Excalidraw	🟢	Wireframe
-၂.၂၁ Local Dev (Docker မပါ)
-Tool	Status	ဘာအတွက်
-GitHub Codespaces	🔄	Primary Dev
-Gitpod	🟢	Alternative
-Python venv	✅	Backend
-nvm (Node.js)	✅	Frontend
-PostgreSQL (Local)	🟢	DB
-📌 အပိုင်း ၃: Manual Mode Guide
-၃.၁ Workflow (၆ ဆင့်)
-text
-1. Idea (၅ မိနစ်)
-2. Script (၃၀ မိနစ်)
-3. Voice (၁၅ မိနစ်)
-4. Images (၃၀ မိနစ်)
-5. Video (၄၅ မိနစ်)
-6. Publish (၁၅ မိနစ်)
-၃.၂ Step 1: Idea
-Topic ရွေး
-
-Category သတ်မှတ်
-
-Hook ရေး
-
-Audience သတ်မှတ်
-
-Emotion သတ်မှတ်
-
-Quality Gate:
-
-Title ရှိလား?
-
-Category သတ်မှတ်ပြီးလား?
-
-One-line concept ရှိလား?
-
-၃.၃ Step 2: Script (ChatGPT/Claude)
-Prompt:
-
-"မြန်မာ TikTok အတွက် ၃ မိနစ်စာ Mini Series ဇာတ်ညွှန်း ရေးပါ။ Dark Psychology အကြောင်း။ ပထမ ၅ စက္ကန့် Hook။ အဆုံး Cliffhanger။"
-
-လုပ်ရမှာ:
-
-Scene ၅ ခု ခွဲ
-
-Scene တစ်ခုစီ Prompt ရေး
-
-Quality Gate:
-
-Hook ရှိလား?
-
-၃ မိနစ်အတွင်း?
-
-Cliffhanger ရှိလား?
-
-၃.၄ Step 3: Voice (Fliki/Edge-TTS)
-Text paste
-
-Voice ရွေး (Nilar/Thiha)
-
-MP3 download
-
-Quality Gate:
-
-Voice duration ကိုက်လား?
-
-Commercial Use ရလား?
-
-၃.၅ Step 4: Images (Pollinations)
-Scene တိုင်း Prompt
-
-9:16 (1080x1920) ထုတ်
-
-ဇာတ်ကောင် တစ်သမတ်တည်း
-
-Quality Gate:
-
-Scene တိုင်းမှာ ရုပ်ပုံရှိလား?
-
-Aspect ratio မှန်လား?
-
-၃.၆ Step 5: Video (CapCut)
-Import MP3 + Images
-
-Auto-Captions → Burmese ပြင်
-
-BGM ထည့်
-
-1080p, 9:16 Export
-
-Quality Gate:
-
-Duration မှန်လား?
-
-Audio sync?
-
-Subtitle overlap?
-
-၃.၇ Step 6: Publish
-TikTok တင်
-
-Caption + Hashtag
-
-Log ဖြည့်
-
-၃.၈ Production Log (Google Sheets)
-Column	ဘာဖြည့်မလဲ
-video_id	NAR_001
-topic	Dark Psychology
-category	Psychology
-hook	"မင်းသိထားသင့်တယ်..."
-hook_type	Warning
-script_length	450 words
-duration	180 sec
-scene_count	5
-voice_tool	Fliki
-image_tool	Pollinations
-video_tool	CapCut
-subtitle_style	Burmese Default
-production_time	135 min
-errors	Subtitle timing
-quality_score	8/10
-published	Yes
-platform	TikTok
-views	5000
-completion_rate	45%
-notes	Hook ကောင်း
-၃.၉ Manual Mode Exit Gate
-□ ဗီဒီယို ၁၅-၂၀ ခု ထုတ်ပြီး
-□ Production Log ဖြည့်ပြီး
-□ Hook types ၃ မျိုး စမ်းပြီး
-□ Subtitle styles ၂ မျိုး စမ်းပြီး
-□ Production time တိုင်းပြီး
-□ Commercial-use risk စစ်ပြီး
-📌 အပိုင်း ၄: Auto Mode Architecture
-၄.၁ High-Level Architecture
-text
-Next.js Frontend
-        ↓
-FastAPI Backend
-        ↓
-PostgreSQL (Neon)
-        ↓
-Job Queue (Redis)
-        ↓
-Worker (Celery)
-  ├── FFmpeg
-  ├── Whisper
-  ├── Cloud LLM (Groq)
-  └── Drive Export
-        ↓
-Google Drive
-၄.၂ Responsibility Boundaries
-Layer	တာဝန်
-Next.js	UI, editor, player, review
-FastAPI	Auth, CRUD, validation, permissions
-PostgreSQL	Workflow state
-Worker	Heavy processing
-FFmpeg	Media extraction/assembly
-Whisper	Transcript
-Google Drive	Approved export
-৪.၃ Workflow (၈ ဆင့်)
-text
-1. Idea
-2. Structure
-3. Script
-4. Assets
-5. Processing
-6. Subtitle
-7. Review
-8. Output
-၄.၄ Status Model
-text
-idea → planned → script_draft → script_review
-→ assets_needed → in_production → processing
-→ subtitle_review → needs_approval → approved
-→ exporting → exported
-၄.၅ Revision Transitions
-text
-script_review → script_draft
-subtitle_review → in_production
-needs_approval → in_production
-exporting → failed → processing
-📌 အပိုင်း ၅: Data Model
-၅.၁ Core Tables
-text
-users
-ideas
-series
-seasons
-episodes
-scripts
-scenes
-assets
-subtitle_cues
-processing_jobs
-approvals
-drive_exports
-publishing_states
-manual_production_logs
-hook_library
-subtitle_presets
-app_analytics
-social_analytics
-activity_logs
-episode_versions          ← အသစ်
-scene_regenerations       ← အသစ်
-content_extensions        ← အသစ်
-characters                ← အသစ်
-၅.၂ Versioning System (အရေးကြီး)
-text
-episode_versions
-- id
-- episode_id
-- version_number (v1, v2, v3)
-- script_id
-- voice_asset_id
-- video_asset_id
-- subtitle_id
-- duration_seconds
-- status (draft/final)
-- notes
-- created_at
-
-scene_regenerations
-- id
-- episode_id
-- scene_id
-- old_asset_id
-- new_asset_id
-- reason
-- created_at
-
-content_extensions
-- id
-- episode_id
-- extension_type (scene/voice/script)
-- added_content
-- created_at
-၅.၃ Characters (LoRA)
-text
-characters
-- id
-- name
-- type (main/side/background)
-- lora_url (main ဆိုရင် ပဲ)
-- lora_file_id (B2)
-- rank (16/32)
-- prompt_template (side ဆိုရင်)
-- trained_at
-- status (active/inactive)
-- created_at
-Rule:
-
-Main Character (၃ ယောက်) → LoRA လိုတယ်
-
-ဖြတ်လျှောက် → Prompt ပဲ
-
-📌 အပိုင်း ၆: UI Plan
-၆.၁ Design Principles (၅ ခု)
-Production-first (not consumer social)
-
-Keyboard-friendly
-
-Responsive (Desktop/Tablet/Mobile)
-
-Accessible (WCAG AA)
-
-State-complete (Empty/Loading/Error)
-
-၆.၂ Screen List (၂၆ ခု)
-Auth (၂)
-#	Screen	Priority
-1	Login	🔴 P0
-2	Logout	🔴 P0
-Dashboard (၁)
-#	Screen	Priority
-3	Dashboard	🔴 P0
-Content (၅)
-#	Screen	Priority
-4	Ideas	🔴 P0
-5	All Series	🔴 P0
-6	Series Detail	🔴 P0
-7	Episodes	🔴 P0
-8	Episode Detail	🔴 P0
-Production (၆)
-#	Screen	Priority
-9	Script Studio	🔴 P0
-10	Scene Breakdown	🔴 P0
-11	Asset Library	🔴 P0
-12	Video Project	🔴 P0
-13	Subtitle Studio	🔴 P0
-14	Thumbnail Studio	🟡 P1
-Processing (၁)
-#	Screen	Priority
-15	Processing Queue	🔴 P0
-Review (၂)
-#	Screen	Priority
-16	Review Center	🔴 P0
-17	Approval Detail	🔴 P0
-Export (၂)
-#	Screen	Priority
-18	Drive Export	🔴 P0
-19	Publishing Preparation	🟡 P1
-Intelligence (၄)
-#	Screen	Priority
-20	Hook Library	🟡 P1
-21	Manual Production Log	🟡 P1
-22	App Analytics	🟡 P1
-23	Social Analytics	🟡 P1
-System (၃)
-#	Screen	Priority
-24	Settings	🟡 P1
-25	Usage & Limits	🟢 P2
-26	Activity Log	🟢 P2
-၆.၃ Most Important Screens (၃ ခု)
-1. Episode Detail
-Workflow control center
-
-Status timeline
-
-Quick actions
-
-2. Subtitle Studio
-Transcript pane
-
-Subtitle editor
-
-Timing ruler
-
-Warning panel
-
-Preset selector
-
-3. Review & Export
-Video player
-
-Checklist
-
-Critical issue blocking
-
-Approve/Reject buttons
-
-📌 အပိုင်း ၇: Design System
-၇.၁ Colors
-text
-Primary:    Blue (#3B82F6)
-Secondary:  Gray (#6B7280)
-Success:    Green (#10B981)
-Warning:    Yellow (#F59E0B)
-Error:      Red (#EF4444)
-Background: White / Dark
-၇.၂ Typography
-text
-Font:  Inter / Noto Sans Myanmar
-Sizes: 12, 14, 16, 18, 20, 24, 32, 48
-၇.၃ Spacing
-text
-4, 8, 12, 16, 24, 32, 48, 64
-၇.၄ States
-text
-Default / Hover / Focus / Disabled / Loading / Error
-📌 အပိုင်း ၈: Component Library (၃၃ ခု)
-၈.၁ Layout (၄)
-AppShell
-
-Sidebar
-
-TopBar
-
-Breadcrumb
-
-၈.၂ Forms (၈)
-TextInput
-
-TextArea
-
-Select
-
-Checkbox
-
-Radio
-
-FileUpload
-
-DatePicker
-
-FormError
-
-၈.၃ Data Display (၆)
-Table
-
-Card
-
-Badge
-
-StatusPill
-
-ProgressBar
-
-Timeline
-
-၈.၄ Media (၅)
-VideoPlayer
-
-AudioPlayer
-
-ImagePreview
-
-SubtitleEditor
-
-Timeline
-
-၈.၅ Feedback (၅)
-Toast
-
-Modal
-
-Drawer
-
-Alert
-
-ConfirmDialog
-
-၈.၆ States (၅)
-EmptyState
-
-LoadingState
-
-ErrorState
-
-OfflineState
-
-PermissionDeniedState
-
-📌 အပိုင်း ၉: Versioning & Modification System
-၉.၁ Rule (အရေးကြီးဆုံး)
-ပြန်ပြင်တာ ပိုကောင်းတယ်။ ဖျက်ပစ်တာ မကောင်းဘူး။
-
-၉.၂ Selective Regeneration
-text
-EP 2 မှာ Scene 3 မကြိုက်ဘူး
-    ↓
-Scene 3 ပဲ ရွေး → "Regenerate"
-    ↓
-AI က Scene 3 ရုပ်ပုံ အသစ် ၃ ပုံ ထုတ်
-    ↓
-မင်း ကြိုက်တာ ရွေး
-    ↓
-Video ပြန် ပေါင်း
-    ↓
-ပြီး။ Scene 1, 2, 4, 5 မထိဘူး။
-၉.၃ Version Storage Policy
-text
-သိမ်းထားရမယ့် Version:
-├── v1 (Original) — သိမ်း
-├── v2 (Modified) — သိမ်း
-├── v3 (Final) — သိမ်း
-└── v4-v10 — အကောင်းဆုံး ၁ ခုပဲ သိမ်း၊ ကျန် ဖျက်
-
-Rule:
-- Final Version — အမြဲ သိမ်း
-- Last 3 Versions — သိမ်း
-- ကျန် — ဖျက်
-၉.၄ ဖျက်သင့်တဲ့ အခြေအနေ
-အခြေအနေ	ဖျက်သင့်လား?
-Concept လုံးဝ မှား	✅ ဖျက်
-Version ၁၀ ခုအထက်	✅ အကောင်းဆုံး ၃ ခုပဲ ထား
-Storage ပြည့်	✅ အကောင်းဆုံးပဲ ထား
-Scene တစ်ခုပဲ မကြိုက်	❌ မဖျက်ရ — ပြန် Generate
-၉.၅ AI Request နှိုင်းယှဉ်
-နည်း	AI Request
-ဖျက်ပြီး ပြန်လုပ်	၂၀-၃၀
-ပြန်ပြင်	၇
-၉.၆ LoRA Strategy
-ဇာတ်ကောင်	LoRA	Space
-Main Character (၃)	✅	၆၀၀ MB
-ဖြတ်လျှောက် (၂၀+)	❌ Prompt ပဲ	၀ MB
-Training:
-
-Platform: Kaggle (Free 30 hrs/week) / Google Colab
-
-Tool: Kohya's GUI
-
-Time: ၁-၂ နာရီ/LoRA
-
-Storage: B2 (Primary) + Google Drive (Backup)
-
-📌 အပိုင်း ၁၀: Roadmap
-၁၀.၁ Track 0: Setup
-□ GitHub Codespaces ဖွင့်
-□ VS Code (Browser) setup
-□ Python venv
-□ Node.js (nvm)
-□ Git config
-□ roadmap.md ရေး
-၁၀.၂ Track 1: Manual Production (🔴 P0)
-□ ChatGPT/Claude နဲ့ ဇာတ်ညွှန်း
-□ Fliki/Edge-TTS နဲ့ အသံ
-□ Pollinations နဲ့ ရုပ်ပုံ
-□ CapCut နဲ့ ဗီဒီယို
-□ TikTok တင်
-□ Google Sheets Log
-□ Hook Types ၃ မျိုး
-□ Subtitle Styles ၂ မျိုး
-Exit Gate:
-
-□ ဗီဒီယို ၁၅-၂၀ ခု
-□ Manual Log ရှိ
-□ Hook Library အစ
-၁၀.၃ Track 2: Backend Verification (🔴 P0)
-Real Storage Tests:
-
-□ B2 upload/download/delete
-□ Supabase Storage test
-□ Cloudinary test
-□ Hybrid routing E2E
-Real AI Tests:
-
-□ Cloudflare Whisper → VTT → Subtitle Studio
-□ Celery fallback on quota-exhaustion
-□ Groq API → Script
-Real Drive Tests:
-
-□ Google OAuth callback
-□ Real Drive export
-□ Idempotent retry test
-Worker Tests:
-
-□ Full processing worker smoke test
-□ Retry/DLQ verification
-□ Duplicate-dispatch verification
-Business Tests:
-
-□ Stripe webhook lifecycle
-□ SMTP invitation delivery
-□ Sentry production event
-Security Tests:
-
-□ Cross-tenant isolation E2E
-□ Full E2E auth flow
-□ Backup/restore drill
-၁၀.၄ Track 3: Frontend / UI (🔴 P0)
-Phase 1: Foundation
-
-□ Next.js app structure
-□ Tailwind setup
-□ shadcn/ui setup
-□ API client
-□ Auth screens
-Phase 2: Core Screens
-
-□ Dashboard
-□ Ideas
-□ Series / Seasons / Episodes
-□ Episode Detail
-□ Script Studio
-□ Scene Breakdown
-Phase 3: Media Screens
-
-□ Asset Library
-□ Video Project
-□ Subtitle Studio
-□ Processing Queue
-□ Thumbnail Studio
-Phase 4: Review & Export
-
-□ Review Center
-□ Approval Detail
-□ Drive Export
-□ Publishing Preparation
-Phase 5: Intelligence
-
-□ Hook Library
-□ Manual Production Log
-□ App Analytics
-□ Social Analytics
-Phase 6: Settings
-
-□ Settings
-□ Usage & Limits
-□ Activity Log
-□ Billing
-UI States (အားလုံး လိုတယ်):
-
-□ Empty
-□ Loading
-□ Uploading
-□ Processing
-□ Completed
-□ Failed
-□ Retrying
-□ Rejected
-□ Offline/Read-only
-□ Permission denied
-□ Session expired
-□ Drive disconnected
-□ Drive export failed
-□ Storage warning
-□ Unsupported file
-□ Critical quality issue
-၁၀.၅ Track 4: Production Hardening (🟡 P1)
-Security:
-
-□ Final dependency scan
-□ Docker image scan
-□ Penetration test
-□ Security review
-Reliability:
-
-□ Flaky-network upload test
-□ Backup/restore drill
-□ Load test
-UX:
-
-□ Empty/loading states audit
-□ Mobile/tablet responsive
-□ WCAG accessibility
-□ UI polish
-၁၀.၆ Track 5: Business / Legal (🟡 P1)
-□ Terms of Service
-□ Privacy Policy
-□ DPA documentation
-□ DMCA process
-□ Stripe production
-□ Business review
-၁၀.၇ Track 6: Future / Reserve (🟢 P2)
-Mobile:
-
-React Native
-
-Expo
-
-Flutter
-
-Advanced AI:
-
-GPT-4 API
-
-Claude 3.5 API
-
-Gemini API
-
-Stable Diffusion Local
-
-ComfyUI
-
-LoRA Training (Cloud GPU)
-
-Advanced Video:
-
-DaVinci Resolve
-
-Adobe Premiere
-
-Blender
-
-Advanced Storage:
-
-AWS S3
-
-Cloudflare R2
-
-Wasabi
-
-MinIO
-
-Advanced Queue:
-
-RabbitMQ
-
-Kafka
-
-AWS SQS
-
-Temporal
-
-Advanced Monitoring:
-
-Grafana
-
-Prometheus
-
-Datadog
-
-New Relic
-
-ELK Stack
-
-Advanced Security:
-
-Vault
-
-AWS KMS
-
-Auth0
-
-Clerk
-
-Business:
-
-Stripe Connect
-
-Paddle
-
-Lemon Squeezy
-
-PayPal
-
-Marketing:
-
-Mailchimp
-
-ConvertKit
-
-Buffer
-
-Analytics:
-
-Mixpanel
-
-Amplitude
-
-Segment
-
-PostHog
-
-Infrastructure:
-
-Kubernetes
-
-Terraform
-
-Ansible
-
-Pulumi
-
-Database:
-
-MongoDB
-
-Cassandra
-
-DynamoDB
-
-ClickHouse
-
-Search:
-
-Elasticsearch
-
-Meilisearch
-
-Typesense
-
-Algolia
-
-Feature Flags:
-
-LaunchDarkly
-
-Unleash
-
-Flagsmith
-
-A/B Testing:
-
-Optimizely
-
-VWO
-
-GrowthBook
-
-Communication:
-
-Slack API
-
-Discord API
-
-Telegram Bot
-
-Design:
-
-Figma
-
-Penpot
-
-Sketch
-
-Documentation:
-
-Docusaurus
-
-MkDocs
-
-GitBook
-
-📌 အပိုင်း ၁၁: Quality Gates
-၁၁.၁ Script Gate
-□ Hook ရှိရမယ်
-□ Target duration ကိုက်ရမယ်
-□ Scene တိုင်းမှာ purpose ရှိရမယ်
-□ Cliffhanger/resolution ရှိရမယ်
-၁၁.၂ Asset Gate
-□ Scene တိုင်းမှာ asset ရှိရမယ်
-□ Aspect ratio မှန်ရမယ်
-□ Voice duration ကိုက်ရမယ်
-□ Commercial-use status သိရမယ်
-၁၁.၃ Processing Gate
-□ Render successful
-□ 9:16 resolution
-□ Audio track ရှိ
-□ No corrupted output
-၁၁.၄ Subtitle Gate
-□ No overlap
-□ Missing text မရှိ
-□ Start < End
-□ Min 1s, Max 7s
-□ Burmese text valid
-□ Reading speed warning
-၁၁.၅ Review Gate
-□ Video playback complete
-□ Audio clear
-□ Subtitle readable
-□ Thumbnail selected
-□ Critical issues = 0
-၁၁.၆ Export Gate
-□ Status = approved
-□ Required files complete
-□ Metadata schema valid
-□ Drive connected
-📌 အပိုင်း ၁၂: Google Drive Export
-၁၂.၁ Folder Structure
-text
-/narrativ-forge/
-└── YYYY-MM-DD/
-    └── content-id/
-        ├── video.mp4
-        ├── subtitles.srt
-        ├── subtitles.vtt
-        ├── transcript.txt
-        ├── script.md
-        ├── metadata.json
-        ├── thumbnail.jpg
-        └── export-manifest.json
-၁၂.၂ Export Rules
-Approved content သာ export
-
-Same episode ကို ပြန် export ရင် duplicate folder မဖန်တီး
-
-Existing export ကို versioned update
-
-Export failure → failed → retry
-
-Partial upload → manifest မပြီးမချင်း complete မသတ်မှတ်
-
-Drive file IDs အားလုံး database မှာ သိမ်း
-
-OAuth token frontend မှာ မထား
-
-📌 အပိုင်း ၁၃: Security
-၁၃.၁ Security Rules
-☑ Invite-only access
-☑ Backend-side RBAC
-☑ OAuth tokens server-side only
-☑ No secrets in Git
-☑ No tokens in localStorage
-☑ Narrow Google Drive scopes
-☑ MIME and extension validation
-☑ File size limit
-☑ Filename sanitization
-☑ Path traversal protection
-☑ CORS whitelist
-☑ Auth/upload rate limits
-☑ No secrets in logs
-☑ Audit approval/export actions
-☑ Idempotent Drive export
-☑ Retry without duplicate files
-☑ Preserve failed jobs
-☑ Never delete source asset automatically
-☑ Soft-delete content
-☑ Database backup
-☑ Export manifest checksum
-၁၃.၂ Reliability Rule
-Original uploaded files ကို processing output နဲ့ overwrite မလုပ်ပါ။ Original, draft, preview, final ကို သီးခြား version တွေအဖြစ် သိမ်းရမယ်။
-
-📌 အပိုင်း ၁၄: Development
-၁၄.၁ Frontend
-bash
-cd web-platform/frontend
-npm install
-npm run dev
-၁၄.၂ Backend
-bash
-cd web-platform/backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-၁၄.၃ Checks
-bash
-npm run typecheck
-npm run build
-npm run e2e
-pytest
-၁၄.၄ GitHub Codespaces
-text
-1. github.com ဖွင့်
-2. Repo → Code → Codespaces → New
-3. Terminal ဖွင့်
-4. pip install / npm install
-5. Run
-📌 အပိုင်း ၁၅: Environment Variables
-text
-APP_ENV=production
-SESSION_SECRET=<secret>
-SESSION_COOKIE_SECURE=true
-CORS_ORIGINS=<frontend-origin>
-TRUSTED_HOSTS=<backend-host>
-
-DATABASE_URL=<postgres>
-REDIS_URL=<redis>
-
-CLOUDINARY_CLOUD_NAME=<secret>
-CLOUDINARY_API_KEY=<secret>
-CLOUDINARY_API_SECRET=<secret>
-
-B2_APPLICATION_KEY_ID=<secret>
-B2_APPLICATION_KEY=<secret>
-B2_BUCKET_NAME=<bucket>
-B2_REGION=<region>
-
-SUPABASE_URL=<project-url>
-SUPABASE_SERVICE_ROLE_KEY=<secret>
-SUPABASE_STORAGE_BUCKET=narrativ-forge
-
-GOOGLE_CLIENT_ID=<secret>
-GOOGLE_CLIENT_SECRET=<secret>
-GOOGLE_REDIRECT_URI=<backend-callback>
-OAUTH_ENCRYPTION_KEY=<secret>
-
-SENTRY_DSN=<secret>
-
-CLOUDFLARE_WHISPER_WORKER_URL=<worker-url>
-CLOUDFLARE_WHISPER_SHARED_SECRET=<secret>
-CLOUDFLARE_WHISPER_TOKEN_TTL_SECONDS=300
-
-GROQ_API_KEY=<secret>                    ← အသစ်
-
-STRIPE_SECRET_KEY=<secret>
-STRIPE_WEBHOOK_SECRET=<secret>
-STRIPE_PRICE_PRO=<price-id>
-STRIPE_PRICE_BUSINESS=<price-id>
-📌 အပိုင်း ၁၆: Daily Limit & Processing Targets
-၁၆.၁ Groq Free Tier
-အချက်	တန်ဖိုး
-Limit	1,000 requests/day (model တစ်ခုချင်း)
-တစ်ပုဒ် (ပြင်ဆင်မှု အပါ)	6-10 requests
-Practical Max	5-10 ပုဒ်/ရက်
-၁၆.၂ Cloudflare Workers AI
-အချက်	တန်ဖိုး
-Limit	10,000 neurons/day
-Whisper	~243 audio min/day
-၁၆.၃ Processing Targets
-Operation	MVP Target	Optimized Target
-Audio extraction	1-2 min	Under 1 min
-Whisper transcription	5-10 min	2-3 min
-Subtitle generation	1-2 min	Under 1 min
-Thumbnail	1-2 min	Under 1 min
-FFmpeg assembly	5-10 min	2-3 min
-Drive export	2-5 min	1-2 min
-Total	15-30 min	7-15 min
-📌 အပိုင်း ၁၇: Final Definition of Done
-၁၇.၁ Manual Mode
-□ Video ၁၅-၂၀ ခု ထုတ်ပြီး
-□ Production log ဖြည့်ပြီး
-□ Hook types ၃ မျိုးအနည်းဆုံး
-□ Subtitle styles ၂ မျိုးအနည်းဆုံး
-□ Production time တိုင်းပြီး
-□ Commercial-use risk စစ်ပြီး
-၁၇.၂ Auto Mode
-□ Standalone app
-□ No Logixa Flow
-□ No Aether Bridge
-□ Invite-only login
-□ Role-based access
-□ Ideas → Series → Season → Episode
-□ Script and scene workflow
-□ Upload and asset versioning
-□ Transcript generation
-□ Timestamp alignment
-□ Burmese subtitle editor
-□ Quality gates
-□ Human approval
-□ Approved-only export
-□ Google Drive package
-□ Metadata and manifest
-□ Category system
-□ Social preparation
-□ Manual publishing record
-□ App analytics
-□ Social analytics import
-□ Hook library
-□ Subtitle presets
-□ Manual production log
-□ Feedback loop
-□ Empty/loading/error/offline states
-□ Responsive UI
-□ Unit/integration/E2E tests
-□ Security audit
-□ Deployment audit
-□ Backup/restore test
-📌 အပိုင်း ၁၈: Final Source of Truth
-Narrativ Forge သည် Manual Mode နှင့် Auto Mode ပါဝင်သော standalone Burmese short-form video production system ဖြစ်သည်။ Manual Mode သည် Auto Mode ၏ specification နှင့် training data ဖြစ်ပြီး၊ Auto Mode သည် အတည်ပြုထားသော manual workflow ကို automate လုပ်ပေးသည်။
-
-Workflow သည် Idea → Structure → Script → Assets → Processing → Subtitle → Review → Output ဖြစ်သည်။ Human approval မရှိပါက Google Drive export မဖြစ်ရ။
-
-Google Drive သည် approved output ၏ final destination ဖြစ်ပြီး၊ application database သည် workflow state, version, subtitle, approval, analytics နှင့် audit data များ၏ source of truth ဖြစ်သည်။
-
-📌 အပိုင်း ၁၉: Next Sequence
-text
-1. Verify production storage credentials
-        ↓
-2. Run real B2 / Supabase / Cloudinary verification
-        ↓
-3. Run real Cloudflare Whisper → VTT → Subtitle Studio
-        ↓
-4. Run real Groq API → Script
-        ↓
-5. Run a real Celery worker/runtime smoke test
-        ↓
-6. Verify Google Drive export + idempotent retry
-        ↓
-7. Verify Stripe + SMTP + Sentry + audit events
-        ↓
-8. Complete backup/restore, dependency, security audits
-        ↓
-9. Run the full integration/E2E suite
-        ↓
-10. Final production readiness decision
-📌 အပိုင်း ၂၀: Documentation Index
-Root Level
-File	Status	ဘာအတွက်
-README.md	✅	Project Overview
-SECURITY.md	✅	Security Policy
-roadmap.md	✅	This file
-tools.md	🟢	Tool Stack (roadmap မှာ ပါပြီ)
-manual-mode.md	🟢	Manual Guide (roadmap မှာ ပါပြီ)
-ui-plan.md	🟢	UI Plan (roadmap မှာ ပါပြီ)
-future-reserve.md	🟢	Future (roadmap မှာ ပါပြီ)
-web-platform/docs/
-File	ဘာအတွက်
-architecture.md	System Architecture
-data-contract.md	Data Model
-processing-flow.md	Processing Pipeline
-drive-export.md	Google Drive Export
-deployment.md	Deployment Guide
-web-platform/docs/runbooks/
-File	ဘာအတွက်
-stuck_job.md	Stuck Job Recovery
-rotate_secrets.md	Secret Rotation
-restore.md	Database Restore
-UI Docs
-File	ဘာအတွက်
-ui-states.md	State Management
-ui-accessibility.md	A11y Guide
-ui-responsive.md	Responsive Guide
-ui-testing.md	UI Testing Guide
-ဒီ roadmap.md သည် Narrativ Forge ရဲ့ Single Source of Truth ဖြစ်သည်။
-
+## 0. Product Definition
+
+Narrativ Forge is a private, invite-only Burmese short-form video production workspace.
+
+### Core workflow
+
+`Idea → Structure → Script → Assets → Processing → Subtitle → Review → Approval → Output → Publishing Preparation → Analytics`
+
+### Operating principles
+
+1. Manual Mode validates the production loop and creates useful production data.
+2. Auto Mode accelerates the same workflow; it does not bypass human quality control.
+3. Human approval is mandatory before final export.
+4. The application database is the workflow/version/approval/audit source of truth.
+5. Google Drive is an approved-output destination, not the workflow database.
+6. Direct TikTok/YouTube/Facebook/Instagram publishing is out of scope for the current product boundary; the system prepares platform-ready metadata/variants and records manual publication results.
+7. No real secrets belong in source control or documentation.
+8. Heavy FFmpeg/Whisper work belongs in worker infrastructure, not request handlers.
+9. Free-first infrastructure is preferred, but production reliability takes precedence over an artificial free-only constraint.
+10. Every generated artifact must remain reviewable, versioned, and selectively replaceable.
+
+### Current target output
+
+- Burmese short-form video
+- Target duration: 3 minutes
+- 9:16
+- Target resolution: 1080×1920
+- Burmese subtitles
+- Output package: video, subtitles, transcript, script, metadata, thumbnail
+
+### Explicit exclusions
+
+- Logixa Flow integration
+- Aether Bridge integration
+- Public registration
+- Public profiles
+- Public browsing/comments
+- Direct social-platform publishing
+- External downstream delivery
+- Google Drive as workflow DB
+- Any feature that bypasses mandatory human approval
 
 ---
 
-## 📚 Reconciled Documentation
+# 1. Execution Model
 
-The master roadmap remains the **target/source of truth for what Narrativ Forge is intended to become**. The repository README remains the source for actual implementation/deployment state.
+## 1.1 Formal phases
 
-The reconciled documentation is now split under `docs/`:
+The roadmap has **12 formal phases**. They are the execution backbone:
 
-- `docs/README.md` — documentation map
-- `docs/01-product.md` — product definition and boundaries
-- `docs/02-stack.md` — stack and constraints
-- `docs/03-architecture.md` — architecture
-- `docs/04-current-vs-target.md` — implementation vs target reconciliation
-- `docs/05-execution-roadmap.md` — remaining work and release order
-- `docs/06-future-reserve.md` — deferred scope
+1. Foundation & Security
+2. Core Domain
+3. Script Studio
+4. Assets & Uploads
+5. Processing Engine
+6. Subtitle Studio
+7. Review & Approval
+8. Export & Publishing Preparation
+9. Search & Analytics
+10. Production Hardening
+11. Business & Collaboration
+12. Scale & Advanced
 
-### Documentation rule
+The expanded Auto Production workstreams below are **not additional formal phases**. They are scheduled capability tracks that attach to the 12-phase roadmap.
 
-`roadmap.md` describes the **desired final system**.  
-`README.md` describes the **actual repository state**.  
-`docs/04-current-vs-target.md` reconciles the two.  
-`docs/05-execution-roadmap.md` is the current execution queue.
+## 1.2 Expanded Auto Production
 
-Do not mark a feature production-ready merely because code exists; real integration, runtime, security, and recovery verification must pass.
+Workstreams 13–17:
 
+13. Cross-platform export variants
+14. Trend integration adapter
+15. A/B testing and feedback scoring
+16. Series trailer planning
+17. Burmese-first translation adapter
+
+## 1.3 Scale / intelligence batches
+
+Batches 18–36 are additional planned capabilities:
+
+18. Multi-platform publishing preparation adapters
+19. Live trend providers
+20. Experimentation engine
+21. AI quality/evaluation
+22. NLE / advanced export
+23. Storage lifecycle and disaster recovery
+24. SRE / compliance
+25. Character and style bible automation
+26. Hook recommendation and episode scoring
+27. Burmese subtitle quality model and Zawgyi/Unicode corpus
+28. Selective regeneration with dependency-aware invalidation
+29. Batch scheduler with quota-aware parallelism
+30. Human-in-the-loop quality learning
+31. Yjs collaborative script editing
+32. Realtime job/review notifications and presence
+33. Usage quotas and plan enforcement
+34. Enterprise tenant controls and resource policies
+35. Onboarding/demo tenant and support workflow
+36. Final production launch gate and external pen-test remediation
+
+These are ordered workstreams, not promises that all are required for MVP launch.
 
 ---
 
-## 📚 Add-On Reconciliation — 2026-10-06
+# 2. Status Vocabulary
 
-The additional Auto Production requirements have been merged into the reconciled plan. Detailed specification: `docs/09-auto-production-expansion.md`.
+Use these statuses consistently:
 
-### Newly added target areas
-- Story Upload + AI Episode Splitter
-- 8-type Hook Engineering + Hook Library + A/B flow
-- SEO Optimization + Keyword/Trend adapters
-- Retention, Pacing, Emotional Arc and Engagement systems
-- Auto Thumbnail pipeline + Visual Variety
-- Sound Design + emotion-based BGM matching
-- Character/Voice consistency + Series Bible + Continuity Checker
-- Cross-platform export preparation
-- Batch Generation + Series Calendar
-- Feedback Loop + Title/Hook/Thumbnail A/B testing
-- Video Generation Provider Adapter + fallback + quota tracking
-- Watermark/commercial-use policy checks
-- Expanded data tables and production screens
+- **CODE-DONE** — implementation exists and has appropriate automated evidence.
+- **FOUNDATION** — reusable seam/contract/foundation exists, but full product integration remains.
+- **VERIFY** — implementation exists but fresh integration/live evidence is required.
+- **USER/LIVE** — requires real credentials, external account action, real infrastructure, or human evidence.
+- **TODO** — implementation has not been completed.
+- **RESERVE** — intentionally deferred or optional future capability.
 
-### Important planning rule
-The new provider numbers/free-tier claims are treated as **unverified candidate assumptions** until checked against live provider terms, API access, quotas, commercial-use rules, watermark behavior and quality.
+Never change a VERIFY/USER-LIVE item to Done merely because code exists.
 
-### Revised execution principle
-Do not jump directly into all new features. First make the repository green and complete real infrastructure verification. Then build the expanded Auto Production pipeline incrementally with schema → API/service → worker → UI → tests → real integration verification.
+---
 
-### Revised Source of Truth
-`roadmap.md` = desired final system.
-`README.md` = actual repository state.
-`docs/04-current-vs-target.md` = current vs target status.
-`docs/05-execution-roadmap.md` = current execution order.
-`docs/09-auto-production-expansion.md` = detailed Add-On target specification.
+# 3. Phase 01 — Foundation & Security
 
+## Scope
 
-## Master reconciliation — 2026-10-07
+Establish the application skeleton, configuration, authentication foundation, security boundaries, migrations, tenant model, and development/production configuration rules.
 
-The repository roadmap, prior master/remediation plans, formal Phases 01–12, Expanded Auto Production 13–17, and Batches 18–36 are reconciled in **docs/21-master-completion-matrix.md**.
+## Target checklist
 
-That matrix is the execution status map: code/foundation work may be completed autonomously, while real worker, credentials, provider accounts, production recovery, E2E, performance, accessibility, legal, and pen-test gates remain explicitly evidence-bound.
+- Next.js frontend foundation
+- FastAPI backend foundation
+- PostgreSQL + Alembic
+- Secure session/auth foundation
+- Invite-only access model
+- Organization/membership model
+- Role model
+- Production configuration validation
+- CORS and trusted-host validation
+- Security headers
+- OAuth token encryption foundation
+- Webhook HTTPS/SSRF protections
+- Filename/path safety
+- Upload MIME/size validation
+- Rate-limit foundation
+- Audit-event foundation
+- Secret hygiene
+- CodeQL / dependency/container security workflow foundations
+- CI test markers and unit-test organization
 
+## Current status
 
-## Code-completion checkpoint — 2026-10-07
+**CODE-DONE / VERIFY**
 
-The latest autonomous code pass adds shared completion contracts for:
-- all required workflow UI states and blocking-state semantics;
-- immutable content-version creation/retention;
-- dependency-aware selective regeneration;
-- token-bucket rate limiting and quota decisions;
-- storage archive/delete planning with 80/90/95% thresholds;
-- alert evaluation and secret-safe audit metadata;
-- realtime presence leases and deterministic notification keys;
-- legal release blockers and release-evidence gating;
-- the production E2E evidence sequence.
+Live verification still required for production authentication, tenant isolation, credentials, security scans, and deployment evidence.
 
-These are code-level contracts only. Real providers, worker runtime, media processing, OAuth/Drive, SMTP, Stripe, Sentry, backup/restore, accessibility, load/security scans, legal documents, and external penetration testing remain verification/user gates.
+---
+
+# 4. Phase 02 — Core Domain
+
+## Scope
+
+Build the durable content model and workflow state.
+
+## Domain
+
+- Ideas
+- Series
+- Seasons
+- Episodes
+- Scripts
+- Script versions
+- Scenes
+- Assets
+- Asset versions
+- Processing jobs
+- Approvals
+- Drive exports
+- Publishing preparation state
+- Manual production logs
+- Hook library
+- Subtitle presets
+- App analytics
+- Social analytics
+- Activity/audit logs
+- Characters
+- Episode versions
+- Scene regeneration records
+- Content extensions
+
+## Required invariants
+
+- Episode belongs to Series and Season.
+- Episode numbering is unique within its intended scope.
+- `public_id` remains separate from internal DB identity.
+- Asset identity is separate from export identity.
+- Assets link to episodes and optionally scenes.
+- Historical content versions are immutable.
+- Script/Episode edits use optimistic locking.
+- Critical transitions use compare-and-set semantics.
+- Database state is the durable workflow source of truth.
+
+## Workflow state
+
+`idea → planned → script_draft → script_review → assets_needed → in_production → processing → subtitle_review → needs_approval → approved → exporting → exported → archived`
+
+Failure/revision paths:
+
+- `script_review → script_draft`
+- `subtitle_review → in_production`
+- `needs_approval → in_production`
+- `exporting → failed`
+- `failed → processing`
+
+## Current status
+
+**CODE-DONE / VERIFY**
+
+---
+
+# 5. Phase 03 — Script Studio
+
+## Scope
+
+Create a reliable Burmese-first script workflow.
+
+## Target checklist
+
+- Script editor
+- Autosave
+- Conflict detection
+- Optimistic locking
+- Immutable script history
+- Version comparison
+- Script review state
+- Scene breakdown
+- AI-assisted structure/script generation behind provider adapters
+- Provider fallback
+- Deterministic mock adapter for development/testing
+- Burmese/Zawgyi normalization
+- Script quality gates
+- Character/style context
+- Selective script revision
+
+## AI routing
+
+Configured OpenAI-compatible providers may be routed by priority. Current implementation supports Groq/OpenAI-compatible providers with deterministic mock fallback.
+
+No provider is considered production-ready until real credentials, rate limits, latency, quality, terms, and failure behavior are verified.
+
+## Current status
+
+**CODE-DONE / VERIFY**
+
+---
+
+# 6. Phase 04 — Assets & Uploads
+
+## Scope
+
+Provide safe, resumable, versioned media handling.
+
+## Storage strategy
+
+- Cloudinary: images/previews
+- Supabase Storage: small workflow files such as SRT/manifest
+- Backblaze B2: raw video/audio/large media
+- Google Drive: approved final outputs
+- Local disk: temporary processing only
+
+Storage routing must remain explicit and reference-safe.
+
+## Target checklist
+
+- Direct uploads
+- Resumable upload sessions
+- Chunk offsets
+- Chunk checksums
+- Provider ETags
+- Ownership checks
+- Expiry/abort behavior
+- Idempotent upload creation
+- MIME/size validation
+- Filename sanitization
+- Asset versioning
+- Retention metadata
+- Immutable source objects
+- Safe download
+- Soft-delete/reference checks
+- Provider-specific encryption where supported
+
+## Current status
+
+**CODE-DONE / VERIFY**
+
+Real B2, Supabase, Cloudinary, and full routing tests remain live gates.
+
+---
+
+# 7. Phase 05 — Processing Engine
+
+## Scope
+
+Build the reliable asynchronous production engine.
+
+## Architecture
+
+`API → PostgreSQL → Redis → Celery Worker → FFmpeg/Whisper/adapters → Storage → DB`
+
+## Target checklist
+
+- ProcessingJob lifecycle
+- Real Celery worker container
+- Beat/scheduled recovery
+- Guarded dispatch
+- Duplicate-dispatch prevention
+- Retry scheduling
+- Failed-job preservation
+- Dead-letter handling
+- Worker concurrency bounds
+- FFmpeg media processing
+- ffprobe validation
+- Whisper transcription
+- Cloudflare Whisper path
+- Celery fallback path
+- Progress tracking
+- Timeouts
+- Abandoned-job recovery
+- Queue depth visibility
+- Representative real-media smoke test
+
+## Free-first worker strategy
+
+- Render: API/web service
+- Upstash Redis: shared broker
+- Home Windows PC: primary heavy worker + single Beat
+- Office Windows PC: reserve light worker, no Beat
+- Kaggle: optional ephemeral free-first worker path
+- Future paid worker: same repository worker contract
+
+No second application codebase is permitted for local workers.
+
+## Current status
+
+**FOUNDATION / VERIFY / USER-LIVE**
+
+The worker code/runtime path exists, but real worker execution and representative media processing remain hard production gates.
+
+---
+
+# 8. Phase 06 — Subtitle Studio
+
+## Scope
+
+Burmese subtitle editing, normalization, validation, and output.
+
+## Target checklist
+
+- Transcript import
+- VTT/SRT handling
+- Burmese Unicode/Zawgyi normalization
+- Subtitle pagination
+- Subtitle editor
+- Timing validation
+- Overlap detection
+- Duration checks
+- Presets
+- Approved subtitle immutability
+- Revision/version creation
+- Cloud Whisper VTT import
+- Manual correction
+- Quality warnings
+- Burmese subtitle evaluation foundation
+
+## Current status
+
+**CODE-DONE / VERIFY**
+
+Real audio → Whisper → VTT → Subtitle Studio remains a live verification gate.
+
+---
+
+# 9. Phase 07 — Review & Approval
+
+## Scope
+
+Make human quality control explicit and enforceable.
+
+## Target checklist
+
+- Review Center
+- Approval Detail
+- Video preview
+- Script review
+- Subtitle review
+- Asset completeness checks
+- Critical issue blocking
+- Approve/reject actions
+- Revision loop
+- Approval audit events
+- Permission enforcement
+- Tenant scoping
+- Export preconditions
+
+## Hard rule
+
+Final export cannot proceed unless:
+
+1. Episode is approved.
+2. Final video asset exists and is valid.
+3. Current approved subtitle exists.
+4. Required metadata/manifest is valid.
+5. User has permission.
+
+## Current status
+
+**CODE-DONE / VERIFY**
+
+---
+
+# 10. Phase 08 — Export & Publishing Preparation
+
+## Scope
+
+Produce approved output packages and platform-ready preparation without direct publishing.
+
+## Target checklist
+
+- Google OAuth
+- Narrow `drive.file` scope
+- Drive export
+- Export manifest
+- Video + SRT + transcript + script + metadata + thumbnail package
+- Idempotent export/re-export
+- Export history
+- Partial-progress recovery
+- Provider identity reuse
+- Export failure state
+- Publishing preparation
+- Platform metadata validation
+- Captions/hashtags
+- Format checks
+- Manual publication record
+- Publication evidence state
+
+## Publishing state
+
+`not_ready → prepared → scheduled_metadata_ready → manually_published → published_recorded`
+
+Never claim publication without evidence.
+
+## Current status
+
+**CODE-DONE / VERIFY / USER-LIVE**
+
+Real Google OAuth/Drive export and recovery remain live gates.
+
+---
+
+# 11. Phase 09 — Search & Analytics
+
+## Scope
+
+Make production history searchable and useful for learning.
+
+## Target checklist
+
+- Global search
+- Relevance ranking
+- Hook Library
+- Manual production log
+- App analytics
+- Social analytics
+- Production time tracking
+- Hook/type tracking
+- Completion/retention signals
+- Shares/engagement signals
+- Episode scoring
+- Feedback aggregation
+- Analytics privacy boundaries
+
+## Current status
+
+**CODE-DONE / VERIFY**
+
+---
+
+# 12. Phase 10 — Production Hardening
+
+## Scope
+
+Close the gap between working code and release-grade operation.
+
+## Security
+
+- Final dependency scan
+- CodeQL
+- pip-audit
+- npm audit
+- Trivy/container scan
+- Security review
+- Penetration testing
+- Cross-tenant E2E
+
+## Reliability
+
+- Flaky-network upload tests
+- Retry/DLQ verification
+- Duplicate dispatch verification
+- Worker crash recovery
+- Backup/restore drill
+- RPO/RTO evidence
+- Load/performance test
+- Rollback test
+
+## Observability
+
+- Structured logs
+- Sentry production event
+- Alert thresholds
+- Queue/job metrics
+- Processing duration metrics
+- Export failure metrics
+- Incident/runbook verification
+- No secrets/PII in logs or metric labels
+
+## UX/accessibility
+
+Every applicable screen must support:
+
+- Empty
+- Loading
+- Uploading
+- Processing
+- Completed
+- Failed
+- Retrying
+- Rejected
+- Offline/read-only
+- Permission denied
+- Session expired
+- Drive disconnected
+- Drive export failed
+- Storage warning
+- Unsupported file
+- Critical quality issue
+
+Also complete:
+
+- Desktop/tablet/mobile responsive audit
+- Keyboard audit
+- Screen-reader audit
+- WCAG 2.2 accessibility audit
+- UI polish
+
+## Current status
+
+**FOUNDATION / VERIFY / USER-LIVE**
+
+---
+
+# 13. Phase 11 — Business & Collaboration
+
+## Scope
+
+Prepare the product for multiple users and commercial operation.
+
+## Target checklist
+
+- Organizations
+- Memberships
+- Owner/editor/viewer roles
+- Invitations
+- Magic links
+- Transactional email
+- Usage metering
+- Quota enforcement
+- Stripe checkout/portal/webhooks
+- Subscription lifecycle
+- Realtime notifications
+- Presence
+- Yjs collaboration seam
+- Demo tenant/sample seed
+- Support/ticket workflow
+- Enterprise resource policies
+
+## Legal requirements
+
+- Terms of Service
+- Privacy Policy
+- DPA/data handling documentation where required
+- DMCA/copyright process if public publishing is introduced
+- Commercial-use/license review for external generation providers
+
+## Current status
+
+**FOUNDATION / VERIFY / USER-LIVE**
+
+---
+
+# 14. Phase 12 — Scale & Advanced
+
+## Scope
+
+Advanced production intelligence, scale, storage lifecycle, and release governance.
+
+## Target checklist
+
+- Character/style bible
+- Hook recommendation
+- Episode scoring
+- Burmese subtitle quality model
+- Selective regeneration
+- Batch scheduling
+- Quota-aware parallelism
+- Human feedback learning
+- NLE export formats
+- Storage lifecycle automation
+- Archive/cold storage
+- Disaster recovery
+- Cost controls
+- SRE controls
+- Enterprise controls
+- Final launch gate
+
+## Current status
+
+**FOUNDATION / TODO / VERIFY**
+
+---
+
+# 15. Expanded Auto Production — Workstreams 13–17
+
+These workstreams extend the core workflow without becoming separate roadmap phases.
+
+## 15.1 Workstream 13 — Cross-platform export variants
+
+Prepare bounded variants for TikTok, YouTube Shorts, Facebook Reels, and the master output.
+
+Requirements:
+
+- Platform-safe dimensions
+- Duration checks
+- Metadata constraints
+- Caption/hashtag preparation
+- Deterministic variant manifests
+- No direct publishing
+
+Status: **FOUNDATION / VERIFY**
+
+## 15.2 Workstream 14 — Trend integration adapter
+
+Build provider-neutral trend signals with:
+
+- Provider adapter contract
+- Cache/TTL
+- Expiry handling
+- Attribution
+- Rate-limit/backoff behavior
+- Graceful degradation
+- Ranking inputs
+
+Status: **FOUNDATION / VERIFY**
+
+## 15.3 Workstream 15 — A/B testing and feedback scoring
+
+Build:
+
+- Variant registry
+- Allocation rules
+- Outcome recording
+- Views
+- Completions
+- Shares
+- Guardrails
+- Deterministic winner/ranking logic
+- Confidence-aware future experimentation seam
+
+Status: **FOUNDATION / VERIFY**
+
+## 15.4 Workstream 16 — Series trailer planning
+
+Build duration-budgeted trailer planning with:
+
+- Segment selection
+- Hook preference
+- Duration budget
+- Story coverage
+- Deterministic plan output
+
+Status: **FOUNDATION / VERIFY**
+
+## 15.5 Workstream 17 — Burmese-first translation adapter
+
+Build:
+
+- Translation request contract
+- Burmese-first validation
+- Line-break preservation
+- Subtitle-safe output
+- Provider-neutral adapter boundary
+
+Status: **FOUNDATION / VERIFY**
+
+---
+
+# 16. Production Intelligence & Scale — Batches 18–24
+
+## 18. Multi-platform publishing preparation adapters
+
+- Provider-neutral preparation contracts
+- Idempotent preparation attempts
+- Platform-specific metadata validation
+- Publication evidence model
+- No direct publishing
+
+Status: **FOUNDATION**
+
+## 19. Live trend providers
+
+- Pluggable connectors
+- Cache/TTL
+- Attribution
+- Rate limits
+- Backoff
+- Provider failure isolation
+- Graceful degradation
+
+Status: **FOUNDATION**
+
+## 20. Experimentation engine
+
+- Variant registry
+- Experiment lifecycle
+- Allocation
+- Outcomes
+- Winner selection
+- Confidence/guardrails
+- Safe stopping rules
+
+Status: **FOUNDATION**
+
+## 21. AI quality and evaluation
+
+- Burmese script evaluation sets
+- Burmese subtitle evaluation sets
+- Provider quality scores
+- Regression tests
+- Cost tracking
+- Latency tracking
+- Capability routing
+- Provider comparison
+
+Status: **FOUNDATION**
+
+## 22. NLE / advanced export
+
+- EDL
+- FCPXML
+- Premiere XML
+- Timeline validation
+- Asset mapping
+- Export manifests
+- Round-trip validation
+
+Status: **FOUNDATION**
+
+## 23. Storage lifecycle and disaster recovery
+
+- Reference-safe retention
+- Storage thresholds at 80/90/95%
+- Cleanup planning
+- Archive/cold storage
+- Restore drills
+- RPO/RTO
+- Cost controls
+- Lifecycle automation
+
+Status: **FOUNDATION / VERIFY / USER-LIVE**
+
+## 24. SRE / compliance
+
+- Alert rules
+- Incident automation
+- Access reviews
+- Audit evidence
+- Deletion verification
+- Privacy controls
+- DMCA/copyright process
+- Security evidence
+- Release evidence
+
+Status: **FOUNDATION / VERIFY / USER-LIVE**
+
+---
+
+# 17. Product Intelligence — Batches 25–30
+
+## 25. Character/style bible automation
+
+- Character profiles
+- Style profiles
+- Continuity context
+- Prompt templates
+- Character consistency checks
+
+Status: **FOUNDATION**
+
+## 26. Hook recommendation and episode scoring
+
+- Hook families
+- Episode quality score
+- Retention-oriented inputs
+- Historical performance signals
+- Recommendation contract
+
+Status: **FOUNDATION**
+
+## 27. Burmese subtitle quality model
+
+- Burmese evaluation corpus
+- Zawgyi/Unicode cases
+- Normalization cases
+- Timing/readability checks
+- Quality scoring
+- Regression corpus
+
+Status: **FOUNDATION**
+
+## 28. Selective regeneration
+
+- Dependency graph
+- Change impact analysis
+- Regeneration plan
+- Asset preservation
+- Version retention
+- Scene-level regeneration
+- Downstream invalidation only where necessary
+
+Status: **FOUNDATION / VERIFY**
+
+## 29. Batch scheduler
+
+- Batch jobs
+- Quota-aware planning
+- Concurrency limits
+- Priority
+- Retry semantics
+- Provider capacity awareness
+
+Status: **FOUNDATION**
+
+## 30. Human-in-the-loop quality learning
+
+- Review learning events
+- Approval/rejection signals
+- Quality model updates
+- Safe feedback aggregation
+- No automatic publication from learned scores
+
+Status: **FOUNDATION**
+
+---
+
+# 18. Collaboration & Commercial Scale — Batches 31–36
+
+## 31. Yjs collaborative script editing
+
+- Shared document model
+- Conflict-free editing
+- Presence
+- Permission enforcement
+- Version snapshots
+- Recovery
+
+Status: **FOUNDATION**
+
+## 32. Realtime notifications and presence
+
+- Job notifications
+- Review notifications
+- Export notifications
+- Presence leases
+- Reconnect behavior
+- Permission-aware delivery
+
+Status: **FOUNDATION / VERIFY**
+
+## 33. Usage quotas and plan enforcement
+
+- Usage metering
+- Quotas
+- Token/provider cost tracking
+- Storage quotas
+- Processing quotas
+- Rate limits
+- Graceful quota errors
+
+Status: **CODE-DONE / VERIFY**
+
+## 34. Enterprise tenant controls
+
+- Resource policies
+- Tenant-level limits
+- Role policies
+- Retention policies
+- Audit requirements
+- Isolation verification
+
+Status: **FOUNDATION**
+
+## 35. Onboarding, demo tenant and support
+
+- Demo/sample seed
+- First-run onboarding
+- Empty-state guidance
+- Support/ticket workflow
+- Troubleshooting links
+- Operational support boundaries
+
+Status: **FOUNDATION**
+
+## 36. Final production launch gate
+
+Release only after all applicable evidence exists.
+
+Required evidence includes:
+
+- Production auth
+- Tenant isolation
+- Real worker
+- Real representative media
+- Queue → Worker → FFmpeg/Whisper → DB/storage
+- Retry/DLQ/failover
+- Real storage providers
+- Google OAuth/Drive export/re-export/recovery
+- SMTP invite/magic link
+- Stripe lifecycle/webhooks
+- Sentry event/alert
+- Backup/restore
+- Full E2E
+- Load/performance
+- Security scans
+- Accessibility/responsive audit
+- Legal/compliance documents
+- External penetration test where required
+- Final documentation audit
+
+Status: **USER/LIVE**
+
+---
+
+# 19. Manual Mode Validation Gate
+
+Manual Mode is not a side project. It is the evidence loop used to validate what automation should optimize.
+
+## Required validation
+
+Produce **15–20 videos** and record:
+
+- Hook type
+- Title variant
+- Thumbnail choice
+- Subtitle style
+- Production time
+- Revision effort
+- Retention/engagement signals where available
+- Commercial-use/licensing observations
+
+Test at least:
+
+- 3 distinct hook families
+- 2 subtitle styles
+
+The expanded Auto plan has an 8-family hook library target; manual validation should cover those families where practical before changing automation defaults.
+
+## Exit gate
+
+- Manual production log exists.
+- Initial Hook Library exists.
+- Production time is measured.
+- Commercial-use risk is reviewed.
+- Repeated problems are captured as automation requirements.
+- MVP scope is frozen before unnecessary expansion.
+
+Status: **USER/LIVE**
+
+---
+
+# 20. UI / Design System Track
+
+The target baseline is **26 screens** and **33 reusable component categories**, but counts are coverage targets, not proof of completion.
+
+## Core screens
+
+- Login
+- Logout
+- Dashboard
+- Ideas
+- Series
+- Series Detail
+- Episodes
+- Episode Detail
+- Script Studio
+- Scene Breakdown
+- Asset Library
+- Video Project
+- Subtitle Studio
+- Thumbnail Studio
+- Processing Queue
+- Review Center
+- Approval Detail
+- Drive Export
+- Publishing Preparation
+- Hook Library
+- Manual Production Log
+- App Analytics
+- Social Analytics
+- Settings
+- Usage & Limits
+- Activity Log
+
+Expanded Auto requirements may be represented as tabs/panels rather than automatically creating new screens.
+
+## Design requirements
+
+- Production-first UI
+- Keyboard-friendly
+- Responsive desktop/tablet/mobile
+- Accessible/WCAG-oriented
+- State-complete
+- Burmese typography support
+- Shared semantic design tokens
+- Reusable accessible primitives
+- Focus-visible behavior
+- Reduced-motion support
+- Minimum interactive target sizing
+
+Status: **FOUNDATION / VERIFY**
+
+---
+
+# 21. Runtime, Storage & Infrastructure Track
+
+## Current target
+
+- Netlify: frontend
+- Render: API/web service
+- Managed PostgreSQL: production DB
+- Upstash Redis: shared broker/cache where selected
+- Cloudinary: image/preview layer
+- Supabase Storage: small workflow files
+- Backblaze B2: raw/large media
+- Google Drive: approved exports
+- Cloudflare Workers AI: primary free-first Whisper path
+- Celery + FFmpeg: long-running worker
+- Sentry: error monitoring
+
+## Local worker profile
+
+### Home PC
+
+- Primary heavy worker
+- `heavy_queue`
+- Single Beat
+- FFmpeg
+- Cloudflare Whisper by default
+- Local Whisper optional
+
+### Office PC
+
+- Reserve light worker
+- `light_queue`
+- No Beat
+- No heavy Whisper/video workload by default
+
+Both use the same repository worker contract and shared Redis broker.
+
+## Storage lifecycle
+
+- Temporary local files expire quickly.
+- Raw/intermediate media is retained according to reference-safe policy.
+- Approved final outputs are protected from cleanup.
+- Cleanup must never remove objects still referenced by durable workflow records.
+- Storage pressure thresholds: 80% warning, 90% urgent, 95% safety/fallback guard.
+- Archive/cold storage and deletion require retention-policy checks.
+
+Status: **FOUNDATION / VERIFY / USER-LIVE**
+
+---
+
+# 22. Cross-Cutting Engineering Contracts
+
+These are implementation foundations that support multiple phases.
+
+## State contract
+
+Shared workflow states are defined in backend/frontend code and must remain synchronized.
+
+## Version contract
+
+Historical content versions are immutable and checksummed where applicable.
+
+## Regeneration contract
+
+Changes invalidate only dependent downstream artifacts.
+
+## Quota contract
+
+Provider and processing usage is bounded by explicit quota decisions.
+
+## Storage contract
+
+Cleanup is reference-safe and threshold-aware.
+
+## Alert contract
+
+Operational alerts use bounded, non-sensitive metadata.
+
+## Audit contract
+
+Audit metadata is redacted and organization-scoped.
+
+## Presence contract
+
+Presence uses expiring leases rather than durable stale records.
+
+## Notification contract
+
+Notification identity is deterministic/idempotent.
+
+## Legal contract
+
+Release blockers are explicit and cannot be bypassed by a code-only status.
+
+## Release evidence contract
+
+A production release is a set of verifiable evidence, not a checklist of code files.
+
+---
+
+# 23. Testing Strategy
+
+## Unit
+
+- Backend domain/services
+- AI adapters
+- Orchestration
+- State/version/quota/storage contracts
+- Production intelligence contracts
+
+## Integration
+
+- PostgreSQL
+- Redis
+- Storage adapters
+- Worker dispatch
+- Processing lifecycle
+- OAuth/Drive adapters where testable
+
+## E2E
+
+Canonical production workflow:
+
+`Login → Series → Episode → Upload → Processing → Transcript → Burmese subtitle edit → Review → Approval → Drive export → Production log`
+
+## Failure-path E2E
+
+- Session expired
+- Permission denied
+- Tenant mismatch
+- Upload interruption
+- Upload resume
+- Duplicate request
+- Duplicate dispatch
+- Worker retry
+- DLQ
+- Storage provider failure
+- Whisper quota exhaustion
+- Drive disconnect
+- Drive export failure
+- Browser offline/read-only
+
+## Release verification
+
+Run fresh evidence against the exact release SHA. Never infer current CI health from an older run.
+
+---
+
+# 24. Production Release Gate
+
+A release may be called production-ready only when every applicable requirement is:
+
+- **CODE-DONE + automated evidence**, or
+- **VERIFY + fresh live evidence**, or
+- **RESERVE by explicit product decision**.
+
+## Hard blockers
+
+The following cannot be waived by documentation:
+
+1. Real worker + representative media
+2. Queue → Worker → FFmpeg/Whisper → DB/storage
+3. Retry/DLQ/failover evidence
+4. Real B2/Supabase/Cloudinary storage verification
+5. Real Google OAuth/Drive export/re-export/recovery
+6. Real SMTP invitation/magic-link delivery
+7. Stripe lifecycle/webhook verification
+8. Sentry production event/alert verification
+9. Backup/restore drill
+10. Production auth/tenant E2E
+11. Full integration/E2E suite
+12. Load/performance benchmark
+13. Security scan on release SHA
+14. Accessibility/responsive audit
+15. Legal/compliance documents
+16. External penetration test where required
+17. Manual Mode evidence where the product decision requires it
+
+---
+
+# 25. Consolidated Verification Window
+
+Implementation should be completed in batches first. Live verification should then be consolidated as much as practical.
+
+Recommended final sequence:
+
+1. Build/test code-only gaps.
+2. Complete UI/state coverage.
+3. Complete versioning/regeneration wiring.
+4. Complete storage cleanup/monitoring wiring.
+5. Complete auth/error-path coverage.
+6. Complete Auto Production integration seams.
+7. Reconcile README and roadmap.
+8. Provision/confirm required external credentials.
+9. Run real storage tests.
+10. Run real worker/media processing.
+11. Run Whisper + subtitle E2E.
+12. Run review/approval.
+13. Run Google Drive export/re-export/recovery.
+14. Run SMTP invitation/magic link.
+15. Run Stripe lifecycle/webhooks.
+16. Run Sentry event/alert.
+17. Run backup/restore.
+18. Run full browser E2E.
+19. Run load/performance.
+20. Run security scans and accessibility/responsive audit.
+21. Complete legal/compliance review.
+22. Perform final repository/documentation audit.
+23. Only then declare production readiness.
+
+---
+
+# 26. Documentation Governance
+
+This roadmap is the **only master execution roadmap**.
+
+### Root README
+
+`README.md` = current implementation, infrastructure, deployment state, verified blockers, and links to authoritative supporting documents.
+
+### This roadmap
+
+`roadmap.md` = desired target, complete future work, execution order, status, gates, and release criteria.
+
+### Completion matrix
+
+`docs/21-master-completion-matrix.md` = detailed evidence/status matrix. It is a supporting audit artifact, not a competing roadmap.
+
+### Supporting documents
+
+Keep detailed documents only when they contain information that cannot be usefully maintained in the roadmap:
+
+- Product definition
+- Architecture
+- UI/design system
+- Manual Mode
+- Auto Production specification
+- Runtime/storage lifecycle
+- Release readiness
+- Production runbook
+- Managed services
+- Security policy
+
+### Cleanup rule
+
+Do not delete or merge a document until:
+
+1. Its unique requirements have been mapped into the master roadmap or an authoritative supporting document.
+2. Internal links are updated.
+3. No requirement/status/evidence is lost.
+4. Duplicate or obsolete wording is removed.
+5. The repository contains one obvious source of truth for each category.
+
+---
+
+# 27. Execution Order From Here
+
+Unless a new blocker or user decision changes priority, execute in this order:
+
+1. Finish remaining code-only TODOs and foundation wiring.
+2. Complete screen/state/component coverage and accessibility foundations.
+3. Complete versioning, content-extension, and selective-regeneration integration.
+4. Complete storage cleanup, retention, and monitoring implementation.
+5. Complete authentication, invitation, and error-path coverage.
+6. Complete expanded Auto Production schema/API/worker/UI wiring.
+7. Complete remaining Phase 10–12 foundations.
+8. Reconcile documentation and remove duplicated roadmap content.
+9. Start the consolidated live verification window.
+10. Fix evidence failures.
+11. Repeat failed gates.
+12. Final release audit.
+13. Production-ready decision.
+
+**Do not jump to later intelligence/commercial features while a hard production blocker remains unless explicitly chosen as a parallel track.**
+
+---
+
+# 28. Mandatory Roadmap Checkpoints
+
+After every major milestone, and at minimum after Phases **03, 06, 09, and 12**:
+
+1. STOP implementation.
+2. Update this `roadmap.md`.
+3. Update `README.md`.
+4. Move verified work into the completed/status sections.
+5. Remove obsolete roadmap statements.
+6. Reconcile `docs/21-master-completion-matrix.md`.
+7. Review the next three execution units.
+8. Confirm no requirement was lost.
+
+This checkpoint is mandatory so the project never returns to fragmented planning.

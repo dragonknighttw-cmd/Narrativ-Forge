@@ -80,5 +80,5 @@ def test_storage_cleanup_protects_final_approved_and_only_copy():
     assert can_delete_asset(is_final=False, is_approved=False, is_only_copy=False, retention_expired=True)
     assert not can_delete_asset(is_final=True, is_approved=False, is_only_copy=False, retention_expired=True)
     assert not can_delete_asset(is_final=False, is_approved=True, is_only_copy=False, retention_expired=True)
-    assert classify_storage_usage(80, 100).state == "warning"
-    assert classify_storage_usage(95, 100).state == "emergency"
+    assert classify_storage_usage(80, 100).state() == "warning"
+    assert classify_storage_usage(95, 100).state() == "emergency"

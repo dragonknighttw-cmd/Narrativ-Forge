@@ -305,3 +305,10 @@ This document remains the authoritative runtime/storage plan. The current split 
 Storage lifecycle coding now includes explicit threshold classification (80/90/95%) and a deletion-safety primitive that refuses to delete final, approved, or only-copy assets. Local multipart cleanup remains retention-aware and preserves active upload sessions.
 
 This does not replace the required live cleanup/emergency drill. The production Definition of Done still requires real worker execution and real storage lifecycle verification.
+
+
+## Kaggle ephemeral worker track — 2026-10-07
+
+A free-first ephemeral worker path is now implemented as a coding foundation: GitHub Actions checks the production queue, launches a private Kaggle kernel only when work is queued, and the Kaggle session atomically claims one `real_processing` job before running the existing FFmpeg/Whisper/storage pipeline. PostgreSQL remains the source of truth. The Local Windows Worker remains the fallback and is not removed.
+
+This is NOT production-verified yet. The live gate still requires a real queued media job proving Kaggle launch → atomic claim → FFmpeg → storage → DB completion → retry/DLQ/recovery. Kaggle's documented CPU/GPU notebook maximum is currently 12 hours, so the architecture treats the session as ephemeral rather than a permanent worker.

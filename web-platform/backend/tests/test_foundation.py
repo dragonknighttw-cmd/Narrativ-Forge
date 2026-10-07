@@ -1087,3 +1087,22 @@ def test_export_state_compare_and_set_blocks_second_export_claim():
             db.close()
     finally:
         client.close()
+
+
+@pytest.mark.unit
+def test_local_storage_round_trip(tmp_path):
+    from pathlib import Path
+    from app.services.storage import LocalStorageProvider
+
+    provider = LocalStorageProvider(str(tmp_path))
+    source = tmp_path / "source.txt"
+    destination = tmp_path / "downloaded.txt"
+    source.write_text("narrativ forge", encoding="utf-8")
+
+    stored = provider.upload_file(source, "episodes/test/assets/v1/video/source.txt", "text/plain")
+    assert stored.size_bytes == source.stat().st_size
+    assert provider.exists(stored.object_key)
+    provider.download_file(stored.object_key, destination)
+    assert destination.read_text(encoding="utf-8") == "narrativ forge"
+    provider.delete(stored.object_key)
+    assert not provider.exists(stored.object_key)

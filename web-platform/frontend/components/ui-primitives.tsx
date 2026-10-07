@@ -56,7 +56,7 @@ export function Checkbox({ label, ...props }: InputHTMLAttributes<HTMLInputEleme
   );
 }
 
-export function Switch({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
+export function Switch({ label, ...props }: InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
   return (
     <label className="ds-switch">
       <input role="switch" {...props} type="checkbox" />

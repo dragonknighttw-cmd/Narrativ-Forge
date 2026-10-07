@@ -299,3 +299,16 @@ The next sequential coding track is:
 7. Expanded Auto Production workstreams 13–17 — cross-platform execution variants, trend adapter, A/B execution/measurement, series trailer planning/execution, and Burmese-first translation adapter.
 
 Code completion and live verification remain separate gates. Real worker, real-media, OAuth/Drive, SMTP, Stripe, Sentry, backup/restore, and live provider-limit verification must not be marked complete without evidence.
+
+
+## Expanded Auto Production 13–17 — coding checkpoint
+
+The sequential coding foundations are now implemented on `main`:
+
+- **13 Cross-platform variants:** bounded TikTok / YouTube Shorts / Facebook Reels export plans plus master validation.
+- **14 Trend adapter:** provider-neutral trend signal contract with expiry-aware deterministic ranking.
+- **15 A/B testing + feedback:** deterministic outcome scoring/ranking using views, completion, and shares.
+- **16 Series trailer:** duration-budgeted trailer segment planning with hook preference.
+- **17 Translation:** Burmese-first translation request/validation contract with line-break preservation.
+
+These are **coding foundations**, not claims that external platform APIs, live trend providers, translation providers, or real trailer rendering are production-verified. Those integrations remain provider/credential/live-media gates.

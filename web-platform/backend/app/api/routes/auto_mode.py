@@ -6,6 +6,7 @@ from ...db import get_db
 from ...models import Asset, Episode, ProcessingJob
 from ...services.auto_mode import create_auto_plan
 from ...services.selective_regeneration import regenerate_scene
+from ...workers.tasks import enqueue_real_job
 from ..dependencies import get_current_membership, require_roles
 
 router = APIRouter(prefix="/auto", tags=["auto-mode"])
@@ -77,6 +78,7 @@ def run_auto_mode(episode_id: str, payload: AutoPlanRequest, membership=Depends(
     episode.status = "in_production"
     db.commit()
     db.refresh(job)
+    enqueue_real_job(job.id)
     return {
         "episode_id": episode_id,
         "script_id": script.id,

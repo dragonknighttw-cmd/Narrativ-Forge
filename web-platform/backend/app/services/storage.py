@@ -1084,5 +1084,6 @@ def build_object_key(episode_id: str, version: int, filename: str, asset_type: s
     if not re.fullmatch(r"[a-z0-9_-]+", safe_asset_type):
         raise StorageError("Invalid asset type for storage key")
 
-    safe = Path(filename).name.replace(" ", "_")
-    return f"episodes/{safe_episode_id}/assets/v{version}/{safe_asset_type}/{safe}"
+    safe_filename = Path(filename).name
+    safe_filename = _safe_key_component(safe_filename.replace(" ", "_"), "filename")
+    return f"episodes/{safe_episode_id}/assets/v{version}/{safe_asset_type}/{safe_filename}"

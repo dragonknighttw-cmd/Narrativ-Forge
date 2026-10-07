@@ -234,3 +234,7 @@ Live worker, external provider, OAuth/Drive, SMTP, Stripe, Sentry, backup/restor
 
 - Auto Production coding track now also contains Series Bible/continuity, quality/pacing assessment, and provider adapter registry foundations; real provider execution remains a live verification item.
 \n\n## Coding-track update — 2026-10-07 (latest)\n\nThe implementation track additionally closed:\n1. Auto Mode helper consistency and normalization call safety.\n2. Magic-link expiry timezone compatibility across SQLite tests and production-style timezone-aware values.\n3. Production-readiness scoring that blocks review readiness on quality or continuity issues.\n4. Expanded accessible UI primitives: table, tabs, modal, tooltip, divider, and status indicator.\n5. Semantic token alignment for the expanded UI primitives.\n\nFresh CI/security evidence for the newest connector-written SHA is still a separate verification gate.
+
+## Coding-track continuation — 2026-10-07
+
+While the live Local Worker gate remains paused, the coding track continued with: provider quota idempotency/threshold coverage, provider fallback failure-path coverage, storage threshold contract validation, local storage round-trip coverage, magic-link missing-token handling, storage filename/path hardening, and Auto Mode adoption of shared accessible UI primitives. These changes still require fresh CI/security completion before automated gates can be marked green.

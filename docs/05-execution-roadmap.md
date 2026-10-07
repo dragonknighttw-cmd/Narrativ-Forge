@@ -238,3 +238,10 @@ Live worker, external provider, OAuth/Drive, SMTP, Stripe, Sentry, backup/restor
 ## Coding-track continuation — 2026-10-07
 
 While the live Local Worker gate remains paused, the coding track continued with: provider quota idempotency/threshold coverage, provider fallback failure-path coverage, storage threshold contract validation, local storage round-trip coverage, magic-link missing-token handling, storage filename/path hardening, and Auto Mode adoption of shared accessible UI primitives. These changes still require fresh CI/security completion before automated gates can be marked green.
+
+
+## Kaggle ephemeral worker track — 2026-10-07
+
+A free-first ephemeral worker path is now implemented as a coding foundation: GitHub Actions checks the production queue, launches a private Kaggle kernel only when work is queued, and the Kaggle session atomically claims one `real_processing` job before running the existing FFmpeg/Whisper/storage pipeline. PostgreSQL remains the source of truth. The Local Windows Worker remains the fallback and is not removed.
+
+This is NOT production-verified yet. The live gate still requires a real queued media job proving Kaggle launch → atomic claim → FFmpeg → storage → DB completion → retry/DLQ/recovery. Kaggle's documented CPU/GPU notebook maximum is currently 12 hours, so the architecture treats the session as ephemeral rather than a permanent worker.

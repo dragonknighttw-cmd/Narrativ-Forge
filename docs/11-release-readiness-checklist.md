@@ -132,3 +132,30 @@ Release status remains unchanged: these are code/test completions, not live prod
 - Missing magic-link token handling is fail-closed with a controlled 401.
 - Storage filename key sanitization and local storage root consistency were hardened and regression-tested.
 - Automated release gates remain unchecked until fresh CI/security evidence is available for the resulting SHA.
+
+
+## Dual-PC Local Worker release gate — 2026-10-07
+
+The free-first release path now has a documented Home/Office fallback profile.
+
+### Must pass before Production Ready
+- [ ] Home heavy worker live.
+- [ ] Home Beat live and unique.
+- [ ] Office light worker live.
+- [ ] RAM/CPU profile recorded for Office.
+- [ ] Heavy/light queue routing verified.
+- [ ] Both workers online simultaneously.
+- [ ] Home-offline and Office-offline behavior verified.
+- [ ] Worker-loss/stale-lease recovery verified.
+- [ ] Retry/DLQ verified with a real failed job.
+- [ ] Real FFmpeg media job completed.
+- [ ] Real transcription path completed (Cloudflare Whisper default; local Whisper optional).
+- [ ] DB + B2/storage state verified after processing.
+- [ ] Storage cleanup/emergency procedure verified.
+
+### Not required for the Office reserve baseline
+- [ ] Local Whisper installation.
+- [ ] Heavy video assembly.
+- [ ] Beat scheduler.
+
+These are not checked merely because the worker scripts exist. Runtime evidence from the actual machines is required.

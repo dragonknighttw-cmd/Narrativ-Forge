@@ -56,12 +56,14 @@ def test_user_listing_is_scoped_to_current_organization(db_session):
 
     user_a = User(email="a@example.com", password_hash="x", role="editor", is_active=True)
     user_b = User(email="b@example.com", password_hash="x", role="viewer", is_active=True)
-    db_session.add_all([user_a, user_b])
+    user_c = User(email="c@example.com", password_hash="x", role="owner", is_active=True)
+    db_session.add_all([user_a, user_b, user_c])
     db_session.flush()
     db_session.add_all([
         OrganizationMembership(organization_id=org_a.id, user_id=user_a.id, role="owner"),
         OrganizationMembership(organization_id=org_a.id, user_id=user_b.id, role="viewer"),
         OrganizationMembership(organization_id=org_b.id, user_id=user_b.id, role="owner"),
+        OrganizationMembership(organization_id=org_b.id, user_id=user_c.id, role="owner"),
     ])
     db_session.commit()
 
@@ -75,4 +77,4 @@ def test_user_listing_is_scoped_to_current_organization(db_session):
         db=db_session,
     )
     assert {row["email"] for row in rows} == {"a@example.com", "b@example.com"}
-    assert all(row["email"] != "org-b-only@example.com" for row in rows)
+    assert all(row["email"] != "c@example.com" for row in rows)

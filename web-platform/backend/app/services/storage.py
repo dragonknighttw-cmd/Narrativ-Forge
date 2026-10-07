@@ -96,10 +96,19 @@ def _cloudinary_download_url(url: str) -> str:
     return url
 
 def _safe_object_key(object_key: str) -> str:
-    normalized = object_key.replace("\\", "/").lstrip("/")
-    parts = [part for part in normalized.split("/") if part not in {"", ".", ".."}]
-    if not parts:
+    if not object_key:
         raise StorageError("Invalid storage object key")
+    if "\\" in object_key:
+        raise StorageError("Invalid storage object key")
+    normalized = object_key.strip("/")
+    if not normalized:
+        raise StorageError("Invalid storage object key")
+    parts = normalized.split("/")
+    for part in parts:
+        if part in {"", ".", ".."}:
+            raise StorageError("Invalid storage object key")
+        if not re.fullmatch(r"[A-Za-z0-9._-]+", part):
+            raise StorageError("Invalid storage object key")
     return "/".join(parts)
 
 

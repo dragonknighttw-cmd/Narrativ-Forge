@@ -219,6 +219,26 @@ For automated deployment, `.github/workflows/cloudflare-whisper.yml` deploys the
 - `CLOUDFLARE_ACCOUNT_ID`
 - `CLOUDFLARE_WHISPER_SHARED_SECRET` — same value configured in Render
 
+## Current coding-track checkpoint — 2026-10-07
+
+- Formal execution roadmap: **12 phases** (01–12).
+- Expanded Auto Production add-on: **17 workstreams**; these are not additional formal phases.
+- Phase 01–06 hardening batch is now merged to main.
+- AI text-provider routing now supports configured Groq/OpenAI-compatible providers with priority/fallback and deterministic mock fallback.
+- Dependency-aware episode orchestration plan is implemented with unit coverage.
+- New AI/orchestration tests are explicitly included in the `unit` CI marker set.
+- Production/live verification remains separate from code completion; no live credential or real-media gate is being falsely marked complete.
+
+### Next coding sequence
+
+1. Phase 07 — Review & Approval hardening.
+2. Phase 08 — Export & Publishing Preparation hardening.
+3. Phase 09 — Search & Analytics hardening.
+4. Phase 10 — Production Hardening / CI / security / observability.
+5. Phase 11 — Business & Collaboration foundations.
+6. Phase 12 — Scale & Advanced foundations.
+7. Expanded Auto Production workstreams 13–17: cross-platform variants, trend adapter, A/B execution, series trailer planning, and Burmese-first translation adapter.
+
 ## 6. Current implementation status
 
 ### Completed / implemented

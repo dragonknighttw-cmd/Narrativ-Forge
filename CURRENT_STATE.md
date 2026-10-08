@@ -168,3 +168,11 @@ Repository head and live deployment head must be tracked separately.
 - The new Phase 52–60 tests are marked `unit`, so they are included in the normal CI unit/security check. No separate live credential is required for these foundations.
 
 **Evidence status:** code/test foundations are implemented; live worker, provider, billing, legal, accessibility and human acceptance gates remain unverified until fresh evidence exists.
+
+
+## CI/test visibility hardening — 2026-10-08
+
+- Backend CI now runs `unit or security` with `-vv`, so individual store/release/product regression tests are visible in the job log instead of being silently omitted by marker selection.
+- Backend unit/security and PostgreSQL/Redis integration jobs each publish a JUnit XML artifact on every run.
+- Previously unmarked backend regression suites were classified explicitly as `unit`, including content quality, magic links, production foundations/intelligence, provider quota/registry, resumable uploads, selective regeneration, and subtitle normalization.
+- CodeQL remains a separate Python + JavaScript/TypeScript security check; Real Worker Evidence remains the real-media/Celery gate; Repository Gate aggregates all checks into the commit-level green/red surface.

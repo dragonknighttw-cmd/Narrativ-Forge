@@ -72,6 +72,8 @@ class Settings(BaseSettings):
     cloudflare_whisper_daily_neuron_budget: int = 10000
     cloudflare_whisper_warning_threshold: float = 0.80
     cloudflare_whisper_fallback_threshold: float = 0.95
+    whisper_remote_timeout_seconds: float = Field(default=60.0, ge=5, le=300)
+    whisper_remote_enabled: bool = True
     cloudflare_whisper_neurons_per_audio_minute: float = 41.14
     # Provider budgets are planning defaults until live account limits are verified.
     agnes_daily_seconds_budget: int = Field(default=500, ge=0)

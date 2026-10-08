@@ -1,7 +1,7 @@
 # Narrativ Forge — Current State
 
 > Owner: Project maintainers
-> Last Updated: 2026-10-08
+> Last Updated: 2026-10-09
 > Status evidence is environment-specific. Code/config alone never promotes a gate to VERIFIED.
 
 ## 1. Release status
@@ -220,3 +220,39 @@ Code-only foundations are staged in `web-platform/backend/app/services/phase_69_
 - New CI-visible unit suite: `web-platform/backend/tests/test_phase_77_84.py` with `pytest.mark.unit`.
 - Code-only backlog is exhausted through Phase 84. Remaining work is evidence/operations: live worker/runtime, real providers, billing, backup/restore, privacy/legal, security, accessibility, support/incident operations, and human acceptance.
 - Latest main commit for this pass: `233d534f609b32ec86cfbab6af4fdd286a3d083d`.
+
+
+## 2026-10-09 audit correction and architecture checkpoint
+
+The previous entries above contain stale historical wording about the worker rerun being in progress. That is superseded by fresh GitHub evidence:
+
+- Real Worker Evidence run #144: workflow run 37815224704, worker job 113444038377, conclusion success, head SHA 0edf3c4b222c144e74f2b9c9e06899cd30f5ac53.
+- The successful smoke produced WORKER_SMOKE_OK with processed video, transcript, subtitle version, and duration evidence.
+- Current main is 55d99dac9ab668a7f27bd944e6cfe3bacfcd5edd (README/status-badge change after the worker-evidence SHA).
+- On current main, Repository Gate #145, CI #1121, Security #886, and CodeQL #493 all have successful completed runs tied to 55d99dac9ab668a7f27bd944e6cfe3bacfcd5edd.
+- Therefore the worker implementation has fresh successful CI evidence, but that worker run was on the immediately preceding code SHA rather than the current README-only SHA. Do not overstate it as an exact-current-head worker run.
+
+### Architecture audit result
+
+A repository-wide cloud/local/package audit is now recorded in docs/CLOUD_LOCAL_PACKAGING_AUDIT.md.
+
+The preferred implementation is incremental, not a rewrite:
+
+1. preserve the existing Next.js/FastAPI/Celery/PostgreSQL/Redis/storage/FFmpeg/Whisper core;
+2. add explicit local-runtime/package configuration;
+3. add Windows-first package build/install/smoke verification;
+4. add credentialed, opt-in cloud/provider E2E workflows using GitHub Secrets/Environments;
+5. add reproducible backup/restore CI evidence;
+6. keep all existing release gates 1–17 in force.
+
+### Newly identified code prerequisite
+
+Production tenant verification needs one hardening step before live E2E can be considered trustworthy: authenticated organization context currently resolves the user's first membership while the session also carries a user-global role. Multi-membership tenant context must become explicit and role resolution must be organization-scoped. The existing two-user cross-tenant test is useful but does not prove this multi-membership case.
+
+### Current priority
+
+Code work first: tenant-context/auth hardening, backup/restore verification harness, reusable credentialed verification workflow scaffolding, and package/runtime abstraction.
+
+Evidence/manual work later: real provider credentials, live production acceptance, legal/compliance, accessibility/manual review, penetration testing, and account-specific provider terms/limits.
+
+No paid Render worker is provisioned by this audit.

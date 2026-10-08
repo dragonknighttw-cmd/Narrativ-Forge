@@ -38,7 +38,7 @@ Readiness returned database=`ok`, redis=`ok`.
 Repository worker implementation is present:
 
 - Docker image: `web-platform/backend/Dockerfile.worker`
-- Entrypoint: `celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --concurrency=1 --beat`
+- Entrypoint: `celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --beat` (configured concurrency defaults to 1 via `WORKER_MAX_CONCURRENCY`)
 - Broker: Redis via `REDIS_URL`
 - Durable job state: PostgreSQL
 - Media tools: FFmpeg + OpenAI Whisper
@@ -79,18 +79,32 @@ Prepared configuration: `render.worker.yaml`.
 | 16. External penetration test | EXTERNAL ACTION | Requires independent tester/report/remediation evidence. |
 | 17. Provider limits / terms / commercial use | EXTERNAL ACTION | Requires account-specific provider review; code defaults are not proof of current limits/terms/watermark/commercial rights. |
 
-## 5. PENDING
+## 5. AUTOMATED EVIDENCE PREPARED
+
+A CI evidence gate has been added on the worker branch/PR:
+
+- Builds the real worker Docker image.
+- Applies Alembic migrations against PostgreSQL.
+- Runs retry/DLQ integration tests against PostgreSQL + Redis.
+- Starts the real Celery worker.
+- Generates deterministic media with FFmpeg.
+- Runs the real Whisper CLI.
+- Verifies processed video, transcript, DB completion, storage output, and current subtitle creation.
+
+This does not replace production-provider/live evidence. The gate remains **execution pending** until its CI run produces a passing result.
+
+## 6. PENDING
 
 - Gates 3, 5, 6, 7, 8, 10, 11.
 - Final UI/state audit and remaining Auto Production surfaces.
 
-## 6. BLOCKED
+## 7. BLOCKED
 
 - Gates 1, 2, 4, 12 are blocked directly or indirectly by the missing live worker.
 - Gate 9 is blocked from verification by lack of access to the external production PostgreSQL instance.
 - Production Ready is blocked until all applicable gates have fresh evidence.
 
-## 7. EXTERNAL ACTION
+## 8. EXTERNAL ACTION
 
 - Gate 13: execute/attach release-SHA security scan artifacts.
 - Gate 14: execute/attach automated + manual WCAG/responsive audit.
@@ -98,7 +112,7 @@ Prepared configuration: `render.worker.yaml`.
 - Gate 16: obtain external penetration-test report and remediation evidence.
 - Gate 17: perform account-specific provider terms/limits/commercial-use review.
 
-## 8. NEXT
+## 9. NEXT
 
 1. Owner provisions the worker using `render.worker.yaml` on a paid Render Background Worker or equivalent runtime.
 2. Configure worker secrets/variables.
@@ -106,7 +120,7 @@ Prepared configuration: `render.worker.yaml`.
 4. Run retry/DLQ/failover and Whisper fallback drills.
 5. Execute remaining provider/recovery/security/accessibility/external gates.
 
-## 9. Evidence rule
+## 10. Evidence rule
 
 **Do not mark a gate VERIFIED from configuration, credentials, source code, unit tests, or a deployment manifest alone.**
 

@@ -11,6 +11,10 @@ COPY requirements.txt requirements-real-processing.txt ./
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-real-processing.txt
 
 COPY --chown=app:app app ./app
+COPY --chown=app:app tests ./tests
+COPY --chown=app:app alembic.ini ./alembic.ini
+COPY --chown=app:app alembic ./alembic
+COPY --chown=app:app scripts/worker_smoke.py ./scripts/worker_smoke.py
 COPY --chown=app:app .env.example ./.env.example
 
 ENV PYTHONUNBUFFERED=1
@@ -18,4 +22,4 @@ USER app
 
 # This is the actual long-running task runtime. The Render blueprint intentionally
 # does not provision it because the current deployment must remain free-only.
-CMD ["celery", "-A", "app.workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--concurrency=1", "--beat"]
+CMD ["celery", "-A", "app.workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--beat"]

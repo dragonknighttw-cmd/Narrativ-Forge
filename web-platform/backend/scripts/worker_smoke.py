@@ -17,7 +17,6 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.db import Base
 from app.models import Asset, Episode, ProcessingJob, Series, Subtitle
 from app.workers.celery_app import get_celery
 
@@ -111,13 +110,12 @@ def main() -> int:
     celery.send_task("narrativ.process_real_job", args=[job_id])
 
     deadline = time.monotonic() + args.timeout
-    final = None
     while time.monotonic() < deadline:
         db = session_factory()
         try:
-            final = db.get(ProcessingJob, job_id)
-            if final and final.status in {"completed", "failed"}:
-                if final.status == "failed":
+            current = db.get(ProcessingJob, job_id)
+            if current and current.status in {"completed", "failed"}:
+                if current.status == "failed":
                     raise RuntimeError(
                         f"worker smoke failed: code={final.error_code} "
                         f"message={final.error_message or final.last_error}"
@@ -125,13 +123,13 @@ def main() -> int:
                 output = db.get(Asset, final.output_asset_id) if final.output_asset_id else None
                 transcript = (
                     db.query(Asset)
-                    .filter(Asset.episode_id == final.episode_id, Asset.asset_type == "transcript")
+                    .filter(Asset.episode_id == current.episode_id, Asset.asset_type == "transcript")
                     .order_by(Asset.version.desc())
                     .first()
                 )
                 subtitle = (
                     db.query(Subtitle)
-                    .filter(Subtitle.episode_id == final.episode_id, Subtitle.is_current.is_(True))
+                    .filter(Subtitle.episode_id == current.episode_id, Subtitle.is_current.is_(True))
                     .first()
                 )
                 if output is None or transcript is None or subtitle is None:
@@ -146,7 +144,7 @@ def main() -> int:
                     f"output={output.local_path}",
                     f"transcript={transcript.local_path}",
                     f"subtitle_version={subtitle.version}",
-                    f"duration={final.duration_seconds}",
+                    f"duration={current.duration_seconds}",
                 )
                 return 0
         finally:

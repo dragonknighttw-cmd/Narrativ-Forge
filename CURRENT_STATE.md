@@ -211,3 +211,12 @@ Code-only foundations are staged in `web-platform/backend/app/services/phase_69_
 - Unit coverage is present in `web-platform/backend/tests/test_phase_77_84.py` for quota forecasting, API sunset rules, migration retirement safety, deterministic tenant export keys, incident/SLA contracts, settlement math/idempotency, and final governance evidence completeness.
 - The complete code-only phase queue through **84** is now staged/implemented on `main`.
 - This does **not** mark production gates VERIFIED: live worker/runtime, provider, billing, backup/restore, privacy/legal, security, accessibility and human acceptance evidence remain external requirements.
+
+
+## Final code-only queue checkpoint — 2026-10-08
+
+- Phases **77–84 are implemented and unit-covered** on `main`.
+- New service: `web-platform/backend/app/services/phase_77_84.py`.
+- New CI-visible unit suite: `web-platform/backend/tests/test_phase_77_84.py` with `pytest.mark.unit`.
+- Code-only backlog is exhausted through Phase 84. Remaining work is evidence/operations: live worker/runtime, real providers, billing, backup/restore, privacy/legal, security, accessibility, support/incident operations, and human acceptance.
+- Latest main commit for this pass: `233d534f609b32ec86cfbab6af4fdd286a3d083d`.

@@ -16,6 +16,14 @@ Cloudflare Workers AI Whisper is a separate transcription adapter/path.
 
 Provider code/configuration does not prove provider health. Live limits, terms, latency, quality, and commercial use require live verification.
 
+## Live Whisper evidence
+
+**VERIFIED — 2026-10-08:** Cloudflare Worker `narrativ-forge-whisper` is present in the connected Cloudflare account, has a live 100% deployment version created 2026-10-07, has the required `NARRATIV_SHARED_SECRET` binding, and is reachable at:
+
+https://narrativ-forge-whisper.narrativ-forge.workers.dev
+
+This verifies deployment/configuration only. It does **not** verify authenticated real-audio transcription, VTT output correctness, Subtitle Studio integration, quota/fallback behavior, or production quality.
+
 ## AI gates
 
 - Backend AI gate is authoritative.

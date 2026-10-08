@@ -81,6 +81,10 @@ Prepared configuration: `render.worker.yaml`.
 
 ## 5. AUTOMATED EVIDENCE PREPARED
 
+Latest automated gate execution: GitHub Actions worker-evidence run is executing against main SHA `cb584aa1800dfc8992819be850bc4fd31a964bcd`. CI, Security, and CodeQL are also queued/running for that same SHA. These remain **UNVERIFIED** until the runs finish successfully.
+
+Whisper fallback implementation was corrected against the deployed `narrativ-forge-whisper` Worker contract: signed Bearer token, episode binding, WAV input, and usage idempotency are now covered in code/tests. Live Burmese transcription quality remains unverified.
+
 A CI evidence gate has been added on the worker branch/PR:
 
 - Builds the real worker Docker image.

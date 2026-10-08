@@ -68,7 +68,11 @@ jobs:
         run: docker build --pull -t narrativ-forge-worker-evidence ./web-platform/backend
 
       - name: Prepare shared local storage
-        run: mkdir -p "$RUNNER_TEMP/narrativ-storage"
+        run: |
+          mkdir -p "$RUNNER_TEMP/narrativ-storage"
+          # The production image runs as a non-root user; make the CI bind mount
+          # writable without changing the production image's runtime user.
+          chmod 0777 "$RUNNER_TEMP/narrativ-storage"
 
       - name: Apply migrations
         run: |

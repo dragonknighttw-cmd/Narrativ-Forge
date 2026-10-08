@@ -137,4 +137,10 @@ Repository head and live deployment head must be tracked separately.
 - The latest known worker evidence attempt reached Docker image build and migrations, then failed during the integration test collection on an `orchestration.py` SyntaxError. The checked `main` source at the recorded SHA currently contains valid `ExecutionPlan.task_names` syntax; the failed attempt has been re-run and is currently in progress. Therefore the worker gate remains **NOT VERIFIED** until that rerun completes successfully.
 - Local test execution from this environment was unavailable because outbound GitHub network resolution is blocked.
 - Live credentials/provider/manual acceptance remain deferred as planned.
+## 2026-10-08 execution continuation — A–D pass
 
+- Phase 15–36 continuation tests were strengthened for deterministic export keys, NLE adjacency, and launch waiver handling.
+- Phase 37–45 operating-maturity contracts remain implemented with unit coverage.
+- Phase 46–51 were pre-staged in `PHASE_EXECUTION.md` for evidence ledger, provider acceptance matrix, production E2E rehearsal, billing reconciliation, release freeze, and post-launch watch.
+- Worker evidence remains **NOT VERIFIED** until the rerun completes successfully. The last observed rerun was still `in_progress` at the time of this update.
+- No production credentials were requested or fabricated; live-provider/manual gates remain deferred.

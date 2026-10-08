@@ -11,6 +11,7 @@ from app.services.phase_52_60 import (
     SocialAnalyticsEvent,
     ThumbnailCandidate,
     TrailerPlan,
+    TranslationAdapter,
     TranslationTerm,
     UIStateAudit,
     normalize_subtitle_text,
@@ -22,6 +23,10 @@ from app.services.phase_52_60 import (
 def test_trailer_and_translation_contracts():
     assert TrailerPlan("series-1", 60, ("hook", "turn", "payoff"), "first-second hook").valid()
     assert TranslationTerm("Hello", "မင်္ဂလာပါ", "my", "glossary-v1").valid()
+    adapter = TranslationAdapter("en", "my", "glossary-v1")
+    assert adapter.valid()
+    assert adapter.route(True) == "provider"
+    assert adapter.route(False) == "en"
     assert normalize_subtitle_text("  one\t two\n\n\nthree  ") == "one two\n\nthree"
 
 
@@ -73,3 +78,16 @@ def test_all_next_phase_contracts_can_be_validated_together():
         UIStateAudit("route", ("loading", "empty", "error", "success"), True, True, "ui-1"),
     )
     assert errors == []
+
+
+def test_audio_overlap_and_thumbnail_duplicates_are_blocked():
+    overlapping = (
+        AudioCue("bgm", 0, 1000),
+        AudioCue("bgm", 900, 1500),
+    )
+    assert not AudioTrack("bgm", "rights", -14, overlapping).valid()
+    duplicate = (
+        ThumbnailCandidate("same", "a", 0.9, 1),
+        ThumbnailCandidate("same", "b", 0.8, 2),
+    )
+    assert select_thumbnail_shortlist(duplicate) == ()

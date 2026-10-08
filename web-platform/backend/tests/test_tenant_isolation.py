@@ -6,7 +6,7 @@ from app.services.passwords import hash_password
 from app.api.dependencies import issue_session
 from app.core.config import settings
 from client_utils import create_test_client
-from test_foundation import TestingSession, auth_client
+from test_foundation import TestingSession
 
 
 @pytest.mark.integration

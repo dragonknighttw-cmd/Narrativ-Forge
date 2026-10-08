@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import re
 
@@ -132,7 +132,7 @@ class LaunchWatchEvent:
     severity: str
     message: str
     rollback_decision: str = "none"
-    occurred_at: datetime = datetime.now(timezone.utc)
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 def launch_allowed(

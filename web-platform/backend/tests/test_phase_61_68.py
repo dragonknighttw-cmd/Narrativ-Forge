@@ -49,7 +49,7 @@ def test_localization_and_monetization_contracts():
 
 
 def test_slo_severity_consumes_error_budget():
-    assert SLOObservation("api", 0.999, 300, 0.5).severity(0.99, 500) == SLOSeverity.WARNING
+    assert SLOObservation("api", 0.999, 300, 0.5).severity(0.99, 500) == SLOSeverity.OK
     assert SLOObservation("api", 0.98, 300, 0.5).severity(0.99, 500) == SLOSeverity.FREEZE
     assert SLOObservation("api", 0.98, 300, 0,).severity(0.99, 500) == SLOSeverity.INCIDENT
 

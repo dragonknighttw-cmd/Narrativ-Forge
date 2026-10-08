@@ -69,7 +69,7 @@ def test_cloudflare_whisper_uses_signed_bearer_wav_contract(monkeypatch, tmp_pat
 
     def fake_run(command, *, timeout):
         if command[0] == "ffprobe":
-            return SimpleNamespace(stdout="3.2\\n")
+            return SimpleNamespace(stdout="3.2\n")
         if command[0] == "ffmpeg":
             Path(command[-1]).write_bytes(b"RIFF-WAV")
             return SimpleNamespace(stdout="", stderr="")

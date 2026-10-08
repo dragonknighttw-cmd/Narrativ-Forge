@@ -37,8 +37,8 @@ jobs:
           rm -f /tmp/narrativ-ci.db
           DATABASE_URL=sqlite:////tmp/narrativ-ci.db PYTHONPATH=. python -m alembic upgrade head
           DATABASE_URL=sqlite:////tmp/narrativ-ci.db PYTHONPATH=. python -m alembic current
-      - name: Run backend unit tests
-        run: PYTHONPATH=. pytest -m unit -q
+      - name: Run backend unit + security regression tests
+        run: PYTHONPATH=. pytest -m "unit or security" -q
 
   backend-integration:
     runs-on: ubuntu-latest

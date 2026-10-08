@@ -61,7 +61,7 @@ jobs:
 
       - name: Verify retry and DLQ integration
         run: |
-          docker run --rm --network host             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             pytest -m integration -q tests/test_tasks_celery.py
+          docker run --rm --network host             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             pytest -m integration -q
 
       - name: Start the real worker
         run: |

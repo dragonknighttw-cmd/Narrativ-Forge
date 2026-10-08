@@ -296,3 +296,19 @@ Code-only foundations are staged in `web-platform/backend/app/services/phase_69_
 77 capacity/tenant quota forecasting; 78 API versioning/deprecation contracts; 79 migration retirement and data cleanup; 80 portable tenant export/import; 81 incident communications and status-page evidence; 82 support SLA/escalation operations; 83 provider marketplace billing/settlement seam; 84 final governance/ownership matrix and release evidence reconciliation.
 
 Implementation rule: these remain code/evidence work after 69–76 are exhausted. Any live provider, billing, legal, privacy, security, accessibility, human acceptance or production-runtime dependency remains an explicit external gate and is never inferred from unit tests.
+
+
+## Phase 77–84 implementation evidence — 2026-10-08
+
+The code-only backlog is now implemented in `web-platform/backend/app/services/phase_77_84.py` with unit coverage in `web-platform/backend/tests/test_phase_77_84.py`.
+
+- **77 Capacity/quota forecasting:** tenant projected usage, reservations, horizon and quota headroom.
+- **78 API versioning/deprecation:** current/minimum/sunset support contract.
+- **79 Migration retirement:** replacement linkage, reference cleanup, rollback-window and data-cleanup safety checks.
+- **80 Portable tenant export/import:** encrypted deterministic manifests with tenant-bound export keys.
+- **81 Incident communications:** lifecycle states and message evidence references.
+- **82 Support SLA/escalation:** priority response, resolution and escalation contracts.
+- **83 Provider settlement:** gross/fee/net reconciliation and idempotency key seam.
+- **84 Governance/evidence reconciliation:** owner + backup + evidence references and a final validation aggregator.
+
+These are code/test foundations only. Production telemetry, consumer migration, destructive cleanup, export/import drills, status-page delivery, support operations, provider settlement/billing acceptance and human/legal/privacy/security sign-off remain external gates.

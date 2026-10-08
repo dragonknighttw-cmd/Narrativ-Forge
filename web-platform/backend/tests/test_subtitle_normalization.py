@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.unit
+
 from app.services.subtitles import normalize_burmese_text, zawgyi_probability
 
 

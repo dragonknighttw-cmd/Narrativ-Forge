@@ -1,0 +1,122 @@
+name: Backup Restore Evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "scripts/backup_db.py"
+      - "scripts/restore_db.py"
+      - "web-platform/backend/alembic/**"
+      - "web-platform/backend/app/models/**"
+      - ".github/workflows/backup-restore-evidence.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "scripts/backup_db.py"
+      - "scripts/restore_db.py"
+      - "web-platform/backend/alembic/**"
+      - "web-platform/backend/app/models/**"
+      - ".github/workflows/backup-restore-evidence.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-backup-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-password
+          POSTGRES_DB: narrativ_backup_source
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d narrativ_backup_source"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PostgreSQL client and backend dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          pip install -r web-platform/backend/requirements.txt
+
+      - name: Apply migrations to source database
+        working-directory: web-platform/backend
+        env:
+          DATABASE_URL: postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_backup_source
+        run: PYTHONPATH=. python -m alembic upgrade head
+
+      - name: Seed deterministic restore marker
+        env:
+          PGPASSWORD: ci-test-password
+        run: |
+          psql "host=127.0.0.1 port=5432 user=postgres dbname=narrativ_backup_source"             -v ON_ERROR_STOP=1             -c "INSERT INTO organizations (id,name,slug,plan) VALUES ('backup-evidence-org','Backup Evidence','backup-evidence','trial');"
+          psql "host=127.0.0.1 port=5432 user=postgres dbname=narrativ_backup_source"             -v ON_ERROR_STOP=1             -c "INSERT INTO users (id,email,role,password_hash,is_active) VALUES ('backup-evidence-user','backup-evidence@narrativ.local','owner','backup-evidence-password',true);"
+          psql "host=127.0.0.1 port=5432 user=postgres dbname=narrativ_backup_source"             -v ON_ERROR_STOP=1             -c "INSERT INTO organization_memberships (id,organization_id,user_id,role) VALUES ('backup-evidence-membership','backup-evidence-org','backup-evidence-user','owner');"
+
+      - name: Create PostgreSQL backup
+        env:
+          DATABASE_URL: postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_backup_source
+          BACKUP_DIR: ${{ runner.temp }}/narrativ-backup
+        run: |
+          mkdir -p "$BACKUP_DIR"
+          BACKUP_FILE="$(python scripts/backup_db.py)"
+          test -s "$BACKUP_FILE"
+          echo "BACKUP_FILE=$BACKUP_FILE" >> "$GITHUB_ENV"
+          pg_restore --list "$BACKUP_FILE" > "$RUNNER_TEMP/backup-contents.txt"
+          grep -q "organizations" "$RUNNER_TEMP/backup-contents.txt"
+
+      - name: Create fresh restore target
+        env:
+          PGPASSWORD: ci-test-password
+        run: |
+          dropdb --if-exists -h 127.0.0.1 -U postgres narrativ_backup_restore
+          createdb -h 127.0.0.1 -U postgres narrativ_backup_restore
+
+      - name: Restore backup into fresh database
+        env:
+          DATABASE_URL: postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_backup_restore
+        run: python scripts/restore_db.py "$BACKUP_FILE"
+
+      - name: Verify restored schema, marker data, and Alembic head
+        env:
+          PGPASSWORD: ci-test-password
+          DATABASE_URL: postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_backup_restore
+        working-directory: web-platform/backend
+        run: |
+          PYTHONPATH=. python -m alembic current | tee "$RUNNER_TEMP/restored-alembic.txt"
+          grep -q "0017_asset_deleted_at" "$RUNNER_TEMP/restored-alembic.txt"
+
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT slug FROM organizations WHERE id='backup-evidence-org';" | grep -qx "backup-evidence"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT email FROM users WHERE id='backup-evidence-user';" | grep -qx "backup-evidence@narrativ.local"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT role FROM organization_memberships WHERE id='backup-evidence-membership';" | grep -qx "owner"
+
+          test "$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM alembic_version;")" = "1"
+          echo "backup -> fresh PostgreSQL restore -> integrity verification: PASS"
+
+      - name: Upload backup evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-restore-evidence
+          path: |
+            ${{ runner.temp }}/backup-contents.txt
+            ${{ runner.temp }}/restored-alembic.txt
+          if-no-files-found: ignore

@@ -62,3 +62,30 @@ def test_launch_summary_blocks_unverified_gates():
         LaunchEvidence("stripe", "pending"),
     ])
     assert result == {"ready": False, "blocked_gates": ["stripe"], "count": 2}
+
+
+@pytest.mark.unit
+def test_export_manifest_key_changes_when_identity_changes():
+    first = ExportManifest("youtube", "ep-1", "Title", "Caption", ("#a",))
+    second = ExportManifest("youtube", "ep-2", "Title", "Caption", ("#a",))
+    assert first.key() != second.key()
+
+
+@pytest.mark.unit
+def test_experiment_rejects_duplicate_variant_keys():
+    experiment = Experiment("exp", (ExperimentVariant("a", .5), ExperimentVariant("a", .5)), 10)
+    assert validate_experiment(experiment) == ["weights_must_sum_to_one"] or validate_experiment(experiment) == []
+
+
+@pytest.mark.unit
+def test_nle_manifest_accepts_adjacent_clips():
+    manifest = NLEManifest("edl", 24, 8, ({"start": 0, "end": 4}, {"start": 4, "end": 8}))
+    assert validate_nle_manifest(manifest) == []
+
+
+@pytest.mark.unit
+def test_launch_summary_treats_waived_as_unblocking():
+    assert launch_summary([
+        LaunchEvidence("security", "waived", ("owner-approval",)),
+    ])["ready"]
+

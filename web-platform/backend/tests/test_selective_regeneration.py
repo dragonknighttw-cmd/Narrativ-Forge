@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.unit
+
 from app.models import Episode, Scene, Script, Series
 from app.services.selective_regeneration import regenerate_scene
 

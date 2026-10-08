@@ -163,3 +163,22 @@ After Phase 36, remaining work is staged as:
 - Quarterly DR/security drills, dependency review, incident postmortems, runbook freshness, and release-readiness audit.
 
 Implementation rule remains: independent foundations may be developed in parallel on main; live credentials, external provider acceptance, legal/terms review, and manual browser/device acceptance stay as explicit gates.
+
+## Post-36 implementation evidence map
+
+The post-36 contracts are now implemented on `main` in
+`web-platform/backend/app/services/operating_maturity.py`, with unit coverage in
+`web-platform/backend/tests/test_operating_maturity.py`.
+
+- **37 Release train:** `ReleaseManifest` + migration/rollback completeness validation.
+- **38 Cost governance:** `CostObservation` + `CostPolicy` warning/critical classification.
+- **39 Data lifecycle/privacy:** `RetentionClass` + deletion-request seam; evaluation datasets require anonymization.
+- **40 Disaster recovery:** `RestorePoint`, `RestoreEvidence`, deterministic latest restore-point selection.
+- **41 Multi-region:** capability/policy contracts and explicit failover eligibility.
+- **42 Queue scheduling:** priority-class job contract and capacity-aware admission foundation.
+- **43 Evaluation governance:** version/provenance/anonymization/baseline contract.
+- **44 Model/provider change management:** versioned model comparison and canary quality regression guard.
+- **45 Operating maturity:** dated drill contract with overdue-without-evidence detection.
+
+These are **implementation foundations and automated unit evidence**, not live production verification. Provider billing, real backup/restore, regional failover, queue saturation, representative Burmese evaluation, and scheduled operational drills remain explicit acceptance gates.
+

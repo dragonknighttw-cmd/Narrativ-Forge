@@ -14,6 +14,7 @@ class AgentTask:
 
 @dataclass(frozen=True)
 class ExecutionPlan:
+    """Immutable execution stages for deterministic dependency scheduling."""
     stages: tuple[tuple[AgentTask, ...], ...]
 
     @property

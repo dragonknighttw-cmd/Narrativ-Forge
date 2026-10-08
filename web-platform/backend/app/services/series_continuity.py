@@ -29,10 +29,10 @@ def build_series_bible(
     continuity_rules: list[str] | None = None,
 ) -> SeriesBible:
     return SeriesBible(
-        title=" ".join(title.split()).strip(),
-        premise=" ".join(premise.split()).strip(),
-        tone=" ".join(tone.split()).strip() or "clear",
-        audience=" ".join(audience.split()).strip() or "general",
+        title=" ".join((title or "").split()).strip(),
+        premise=" ".join((premise or "").split()).strip(),
+        tone=" ".join((tone or "").split()).strip() or "clear",
+        audience=" ".join((audience or "").split()).strip() or "general",
         recurring_elements=tuple(dict.fromkeys(x.strip() for x in (recurring_elements or []) if x.strip())),
         continuity_rules=tuple(dict.fromkeys(x.strip() for x in (continuity_rules or []) if x.strip())),
     )
@@ -40,9 +40,11 @@ def build_series_bible(
 
 def check_continuity(bible: SeriesBible, *, title: str, synopsis: str, required_terms: list[str] | None = None) -> list[ContinuityIssue]:
     issues: list[ContinuityIssue] = []
-    if bible.title and bible.title.lower() not in title.lower() and bible.title.lower() not in synopsis.lower():
+    safe_title = title or ""
+    safe_synopsis = synopsis or ""
+    if bible.title and bible.title.lower() not in safe_title.lower() and bible.title.lower() not in safe_synopsis.lower():
         issues.append(ContinuityIssue("series_title", "Episode content does not reference the series identity."))
-    haystack = f"{title} {synopsis}".lower()
+    haystack = f"{safe_title} {safe_synopsis}".lower()
     for term in required_terms or bible.recurring_elements:
         if term and term.lower() not in haystack:
             issues.append(ContinuityIssue("recurring_element", f"Missing recurring element: {term}"))

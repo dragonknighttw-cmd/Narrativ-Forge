@@ -1,0 +1,81 @@
+name: Repository Gate
+
+# Always create one repository-level check so the commit page has a single
+# green/red gate without requiring the user to open Actions.
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: repository-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+  checks: read
+
+jobs:
+  gate:
+    name: Repository Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Wait for other checks to settle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          sleep 20
+          deadline=$((SECONDS + 1380))
+          self_name="Repository Gate / Repository Gate"
+
+          while (( SECONDS < deadline )); do
+            payload="$(gh api --paginate --slurp "repos/${REPOSITORY}/commits/${SHA}/check-runs?per_page=100" | jq -s 'add | .check_runs')"
+
+            pending="$(jq --arg self "${self_name}" '
+              map(select(.name != $self and (.status == "queued" or .status == "in_progress" or .status == "waiting" or .status == "requested")))
+              | length
+            ' <<<"${payload}")"
+
+            failures="$(jq --arg self "${self_name}" '
+              map(select(.name != $self and .status == "completed" and
+                (.conclusion == "failure" or .conclusion == "cancelled" or
+                 .conclusion == "timed_out" or .conclusion == "action_required" or
+                 .conclusion == "startup_failure" or .conclusion == "stale")))
+              | length
+            ' <<<"${payload}")"
+
+            if [[ "${failures}" != "0" ]]; then
+              echo "Repository checks contain ${failures} failing check(s)."
+              jq --arg self "${self_name}" -r '
+                .[]
+                | select(.name != $self and .status == "completed")
+                | select(.conclusion != "success" and .conclusion != "neutral" and .conclusion != "skipped")
+                | "- (.name): (.conclusion)"
+              ' <<<"${payload}"
+              exit 1
+            fi
+
+            if [[ "${pending}" == "0" ]]; then
+              echo "Repository Gate: all currently registered checks are green/neutral/skipped."
+              jq --arg self "${self_name}" -r '
+                .[]
+                | select(.name != $self)
+                | "- (.name): (.status)/(.conclusion // "pending")"
+              ' <<<"${payload}"
+              exit 0
+            fi
+
+            echo "Waiting for ${pending} check(s)..."
+            sleep 15
+          done
+
+          echo "Repository Gate timed out waiting for checks."
+          exit 1

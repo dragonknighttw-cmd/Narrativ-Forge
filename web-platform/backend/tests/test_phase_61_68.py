@@ -1,68 +1,51 @@
 import pytest
 
-pytestmark = pytest.mark.unit
-
 from app.services.phase_61_68 import (
-    AuditAction,
-    AuditEvent,
     AutoscalePolicy,
-    LocalizationQA,
-    MonetizationLedger,
+    BillingMeter,
+    EnterprisePermission,
+    IncidentPolicy,
+    LocaleQualityRecord,
     PerformanceBudget,
     ProvenanceRecord,
     ProviderCapability,
-    SLOObservation,
-    SLOSeverity,
-    validate_operating_inputs,
+    SLOBudget,
+    adapter_capabilities,
 )
 
-
-def test_performance_and_autoscaling_contracts():
-    budget = PerformanceBudget("/render", 800, 0.01, 0.25)
-    policy = AutoscalePolicy(1, 8, 10, 2)
-    assert budget.valid()
-    assert policy.valid()
-    assert policy.desired_workers(25, 3) == 5
-    assert policy.desired_workers(2, 3) == 1
+pytestmark = pytest.mark.unit
 
 
-def test_provenance_and_audit_are_immutable_inputs():
-    provenance = ProvenanceRecord("asset-1", ("source-1",), "provider", "v2", "sha256", "ledger-1")
-    audit = AuditEvent("owner", "series-1", AuditAction.APPROVE, "episode-1", "event-1")
-    assert provenance.valid()
-    assert audit.valid()
+def test_performance_budget_and_autoscaling_are_deterministic():
+    assert PerformanceBudget("render", 10, 1).check(9.9, 0.5)
+    policy = AutoscalePolicy(1, 5, 10, 2)
+    assert policy.desired_workers(12, 2) == 3
+    assert policy.desired_workers(0, 3) == 2
 
 
-def test_provider_capability_respects_health_and_circuit_breaker():
-    provider = ProviderCapability("provider-a", "v1", ("transcribe", "render"), True)
-    assert provider.available("transcribe")
-    assert not ProviderCapability("provider-a", "v1", ("transcribe",), False).available("transcribe")
-    assert not ProviderCapability("provider-a", "v1", ("transcribe",), True, True).available("transcribe")
+def test_provenance_is_stable_for_same_lineage():
+    record = ProvenanceRecord("a", ("p1", "p2"), "model", "v1", "provider", "hash")
+    assert record.lineage_key == ProvenanceRecord("a", ("p1", "p2"), "model", "v1", "provider", "hash").lineage_key
 
 
-def test_localization_and_monetization_contracts():
-    qa = LocalizationQA("my", "glossary-v2", 0.98, 0.02, 3)
-    ledger = MonetizationLedger("tenant", "pro", 1000, 400, 50, "billing-1")
-    assert qa.valid()
-    assert ledger.valid()
-    assert ledger.remaining() == 650
+def test_enterprise_permission_and_provider_capabilities():
+    assert EnterprisePermission("editor", "project", "write", True).allowed
+    records = [
+        ProviderCapability("a", "translate", "v1", True),
+        ProviderCapability("a", "render", "v2", False),
+        ProviderCapability("b", "render", "v1", True),
+    ]
+    assert adapter_capabilities(records) == {"a": {"translate"}, "b": {"render"}}
 
 
-def test_slo_severity_consumes_error_budget():
-    assert SLOObservation("api", 0.999, 300, 0.5).severity(0.99, 500) == SLOSeverity.OK
-    assert SLOObservation("api", 0.98, 300, 0.5).severity(0.99, 500) == SLOSeverity.FREEZE
-    assert SLOObservation("api", 0.98, 300, 0,).severity(0.99, 500) == SLOSeverity.INCIDENT
+def test_localization_and_billing_validation():
+    assert LocaleQualityRecord("my", "g1", "h", 0.02).acceptable(0.05)
+    with pytest.raises(ValueError):
+        BillingMeter("tenant", -1, "key").validate()
 
 
-def test_all_post_60_contracts_validate_together():
-    errors = validate_operating_inputs(
-        PerformanceBudget("/api", 500, 0.01, 0.1),
-        AutoscalePolicy(1, 4, 10, 1),
-        ProvenanceRecord("a", ("source",), "p", "v1", "hash", "ref"),
-        AuditEvent("actor", "scope", AuditAction.UPDATE, "target", "event"),
-        ProviderCapability("p", "v1", ("render",), True),
-        LocalizationQA("my", "v1", 0.95, 0.01, 0),
-        MonetizationLedger("tenant", "free", 100, 10, 0, "idem"),
-        SLOObservation("api", 0.999, 100, 0.5),
-    )
-    assert errors == []
+def test_slo_and_incident_policy():
+    assert SLOBudget("api", 99.9, 500, 0.1).valid()
+    policy = IncidentPolicy(thresholds={"burn": 5, "critical_error": 1})
+    assert policy.action_for("burn", 5) == "freeze"
+    assert policy.action_for("critical_error", 1) == "rollback"

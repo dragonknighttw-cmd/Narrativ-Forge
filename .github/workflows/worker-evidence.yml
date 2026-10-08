@@ -90,7 +90,7 @@ jobs:
 
       - name: Wait for Celery worker and run real-media smoke
         run: |
-          docker run --rm --network host             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -e PROCESSING_TIMEOUT_SECONDS=600             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             python scripts/worker_smoke.py --work-dir /app/storage/worker-smoke --timeout 900
+          docker run --rm --network host             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -e PROCESSING_TIMEOUT_SECONDS=600             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             env PYTHONPATH=/app python scripts/worker_smoke.py --work-dir /app/storage/worker-smoke --timeout 900
 
       - name: Show worker logs on failure
         if: failure()

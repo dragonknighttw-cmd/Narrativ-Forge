@@ -1,5 +1,7 @@
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from app.services.provider_registry import DEFAULT_CAPABILITIES, ProviderRegistry, ProviderSpec
 
 

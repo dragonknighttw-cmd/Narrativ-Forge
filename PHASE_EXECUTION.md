@@ -129,3 +129,37 @@ Independent implementation work is now intentionally staged so the next work can
 ### Execution rule for the continuation queue
 
 Phases 15–35 can be implemented/tested in parallel where dependencies permit. Live provider, billing, legal, security, and external acceptance gates remain separate. No new Git branch is required for this queue; implementation continues on main as requested.
+
+
+## Post-36 continuation queue
+
+After Phase 36, remaining work is staged as:
+
+### Phase 37 — Release train / migration safety
+- Release manifests, migration compatibility windows, rollback notes, and versioned deployment evidence.
+
+### Phase 38 — Cost governance
+- Provider cost ledger, budget alerts, per-tenant attribution, and anomaly thresholds.
+
+### Phase 39 — Data lifecycle / privacy
+- Retention classes, deletion workflows, export requests, redaction verification, and audit evidence.
+
+### Phase 40 — Disaster recovery automation
+- Restore-point selection, isolated restore orchestration, checksum validation, and recovery-time evidence.
+
+### Phase 41 — Multi-region readiness
+- Region capability matrix, data locality policy, failover routing, and degraded-mode behavior.
+
+### Phase 42 — Advanced queue scheduling
+- Priority classes, fair tenant scheduling, starvation prevention, backpressure, and capacity-aware admission.
+
+### Phase 43 — Evaluation dataset governance
+- Versioned Burmese evaluation sets, provenance, anonymization, regression baselines, and approval workflow.
+
+### Phase 44 — Model/provider change management
+- Provider/model registry versions, canary evaluation, rollback selection, and quality/cost regression gates.
+
+### Phase 45 — Final operating maturity
+- Quarterly DR/security drills, dependency review, incident postmortems, runbook freshness, and release-readiness audit.
+
+Implementation rule remains: independent foundations may be developed in parallel on main; live credentials, external provider acceptance, legal/terms review, and manual browser/device acceptance stay as explicit gates.

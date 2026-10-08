@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import pytest
 
-pytestmark = pytest.mark.unit
-
 import hashlib
 from datetime import datetime, timedelta, timezone
 from io import BytesIO

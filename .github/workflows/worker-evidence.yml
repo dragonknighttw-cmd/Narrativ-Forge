@@ -53,6 +53,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
 
       - name: Pin checkout to the exact triggering SHA
         run: |

@@ -78,6 +78,14 @@ jobs:
         run: |
           docker run --rm --network host             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             python -m alembic upgrade head
 
+      - name: Normalize shared storage permissions after migrations
+        run: |
+          # Alembic runs as root in the container and LocalStorageProvider creates
+          # /app/storage/objects as root-owned. The real worker runs as non-root.
+          # Normalize the bind mount so both the evidence runner and worker can
+          # create episode/object directories during the real processing test.
+          chmod -R a+rwX "$RUNNER_TEMP/narrativ-storage"
+
       - name: Verify retry, DLQ, and tenant integration
         working-directory: web-platform/backend
         run: |

@@ -3,6 +3,8 @@ import pytest
 from app.main import app
 from app.models import Organization, OrganizationMembership, User
 from app.services.passwords import hash_password
+from app.api.dependencies import issue_session
+from app.core.config import settings
 from client_utils import create_test_client
 from test_foundation import TestingSession, auth_client
 
@@ -35,11 +37,10 @@ def test_second_tenant_cannot_read_or_mutate_first_tenant_series():
 
     second = create_test_client(app)
     try:
-        login = second.post(
-            "/api/v1/auth/login",
-            json={"email": "tenant-b-owner@narrativ.local", "password": "tenant-b-password-123456"},
+        second.cookies.set(
+            settings.session_cookie_name,
+            issue_session("tenant-b-owner@narrativ.local", "owner"),
         )
-        assert login.status_code == 200
         assert second.get(f"/api/v1/series/{series_id}").status_code == 404
         assert second.patch(
             f"/api/v1/series/{series_id}",

@@ -6,6 +6,7 @@ import os
 import signal
 import subprocess
 import tempfile
+import requests
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -209,8 +210,6 @@ def _transcribe_with_fallback(source: Path, transcript_dir: Path) -> Path:
     remote_error: Exception | None = None
     if settings.whisper_remote_enabled and settings.cloudflare_whisper_worker_url:
         try:
-            import requests
-
             with source.open("rb") as audio:
                 response = requests.post(
                     settings.cloudflare_whisper_worker_url,

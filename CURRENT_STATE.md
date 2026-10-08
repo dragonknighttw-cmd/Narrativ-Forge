@@ -129,3 +129,12 @@ This does not replace production-provider/live evidence. The gate remains **exec
 **Do not mark a gate VERIFIED from configuration, credentials, source code, unit tests, or a deployment manifest alone.**
 
 Repository head and live deployment head must be tracked separately.
+
+## 2026-10-08 continuation update
+
+- Phase 15–36 continuation contracts/tests are present on `main`.
+- Phase 37–45 operating-maturity contracts/tests are now present on `main` in `web-platform/backend/app/services/operating_maturity.py` and `test_operating_maturity.py`.
+- The latest known worker evidence attempt reached Docker image build and migrations, then failed during the integration test collection on an `orchestration.py` SyntaxError. The checked `main` source at the recorded SHA currently contains valid `ExecutionPlan.task_names` syntax; the failed attempt has been re-run and is currently in progress. Therefore the worker gate remains **NOT VERIFIED** until that rerun completes successfully.
+- Local test execution from this environment was unavailable because outbound GitHub network resolution is blocked.
+- Live credentials/provider/manual acceptance remain deferred as planned.
+

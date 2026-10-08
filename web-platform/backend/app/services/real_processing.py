@@ -203,6 +203,65 @@ def _validate_rendered_media(path: Path) -> tuple[int, int, float]:
         raise ValueError("Rendered output has invalid duration")
     return width, height, duration
 
+
+def _transcribe_with_fallback(source: Path, transcript_dir: Path) -> Path:
+    """Prefer configured Cloudflare Whisper, then fall back to local Whisper CLI."""
+    remote_error: Exception | None = None
+    if settings.whisper_remote_enabled and settings.cloudflare_whisper_worker_url:
+        try:
+            import requests
+
+            with source.open("rb") as audio:
+                response = requests.post(
+                    settings.cloudflare_whisper_worker_url,
+                    files={"file": (source.name, audio, "video/mp4")},
+                    data={"language": "my", "task": "transcribe"},
+                    headers=(
+                        {"X-Whisper-Secret": settings.cloudflare_whisper_shared_secret}
+                        if settings.cloudflare_whisper_shared_secret
+                        else {}
+                    ),
+                    timeout=settings.whisper_remote_timeout_seconds,
+                )
+            response.raise_for_status()
+            payload = response.json()
+            if not isinstance(payload, dict):
+                raise ValueError("Cloudflare Whisper returned a non-object response")
+            payload["source"] = "cloudflare_whisper"
+            payload["language"] = payload.get("language", "my")
+            output = transcript_dir / f"{source.stem}.json"
+            output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            return output
+        except Exception as exc:
+            remote_error = exc
+            logger.warning(
+                "cloudflare_whisper_failed_using_local_fallback",
+                extra={"event": "whisper_fallback", "error_type": type(exc).__name__},
+            )
+
+    try:
+        _run(
+            [
+                settings.whisper_command, str(source), "--language", "my", "--task", "transcribe",
+                "--output_format", "json", "--output_dir", str(transcript_dir), "--model", settings.whisper_model,
+            ],
+            timeout=settings.processing_timeout_seconds,
+        )
+    except Exception:
+        if remote_error is not None:
+            logger.exception("local_whisper_fallback_failed", extra={"event": "whisper_fallback"})
+        raise
+
+    whisper_json = transcript_dir / f"{source.stem}.json"
+    if not whisper_json.is_file():
+        candidates = sorted(transcript_dir.glob("*.json"))
+        if not candidates:
+            if remote_error is not None:
+                raise RuntimeError("Both Cloudflare Whisper and local Whisper fallback failed")
+            raise RuntimeError("Whisper completed without a JSON transcript")
+        whisper_json = candidates[0]
+    return whisper_json
+
 def run_real_job(job_id: str, db: Session, *, already_claimed: bool = False) -> ProcessingJob:
     job = db.get(ProcessingJob, job_id)
     if not job:
@@ -251,22 +310,13 @@ def run_real_job(job_id: str, db: Session, *, already_claimed: bool = False) -> 
             job.progress = 55
             db.commit()
 
-            _run(
-                [
-                    settings.whisper_command, str(source), "--language", "my", "--task", "transcribe",
-                    "--output_format", "json", "--output_dir", str(transcript_dir), "--model", settings.whisper_model,
-                ],
-                timeout=settings.processing_timeout_seconds,
-            )
-            whisper_json = transcript_dir / f"{source.stem}.json"
-            if not whisper_json.is_file():
-                candidates = sorted(transcript_dir.glob("*.json"))
-                if not candidates:
-                    return _fail(job, "WHISPER_OUTPUT_MISSING", "Whisper completed without a JSON transcript", db)
-                whisper_json = candidates[0]
+            try:
+                whisper_json = _transcribe_with_fallback(source, transcript_dir)
+            except Exception as exc:
+                return _fail(job, "WHISPER_OUTPUT_MISSING", str(exc), db)
 
             transcript = json.loads(whisper_json.read_text(encoding="utf-8"))
-            transcript["source"] = "whisper"
+            transcript.setdefault("source", "whisper")
             transcript["language"] = transcript.get("language", "my")
             transcript_path = work_dir / f"{uuid4().hex}_transcript.json"
             transcript_path.write_text(json.dumps(transcript, ensure_ascii=False, indent=2), encoding="utf-8")

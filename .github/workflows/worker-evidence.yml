@@ -65,7 +65,7 @@ jobs:
           sed -n "1,35p" web-platform/backend/app/services/orchestration.py
 
       - name: Build the production worker image
-        run: docker build --pull -t narrativ-forge-worker-evidence ./web-platform/backend
+        run: docker build --pull -f web-platform/backend/Dockerfile.worker -t narrativ-forge-worker-evidence web-platform/backend
 
       - name: Prepare shared local storage
         run: |
@@ -87,6 +87,15 @@ jobs:
           STORAGE_PROVIDER=local \
           UPLOAD_DIR="$RUNNER_TEMP/narrativ-storage" \
           PYTHONPATH=. pytest -m integration -q
+
+      - name: Prewarm deterministic Whisper model cache
+        timeout-minutes: 5
+        run: |
+          docker run --rm --network host \\
+            -e XDG_CACHE_HOME=/app/storage/whisper-cache \\
+            -v "$RUNNER_TEMP/narrativ-storage:/app/storage" \\
+            narrativ-forge-worker-evidence \\
+            python -c "import whisper; whisper.load_model('tiny')"
 
       - name: Start the real worker
         run: |

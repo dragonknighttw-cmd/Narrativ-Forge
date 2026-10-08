@@ -488,3 +488,99 @@ class AuditEvent(Base):
     resource_id: Mapped[str] = mapped_column(String(36), index=True)
     metadata_json: Mapped[str] = mapped_column(Text, default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class EvidenceLedgerEntry(Base):
+    __tablename__ = "evidence_ledger_entries"
+    __table_args__ = (
+        UniqueConstraint("gate", "commit_sha", name="uq_evidence_gate_commit"),
+        CheckConstraint("status IN ('pending', 'blocked', 'verified', 'waived')", name="ck_evidence_status"),
+        CheckConstraint(
+            "(status <> 'verified') OR (workflow_run <> '' AND evidence_ref <> '' AND verified_at IS NOT NULL)",
+            name="ck_evidence_verified_requires_proof",
+        ),
+        CheckConstraint(
+            "(status <> 'waived') OR (waiver_ref IS NOT NULL AND waiver_ref <> '')",
+            name="ck_evidence_waived_requires_ref",
+        ),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    gate: Mapped[str] = mapped_column(String(80), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    commit_sha: Mapped[str] = mapped_column(String(40))
+    workflow_run: Mapped[str] = mapped_column(String(255), default="")
+    evidence_ref: Mapped[str] = mapped_column(String(1024), default="")
+    owner: Mapped[str] = mapped_column(String(255))
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    waiver_ref: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class ProviderAcceptanceRecord(Base):
+    __tablename__ = "provider_acceptance_records"
+    __table_args__ = (UniqueConstraint("provider", name="uq_provider_acceptance_provider"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    provider: Mapped[str] = mapped_column(String(80))
+    credential_dependency: Mapped[str] = mapped_column(String(255))
+    quota_terms_review: Mapped[str] = mapped_column(String(40), default="pending")
+    live_test_result: Mapped[str] = mapped_column(String(40), default="pending")
+    fallback: Mapped[str] = mapped_column(Text, default="")
+    commercial_use: Mapped[str] = mapped_column(String(40), default="pending")
+    owner: Mapped[str] = mapped_column(String(255))
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class BillingReconciliationRecord(Base):
+    __tablename__ = "billing_reconciliation_records"
+    __table_args__ = (
+        UniqueConstraint("webhook_event_id", name="uq_billing_webhook_event"),
+        UniqueConstraint("tenant_key", "idempotency_key", name="uq_billing_tenant_idempotency"),
+        CheckConstraint(
+            "quota_units >= 0 AND reserved_units >= 0 AND usage_units >= 0",
+            name="ck_billing_nonnegative_units",
+        ),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    tenant_key: Mapped[str] = mapped_column(String(255), index=True)
+    plan_state: Mapped[str] = mapped_column(String(80))
+    quota_units: Mapped[int] = mapped_column(BigInteger, default=0)
+    reserved_units: Mapped[int] = mapped_column(BigInteger, default=0)
+    usage_units: Mapped[int] = mapped_column(BigInteger, default=0)
+    webhook_event_id: Mapped[str] = mapped_column(String(255))
+    webhook_status: Mapped[str] = mapped_column(String(40))
+    idempotency_key: Mapped[str] = mapped_column(String(255))
+    failure_state: Mapped[str] = mapped_column(String(80), default="none")
+    reconciled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class ReleaseCandidateRecord(Base):
+    __tablename__ = "release_candidates"
+    __table_args__ = (UniqueConstraint("version", name="uq_release_candidate_version"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    version: Mapped[str] = mapped_column(String(80))
+    commit_sha: Mapped[str] = mapped_column(String(40))
+    migration_plan_ref: Mapped[str] = mapped_column(String(1024))
+    environment_manifest_ref: Mapped[str] = mapped_column(String(1024))
+    rollback_ref: Mapped[str] = mapped_column(String(1024))
+    evidence_ledger_ref: Mapped[str] = mapped_column(String(1024))
+    acceptance_checklist_ref: Mapped[str] = mapped_column(String(1024))
+    frozen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class LaunchWatchEventRecord(Base):
+    __tablename__ = "launch_watch_events"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    candidate_version: Mapped[str] = mapped_column(String(80), index=True)
+    event_type: Mapped[str] = mapped_column(String(80))
+    severity: Mapped[str] = mapped_column(String(40))
+    message: Mapped[str] = mapped_column(Text)
+    rollback_decision: Mapped[str] = mapped_column(String(40), default="none")
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

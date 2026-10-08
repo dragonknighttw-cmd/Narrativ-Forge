@@ -158,3 +158,13 @@ Repository head and live deployment head must be tracked separately.
 - Phases **52–60** are pre-staged in `PHASE_EXECUTION.md` and `ROADMAP.md` for trailer planning, Burmese translation, sound/BGM, thumbnails, LoRA/voice consistency, social analytics import, archive/PII purge, Manual Mode validation, and final UI/state audit.
 
 **Current release status remains NOT Production Ready.** No live/provider/manual gate is promoted by these code-only changes.
+
+
+## 2026-10-08 Phase 52–60 continuation
+
+- Code-only contracts and tests now cover trailer planning, Burmese translation/subtitle normalization, BGM/audio rights and cueing, thumbnail shortlist selection, LoRA/voice consistency, social analytics idempotency, archive/PII purge protection, Manual Mode evidence, and UI/state/accessibility audit.
+- Backend CI explicitly runs `unit or security` tests, while the PostgreSQL/Redis integration job remains separate; CodeQL runs Python and JavaScript/TypeScript analysis. Repository Gate aggregates the checks into one green/red status for the commit page.
+- Phase 61–68 have been pre-staged in `PHASE_EXECUTION.md` and `ROADMAP.md`: performance/cost, worker autoscaling, provenance, enterprise audit, provider adapters, localization operations, monetization expansion, and post-launch SLO/error-budget operations.
+- The new Phase 52–60 tests are marked `unit`, so they are included in the normal CI unit/security check. No separate live credential is required for these foundations.
+
+**Evidence status:** code/test foundations are implemented; live worker, provider, billing, legal, accessibility and human acceptance gates remain unverified until fresh evidence exists.

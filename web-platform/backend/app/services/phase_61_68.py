@@ -1,171 +1,132 @@
-"""Code-only contracts for the post-60 operating backlog.
+"""Code-only foundations for the Phase 61-68 continuation queue.
 
-These models make performance, autoscaling, provenance, enterprise audit,
-provider adapters, localization QA, monetization and SLO operations
-testable without requiring live credentials or external services.
+These contracts are deliberately provider-neutral. They can be wired to live
+telemetry, billing, provider and enterprise systems later without pretending
+that a live acceptance gate has passed.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from enum import Enum
-
-
-class SLOSeverity(str, Enum):
-    OK = "ok"
-    WARNING = "warning"
-    FREEZE = "freeze"
-    INCIDENT = "incident"
+from dataclasses import dataclass, field
+from hashlib import sha256
+from typing import Mapping, Sequence
 
 
 @dataclass(frozen=True)
 class PerformanceBudget:
-    route: str
-    p95_ms: float
-    error_rate: float
-    cost_per_job: float
+    operation: str
+    max_seconds: float
+    max_cost_usd: float
 
-    def valid(self) -> bool:
-        return bool(self.route.strip() and self.p95_ms > 0 and 0 <= self.error_rate <= 1 and self.cost_per_job >= 0)
+    def check(self, elapsed_seconds: float, cost_usd: float) -> bool:
+        return elapsed_seconds <= self.max_seconds and cost_usd <= self.max_cost_usd
 
 
 @dataclass(frozen=True)
 class AutoscalePolicy:
     min_workers: int
     max_workers: int
-    queue_target: int
-    scale_step: int
-
-    def valid(self) -> bool:
-        return 1 <= self.min_workers <= self.max_workers and self.queue_target > 0 and self.scale_step > 0
+    scale_up_queue: int
+    scale_down_queue: int
 
     def desired_workers(self, queue_depth: int, current: int) -> int:
-        if not self.valid():
-            raise ValueError("invalid autoscale policy")
-        if queue_depth <= self.queue_target:
-            return max(self.min_workers, current - self.scale_step)
-        return min(self.max_workers, current + self.scale_step)
+        if queue_depth >= self.scale_up_queue:
+            return min(self.max_workers, max(current + 1, self.min_workers))
+        if queue_depth <= self.scale_down_queue:
+            return max(self.min_workers, current - 1)
+        return max(self.min_workers, min(self.max_workers, current))
 
 
 @dataclass(frozen=True)
 class ProvenanceRecord:
     asset_id: str
-    parent_refs: tuple[str, ...]
-    model_provider: str
+    parent_ids: tuple[str, ...]
+    model: str
     model_version: str
+    provider: str
     source_hash: str
-    immutable_ref: str
 
-    def valid(self) -> bool:
-        return bool(
-            self.asset_id.strip()
-            and self.parent_refs
-            and self.model_provider.strip()
-            and self.model_version.strip()
-            and self.source_hash.strip()
-            and self.immutable_ref.strip()
-        )
-
-
-class AuditAction(str, Enum):
-    READ = "read"
-    CREATE = "create"
-    UPDATE = "update"
-    DELETE = "delete"
-    APPROVE = "approve"
+    @property
+    def lineage_key(self) -> str:
+        payload = "|".join((self.asset_id, *self.parent_ids, self.model, self.model_version, self.provider, self.source_hash))
+        return sha256(payload.encode()).hexdigest()
 
 
 @dataclass(frozen=True)
-class AuditEvent:
-    actor: str
-    scope: str
-    action: AuditAction
-    target: str
-    event_id: str
-
-    def valid(self) -> bool:
-        return all(value.strip() for value in (self.actor, self.scope, self.target, self.event_id))
+class EnterprisePermission:
+    role: str
+    resource: str
+    action: str
+    allowed: bool
 
 
 @dataclass(frozen=True)
 class ProviderCapability:
     provider: str
+    capability: str
     version: str
-    capabilities: tuple[str, ...]
     healthy: bool
-    circuit_open: bool = False
-
-    def available(self, capability: str) -> bool:
-        return self.healthy and not self.circuit_open and capability in self.capabilities
 
 
 @dataclass(frozen=True)
-class LocalizationQA:
+class LocaleQualityRecord:
     locale: str
     glossary_version: str
-    terminology_score: float
+    source_hash: str
     subtitle_error_rate: float
-    correction_count: int
+
+    def acceptable(self, max_error_rate: float) -> bool:
+        return self.subtitle_error_rate <= max_error_rate
+
+
+@dataclass(frozen=True)
+class BillingMeter:
+    tenant_key: str
+    units: int
+    idempotency_key: str
+
+    def validate(self) -> None:
+        if self.units < 0:
+            raise ValueError("units must be non-negative")
+        if not self.tenant_key or not self.idempotency_key:
+            raise ValueError("tenant_key and idempotency_key are required")
+
+
+@dataclass(frozen=True)
+class SLOBudget:
+    service: str
+    availability_target: float
+    latency_ms_p95: int
+    error_budget_percent: float
 
     def valid(self) -> bool:
-        return bool(
-            self.locale.strip()
-            and self.glossary_version.strip()
-            and 0 <= self.terminology_score <= 1
-            and 0 <= self.subtitle_error_rate <= 1
-            and self.correction_count >= 0
+        return (
+            0 < self.availability_target <= 100
+            and self.latency_ms_p95 > 0
+            and 0 <= self.error_budget_percent <= 100
         )
 
 
-@dataclass(frozen=True)
-class MonetizationLedger:
-    tenant_key: str
-    entitlement: str
-    quota_units: int
-    used_units: int
-    credit_units: int
-    idempotency_key: str
+@dataclass
+class IncidentPolicy:
+    freeze_on_burn: bool = True
+    rollback_on_critical: bool = True
+    thresholds: Mapping[str, float] = field(default_factory=dict)
 
-    def remaining(self) -> int:
-        return self.quota_units + self.credit_units - self.used_units
-
-    def valid(self) -> bool:
-        return bool(self.tenant_key.strip() and self.entitlement.strip() and self.idempotency_key.strip()) and min(
-            self.quota_units, self.used_units, self.credit_units
-        ) >= 0
-
-
-@dataclass(frozen=True)
-class SLOObservation:
-    service: str
-    availability: float
-    p95_ms: float
-    error_budget_remaining: float
-
-    def severity(self, availability_target: float, p95_target_ms: float) -> SLOSeverity:
-        if self.availability < availability_target or self.p95_ms > p95_target_ms:
-            return SLOSeverity.INCIDENT if self.error_budget_remaining <= 0 else SLOSeverity.FREEZE
-        if self.error_budget_remaining < 0.1:
-            return SLOSeverity.WARNING
-        return SLOSeverity.WARNING if self.error_budget_remaining < 0.25 else SLOSeverity.OK
+    def action_for(self, signal: str, value: float) -> str:
+        threshold = self.thresholds.get(signal)
+        if threshold is None:
+            return "observe"
+        if value >= threshold:
+            if signal == "critical_error" and self.rollback_on_critical:
+                return "rollback"
+            if self.freeze_on_burn:
+                return "freeze"
+        return "observe"
 
 
-def validate_operating_inputs(
-    performance: PerformanceBudget,
-    autoscale: AutoscalePolicy,
-    provenance: ProvenanceRecord,
-    audit: AuditEvent,
-    provider: ProviderCapability,
-    localization: LocalizationQA,
-    billing: MonetizationLedger,
-    slo: SLOObservation,
-) -> list[str]:
-    errors: list[str] = []
-    if not performance.valid(): errors.append("performance_invalid")
-    if not autoscale.valid(): errors.append("autoscale_invalid")
-    if not provenance.valid(): errors.append("provenance_invalid")
-    if not audit.valid(): errors.append("audit_invalid")
-    if not provider.provider.strip() or not provider.version.strip(): errors.append("provider_invalid")
-    if not localization.valid(): errors.append("localization_invalid")
-    if not billing.valid(): errors.append("billing_invalid")
-    if not slo.service.strip() or not 0 <= slo.availability <= 1 or slo.p95_ms < 0: errors.append("slo_invalid")
-    return errors
+def adapter_capabilities(records: Sequence[ProviderCapability]) -> dict[str, set[str]]:
+    result: dict[str, set[str]] = {}
+    for record in records:
+        if record.healthy:
+            result.setdefault(record.provider, set()).add(record.capability)
+    return result

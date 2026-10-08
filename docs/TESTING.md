@@ -43,3 +43,52 @@ Where applicable test loading, empty, uploading, processing, completed, failed, 
 ## Manual Mode evidence gate
 
 Before production-ready Manual Mode, collect 15–20 manual videos, production logs, multiple hook types, subtitle styles, production-time measurements, commercial-use review, and a repeated-problem dataset.
+
+## Media release verification procedures
+
+### Gate 1 — real media E2E
+
+Use one representative Burmese audio/video asset that is safe to process.
+
+1. Upload asset through the real API.
+2. Confirm a `ProcessingJob` is created.
+3. Confirm Redis/Celery dispatch.
+4. Confirm worker accepts `narrativ.process_real_job`.
+5. Confirm FFmpeg output exists.
+6. Confirm Whisper output exists.
+7. Confirm DB job state becomes completed.
+8. Confirm output object exists in the configured storage provider.
+9. Verify checksum/reference consistency.
+10. Record worker logs, job ID, timestamps and final state.
+
+### Gate 2 — retry/DLQ/failover
+
+1. Dispatch a disposable processing job.
+2. Inject one deterministic worker failure.
+3. Verify retry count and backoff.
+4. Inject failures until retry exhaustion.
+5. Verify `FailedJob` and DLQ publication.
+6. Re-run with a healthy worker and verify recovery.
+7. Submit duplicate dispatch and verify the dispatch lock prevents duplicate execution.
+
+### Gate 4 — Whisper fallback
+
+1. Run a representative audio file through Cloudflare Whisper.
+2. Record successful transcription/VTT.
+3. Simulate cloud failure or exceed configured fallback threshold.
+4. Verify local Whisper executes.
+5. Verify final subtitle state records the successful source.
+6. Confirm no duplicate finalization.
+
+### Gate 10 — backup/restore
+
+1. Create a production-consistent backup using the managed DB provider.
+2. Restore into an isolated database.
+3. Verify Alembic history and critical tables.
+4. Verify tenant isolation and storage references.
+5. Run application smoke checks against the isolated target.
+6. Record restore timestamp and result.
+
+### Gate 12 — load/performance
+
+Use representative API and media-job volumes. Record p50/p95 latency, worker processing time, CPU, memory, queue depth and failure rate. The 15–30 minute MVP processing target is a product target, not evidence until measured.

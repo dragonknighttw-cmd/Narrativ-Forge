@@ -37,6 +37,8 @@ def auth_client():
             db.add(organization)
             db.flush()
         admin = db.query(User).filter(User.email == "admin@narrativ.local").first()
+        admin.password_hash = hash_password("change-me-123456")
+        admin.is_active = True
         if not db.query(OrganizationMembership).filter(
             OrganizationMembership.organization_id == organization.id,
             OrganizationMembership.user_id == admin.id,

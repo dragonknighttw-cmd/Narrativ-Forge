@@ -53,16 +53,24 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    membership = (
+        db.query(OrganizationMembership)
+        .filter(OrganizationMembership.user_id == user.id)
+        .order_by(OrganizationMembership.created_at)
+        .first()
+    )
+    if not membership:
+        raise HTTPException(status_code=403, detail="Workspace membership required")
     response.set_cookie(
         key=settings.session_cookie_name,
-        value=issue_session(user.email, user.role),
+        value=issue_session(user.email, membership.role, membership.organization_id),
         httponly=True,
         secure=settings.session_cookie_secure,
         samesite="strict",
         max_age=settings.session_ttl_seconds,
         path="/",
     )
-    return {"authenticated": True, "user": {"id": user.id, "email": user.email, "role": user.role}}
+    return {"authenticated": True, "user": {"id": user.id, "email": user.email, "role": membership.role, "organization_id": membership.organization_id}}
 
 
 @router.post("/logout")
@@ -74,6 +82,39 @@ def logout(response: Response):
 @router.get("/me")
 def me(user=Depends(get_current_user)):
     return user
+
+
+class WorkspaceSwitchRequest(BaseModel):
+    organization_id: str
+
+
+@router.post("/switch-workspace")
+def switch_workspace(
+    payload: WorkspaceSwitchRequest,
+    response: Response,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    membership = (
+        db.query(OrganizationMembership)
+        .filter(
+            OrganizationMembership.user_id == user["id"],
+            OrganizationMembership.organization_id == payload.organization_id,
+        )
+        .first()
+    )
+    if not membership:
+        raise HTTPException(status_code=404, detail="Workspace membership not found")
+    response.set_cookie(
+        key=settings.session_cookie_name,
+        value=issue_session(user["email"], membership.role, membership.organization_id),
+        httponly=True,
+        secure=settings.session_cookie_secure,
+        samesite="strict",
+        max_age=settings.session_ttl_seconds,
+        path="/",
+    )
+    return {"authenticated": True, "organization_id": membership.organization_id, "role": membership.role}
 
 
 @router.post("/invite")
@@ -188,15 +229,24 @@ def consume_magic_link(token: str, response: Response, db: Session = Depends(get
     if not user:
         raise HTTPException(status_code=401, detail="Magic link is invalid or expired")
 
+    membership = (
+        db.query(OrganizationMembership)
+        .filter(OrganizationMembership.user_id == user.id)
+        .order_by(OrganizationMembership.created_at)
+        .first()
+    )
+    if not membership:
+        raise HTTPException(status_code=403, detail="Workspace membership required")
+
     record.consumed_at = datetime.now(timezone.utc)
     db.commit()
     response.set_cookie(
         key=settings.session_cookie_name,
-        value=issue_session(user.email, user.role),
+        value=issue_session(user.email, membership.role, membership.organization_id),
         httponly=True,
         secure=settings.session_cookie_secure,
         samesite="strict",
         max_age=settings.session_ttl_seconds,
         path="/",
     )
-    return {"authenticated": True, "user": {"id": user.id, "email": user.email, "role": user.role}}
+    return {"authenticated": True, "user": {"id": user.id, "email": user.email, "role": membership.role, "organization_id": membership.organization_id}}

@@ -1,7 +1,7 @@
 """Persist release evidence, provider acceptance, billing reconciliation, and launch-watch records.
 
 Revision ID: 0017_release_maturity
-Revises: 0016_repair_legacy_scene_constraint
+Revises: 0017_asset_deleted_at
 """
 
 from alembic import op
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 
 
 revision = "0017_release_maturity"
-down_revision = "0016_repair_legacy_scene_constraint"
+down_revision = "0017_asset_deleted_at"
 branch_labels = None
 depends_on = None
 

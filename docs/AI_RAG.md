@@ -55,3 +55,17 @@ Feedback and recommendation data may be process-local or foundation-level depend
 ## Provider policy
 
 Agnes/Kling/Magic Hour and similar candidates remain candidate/planning providers unless live access, limits, commercial terms, watermark behavior, quality, and retry semantics are verified.
+
+## Whisper close-out status
+
+**Deployment VERIFIED; real transcription E2E BLOCKED.**
+
+Cloudflare Whisper is deployed and reachable, but no authenticated representative audio has been processed through the production worker path.
+
+Fallback policy:
+1. Prefer Cloudflare Whisper when configured and within the budget threshold.
+2. If cloud transcription is unavailable/over budget, use local Whisper in the media worker.
+3. Persist the transcription source and final subtitle state.
+4. Record failure/retry evidence.
+
+A live authenticated audio → VTT → Subtitle Studio test is required before Gate 4 can become VERIFIED.

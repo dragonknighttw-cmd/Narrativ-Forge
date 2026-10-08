@@ -203,3 +203,11 @@ Code-only foundations are staged in `web-platform/backend/app/services/phase_69_
 - Phase 77–84 are pre-staged as the next queue: capacity/quota forecasting, API versioning, migration retirement, tenant portability, incident communications, support SLA, provider settlement seam, and final governance/evidence reconciliation.
 - Latest main SHA: `dba5ea3eb781b1d3fa6fa3078faf3d4cd2b10999`.
 - Fresh CI/CodeQL/Security/Repository Gate runs are active for the latest main changes; no green result is claimed until the run completes.
+
+
+## 2026-10-08 Phase 77–84 code-only completion
+
+- Phase 77–84 service contracts are implemented in `web-platform/backend/app/services/phase_77_84.py`.
+- Unit coverage is present in `web-platform/backend/tests/test_phase_77_84.py` for quota forecasting, API sunset rules, migration retirement safety, deterministic tenant export keys, incident/SLA contracts, settlement math/idempotency, and final governance evidence completeness.
+- The complete code-only phase queue through **84** is now staged/implemented on `main`.
+- This does **not** mark production gates VERIFIED: live worker/runtime, provider, billing, backup/restore, privacy/legal, security, accessibility and human acceptance evidence remain external requirements.

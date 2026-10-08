@@ -1,4 +1,5 @@
 name: Real Worker Evidence
+# Evidence gate: execute integration suite from source, then real worker smoke.
 
 on:
   workflow_dispatch:

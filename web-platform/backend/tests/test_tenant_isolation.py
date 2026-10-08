@@ -55,3 +55,56 @@ def test_second_tenant_cannot_read_or_mutate_first_tenant_series():
         app.dependency_overrides.clear()
         app.dependency_overrides.update(original_overrides)
         second.close()
+
+
+
+@pytest.mark.integration
+@pytest.mark.security
+def test_authenticated_session_is_bound_to_selected_membership():
+    from app.api.dependencies import issue_session
+
+    with TestingSession() as db:
+        org_a = Organization(name="Tenant A", slug="tenant-a-session", plan="trial")
+        org_b = Organization(name="Tenant B", slug="tenant-b-session", plan="trial")
+        db.add_all([org_a, org_b])
+        db.flush()
+
+        user = User(
+            email="multi-membership@narrativ.local",
+            role="viewer",
+            password_hash=hash_password("multi-membership-password"),
+            is_active=True,
+        )
+        db.add(user)
+        db.flush()
+        db.add_all([
+            OrganizationMembership(organization_id=org_a.id, user_id=user.id, role="viewer"),
+            OrganizationMembership(organization_id=org_b.id, user_id=user.id, role="owner"),
+        ])
+        db.commit()
+        user_id = user.id
+        user_email = user.email
+        org_a_id = org_a.id
+        org_b_id = org_b.id
+
+    client = create_test_client(app)
+    original_overrides = dict(app.dependency_overrides)
+    try:
+        session = issue_session(user_email, "owner", org_b_id)
+        me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {session}"})
+        assert me.status_code == 200
+        assert me.json()["organization_id"] == org_b_id
+        assert me.json()["role"] == "owner"
+
+        switched = client.post(
+            "/api/v1/auth/switch-workspace",
+            json={"organization_id": org_a_id},
+            headers={"Authorization": f"Bearer {session}"},
+        )
+        assert switched.status_code == 200
+        assert switched.json()["organization_id"] == org_a_id
+        assert switched.json()["role"] == "viewer"
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(original_overrides)
+        client.close()

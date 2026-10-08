@@ -87,7 +87,7 @@ jobs:
           APP_UID="$(docker run --rm narrativ-forge-worker-evidence id -u app)"
           APP_GID="$(docker run --rm narrativ-forge-worker-evidence id -g app)"
           echo "worker runtime uid=$APP_UID gid=$APP_GID"
-          docker run --rm --user 0:0             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             sh -lc "chown -R $APP_UID:$APP_GID /app/storage && find /app/storage -type d -exec chmod 0770 {} + && find /app/storage -type f -exec chmod 0660 {} +"
+          docker run --rm --user 0:0             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             sh -lc "chown -R $APP_UID:$APP_GID /app/storage && chmod -R a+rwX /app/storage && find /app/storage -type d -exec chmod 0770 {} + && find /app/storage -type f -exec chmod 0660 {} +"
           stat -c '%U:%G %a %n' "$RUNNER_TEMP/narrativ-storage" || true
           find "$RUNNER_TEMP/narrativ-storage" -maxdepth 3 -type d -print | sort | head -80
 
@@ -122,7 +122,7 @@ jobs:
           # immediately before the real worker starts.
           APP_UID="$(docker run --rm narrativ-forge-worker-evidence id -u app)"
           APP_GID="$(docker run --rm narrativ-forge-worker-evidence id -g app)"
-          docker run --rm --user 0:0             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             sh -lc "chown -R $APP_UID:$APP_GID /app/storage && find /app/storage -type d -exec chmod 0770 {} + && find /app/storage -type f -exec chmod 0660 {} +"
+          docker run --rm --user 0:0             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             sh -lc "chown -R $APP_UID:$APP_GID /app/storage && chmod -R a+rwX /app/storage && find /app/storage -type d -exec chmod 0770 {} + && find /app/storage -type f -exec chmod 0660 {} +"
           echo "final worker storage ownership: uid=$APP_UID gid=$APP_GID"
           docker run --rm             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             sh -lc 'set -eu; id; test -d /app/storage/objects; mkdir -p /app/storage/objects/episodes/preflight-final; test -w /app/storage/objects/episodes/preflight-final; printf ok > /app/storage/objects/episodes/preflight-final/probe; test -s /app/storage/objects/episodes/preflight-final/probe; rm -rf /app/storage/objects/episodes/preflight-final'
           echo "final production worker storage preflight: PASS"

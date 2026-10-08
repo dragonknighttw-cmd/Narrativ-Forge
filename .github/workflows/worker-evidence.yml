@@ -59,9 +59,15 @@ jobs:
         run: |
           docker run --rm --network host             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             python -m alembic upgrade head
 
-      - name: Verify retry and DLQ integration
+      - name: Verify retry, DLQ, and tenant integration
+        working-directory: web-platform/backend
         run: |
-          docker run --rm --network host             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             pytest -m integration -q
+          pip install -r requirements.txt
+          DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker \
+          REDIS_URL=redis://127.0.0.1:6379/0 \
+          STORAGE_PROVIDER=local \
+          UPLOAD_DIR="$RUNNER_TEMP/narrativ-storage" \
+          PYTHONPATH=. pytest -m integration -q
 
       - name: Start the real worker
         run: |

@@ -22,7 +22,7 @@ jobs:
   dependency-audit:
     runs-on: ubuntu-latest
     steps:
-1      - name: Pin checkout to exact triggering SHA
+      - name: Pin checkout to exact triggering SHA
         run: |
           git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
           git checkout --detach "$GITHUB_SHA"
@@ -55,7 +55,7 @@ jobs:
       actions: read
       security-events: write
     steps:
-1      - name: Pin checkout to exact triggering SHA
+      - name: Pin checkout to exact triggering SHA
         run: |
           git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
           git checkout --detach "$GITHUB_SHA"
@@ -70,7 +70,7 @@ jobs:
   container-scan:
     runs-on: ubuntu-latest
     steps:
-1      - name: Pin checkout to exact triggering SHA
+      - name: Pin checkout to exact triggering SHA
         run: |
           git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
           git checkout --detach "$GITHUB_SHA"

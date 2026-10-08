@@ -92,10 +92,13 @@ def reserve_provider_quota(
         select(UsageEvent).where(UsageEvent.idempotency_key == idempotency_key)
     )
     if existing is not None:
+        existing_period = existing.period_start
+        if existing_period is not None and existing_period.tzinfo is None:
+            existing_period = existing_period.replace(tzinfo=timezone.utc)
         if (
             existing.organization_id != organization_id
             or existing.metric != metric
-            or existing.period_start != period
+            or existing_period != period
             or existing.unit != unit
         ):
             raise ValueError("Idempotency key is already bound to a different provider quota reservation")

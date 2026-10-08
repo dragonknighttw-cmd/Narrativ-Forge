@@ -1,5 +1,6 @@
 # Narrativ Forge
 
+[![Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/repository-gate.yml/badge.svg)](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/repository-gate.yml)\n
 Private, invite-only Burmese short-form video production workspace.
 
 > Owner: Project maintainers  

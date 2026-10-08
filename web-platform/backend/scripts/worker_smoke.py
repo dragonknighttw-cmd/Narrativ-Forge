@@ -117,10 +117,10 @@ def main() -> int:
             if current and current.status in {"completed", "failed"}:
                 if current.status == "failed":
                     raise RuntimeError(
-                        f"worker smoke failed: code={final.error_code} "
-                        f"message={final.error_message or final.last_error}"
+                        f"worker smoke failed: code={current.error_code} "
+                        f"message={current.error_message or current.last_error}"
                     )
-                output = db.get(Asset, final.output_asset_id) if final.output_asset_id else None
+                output = db.get(Asset, current.output_asset_id) if current.output_asset_id else None
                 transcript = (
                     db.query(Asset)
                     .filter(Asset.episode_id == current.episode_id, Asset.asset_type == "transcript")

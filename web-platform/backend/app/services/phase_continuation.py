@@ -66,6 +66,7 @@ def validate_experiment(experiment: Experiment) -> list[str]:
     errors: list[str] = []
     if not experiment.key.strip(): errors.append("key_required")
     if not experiment.variants: errors.append("variants_required")
+    if len({v.key for v in experiment.variants}) != len(experiment.variants): errors.append("duplicate_variant_key")
     if abs(sum(v.weight for v in experiment.variants) - 1.0) > 1e-6: errors.append("weights_must_sum_to_one")
     if any(v.weight < 0 for v in experiment.variants): errors.append("negative_weight")
     if experiment.min_samples < 1: errors.append("min_samples")

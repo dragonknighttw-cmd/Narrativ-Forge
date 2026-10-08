@@ -35,14 +35,11 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           python -m py_compile app/services/orchestration.py
           sed -n '1,35p' app/services/orchestration.py
-      - name: Assert exact source revision and compile critical backend modules
+      - name: Verify backend source revision
         run: |
           git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
           git checkout --detach "$GITHUB_SHA"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "CI exact SHA=$(git rev-parse HEAD)"
-          git show "$GITHUB_SHA:web-platform/backend/app/services/orchestration.py" | sed -n '1,35p'
           python -m py_compile app/services/orchestration.py
           sed -n '1,35p' app/services/orchestration.py
       - uses: actions/setup-python@v5
@@ -97,10 +94,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-      - name: Checkout exact triggering SHA
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
+      - name: Verify backend source revision
+        run: |
+          git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
+          git checkout --detach "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python -m py_compile app/services/orchestration.py
+          sed -n '1,35p' app/services/orchestration.py
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -132,10 +132,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-      - name: Checkout exact triggering SHA
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -153,10 +149,6 @@ jobs:
       run:
         working-directory: web-platform/frontend
     steps:
-      - name: Checkout exact triggering SHA
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
       - name: Checkout exact triggering SHA
         uses: actions/checkout@v4
         with:

@@ -13,13 +13,27 @@
 - Redis/delivery: external managed service where enabled.
 - Approved output: user-owned Google Drive.
 
-The current Render blueprint intentionally provisions the API web service only. It does not silently add a paid Render Background Worker.
+### Live evidence checkpoint — 2026-10-08
+
+The Render service `Narrativ-Forge` is live from `main` and its latest live deploy is commit `1369d9a3e4d8896cf6024fa45fa6810cc3cee890`.
+
+- API: https://narrativ-forge.onrender.com
+- Health: https://narrativ-forge.onrender.com/api/v1/health
+- Readiness: https://narrativ-forge.onrender.com/api/v1/ready
+- Render service: https://dashboard.render.com/web/srv-davrqtu7bikc73f7isbg
+- Release commit: https://github.com/dragonknighttw-cmd/Narrativ-Forge/commit/1369d9a3e4d8896cf6024fa45fa6810cc3cee890
+
+At verification time, health returned HTTP 200 with `status=ok`. Readiness returned HTTP 200 with database=`ok` and redis=`ok`. Render logs also show the live instance running `alembic upgrade head` against PostgreSQL followed by successful Uvicorn startup.
+
+The exact live Alembic revision is still VERIFY because startup connectivity/logs do not independently report the final revision.
 
 ## Worker options
 
 The repository contains a Celery worker path and an ephemeral Kaggle worker path. A local Windows worker is also a documented free-first fallback.
 
 Paid Render Background Worker/VPS is reserved for future use unless explicitly approved.
+
+The current Render account has one Narrativ Forge web service and no separately provisioned Render Background Worker. Therefore API deployment is verified, but real background media execution remains a release gate.
 
 ## Free-first deployment decisions
 
@@ -30,7 +44,17 @@ Paid Render Background Worker/VPS is reserved for future use unless explicitly a
 
 ## Cloudflare Whisper
 
-The Whisper Worker is deployed separately. Render must point to the deployed Worker URL and shared-secret configuration. Real audio E2E remains a release gate.
+The Whisper Worker is deployed separately.
+
+Live verification on 2026-10-08 confirmed:
+- Worker name: `narrativ-forge-whisper`.
+- Wrangler deployment exists with a 100% production version created 2026-10-07.
+- `NARRATIV_SHARED_SECRET` is bound as a Worker secret.
+- workers.dev subdomain is enabled.
+- Live endpoint: https://narrativ-forge-whisper.narrativ-forge.workers.dev
+- A live request without POST/authentication returned the expected method guard response.
+
+Real authenticated audio → Whisper → VTT → Subtitle Studio E2E and fallback behavior remain VERIFY.
 
 ## Environment
 

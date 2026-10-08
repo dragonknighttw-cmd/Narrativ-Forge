@@ -111,3 +111,20 @@ Separate:
 ## 8. Safety
 
 Preserve original assets and approved outputs. Do not silently alter approved content. Never expose secrets. Do not bypass provider watermark/commercial-use restrictions.
+
+## Release gate trigger table
+
+| Trigger | Required status/evidence update |
+|---|---|
+| Worker provisioned/deprovisioned | CURRENT_STATE + DEPLOYMENT + OPERATIONS + ROADMAP |
+| Real media E2E passes/fails | CURRENT_STATE + TESTING + AI_RAG + STORAGE |
+| Retry/DLQ/failover drill | CURRENT_STATE + TESTING + OPERATIONS + TROUBLESHOOTING |
+| Storage lifecycle verified | CURRENT_STATE + STORAGE |
+| OAuth/Drive verified | CURRENT_STATE + DEPLOYMENT/API |
+| SMTP/Stripe/Sentry live-tested | CURRENT_STATE + affected operational doc |
+| Live Alembic head verified | CURRENT_STATE + DATABASE |
+| Backup/restore drill | CURRENT_STATE + DATABASE + OPERATIONS |
+| Browser E2E/load/security/a11y evidence | CURRENT_STATE + TESTING |
+| Legal/pen-test/provider terms signed off | CURRENT_STATE + ROADMAP + SECURITY as applicable |
+
+**Evidence rule:** VERIFIED requires a fresh link, log, screenshot, query result, or dated provider/runtime artifact. Configuration alone remains DONE/PENDING/VERIFY.

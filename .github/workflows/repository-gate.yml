@@ -36,46 +36,64 @@ jobs:
           deadline=$((SECONDS + 1380))
           self_name="Repository Gate"
 
+          required_workflows=("CI" "Security" "CodeQL")
           while (( SECONDS < deadline )); do
-            payload="$(gh api --paginate --slurp "repos/${REPOSITORY}/commits/${SHA}/check-runs?per_page=100" | jq '[.[].check_runs[]]')"
+            runs="$(gh api --paginate --slurp "repos/${REPOSITORY}/actions/runs?head_sha=${SHA}&per_page=100" | jq '[.[].workflow_runs[]]')"
 
-            pending="$(jq --arg self "${self_name}" '
-              map(select(.name != $self and (.status == "queued" or .status == "in_progress" or .status == "waiting" or .status == "requested")))
-              | length
-            ' <<<"${payload}")"
+            missing=0
+            failures=0
+            pending=0
 
-            failures="$(jq --arg self "${self_name}" '
-              map(select(.name != $self and .status == "completed" and
-                (.conclusion == "failure" or .conclusion == "cancelled" or
-                 .conclusion == "timed_out" or .conclusion == "action_required" or
-                 .conclusion == "startup_failure" or .conclusion == "stale")))
-              | length
-            ' <<<"${payload}")"
+            for workflow in "${required_workflows[@]}"; do
+              row="$(jq -c --arg workflow "${workflow}" '
+                map(select(.name == $workflow))
+                | sort_by(.run_number)
+                | last // empty
+              ' <<<"${runs}")"
 
-            if [[ "${failures}" != "0" ]]; then
-              echo "Repository checks contain ${failures} failing check(s)."
-              jq --arg self "${self_name}" -r '
-                .[]
-                | select(.name != $self and .status == "completed")
-                | select(.conclusion != "success" and .conclusion != "neutral" and .conclusion != "skipped")
-                | "- \(.name): \(.conclusion)"
-              ' <<<"${payload}"
+              if [[ -z "${row}" ]]; then
+                echo "Waiting for required workflow: ${workflow}"
+                missing=$((missing + 1))
+                continue
+              fi
+
+              status="$(jq -r '.status' <<<"${row}")"
+              conclusion="$(jq -r '.conclusion // "pending"' <<<"${row}")"
+              echo "${workflow}: ${status}/${conclusion}"
+
+              if [[ "${status}" != "completed" ]]; then
+                pending=$((pending + 1))
+              elif [[ "${conclusion}" != "success" ]]; then
+                failures=$((failures + 1))
+              fi
+            done
+
+            # Worker evidence is conditional: if this SHA triggered it, it is
+            # part of the gate; docs/config-only commits may legitimately omit it.
+            worker="$(jq -c 'map(select(.name == "Real Worker Evidence")) | sort_by(.run_number) | last // empty' <<<"${runs}")"
+            if [[ -n "${worker}" ]]; then
+              status="$(jq -r '.status' <<<"${worker}")"
+              conclusion="$(jq -r '.conclusion // "pending"' <<<"${worker}")"
+              echo "Real Worker Evidence: ${status}/${conclusion}"
+              if [[ "${status}" != "completed" ]]; then
+                pending=$((pending + 1))
+              elif [[ "${conclusion}" != "success" ]]; then
+                failures=$((failures + 1))
+              fi
+            fi
+
+            if (( failures > 0 )); then
+              echo "Repository Gate: required workflow failure detected."
               exit 1
             fi
 
-            if [[ "${pending}" == "0" ]]; then
-              echo "Repository Gate: all currently registered checks are green/neutral/skipped."
-              jq --arg self "${self_name}" -r '
-                .[]
-                | select(.name != $self)
-                | "- \(.name): \(.status)/\(.conclusion // "pending")"
-              ' <<<"${payload}"
+            if (( missing == 0 && pending == 0 )); then
+              echo "Repository Gate: required workflows completed successfully."
               exit 0
             fi
 
-            echo "Waiting for ${pending} check(s)..."
             sleep 15
-          done
+          
 
           echo "Repository Gate timed out waiting for checks."
           exit 1

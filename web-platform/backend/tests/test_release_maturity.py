@@ -69,3 +69,26 @@ def test_launch_requires_frozen_candidate_and_evidence():
     assert launch_allowed([entry], candidate)
     assert not launch_allowed([entry], None)
     assert not launch_allowed([EvidenceLedgerEntry("ci", BLOCKED, "c" * 40, "run-1", "artifact-1", "owner")], candidate)
+
+
+def test_launch_requires_matching_evidence_commit():
+    candidate = ReleaseCandidate(
+        version="v1",
+        commit_sha="a" * 40,
+        migration_plan_ref="migration",
+        environment_manifest_ref="env",
+        rollback_ref="rollback",
+        evidence_ledger_ref="ledger",
+        acceptance_checklist_ref="acceptance",
+        frozen_at=datetime.now(timezone.utc),
+    )
+    mismatched = EvidenceLedgerEntry(
+        gate="ci",
+        status=VERIFIED,
+        commit_sha="b" * 40,
+        workflow_run="run-1",
+        evidence_ref="artifact-1",
+        owner="release",
+        verified_at=datetime.now(timezone.utc),
+    )
+    assert not launch_allowed([mismatched], candidate)

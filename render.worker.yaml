@@ -1,0 +1,95 @@
+# Optional paid Render Background Worker blueprint.
+# Do NOT merge this service into the free-only render.yaml unless the owner
+# explicitly approves the billable worker runtime.
+services:
+  - type: worker
+    name: narrativ-forge-worker
+    runtime: docker
+    rootDir: web-platform/backend
+    dockerfilePath: ./Dockerfile.worker
+    plan: starter
+    branch: main
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: STORAGE_PROVIDER
+        value: hybrid
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLOUDINARY_FOLDER
+        value: narrativ-forge
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: narrativ-forge
+      - key: B2_APPLICATION_KEY_ID
+        sync: false
+      - key: B2_APPLICATION_KEY
+        sync: false
+      - key: B2_BUCKET_NAME
+        sync: false
+      - key: B2_REGION
+        sync: false
+      - key: B2_ENDPOINT_URL
+        sync: false
+      - key: CLOUDFLARE_WHISPER_WORKER_URL
+        sync: false
+      - key: CLOUDFLARE_WHISPER_SHARED_SECRET
+        sync: false
+      - key: CLOUDFLARE_WHISPER_TOKEN_TTL_SECONDS
+        value: "300"
+      - key: CLOUDFLARE_WHISPER_DAILY_NEURON_BUDGET
+        value: "10000"
+      - key: CLOUDFLARE_WHISPER_WARNING_THRESHOLD
+        value: "0.80"
+      - key: CLOUDFLARE_WHISPER_FALLBACK_THRESHOLD
+        value: "0.95"
+      - key: CLOUDFLARE_WHISPER_NEURONS_PER_AUDIO_MINUTE
+        value: "41.14"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: OAUTH_ENCRYPTION_KEY
+        sync: false
+      - key: FRONTEND_BASE_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_USE_TLS
+        value: "true"
+      - key: FFMPEG_BINARY
+        value: ffmpeg
+      - key: FFPROBE_BINARY
+        value: ffprobe
+      - key: WHISPER_COMMAND
+        value: whisper
+      - key: WHISPER_MODEL
+        value: small
+      - key: WORKER_MAX_CONCURRENCY
+        value: "1"

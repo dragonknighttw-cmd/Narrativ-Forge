@@ -10,6 +10,8 @@ from app.main import app
 from app.db import Base, get_db
 from app.models import Organization, OrganizationMembership, User
 from app.services.passwords import hash_password
+from app.api.dependencies import issue_session
+from app.core.config import settings
 from client_utils import create_test_client
 
 engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
@@ -47,8 +49,7 @@ def auth_client():
         db.commit()
 
     client = create_test_client(app)
-    response = client.post("/api/v1/auth/login", json={"email": "admin@narrativ.local", "password": "change-me-123456"})
-    assert response.status_code == 200
+    client.cookies.set(settings.session_cookie_name, issue_session("admin@narrativ.local", "owner"))
     return client
 
 @pytest.mark.integration

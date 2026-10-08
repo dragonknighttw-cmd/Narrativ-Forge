@@ -22,7 +22,13 @@ class TrailerPlan:
     approval: Status = "draft"
 
     def valid(self) -> bool:
-        return bool(self.series_id.strip() and self.hook.strip() and 10 <= self.duration_seconds <= 180 and self.beats)
+        return bool(
+            self.series_id.strip()
+            and self.hook.strip()
+            and 10 <= self.duration_seconds <= 180
+            and self.beats
+            and all(beat.strip() for beat in self.beats)
+        )
 
 
 @dataclass(frozen=True)
@@ -35,6 +41,25 @@ class TranslationTerm:
 
     def valid(self) -> bool:
         return bool(self.source.strip() and self.target.strip() and self.language.strip() and self.glossary_version.strip())
+
+
+@dataclass(frozen=True)
+class TranslationAdapter:
+    source_language: str
+    target_language: str
+    glossary_version: str
+    fallback_language: str = "en"
+
+    def valid(self) -> bool:
+        return bool(
+            self.source_language.strip()
+            and self.target_language.strip()
+            and self.glossary_version.strip()
+            and self.fallback_language.strip()
+        )
+
+    def route(self, provider_available: bool) -> str:
+        return "provider" if provider_available else self.fallback_language
 
 
 def normalize_subtitle_text(text: str) -> str:
@@ -63,7 +88,16 @@ class AudioTrack:
     cues: tuple[AudioCue, ...] = ()
 
     def valid(self) -> bool:
-        return bool(self.track_id.strip() and self.rights_ref.strip() and -60 <= self.loudness_lufs <= 0 and all(c.valid() for c in self.cues))
+        return bool(
+            self.track_id.strip()
+            and self.rights_ref.strip()
+            and -60 <= self.loudness_lufs <= 0
+            and all(c.valid() for c in self.cues)
+            and all(
+                self.cues[i].end_ms <= self.cues[i + 1].start_ms
+                for i in range(len(self.cues) - 1)
+            )
+        )
 
 
 @dataclass(frozen=True)
@@ -80,7 +114,9 @@ class ThumbnailCandidate:
 
 def select_thumbnail_shortlist(candidates: tuple[ThumbnailCandidate, ...], limit: int = 5) -> tuple[ThumbnailCandidate, ...]:
     valid = [c for c in candidates if c.valid()]
-    return tuple(sorted(valid, key=lambda c: (-c.score, c.rank, c.candidate_id))[: max(1, limit)])
+    if len({c.candidate_id for c in valid}) != len(valid):
+        return ()
+    return tuple(sorted(valid, key=lambda c: (-c.score, c.rank, c.candidate_id))[: max(1, min(5, limit))])
 
 
 @dataclass(frozen=True)
@@ -106,7 +142,13 @@ class SocialAnalyticsEvent:
         return f"{self.source.strip().lower()}:{self.external_event_id.strip()}"
 
     def valid(self) -> bool:
-        return bool(self.source.strip() and self.external_event_id.strip() and self.metric.strip() and self.occurred_at.strip() and self.value >= 0)
+        return bool(
+            self.source.strip()
+            and self.external_event_id.strip()
+            and self.metric.strip()
+            and self.occurred_at.strip()
+            and self.value >= 0
+        )
 
 
 @dataclass(frozen=True)

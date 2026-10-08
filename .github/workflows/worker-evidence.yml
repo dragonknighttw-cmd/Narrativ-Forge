@@ -101,17 +101,35 @@ jobs:
       - name: Verify retry, DLQ, and tenant integration
         working-directory: web-platform/backend
         run: |
+          # Keep integration-test storage isolated from the production-worker
+          # evidence volume. Tests are allowed to create/delete local objects;
+          # they must not mutate the ownership/mode contract of the real worker.
+          rm -rf "$RUNNER_TEMP/narrativ-integration-storage"
+          mkdir -p "$RUNNER_TEMP/narrativ-integration-storage"
+          chmod 0777 "$RUNNER_TEMP/narrativ-integration-storage"
           pip install -r requirements.txt
-          DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker           REDIS_URL=redis://127.0.0.1:6379/0           STORAGE_PROVIDER=local           UPLOAD_DIR="$RUNNER_TEMP/narrativ-storage"           PYTHONPATH=. pytest -m integration -q
+          DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker           REDIS_URL=redis://127.0.0.1:6379/0           STORAGE_PROVIDER=local           UPLOAD_DIR="$RUNNER_TEMP/narrativ-integration-storage"           PYTHONPATH=. pytest -m integration -q
 
       - name: Prewarm deterministic Whisper model cache
         timeout-minutes: 5
         run: |
           docker run --rm --network host             -e XDG_CACHE_HOME=/app/storage/whisper-cache             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             python -c "import whisper; whisper.load_model('tiny')"
 
+      - name: Re-normalize worker storage after all test activity
+        run: |
+          # Integration tests and model prewarm can create directories after the
+          # first normalization. Make the final worker volume authoritative again
+          # immediately before the real worker starts.
+          APP_UID="$(docker run --rm narrativ-forge-worker-evidence id -u app)"
+          APP_GID="$(docker run --rm narrativ-forge-worker-evidence id -g app)"
+          docker run --rm --user 0:0             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             sh -lc "chown -R $APP_UID:$APP_GID /app/storage && find /app/storage -type d -exec chmod 0770 {} + && find /app/storage -type f -exec chmod 0660 {} +"
+          echo "final worker storage ownership: uid=$APP_UID gid=$APP_GID"
+          docker run --rm             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             sh -lc 'set -eu; id; test -d /app/storage/objects; mkdir -p /app/storage/objects/episodes/preflight-final; test -w /app/storage/objects/episodes/preflight-final; printf ok > /app/storage/objects/episodes/preflight-final/probe; test -s /app/storage/objects/episodes/preflight-final/probe; rm -rf /app/storage/objects/episodes/preflight-final'
+          echo "final production worker storage preflight: PASS"
+
       - name: Start the real worker
         run: |
-          docker run -d --name narrativ-worker-evidence --network host             -e APP_ENV=ci             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -e WHISPER_MODEL=tiny             -e XDG_CACHE_HOME=/app/storage/whisper-cache             -e CELERY_BEAT_SCHEDULE_FILENAME=/app/storage/celerybeat-schedule             -e WORKER_EVIDENCE_QUEUE=worker_evidence             -e PROCESSING_TIMEOUT_SECONDS=600             -e PROCESSING_TIMEOUT_GRACE_SECONDS=10             -e WORKER_MAX_CONCURRENCY=1             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --beat --queues=worker_evidence
+          docker run -d --name narrativ-worker-evidence --network host             -e APP_ENV=ci             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -e WHISPER_MODEL=tiny             -e XDG_CACHE_HOME=/app/storage/whisper-cache             -e CELERY_BEAT_SCHEDULE_FILENAME=/app/storage/celerybeat-schedule             -e WORKER_EVIDENCE_QUEUE=worker_evidence             -e PROCESSING_TIMEOUT_SECONDS=600             -e PROCESSING_TIMEOUT_GRACE_SECONDS=10             -e WORKER_MAX_CONCURRENCY=1             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             sh -lc 'set -eu; echo "worker runtime:"; id; test -w /app/storage; mkdir -p /app/storage/objects/episodes/runtime-preflight; test -w /app/storage/objects/episodes/runtime-preflight; rm -rf /app/storage/objects/episodes/runtime-preflight; exec celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --beat --queues=worker_evidence'
 
       - name: Wait for Celery worker and run real-media smoke
         run: |

@@ -34,8 +34,6 @@ jobs:
           set -euo pipefail
           sleep 20
           deadline=$((SECONDS + 1380))
-          self_name="Repository Gate"
-
           required_workflows=("CI" "Security" "CodeQL")
           while (( SECONDS < deadline )); do
             runs="$(gh api --paginate --slurp "repos/${REPOSITORY}/actions/runs?head_sha=${SHA}&per_page=100" | jq '[.[].workflow_runs[]]')"
@@ -93,7 +91,7 @@ jobs:
             fi
 
             sleep 15
-          
+          done
 
           echo "Repository Gate timed out waiting for checks."
           exit 1

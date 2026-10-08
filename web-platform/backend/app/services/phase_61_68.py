@@ -11,6 +11,7 @@ from enum import Enum
 
 
 class SLOSeverity(str, Enum):
+    OK = "ok"
     WARNING = "warning"
     FREEZE = "freeze"
     INCIDENT = "incident"
@@ -145,7 +146,7 @@ class SLOObservation:
             return SLOSeverity.INCIDENT if self.error_budget_remaining <= 0 else SLOSeverity.FREEZE
         if self.error_budget_remaining < 0.1:
             return SLOSeverity.WARNING
-        return SLOSeverity.WARNING if self.error_budget_remaining < 0.25 else SLOSeverity.WARNING
+        return SLOSeverity.WARNING if self.error_budget_remaining < 0.25 else SLOSeverity.OK
 
 
 def validate_operating_inputs(

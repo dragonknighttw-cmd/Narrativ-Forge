@@ -34,3 +34,8 @@ def test_parallel_plan_rejects_cycle():
         assert "cycle" in str(exc)
     else:
         raise AssertionError("expected cycle validation failure")
+
+
+def test_execution_plan_exposes_parallel_stage_widths():
+    plan = default_episode_plan()
+    assert plan.stage_widths == (1, 3, 1, 1, 1, 1, 1, 1)

@@ -209,3 +209,55 @@ These are **implementation foundations and automated unit evidence**, not live p
 **Rule:** 46–51 are intentionally pre-staged. They cannot honestly be marked VERIFIED until the corresponding live/manual evidence exists.
 
 \n\n## Phase 46–51 implementation evidence — 2026-10-08\n\nThe post-45 queue is no longer documentation-only. Code, persistence models, migration, unit tests, and a repository-level release gate are now present on `main`.\n\n- **46 Evidence ledger:** `release_maturity.EvidenceLedgerEntry` + `evidence_ledger_entries`; VERIFIED requires exact 40-char commit SHA, workflow run, evidence reference, owner, and verification timestamp. WAIVED requires an explicit waiver reference. Database checks reject VERIFIED/WAIVED records without proof.\n- **47 Provider acceptance:** `ProviderAcceptance` + `provider_acceptance_records`; tracks credential dependency without storing secrets, quota/terms review, live result, fallback, commercial-use acceptance, and owner.\n- **48 Production E2E rehearsal:** `ReleaseCandidate`/watch contracts and the existing real-worker evidence workflow provide the release rehearsal seam; live staging execution remains blocked until the continuous worker runtime exists.\n- **49 Billing/entitlement reconciliation:** `BillingReconciliation` + `billing_reconciliation_records`; tenant quota/reservation/usage, webhook event uniqueness, and tenant/idempotency uniqueness are persisted.\n- **50 Release candidate freeze:** `ReleaseCandidate` + `release_candidates`; freezes version/SHA, migration/environment/rollback/evidence/checklist references.\n- **51 Launch/post-launch watch:** `LaunchWatchEvent` + `launch_watch_events`; `launch_allowed()` refuses unfrozen candidates or gates that are not VERIFIED/WAIVED with valid evidence.\n\n### Repository-level check visibility\n\n`.github/workflows/repository-gate.yml` now runs on every `main` push/PR and creates a single **Repository Gate** check. It waits for currently registered checks and becomes red when another check fails/cancels/times out, or green when the registered checks settle successfully. This makes the commit/repository status visible without opening Actions.\n\nThis gate is an aggregation/status surface, not a replacement for the underlying CI, worker, security, or external acceptance evidence.\n\n## Remaining phase queue — 52–60\n\n### Phase 52 — Series trailer planning\n- Trailer beat sheet, hook continuity, asset selection, duration constraints, and approval state.\n- Gate: representative series acceptance dataset.\n\n### Phase 53 — Burmese-first translation adapter\n- Translation provider interface, terminology glossary, fallback routing, subtitle-safe text normalization, and correction history.\n- Gate: representative Burmese/English acceptance corpus + provider terms.\n\n### Phase 54 — Sound / BGM workflow\n- Track metadata, loudness/ducking rules, rights metadata, cue timing, and export manifest integration.\n- Gate: licensed sample pack and human audio acceptance.\n\n### Phase 55 — Thumbnail candidate workflow\n- Deterministic candidate generation contract, 10→5 filtering, scoring, human selection, and persistence.\n- Gate: browser review E2E + representative visual dataset.\n\n### Phase 56 — LoRA / voice consistency seam\n- Model/profile versioning, character voice/style identity, consistency checks, fallback behavior, and commercial-use evidence fields.\n- Gate: live provider/model acceptance and human quality review.\n\n### Phase 57 — Social analytics import\n- Import adapters, source attribution, idempotent event ingestion, normalization, and analytics-to-experiment linkage.\n- Gate: real platform export/API sample validation.\n\n### Phase 58 — Archive / cold storage / PII purge\n- Archive state machine, legal-hold protection, retention execution, purge evidence, and restoreability checks.\n- Gate: real storage lifecycle + privacy/legal approval.\n\n### Phase 59 — Manual Mode production validation\n- 15–20 manual-video evidence bundle, production-time measurements, repeated-problem dataset, hook/subtitle coverage, commercial-use review, and MVP scope freeze.\n- Gate: owner/human acceptance.\n\n### Phase 60 — Final UI/state/component audit\n- Screen/state matrix, loading/error/empty states, responsive/WCAG checks, evidence capture, and release checklist reconciliation.\n- Gate: fresh browser/device evidence and manual sign-off.\n\n**Post-60 rule:** do not invent new phase numbers for live provider work. Live credential, runtime, legal, security, accessibility, and external acceptance items stay attached to the phase whose gate they verify.
+
+## Phase 52–60 implementation evidence — 2026-10-08
+
+The code-only foundations for the next backlog are now implemented in `web-platform/backend/app/services/phase_52_60.py` with unit coverage in `tests/test_phase_52_60.py`.
+
+- **52 Trailer:** beat-sheet, hook, duration and approval contract.
+- **53 Burmese translation:** glossary-aware translation term contract and subtitle-safe normalization.
+- **54 Sound/BGM:** rights metadata, loudness bounds, cue timing, gain and ducking contract.
+- **55 Thumbnails:** deterministic candidate validation and 10→5 shortlist selection.
+- **56 LoRA/voice consistency:** model/profile versioning and identity-reference contract.
+- **57 Social analytics:** normalized metric events and deterministic source/event idempotency key.
+- **58 Archive/PII purge:** encrypted retention record with legal-hold protection and purge eligibility.
+- **59 Manual Mode:** evidence bundle, measured processing time, repeated-problem tags and acceptance state.
+- **60 UI/state audit:** loading/empty/error/success coverage, accessibility/responsive checks and evidence reference.
+
+These are implementation/test foundations only. Live providers, licensed media, real platform exports, human visual/audio review, production browser evidence and legal/commercial acceptance remain gates attached to their respective phases.
+
+## Phase 61–68 — pre-staged continuation queue
+
+### Phase 61 — Performance and cost optimization
+- Profile API/database/media hot paths; establish regression budgets and cost-per-episode targets.
+- Gate: representative workload benchmark and production cost evidence.
+
+### Phase 62 — Worker fleet autoscaling
+- Queue-depth scaling policy, worker concurrency envelopes, graceful drain, capacity reservations and rollback.
+- Gate: staging burst/load evidence with real worker fleet.
+
+### Phase 63 — Content provenance and lineage
+- Source asset lineage, generated-asset parentage, model/provider provenance, immutable audit references.
+- Gate: end-to-end provenance sample and retention/privacy review.
+
+### Phase 64 — Advanced collaboration and enterprise audit
+- Role matrix expansion, project-level permissions, audit exports, approval workflows and administrative event history.
+- Gate: multi-user browser E2E and enterprise acceptance.
+
+### Phase 65 — Provider adapter/marketplace seam
+- Versioned provider adapter interface, capability discovery, health/circuit-breaker state and migration between providers.
+- Gate: two real providers with terms/commercial-use acceptance.
+
+### Phase 66 — Localization quality operations
+- Language packs, glossary drift detection, subtitle QA metrics, correction memory and locale fallback.
+- Gate: representative multilingual acceptance corpus and human review.
+
+### Phase 67 — Monetization expansion
+- Metered usage, overage/credit policies, invoice reconciliation, refunds/disputes and entitlement transitions.
+- Gate: real billing sandbox/live reconciliation evidence.
+
+### Phase 68 — Post-launch SLO and error-budget operations
+- Service-level objectives, error budgets, release freeze thresholds, incident review and weekly operational evidence.
+- Gate: live telemetry, incident drill and owner sign-off.
+
+**Continuation rule:** 61–68 remain code/evidence work until their external gates are reached. Never mark a live provider, billing, legal, security, accessibility or human-acceptance gate VERIFIED from unit tests alone.

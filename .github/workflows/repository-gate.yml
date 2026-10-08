@@ -34,10 +34,10 @@ jobs:
           set -euo pipefail
           sleep 20
           deadline=$((SECONDS + 1380))
-          self_name="Repository Gate / Repository Gate"
+          self_name="Repository Gate"
 
           while (( SECONDS < deadline )); do
-            payload="$(gh api --paginate --slurp "repos/${REPOSITORY}/commits/${SHA}/check-runs?per_page=100" | jq -s 'add | .check_runs')"
+            payload="$(gh api --paginate --slurp "repos/${REPOSITORY}/commits/${SHA}/check-runs?per_page=100" | jq '[.[].check_runs[]]')"
 
             pending="$(jq --arg self "${self_name}" '
               map(select(.name != $self and (.status == "queued" or .status == "in_progress" or .status == "waiting" or .status == "requested")))

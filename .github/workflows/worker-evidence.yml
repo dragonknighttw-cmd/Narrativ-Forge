@@ -78,13 +78,25 @@ jobs:
         run: |
           docker run --rm --network host             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             python -m alembic upgrade head
 
-      - name: Normalize shared storage permissions after migrations
+      - name: Normalize shared storage ownership for the production worker user
         run: |
-          # Alembic runs as root in the container and LocalStorageProvider creates
-          # /app/storage/objects as root-owned. The real worker runs as non-root.
-          # Normalize the bind mount so both the evidence runner and worker can
-          # create episode/object directories during the real processing test.
-          chmod -R a+rwX "$RUNNER_TEMP/narrativ-storage"
+          # Migrations intentionally run as root, while the production worker image
+          # runs as the non-root "app" user. chmod alone is not a reliable contract
+          # for a bind mount, so resolve the image UID/GID and chown the whole shared
+          # volume to the exact runtime identity before starting the real worker.
+          APP_UID="$(docker run --rm narrativ-forge-worker-evidence id -u app)"
+          APP_GID="$(docker run --rm narrativ-forge-worker-evidence id -g app)"
+          echo "worker runtime uid=$APP_UID gid=$APP_GID"
+          docker run --rm --user 0:0             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             sh -lc "chown -R $APP_UID:$APP_GID /app/storage && find /app/storage -type d -exec chmod 0770 {} + && find /app/storage -type f -exec chmod 0660 {} +"
+          stat -c '%U:%G %a %n' "$RUNNER_TEMP/narrativ-storage" || true
+          find "$RUNNER_TEMP/narrativ-storage" -maxdepth 3 -type d -print | sort | head -80
+
+      - name: Verify production worker storage access before starting the worker
+        run: |
+          # This is a fail-fast gate: prove that the exact non-root production user
+          # can create the same object path that the real processing task will use.
+          docker run --rm --network host             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             sh -lc 'set -eu; id; mkdir -p /app/storage/objects/episodes/preflight/assets/v1/video; printf preflight > /app/storage/objects/episodes/preflight/assets/v1/video/write-test.mp4; test -s /app/storage/objects/episodes/preflight/assets/v1/video/write-test.mp4; rm -rf /app/storage/objects/episodes/preflight; mkdir -p /app/storage/worker-smoke; touch /app/storage/worker-smoke/.write-test; rm /app/storage/worker-smoke/.write-test'
+          echo "production worker storage preflight: PASS"
 
       - name: Verify retry, DLQ, and tenant integration
         working-directory: web-platform/backend

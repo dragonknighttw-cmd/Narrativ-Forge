@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.unit
+
 from app.services.phase_52_60 import (
     ArchiveRecord,
     AudioCue,

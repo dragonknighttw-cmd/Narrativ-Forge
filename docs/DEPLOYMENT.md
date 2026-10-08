@@ -65,3 +65,55 @@ Protected configuration belongs in the deployment secret manager. Never document
 Verify exact deployment target, health/readiness, database migration state, Redis/delivery connectivity, worker runtime if enabled, storage, external integrations, and rollback/smoke/full-content checks.
 
 A manifest is not proof of a live deployment.
+
+## Background worker close-out — 2026-10-08
+
+**Status: BLOCKED pending owner provisioning.**
+
+The repository worker is deployable as a Docker background worker:
+
+- Dockerfile: `web-platform/backend/Dockerfile.worker`
+- Command: `celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --concurrency=1 --beat`
+- Broker: `REDIS_URL`
+- State: `DATABASE_URL`
+- Media runtime: FFmpeg + OpenAI Whisper
+- Concurrency default: 1
+
+The connected Render service is currently a **Free web service**. Render documents Free instances for web services/Postgres/Key Value, while background-worker compute is a paid service type. citeturn0search1turn0search0turn0search4
+
+Prepared, intentionally non-auto-provisioning blueprint:
+`render.worker.yaml`
+
+Required owner action:
+1. Create a paid Render Background Worker named `narrativ-forge-worker`.
+2. Use `web-platform/backend/Dockerfile.worker`.
+3. Set the variables in `render.worker.yaml`.
+4. Keep concurrency at 1 for the first real-media verification.
+5. Verify Celery worker heartbeat/queue consumption before sending production media.
+
+Render background workers are explicitly designed for queue-based asynchronous media processing and support Celery. citeturn0search6
+
+### Alternative runtime: Railway
+
+Railway can deploy a GitHub repository or Dockerfile as an independent service. citeturn0search9turn0search15
+
+Exact worker setup:
+- Source: `dragonknighttw-cmd/Narrativ-Forge`, branch `main`
+- Root directory: `web-platform/backend`
+- Dockerfile: `Dockerfile.worker`
+- Start command: `celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --concurrency=1 --beat`
+- Required runtime variables: `DATABASE_URL`, `REDIS_URL`, storage credentials, Cloudflare Whisper variables, and any enabled notification/provider credentials.
+- Verification: service logs show Celery worker connected to Redis and accepting tasks.
+
+### Alternative runtime: Fly.io
+
+Fly supports separate process groups and explicitly documents Celery workers as a worker process group. citeturn1search1
+
+Exact worker setup:
+- Build the same `Dockerfile.worker`.
+- Define a `worker` process group with the Celery command.
+- Provide `DATABASE_URL` and `REDIS_URL` plus enabled storage/provider secrets.
+- Run one worker first; scale only after media E2E evidence.
+- Keep HTTP routing limited to the web process group.
+
+Fly charges provisioned compute by usage; this is not a free-only assumption. citeturn1search7

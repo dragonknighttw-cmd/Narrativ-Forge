@@ -256,3 +256,21 @@ Code work first: tenant-context/auth hardening, backup/restore verification harn
 Evidence/manual work later: real provider credentials, live production acceptance, legal/compliance, accessibility/manual review, penetration testing, and account-specific provider terms/limits.
 
 No paid Render worker is provisioned by this audit.
+
+
+## 2026-10-09 cloud/local verification architecture progress
+
+The repository is now being advanced toward reproducible `build -> run -> test -> evidence -> cleanup` verification rather than relying on permanent environments.
+
+Completed in this increment:
+- Authenticated sessions are now bound to an explicit organization membership when issued.
+- Membership role is resolved from the selected organization, not the user's global role.
+- Added `POST /api/v1/auth/switch-workspace` for explicit multi-membership workspace context.
+- Added integration/security coverage proving a user with two memberships receives the selected organization's role and can switch context.
+- Added `.github/workflows/backup-restore-evidence.yml` for an ephemeral PostgreSQL backup -> fresh database restore -> schema/data/Alembic integrity drill.
+- Existing deterministic worker evidence remains separate from credentialed/live provider evidence.
+
+Evidence status:
+- Auth hardening: DONE at repository level; production authentication/cross-tenant behavior remains VERIFY until a fresh credentialed environment run.
+- Backup/restore CI drill: IMPLEMENTED; remains VERIFY until the workflow completes successfully and uploads evidence.
+- Production/provider gates are not promoted by these code changes alone.

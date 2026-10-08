@@ -40,6 +40,7 @@ def auth_client():
             db.flush()
         admin = db.query(User).filter(User.email == "admin@narrativ.local").first()
         admin.password_hash = hash_password("change-me-123456")
+        admin.role = "owner"
         admin.is_active = True
         if not db.query(OrganizationMembership).filter(
             OrganizationMembership.organization_id == organization.id,
@@ -49,7 +50,9 @@ def auth_client():
         db.commit()
 
     client = create_test_client(app)
-    client.headers.update({"Authorization": f"Bearer {issue_session('admin@narrativ.local', 'owner')}"})
+    token = issue_session("admin@narrativ.local", "owner")
+    client.headers.update({"Authorization": f"Bearer {token}"})
+    client.cookies.set(settings.session_cookie_name, token)
     return client
 
 @pytest.mark.integration

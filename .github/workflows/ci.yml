@@ -24,7 +24,7 @@ jobs:
       run:
         working-directory: web-platform/backend
     steps:
-1      - name: Pin checkout to exact triggering SHA
+      - name: Pin checkout to exact triggering SHA
         run: |
           git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
           git checkout --detach "$GITHUB_SHA"
@@ -78,7 +78,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-1      - name: Pin checkout to exact triggering SHA
+      - name: Pin checkout to exact triggering SHA
         run: |
           git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
           git checkout --detach "$GITHUB_SHA"
@@ -111,7 +111,7 @@ jobs:
       run:
         working-directory: web-platform/frontend
     steps:
-1      - name: Pin checkout to exact triggering SHA
+      - name: Pin checkout to exact triggering SHA
         run: |
           git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
           git checkout --detach "$GITHUB_SHA"
@@ -134,7 +134,7 @@ jobs:
       run:
         working-directory: web-platform/frontend
     steps:
-1      - name: Pin checkout to exact triggering SHA
+      - name: Pin checkout to exact triggering SHA
         run: |
           git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
           git checkout --detach "$GITHUB_SHA"

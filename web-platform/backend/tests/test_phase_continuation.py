@@ -74,7 +74,7 @@ def test_export_manifest_key_changes_when_identity_changes():
 @pytest.mark.unit
 def test_experiment_rejects_duplicate_variant_keys():
     experiment = Experiment("exp", (ExperimentVariant("a", .5), ExperimentVariant("a", .5)), 10)
-    assert validate_experiment(experiment) == ["weights_must_sum_to_one"] or validate_experiment(experiment) == []
+    assert validate_experiment(experiment) == ["duplicate_variant_key"]
 
 
 @pytest.mark.unit

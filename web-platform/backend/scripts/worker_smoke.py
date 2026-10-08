@@ -1,3 +1,4 @@
+# Real-worker evidence smoke is intentionally deterministic and CI-gated.
 """Automated real-worker smoke test used by CI and release verification.
 
 This intentionally uses local storage and a generated media fixture so it does not

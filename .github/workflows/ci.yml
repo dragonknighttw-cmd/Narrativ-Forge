@@ -24,12 +24,10 @@ jobs:
       run:
         working-directory: web-platform/backend
     steps:
-      - name: Pin checkout to exact triggering SHA
-        run: |
-          git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
-          git checkout --detach "$GITHUB_SHA"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "CI source SHA=$(git rev-parse HEAD)"
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -78,12 +76,10 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - name: Pin checkout to exact triggering SHA
-        run: |
-          git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
-          git checkout --detach "$GITHUB_SHA"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "CI source SHA=$(git rev-parse HEAD)"
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -111,12 +107,10 @@ jobs:
       run:
         working-directory: web-platform/frontend
     steps:
-      - name: Pin checkout to exact triggering SHA
-        run: |
-          git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
-          git checkout --detach "$GITHUB_SHA"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "CI source SHA=$(git rev-parse HEAD)"
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -134,12 +128,10 @@ jobs:
       run:
         working-directory: web-platform/frontend
     steps:
-      - name: Pin checkout to exact triggering SHA
-        run: |
-          git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
-          git checkout --detach "$GITHUB_SHA"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "CI source SHA=$(git rev-parse HEAD)"
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

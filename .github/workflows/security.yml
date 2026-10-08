@@ -22,12 +22,10 @@ jobs:
   dependency-audit:
     runs-on: ubuntu-latest
     steps:
-      - name: Pin checkout to exact triggering SHA
-        run: |
-          git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
-          git checkout --detach "$GITHUB_SHA"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "CI source SHA=$(git rev-parse HEAD)"
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -55,12 +53,10 @@ jobs:
       actions: read
       security-events: write
     steps:
-      - name: Pin checkout to exact triggering SHA
-        run: |
-          git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
-          git checkout --detach "$GITHUB_SHA"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "CI source SHA=$(git rev-parse HEAD)"
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: github/codeql-action/init@v4
         with:
           languages: python,javascript-typescript
@@ -70,12 +66,10 @@ jobs:
   container-scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Pin checkout to exact triggering SHA
-        run: |
-          git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
-          git checkout --detach "$GITHUB_SHA"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "CI source SHA=$(git rev-parse HEAD)"
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - name: Report runner Docker disk state
         run: |
           df -h /

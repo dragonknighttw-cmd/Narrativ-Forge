@@ -90,11 +90,11 @@ jobs:
 
       - name: Start the real worker
         run: |
-          docker run -d --name narrativ-worker-evidence --network host             -e APP_ENV=ci             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -e WHISPER_MODEL=tiny             -e PROCESSING_TIMEOUT_SECONDS=600             -e PROCESSING_TIMEOUT_GRACE_SECONDS=10             -e WORKER_MAX_CONCURRENCY=1             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence
+          docker run -d --name narrativ-worker-evidence --network host             -e APP_ENV=ci             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -e WHISPER_MODEL=tiny             -e XDG_CACHE_HOME=/app/storage/whisper-cache             -e PROCESSING_TIMEOUT_SECONDS=600             -e PROCESSING_TIMEOUT_GRACE_SECONDS=10             -e WORKER_MAX_CONCURRENCY=1             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence
 
       - name: Wait for Celery worker and run real-media smoke
         run: |
-          docker run --rm --network host             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -e PROCESSING_TIMEOUT_SECONDS=600             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             env PYTHONPATH=/app python scripts/worker_smoke.py --work-dir /app/storage/worker-smoke --timeout 900
+          docker run --rm --network host             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -e XDG_CACHE_HOME=/app/storage/whisper-cache             -e PROCESSING_TIMEOUT_SECONDS=600             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             env PYTHONPATH=/app python scripts/worker_smoke.py --work-dir /app/storage/worker-smoke --timeout 900
 
       - name: Show worker logs on failure
         if: failure()

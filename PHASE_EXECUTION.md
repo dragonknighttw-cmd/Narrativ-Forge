@@ -182,3 +182,29 @@ The post-36 contracts are now implemented on `main` in
 
 These are **implementation foundations and automated unit evidence**, not live production verification. Provider billing, real backup/restore, regional failover, queue saturation, representative Burmese evaluation, and scheduled operational drills remain explicit acceptance gates.
 
+## Next implementation queue — post-45
+
+### Phase 46 — Evidence ledger
+- Persist gate status, exact commit SHA, workflow run, artifact/evidence reference, owner, and verification timestamp.
+- Prevent `VERIFIED` without attached evidence.
+
+### Phase 47 — Provider acceptance matrix
+- Track provider, credential dependency, quota/terms review, live test result, fallback, and commercial-use acceptance.
+- Keep secrets outside the repository.
+
+### Phase 48 — Production E2E rehearsal
+- Execute the complete worker/media/retry/DLQ/storage/transcription/export pipeline against staging.
+- Capture deterministic artifacts and rollback evidence.
+
+### Phase 49 — Billing/entitlement reconciliation
+- Reconcile Stripe plan state, tenant quotas, usage reservations, retries, webhook idempotency, and failure recovery.
+
+### Phase 50 — Release candidate freeze
+- Freeze release SHA, migration plan, environment manifest, rollback reference, evidence ledger, and acceptance checklist.
+
+### Phase 51 — Final launch / post-launch watch
+- Launch only after all applicable gates are VERIFIED or explicitly waived by owner.
+- Run a bounded post-launch observation window and record incidents, rollback decision, and final sign-off.
+
+**Rule:** 46–51 are intentionally pre-staged. They cannot honestly be marked VERIFIED until the corresponding live/manual evidence exists.
+

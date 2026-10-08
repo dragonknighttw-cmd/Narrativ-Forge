@@ -4,11 +4,9 @@ pytestmark = pytest.mark.unit
 
 from datetime import datetime, timezone, timedelta
 
-import pytest
-
 from app.services.phase_continuation import (
     CachedTrend, CollaborationLock, Experiment, ExperimentVariant,
-    ExportManifest, NLEManifest, ProviderQualityScore, UsageReservation,
+    ExportManifest, LaunchEvidence, NLEManifest, ProviderQualityScore, UsageReservation,
     choose_experiment_winner, launch_summary, rank_providers,
     validate_experiment, validate_export_manifest, validate_lock,
     validate_nle_manifest, validate_usage_reservation,

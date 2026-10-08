@@ -7,6 +7,7 @@ RUN apt-get update \
     && useradd --system --gid app --create-home app
 
 WORKDIR /app
+RUN install -d -o app -g app /app/storage /app/storage/objects /app/storage/whisper-cache
 COPY requirements.txt requirements-real-processing.txt ./
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-real-processing.txt
 

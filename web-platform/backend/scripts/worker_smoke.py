@@ -108,7 +108,8 @@ def main() -> int:
         db.close()
 
     celery = get_celery()
-    celery.send_task("narrativ.process_real_job", args=[job_id])
+    queue = os.getenv("WORKER_EVIDENCE_QUEUE", "celery")
+    celery.send_task("narrativ.process_real_job", args=[job_id], queue=queue)
 
     deadline = time.monotonic() + args.timeout
     while time.monotonic() < deadline:
@@ -121,6 +122,7 @@ def main() -> int:
                         f"worker smoke failed: code={current.error_code} "
                         f"message={current.error_message or current.last_error}"
                     )
+
                 output = db.get(Asset, current.output_asset_id) if current.output_asset_id else None
                 transcript = (
                     db.query(Asset)
@@ -133,12 +135,23 @@ def main() -> int:
                     .filter(Subtitle.episode_id == current.episode_id, Subtitle.is_current.is_(True))
                     .first()
                 )
-                if output is None or transcript is None or subtitle is None:
-                    raise RuntimeError("worker smoke completed without output/transcript/current subtitle")
+
+                missing = []
+                if output is None:
+                    missing.append("output asset")
+                if transcript is None:
+                    missing.append("transcript asset")
+                if subtitle is None:
+                    missing.append("current subtitle")
+                if missing:
+                    raise RuntimeError(
+                        "worker smoke completed without " + ", ".join(missing)
+                    )
                 if not output.local_path or not Path(output.local_path).is_file():
-                    raise RuntimeError("processed output file is missing")
+                    raise RuntimeError(f"processed output file is missing: {output.local_path!r}")
                 if not transcript.local_path or not Path(transcript.local_path).is_file():
-                    raise RuntimeError("transcript file is missing")
+                    raise RuntimeError(f"transcript file is missing: {transcript.local_path!r}")
+
                 print(
                     "WORKER_SMOKE_OK",
                     f"job={job_id}",

@@ -1,4 +1,5 @@
 import pytest
+from cryptography.fernet import Fernet
 
 from app.main import app
 from client_utils import create_test_client
@@ -25,7 +26,7 @@ def test_production_runtime_rejects_wildcard_cors():
         app_env="production",
         session_secret="x" * 64,
         session_cookie_secure=True,
-        oauth_encryption_key="invalid",
+        oauth_encryption_key=Fernet.generate_key().decode(),
         cors_origins="*",
         trusted_hosts="example.com",
         storage_provider="cloudinary",

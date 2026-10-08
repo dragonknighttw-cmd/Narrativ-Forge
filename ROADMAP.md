@@ -148,3 +148,40 @@ Anything requiring user/provider credentials, a real worker machine, real media,
 ## Evidence rule
 
 Never promote code-configured to VERIFIED from credentials alone. Never promote a live integration from unit tests alone.
+
+## Release gate close-out checkpoint — 2026-10-08
+
+### Worker
+
+**BLOCKED — owner provisioning required.**
+
+Worker code is complete and deployable:
+`web-platform/backend/Dockerfile.worker` → Celery → Redis → PostgreSQL → FFmpeg/Whisper.
+
+The connected Render service is a Free web service. Render documents background workers as a separate service type whose compute plans are paid; Free instances are available for web services, Postgres and Key Value. citeturn0search0turn0search1
+
+Prepared blueprint: `render.worker.yaml`.
+
+### Gate status
+
+| Gate | Status |
+|---|---|
+| 1 Real media E2E | BLOCKED — worker |
+| 2 Retry/DLQ/failover | BLOCKED — worker |
+| 3 Storage lifecycle | PENDING |
+| 4 Whisper/fallback E2E | BLOCKED — worker |
+| 5 Google Drive OAuth/export/recovery | PENDING |
+| 6 SMTP | PENDING |
+| 7 Stripe | PENDING |
+| 8 Sentry | PENDING |
+| 9 Exact live Alembic head | VERIFY — external DB inaccessible |
+| 10 Backup/restore | PENDING |
+| 11 Auth/cross-tenant E2E | PENDING |
+| 12 Full E2E/load/performance | BLOCKED — worker dependency |
+| 13 Security scans | EXTERNAL ACTION |
+| 14 Accessibility/WCAG | EXTERNAL ACTION |
+| 15 Legal/compliance | EXTERNAL ACTION |
+| 16 Pen-test | EXTERNAL ACTION |
+| 17 Provider terms/limits/commercial use | EXTERNAL ACTION |
+
+No gate is promoted to VERIFIED by source-code or configuration evidence alone.

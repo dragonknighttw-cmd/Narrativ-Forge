@@ -21,6 +21,10 @@ class ExecutionPlan:
     task_names(self) -> tuple[str, ...]:
         return tuple(task.name for stage in self.stages for task in stage)
 
+    @property
+    def stage_count(self) -> int:
+        return len(self.stages)
+
 
 def build_parallel_plan(tasks: list[AgentTask]) -> ExecutionPlan:
     """Build deterministic parallel stages using a dependency DAG."""

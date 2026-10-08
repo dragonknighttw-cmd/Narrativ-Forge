@@ -50,6 +50,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Pin checkout to the exact triggering SHA
+        run: |
+          git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
+          git checkout --detach "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "worker-evidence SHA=$(git rev-parse HEAD)"
+          sed -n "1,35p" web-platform/backend/app/services/orchestration.py
+
       - name: Build the production worker image
         run: docker build --pull -t narrativ-forge-worker-evidence ./web-platform/backend
 

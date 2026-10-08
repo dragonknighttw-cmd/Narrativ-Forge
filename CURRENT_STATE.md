@@ -81,7 +81,7 @@ Prepared configuration: `render.worker.yaml`.
 
 ## 5. AUTOMATED EVIDENCE PREPARED
 
-Latest automated gate execution: GitHub Actions worker-evidence run is executing against main SHA `cb584aa1800dfc8992819be850bc4fd31a964bcd`. CI, Security, and CodeQL are also queued/running for that same SHA. These remain **UNVERIFIED** until the runs finish successfully.
+Previous automated gate execution reached the worker Docker build/migration stage but did not produce a passing VERIFIED result. Subsequent release-maturity commits have changed `main`, so no older run is treated as evidence for the current head. The GitHub connector available here exposes PR-associated workflow runs only; push-run completion is therefore not claimed from stale data.
 
 Whisper fallback implementation was corrected against the deployed `narrativ-forge-whisper` Worker contract: signed Bearer token, episode binding, WAV input, and usage idempotency are now covered in code/tests. Live Burmese transcription quality remains unverified.
 
@@ -144,3 +144,17 @@ Repository head and live deployment head must be tracked separately.
 - Phase 46–51 were pre-staged in `PHASE_EXECUTION.md` for evidence ledger, provider acceptance matrix, production E2E rehearsal, billing reconciliation, release freeze, and post-launch watch.
 - Worker evidence remains **NOT VERIFIED** until the rerun completes successfully. The last observed rerun was still `in_progress` at the time of this update.
 - No production credentials were requested or fabricated; live-provider/manual gates remain deferred.
+
+
+## 2026-10-08 Phase 46–51 implementation continuation
+
+- **Phase 46:** persistent evidence ledger + database checks; VERIFIED requires commit SHA, workflow run, evidence reference, owner, and verification timestamp.
+- **Phase 47:** persistent provider acceptance matrix; secrets remain outside the repository.
+- **Phase 48:** release rehearsal/freeze/watch contracts and persistence store are implemented; live staging rehearsal still depends on the continuous worker runtime.
+- **Phase 49:** persistent billing reconciliation with webhook-event and tenant/idempotency uniqueness.
+- **Phase 50:** persistent release-candidate freeze record with migration/environment/rollback/evidence/checklist references.
+- **Phase 51:** persistent post-launch watch events plus launch eligibility contract that refuses unfrozen or unsupported gates.
+- Repository-level status workflow `.github/workflows/repository-gate.yml` now produces a single **Repository Gate** check on every `main` push/PR so the commit page can show green/red without opening Actions.
+- Phases **52–60** are pre-staged in `PHASE_EXECUTION.md` and `ROADMAP.md` for trailer planning, Burmese translation, sound/BGM, thumbnails, LoRA/voice consistency, social analytics import, archive/PII purge, Manual Mode validation, and final UI/state audit.
+
+**Current release status remains NOT Production Ready.** No live/provider/manual gate is promoted by these code-only changes.

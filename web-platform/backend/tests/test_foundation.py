@@ -49,7 +49,7 @@ def auth_client():
         db.commit()
 
     client = create_test_client(app)
-    client.cookies.set(settings.session_cookie_name, issue_session("admin@narrativ.local", "owner"))
+    client.headers.update({"Authorization": f"Bearer {issue_session('admin@narrativ.local', 'owner')}"})
     return client
 
 @pytest.mark.integration

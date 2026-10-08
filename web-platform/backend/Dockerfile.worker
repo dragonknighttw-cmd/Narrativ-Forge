@@ -18,4 +18,4 @@ USER app
 
 # This is the actual long-running task runtime. The Render blueprint intentionally
 # does not provision it because the current deployment must remain free-only.
-CMD ["celery", "-A", "app.workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--concurrency=1", "--beat"]
+CMD ["celery", "-A", "app.workers.celery_app:celery_app", "worker", "--loglevel=INFO", "--beat"]

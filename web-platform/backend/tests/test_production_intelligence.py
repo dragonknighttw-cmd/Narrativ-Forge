@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.unit
+
 from app.api.routes.production_intelligence import HOOK_TYPES, validate_publication_payload
 
 

@@ -176,3 +176,8 @@ Repository head and live deployment head must be tracked separately.
 - Backend unit/security and PostgreSQL/Redis integration jobs each publish a JUnit XML artifact on every run.
 - Previously unmarked backend regression suites were classified explicitly as `unit`, including content quality, magic links, production foundations/intelligence, provider quota/registry, resumable uploads, selective regeneration, and subtitle normalization.
 - CodeQL remains a separate Python + JavaScript/TypeScript security check; Real Worker Evidence remains the real-media/Celery gate; Repository Gate aggregates all checks into the commit-level green/red surface.
+
+
+## 2026-10-08 Phase 61–68 foundation continuation
+
+Code-only contracts/tests are now staged for performance/cost budgets, worker autoscaling, provenance/lineage, enterprise audit, provider capability/circuit-breaker, localization QA, monetization ledgers, and SLO/error-budget operations. Live telemetry/providers/billing/enterprise acceptance remain unverified.

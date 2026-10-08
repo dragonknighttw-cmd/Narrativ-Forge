@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.unit
+
 from datetime import datetime, timezone
 
 import pytest

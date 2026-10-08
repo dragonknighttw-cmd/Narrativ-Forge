@@ -33,6 +33,9 @@ jobs:
           git fetch --no-tags --prune --depth=1 origin "$GITHUB_SHA"
           git checkout --detach "$GITHUB_SHA"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "CI exact SHA=$(git rev-parse HEAD)"
+          git show "$GITHUB_SHA:web-platform/backend/app/services/orchestration.py" | sed -n '1,35p'
           python -m py_compile app/services/orchestration.py
           sed -n '1,35p' app/services/orchestration.py
       - uses: actions/setup-python@v5

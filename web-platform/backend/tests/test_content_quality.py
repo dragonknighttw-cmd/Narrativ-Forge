@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.unit
+
 from app.services.content_quality import assess_content
 from app.services.series_continuity import build_series_bible, check_continuity
 

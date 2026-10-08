@@ -58,7 +58,7 @@ def test_optimistic_lock_and_usage_reservation():
 @pytest.mark.unit
 def test_launch_summary_blocks_unverified_gates():
     result = launch_summary([
-        {"gate": "ci", "status": "verified"},
-        {"gate": "stripe", "status": "pending"},
+        LaunchEvidence("ci", "verified"),
+        LaunchEvidence("stripe", "pending"),
     ])
     assert result == {"ready": False, "blocked_gates": ["stripe"], "count": 2}

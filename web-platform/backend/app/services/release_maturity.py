@@ -143,7 +143,11 @@ def launch_allowed(
         return False
     if not candidate.evidence_ledger_ref.strip():
         return False
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", candidate.commit_sha):
+        return False
     return bool(entries) and all(
-        entry.status in {VERIFIED, WAIVED} and entry.valid()
+        entry.commit_sha.lower() == candidate.commit_sha.lower()
+        and entry.status in {VERIFIED, WAIVED}
+        and entry.valid()
         for entry in entries
     )

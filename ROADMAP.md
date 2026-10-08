@@ -30,13 +30,47 @@ This is the **only master execution roadmap**. Supporting documents contain impl
 
 **Verification and evidence.**
 
+### Verified at the 2026-10-08 checkpoint
+
+- Render API deployment is live from release SHA `1369d9a3e4d8896cf6024fa45fa6810cc3cee890`.
+- Render health endpoint returns HTTP 200.
+- Render readiness reports PostgreSQL=`ok` and Redis=`ok`.
+- Cloudflare Whisper Worker `narrativ-forge-whisper` has a live 100% deployment and workers.dev reachability.
+
+Evidence:
+- https://narrativ-forge.onrender.com/api/v1/health
+- https://narrativ-forge.onrender.com/api/v1/ready
+- https://narrativ-forge-whisper.narrativ-forge.workers.dev
+- https://github.com/dragonknighttw-cmd/Narrativ-Forge/commit/1369d9a3e4d8896cf6024fa45fa6810cc3cee890
+
+### Still VERIFY
+
+1. Real worker/media/storage completion.
+2. Retry/DLQ/duplicate-dispatch/failover.
+3. Real B2/Supabase/Cloudinary lifecycle.
+4. Authenticated real Whisper + VTT + fallback E2E.
+5. Google OAuth/Drive export/recovery.
+6. SMTP.
+7. Stripe.
+8. Sentry.
+9. Exact live Alembic migration head.
+10. Backup/restore.
+11. Production auth/tenant E2E.
+12. Full browser E2E + load/performance.
+13. Security/dependency/container scans on the release SHA.
+14. Accessibility/responsive/WCAG review.
+15. Legal/compliance.
+16. External penetration testing.
+17. Live provider limits/terms/commercial-use verification.
+
 Priority order:
 1. Freeze requirements and documentation ownership.
-2. Verify worker/media/storage/Whisper/Drive/SMTP/Stripe/Sentry/PostgreSQL/Redis/backup.
-3. Run production/cross-tenant E2E, load, security, accessibility, and responsive audits.
-4. Complete UI screen/state/component audit.
-5. Finish remaining Auto Production surfaces.
-6. Final release audit.
+2. Complete the approved worker/media runtime path and authenticated Whisper E2E.
+3. Verify storage and external integrations.
+4. Run recovery, security, accessibility, E2E, and performance gates.
+5. Complete UI screen/state/component audit.
+6. Finish remaining Auto Production surfaces.
+7. Final release audit.
 
 ## Future Phases / Workstreams
 

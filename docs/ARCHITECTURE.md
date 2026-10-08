@@ -65,3 +65,31 @@ Legacy agents are kept separate from the canonical workflow engine.
 - Human approval is mandatory before final export.
 - Heavy processing stays outside request/response paths.
 - Direct social publishing is out of scope.
+
+## Media execution pipeline — release canonical
+
+```
+Upload
+  ↓
+PostgreSQL ProcessingJob
+  ↓
+Redis / Celery delivery
+  ↓
+narrativ-forge-worker
+  ↓
+FFmpeg transform
+  ↓
+Whisper transcription
+  ├── Cloudflare Whisper when enabled
+  └── local Whisper fallback
+  ↓
+PostgreSQL job/subtitle state
+  ↓
+B2 / Supabase / Cloudinary storage
+  ↓
+Approved Google Drive export
+```
+
+The API creates/persists workflow state; the worker performs heavy media work. Redis is the Celery broker and PostgreSQL remains the durable workflow/job source of truth.
+
+The live deployment currently has no continuous worker, so this is the implemented target topology, not proof of live E2E execution.

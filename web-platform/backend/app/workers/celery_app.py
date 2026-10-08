@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from celery import Celery
 from typing import Optional
 
@@ -25,6 +26,13 @@ def make_celery(broker_url: Optional[str] = None) -> Celery:
             "schedule": 21600.0,
         },
     }
+    # Keep the embedded beat state on the writable application storage volume.
+    # The production image runs as a non-root user, so the default /app path is
+    # not guaranteed to be writable.
+    app.conf.beat_schedule_filename = os.getenv(
+        "CELERY_BEAT_SCHEDULE_FILENAME",
+        "/app/storage/celerybeat-schedule",
+    )
     # Minimal, safe configuration
     app.conf.update(
         task_serializer="json",

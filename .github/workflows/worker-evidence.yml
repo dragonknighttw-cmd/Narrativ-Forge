@@ -91,10 +91,10 @@ jobs:
       - name: Prewarm deterministic Whisper model cache
         timeout-minutes: 5
         run: |
-          docker run --rm --network host \\
-            -e XDG_CACHE_HOME=/app/storage/whisper-cache \\
-            -v "$RUNNER_TEMP/narrativ-storage:/app/storage" \\
-            narrativ-forge-worker-evidence \\
+          docker run --rm --network host \
+            -e XDG_CACHE_HOME=/app/storage/whisper-cache \
+            -v "$RUNNER_TEMP/narrativ-storage:/app/storage" \
+            narrativ-forge-worker-evidence \
             python -c "import whisper; whisper.load_model('tiny')"
 
       - name: Start the real worker

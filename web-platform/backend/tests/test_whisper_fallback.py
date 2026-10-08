@@ -83,7 +83,7 @@ def test_cloudflare_whisper_uses_signed_bearer_wav_contract(monkeypatch, tmp_pat
             return {"text": "မင်္ဂလာပါ", "vtt": "WEBVTT\\n"}
 
     def fake_post(url, **kwargs):
-        calls.append((url, kwargs))
+        calls.append((url, {**kwargs, "body_bytes": kwargs["data"].read()}))
         return Response()
 
     monkeypatch.setattr(real_processing.requests, "post", fake_post)
@@ -95,4 +95,4 @@ def test_cloudflare_whisper_uses_signed_bearer_wav_contract(monkeypatch, tmp_pat
     assert request[1]["headers"]["Content-Type"] == "audio/wav"
     assert request[1]["headers"]["X-Narrativ-Episode"] == "episode-42"
     assert request[1]["headers"]["Authorization"].startswith("Bearer ")
-    assert request[1]["data"].read() == b"RIFF-WAV"
+    assert request[1]["body_bytes"] == b"RIFF-WAV"

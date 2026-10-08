@@ -1,6 +1,11 @@
 # Narrativ Forge
 
-[![Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/repository-gate.yml/badge.svg)](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/repository-gate.yml)\n
+[![Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/repository-gate.yml/badge.svg?branch=main)](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/repository-gate.yml?query=branch%3Amain)
+[![CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/ci.yml?query=branch%3Amain)
+[![Worker Evidence](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/worker-evidence.yml/badge.svg?branch=main)](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/worker-evidence.yml?query=branch%3Amain)
+[![Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/security.yml?query=branch%3Amain)
+[![CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/codeql.yml?query=branch%3Amain)
+
 Private, invite-only Burmese short-form video production workspace.
 
 > Owner: Project maintainers  

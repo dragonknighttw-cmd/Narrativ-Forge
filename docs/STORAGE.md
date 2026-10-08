@@ -48,3 +48,27 @@ Thresholds:
 ## Verification
 
 Real B2, Supabase, Cloudinary lifecycle, cleanup, archive/cold storage, deletion/PII purge, and backup/restore remain VERIFY until real evidence exists.
+
+## Release-gate lifecycle verification
+
+The configured hybrid routing is implemented:
+
+| Data | Provider |
+|---|---|
+| Raw/large media | B2 |
+| Images/previews | Cloudinary |
+| SRT/manifests/small workflow files | Supabase Storage |
+| Approved final output | Google Drive |
+
+**Live lifecycle status: PENDING.**
+
+Required evidence for Gate 3:
+1. Upload representative object.
+2. Download it and verify checksum/size.
+3. Verify application DB reference.
+4. Delete/retire according to lifecycle policy.
+5. Verify archive/cold-storage path where applicable.
+6. Repeat for B2, Cloudinary and Supabase Storage.
+7. Record timestamp/provider/result without exposing credentials.
+
+The existence of provider credentials or adapter code is not lifecycle evidence.

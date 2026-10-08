@@ -1,156 +1,113 @@
 # Narrativ Forge — Current State
 
-> Owner: Project maintainers  
-> Update when: a status/evidence item changes  
-> Last Updated: 2026-10-08  
-> Do NOT put here: long-form implementation tutorials or future requirements without status
+> Owner: Project maintainers
+> Last Updated: 2026-10-08
+> Status evidence is environment-specific. Code/config alone never promotes a gate to VERIFIED.
 
-## 1. Current Release
+## 1. Release status
 
-**Status: PENDING / not Production Ready.**
+**PENDING / not Production Ready.**
 
-The latest live application deploy is on Render at release SHA `1369d9a3e4d8896cf6024fa45fa6810cc3cee890`; subsequent commits in `main` are documentation-only verification records and are being deployed separately. PostgreSQL and Redis readiness are confirmed on the live service. Production readiness is still blocked by real worker/media execution, external integrations, recovery, performance, security, accessibility, legal, and final E2E evidence.
+The live Render API is healthy and ready, and the Cloudflare Whisper Worker is deployed. The production release is still blocked by the absence of a continuously provisioned media worker and by external/live evidence gates.
 
-## 2. Current Phase
+## 2. VERIFIED
 
-**Verification and evidence phase after Phases 01–12 and Auto Production 13–17 coding foundations.**
+### Render API
+**VERIFIED — 2026-10-08**
 
-## 3. Status Definitions
-
-- DONE = repository implementation evidence exists.
-- VERIFIED = fresh runtime/provider evidence exists.
-- PENDING = required work/evidence remains.
-- BLOCKED = dependency prevents completion.
-- DEFERRED = intentionally postponed.
-- NEXT = next execution target.
-- VERIFY = evidence is required before promotion.
-
-## 4. COMPLETED
-
-- Core Next.js/FastAPI application foundation.
-- Ideas/Series/Seasons/Episodes.
-- Script/version/autosave foundations.
-- Scene and asset workflows.
-- Upload validation, resumable-upload foundations, original preservation.
-- Processing job/Celery foundations.
-- Burmese subtitle workflow and validation.
-- Review/approval foundation.
-- Google Drive export foundation.
-- Hybrid storage routing foundation.
-- Tenant scoping/security hardening foundations.
-- Billing/webhook foundation.
-- Search/analytics foundations.
-- AI adapter/provider routing and orchestration foundations.
-- Auto Production 13–17 coding foundations.
-- Reusable UI design-token/primitives foundation.
-- Operational runbooks and release-gate contracts.
-
-## 5. VERIFIED
-
-### 5.1 Render API deployment
-**VERIFIED — 2026-10-08.**
-
-Render service `Narrativ-Forge` is configured from the repository `dragonknighttw-cmd/Narrativ-Forge`, branch `main`, and the latest live deploy is commit `1369d9a3e4d8896cf6024fa45fa6810cc3cee890`. The live API returned HTTP 200 from both health and readiness endpoints.
-
-Evidence:
-- Live health: https://narrativ-forge.onrender.com/api/v1/health
-- Live readiness: https://narrativ-forge.onrender.com/api/v1/ready
-- Release commit: https://github.com/dragonknighttw-cmd/Narrativ-Forge/commit/1369d9a3e4d8896cf6024fa45fa6810cc3cee890
+- Health: https://narrativ-forge.onrender.com/api/v1/health
+- Readiness: https://narrativ-forge.onrender.com/api/v1/ready
+- Live application SHA at checkpoint: `1369d9a3e4d8896cf6024fa45fa6810cc3cee890`
 - Render service: https://dashboard.render.com/web/srv-davrqtu7bikc73f7isbg
 
-### 5.2 PostgreSQL and Redis runtime connectivity
-**VERIFIED — 2026-10-08.**
+Readiness returned database=`ok`, redis=`ok`.
 
-The live readiness endpoint returned `{"status":"ready","checks":{"database":"ok","redis":"ok"}}`. Render logs also show PostgreSQL Alembic startup and Uvicorn application startup on the live instance.
+### Cloudflare Whisper deployment
+**VERIFIED — 2026-10-08**
 
-Evidence:
-- Readiness: https://narrativ-forge.onrender.com/api/v1/ready
-- Render service logs/runtime: https://dashboard.render.com/web/srv-davrqtu7bikc73f7isbg
+- Worker: https://narrativ-forge-whisper.narrativ-forge.workers.dev
+- Cloudflare account/deployment evidence confirms a 100% production version.
+- `NARRATIV_SHARED_SECRET` binding exists.
 
-**Scope limit:** this verifies live connectivity/readiness only. Exact live Alembic head, backup/restore, and production data-integrity drills remain VERIFY.
+**Scope:** deployment/reachability only. Authenticated real-audio transcription, VTT correctness, Subtitle Studio integration, quota/fallback behavior remain unverified.
 
-### 5.3 Cloudflare Whisper Worker deployment
-**VERIFIED — 2026-10-08.**
+## 3. WORKER BLOCKER
 
-Cloudflare account evidence shows Worker `narrativ-forge-whisper` exists, was deployed from Wrangler, and has a 100% production deployment version created 2026-10-07. The Worker has the required `NARRATIV_SHARED_SECRET` secret binding and its workers.dev subdomain is enabled. A live request to the Worker returned the expected HTTP-method guard response.
+**BLOCKED — deployment capacity, not missing worker code.**
 
-Evidence:
-- Live Worker: https://narrativ-forge-whisper.narrativ-forge.workers.dev
-- Cloudflare Worker deployment: https://dash.cloudflare.com/
+Repository worker implementation is present:
 
-**Scope limit:** deployment/configuration is verified; authenticated real audio → Whisper → VTT → Subtitle Studio E2E and fallback behavior remain VERIFY.
+- Docker image: `web-platform/backend/Dockerfile.worker`
+- Entrypoint: `celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --concurrency=1 --beat`
+- Broker: Redis via `REDIS_URL`
+- Durable job state: PostgreSQL
+- Media tools: FFmpeg + OpenAI Whisper
+- Worker task registration: `web-platform/backend/app/workers/tasks.py`
+- Failure recovery: late ACK, worker-lost rejection, retries, DLQ publication, stale-job recovery.
 
-## 6. VERIFY / BLOCKERS
+Current Render service evidence:
+- service type = `web_service`
+- plan = `free`
+- instances = 1
+- no background worker service exists in the connected Render workspace.
 
-| Item | Status | Exact blocker / required evidence |
+Render's current documentation says Free instances are available for web services, Postgres, and Key Value; private/background-worker compute plans start at paid tiers. citeturn0search1turn0search0
+
+**Owner action:** provision a paid Render Background Worker or an equivalent external worker runtime. Do not convert the API web service into a fake worker.
+
+Prepared configuration: `render.worker.yaml`.
+
+## 4. RELEASE GATE MATRIX
+
+| Gate | Status | Evidence / exact blocker |
 |---|---|---|
-| Real worker → representative media → FFmpeg/Whisper → DB/storage | VERIFY | No live background media worker is provisioned in Render; current Render service is API-only. Need a real worker runtime or approved ephemeral worker plus representative media evidence. |
-| Retry / DLQ / duplicate-dispatch / failover | VERIFY | No live failure-injection drill evidence. |
-| Real B2 / Supabase / Cloudinary lifecycle | VERIFY | No fresh live upload/download/delete/archive lifecycle evidence for each configured provider. |
-| Real Whisper + fallback | VERIFY | Whisper Worker deployment is verified, but no authenticated real-audio E2E or fallback drill has been evidenced. |
-| Google OAuth / Drive export / re-export / recovery | VERIFY | No fresh authenticated OAuth/export/recovery evidence. |
-| SMTP delivery | VERIFY | No real mailbox delivery evidence. |
-| Stripe lifecycle / webhooks | VERIFY | No live checkout/subscription/webhook lifecycle evidence. |
-| Sentry event / alert verification | VERIFY | No fresh production event and alert-delivery evidence. |
-| Exact live Alembic migration head | VERIFY | Runtime PostgreSQL connectivity and `alembic upgrade head` startup are evidenced, but the exact live revision has not been queried independently. |
-| Backup / restore drill | VERIFY | No completed restore drill against the live managed PostgreSQL environment. |
-| Production auth / cross-tenant E2E | VERIFY | No fresh browser E2E proving invite/auth/session and cross-tenant isolation in the live environment. |
-| Full browser E2E / load / performance | VERIFY | No fresh full production E2E suite or representative load benchmark evidence. |
-| Security / dependency / container scans | VERIFY | No fresh scan artifacts tied to release SHA `1369d9a3e4d8896cf6024fa45fa6810cc3cee890`. |
-| Accessibility / responsive / WCAG review | VERIFY | No fresh automated + manual audit evidence for the release UI. |
-| Legal / privacy / compliance | VERIFY | No external approval/sign-off evidence. |
-| External penetration test | VERIFY | No external pen-test report/remediation evidence. |
-| Live provider limits / terms / commercial use | VERIFY | Code/configuration is present, but account-specific limits, current terms, watermark behavior, and commercial-use conditions are not evidenced for all planned providers. |
+| 1. Real media → FFmpeg → Whisper → DB/storage | BLOCKED | No continuously running worker. Worker code exists; live execution evidence cannot be produced until worker runtime exists. |
+| 2. Retry / DLQ / duplicate-dispatch / failover | BLOCKED | Requires live worker/queue failure-injection drill. |
+| 3. B2 / Supabase / Cloudinary lifecycle | PENDING | Provider routing exists, but no fresh live upload/download/delete/archive evidence for every configured provider. |
+| 4. Whisper + fallback E2E | BLOCKED | Cloudflare Worker deployment is verified; authenticated real-audio E2E and fallback drill require worker/media execution. |
+| 5. Google OAuth / Drive export / recovery | PENDING | Code defines `/api/v1/drive/google/start` and `/callback`; no authenticated production OAuth/export/recovery evidence. |
+| 6. SMTP | PENDING | Render blueprint declares SMTP variables, but available Render tooling does not expose secret values. No real mailbox delivery evidence. |
+| 7. Stripe | PENDING | Checkout/webhook code and Render variables exist; no live test-mode checkout/webhook evidence. |
+| 8. Sentry | PENDING | Sentry initialization/code exists; DSN value and live event/alert evidence are not accessible through current tooling. |
+| 9. Exact live Alembic head | VERIFY | Connected Render account has no Render-managed Postgres instance. Live `DATABASE_URL` points to an external provider, but current tooling cannot query that database or reveal the secret value. |
+| 10. Backup / restore | PENDING | Backup/restore scripts exist; no real managed-Postgres restore drill has been completed. |
+| 11. Production auth / cross-tenant E2E | PENDING | Playwright cross-tenant tests exist, but no fresh live production browser evidence. |
+| 12. Full E2E / load / performance | BLOCKED | Full release E2E depends on worker/media path; no fresh representative load benchmark. |
+| 13. Security / dependency / container scans | EXTERNAL ACTION | CI workflow exists for pip-audit, npm audit, CodeQL and Trivy, but no fresh scan artifacts tied to the release checkpoint are available. |
+| 14. Accessibility / responsive / WCAG | EXTERNAL ACTION | No fresh automated + manual release audit artifact. |
+| 15. Legal / privacy / compliance | EXTERNAL ACTION | Requires owner/legal sign-off; tooling cannot provide external approval. |
+| 16. External penetration test | EXTERNAL ACTION | Requires independent tester/report/remediation evidence. |
+| 17. Provider limits / terms / commercial use | EXTERNAL ACTION | Requires account-specific provider review; code defaults are not proof of current limits/terms/watermark/commercial rights. |
 
-## 7. PENDING
+## 5. PENDING
 
-- Final UI screen inventory and state coverage.
-- Remaining Auto Production product surfaces.
-- Evidence-backed release audit.
-- Legal/compliance documents.
-- External penetration testing.
+- Gates 3, 5, 6, 7, 8, 10, 11.
+- Final UI/state audit and remaining Auto Production surfaces.
 
-## 8. BLOCKED
+## 6. BLOCKED
 
-Production-ready release is blocked until the applicable VERIFY gates above have fresh evidence. Code existence, deployment manifests, credentials, or unit tests alone cannot unblock a live gate.
+- Gates 1, 2, 4, 12 are blocked directly or indirectly by the missing live worker.
+- Gate 9 is blocked from verification by lack of access to the external production PostgreSQL instance.
+- Production Ready is blocked until all applicable gates have fresh evidence.
 
-## 9. DEFERRED
+## 7. EXTERNAL ACTION
 
-- Direct social publishing remains out of scope.
-- Full mobile client remains reserved.
-- Character/LoRA production pipeline remains target/reserve until the complete training → storage → generation → consistency path is evidenced.
-- Paid always-on worker is reserved unless free/local/ephemeral execution is insufficient.
+- Gate 13: execute/attach release-SHA security scan artifacts.
+- Gate 14: execute/attach automated + manual WCAG/responsive audit.
+- Gate 15: obtain legal/privacy/compliance sign-off.
+- Gate 16: obtain external penetration-test report and remediation evidence.
+- Gate 17: perform account-specific provider terms/limits/commercial-use review.
 
-## 10. REMAINING RELEASE GATES
+## 8. NEXT
 
-1. Worker → real media → DB/storage completion.
-2. Retry/DLQ/duplicate-dispatch/failover.
-3. Real B2/Supabase/Cloudinary lifecycle.
-4. Real Whisper and fallback.
-5. Google Drive OAuth/export/re-export/recovery.
-6. SMTP.
-7. Stripe.
-8. Sentry.
-9. Exact live PostgreSQL migration head.
-10. Backup/restore.
-11. Production auth/tenant E2E.
-12. Full E2E + load/performance.
-13. Security/container scans.
-14. Accessibility/responsive/WCAG review.
-15. Legal/compliance.
-16. External pen-test.
-17. Live provider limits/terms/commercial-use verification.
+1. Owner provisions the worker using `render.worker.yaml` on a paid Render Background Worker or equivalent runtime.
+2. Configure worker secrets/variables.
+3. Run representative real-media E2E.
+4. Run retry/DLQ/failover and Whisper fallback drills.
+5. Execute remaining provider/recovery/security/accessibility/external gates.
 
-## 11. LAST VERIFIED
+## 9. Evidence rule
 
-**2026-10-08 live verification checkpoint.**
+**Do not mark a gate VERIFIED from configuration, credentials, source code, unit tests, or a deployment manifest alone.**
 
-Verified at this checkpoint:
-- Render API live on release SHA `1369d9a3e4d8896cf6024fa45fa6810cc3cee890`.
-- PostgreSQL readiness = `ok`.
-- Redis readiness = `ok`.
-- Cloudflare Whisper Worker deployment and workers.dev reachability.
-
-## 12. NEXT ACTION
-
-Run the remaining live verification gates in dependency order, starting with an approved real worker/media execution path and authenticated Whisper E2E. Do not label the release Production Ready until every applicable gate has evidence.
+Repository head and live deployment head must be tracked separately.

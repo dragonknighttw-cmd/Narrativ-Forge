@@ -8,6 +8,10 @@ import subprocess
 import tempfile
 import requests
 import time
+import base64
+import hashlib
+import hmac
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -17,7 +21,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
-from ..models import Asset, Episode, ProcessingJob, UploadSession
+from ..models import Asset, Episode, ProcessingJob, UploadSession, UsageEvent
 from .storage import StorageError, build_object_key, get_storage, materialize_asset, storage_provider_for_asset
 from .subtitles import generate_subtitle_for_episode
 
@@ -205,32 +209,107 @@ def _validate_rendered_media(path: Path) -> tuple[int, int, float]:
     return width, height, duration
 
 
-def _transcribe_with_fallback(source: Path, transcript_dir: Path) -> Path:
-    """Prefer configured Cloudflare Whisper, then fall back to local Whisper CLI."""
+def _b64(value: bytes) -> str:
+    return base64.urlsafe_b64encode(value).decode().rstrip("=")
+
+
+def _sign_whisper_claims(payload: dict) -> str:
+    encoded = _b64(json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode())
+    signature = hmac.new(
+        settings.cloudflare_whisper_shared_secret.encode(),
+        encoded.encode(),
+        hashlib.sha256,
+    ).digest()
+    return encoded + "." + _b64(signature)
+
+
+def _daily_whisper_usage_seconds(db: Session, organization_id: str) -> int:
+    today = datetime.now(timezone.utc).date()
+    rows = db.query(UsageEvent).filter(
+        UsageEvent.organization_id == organization_id,
+        UsageEvent.metric == "cloudflare_whisper_audio_seconds",
+    ).all()
+    return sum(
+        int(row.quantity)
+        for row in rows
+        if row.created_at and row.created_at.astimezone(timezone.utc).date() == today
+    )
+
+
+def _transcribe_cloudflare(source: Path, transcript_dir: Path, episode: Episode, db: Session) -> Path:
+    if not settings.cloudflare_whisper_shared_secret:
+        raise RuntimeError("Cloudflare Whisper shared secret is not configured")
+
+    duration_probe = _run([
+        settings.ffprobe_binary, "-v", "error", "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1", str(source),
+    ], timeout=settings.processing_timeout_seconds)
+    duration_seconds = max(1, math.ceil(float((duration_probe.stdout or "0").strip())))
+    used_seconds = _daily_whisper_usage_seconds(db, episode.organization_id)
+    estimated_neurons = ((used_seconds + duration_seconds) / 60.0) * settings.cloudflare_whisper_neurons_per_audio_minute
+    if estimated_neurons >= float(settings.cloudflare_whisper_daily_neuron_budget or 1) * settings.cloudflare_whisper_fallback_threshold:
+        raise RuntimeError("Cloudflare Whisper quota requires local fallback")
+
+    wav_path = transcript_dir / f"{source.stem}.wav"
+    _run([
+        settings.ffmpeg_binary, "-y", "-i", str(source), "-vn", "-ac", "1", "-ar", "16000",
+        "-c:a", "pcm_s16le", str(wav_path),
+    ], timeout=settings.processing_timeout_seconds)
+
+    now = int(time.time())
+    jti = str(uuid4())
+    token = _sign_whisper_claims({
+        "sub": "narrativ-worker",
+        "episode_id": episode.id,
+        "exp": now + settings.cloudflare_whisper_token_ttl_seconds,
+        "jti": jti,
+        "max_audio_seconds": duration_seconds,
+    })
+    with wav_path.open("rb") as audio:
+        response = requests.post(
+            settings.cloudflare_whisper_worker_url.rstrip("/"),
+            data=audio,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "audio/wav",
+                "X-Narrativ-Episode": episode.id,
+            },
+            timeout=settings.whisper_remote_timeout_seconds,
+        )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, dict) or "text" not in payload:
+        raise ValueError("Cloudflare Whisper returned an invalid response")
+    payload["source"] = "cloudflare_whisper"
+    payload["language"] = "my"
+    payload.setdefault("audio_seconds", duration_seconds)
+    payload.setdefault("jti", jti)
+
+    existing = db.query(UsageEvent).filter(UsageEvent.idempotency_key == f"cloud-whisper-worker:{jti}").first()
+    if existing is None:
+        period = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        db.add(UsageEvent(
+            organization_id=episode.organization_id,
+            metric="cloudflare_whisper_audio_seconds",
+            quantity=duration_seconds,
+            unit="second",
+            idempotency_key=f"cloud-whisper-worker:{jti}",
+            period_start=period,
+            metadata_json=json.dumps({"episode_id": episode.id, "jti": jti}, separators=(",", ":")),
+        ))
+        db.commit()
+
+    output = transcript_dir / f"{source.stem}.json"
+    output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return output
+
+
+def _transcribe_with_fallback(source: Path, transcript_dir: Path, episode: Episode, db: Session) -> Path:
+    """Prefer authenticated Cloudflare Whisper, then fall back to local Whisper CLI."""
     remote_error: Exception | None = None
     if settings.whisper_remote_enabled and settings.cloudflare_whisper_worker_url:
         try:
-            with source.open("rb") as audio:
-                response = requests.post(
-                    settings.cloudflare_whisper_worker_url,
-                    files={"file": (source.name, audio, "video/mp4")},
-                    data={"language": "my", "task": "transcribe"},
-                    headers=(
-                        {"X-Whisper-Secret": settings.cloudflare_whisper_shared_secret}
-                        if settings.cloudflare_whisper_shared_secret
-                        else {}
-                    ),
-                    timeout=settings.whisper_remote_timeout_seconds,
-                )
-            response.raise_for_status()
-            payload = response.json()
-            if not isinstance(payload, dict):
-                raise ValueError("Cloudflare Whisper returned a non-object response")
-            payload["source"] = "cloudflare_whisper"
-            payload["language"] = payload.get("language", "my")
-            output = transcript_dir / f"{source.stem}.json"
-            output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-            return output
+            return _transcribe_cloudflare(source, transcript_dir, episode, db)
         except Exception as exc:
             remote_error = exc
             logger.warning(
@@ -310,7 +389,7 @@ def run_real_job(job_id: str, db: Session, *, already_claimed: bool = False) -> 
             db.commit()
 
             try:
-                whisper_json = _transcribe_with_fallback(source, transcript_dir)
+                whisper_json = _transcribe_with_fallback(source, transcript_dir, episode, db)
             except Exception as exc:
                 return _fail(job, "WHISPER_OUTPUT_MISSING", str(exc), db)
 

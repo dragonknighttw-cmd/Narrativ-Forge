@@ -35,3 +35,36 @@ Rotate through the deployment/provider secret stores. Never paste secrets into t
 ## Verification boundary
 
 If a failure depends on a real provider, worker, credential, mailbox, or production environment, classify it VERIFY/PENDING rather than inferring success from local tests.
+
+## Media pipeline failure modes
+
+### Job stuck
+- Inspect PostgreSQL `ProcessingJob`.
+- Check Redis/Celery worker heartbeat.
+- Check worker logs.
+- If lease expired, use stale-job recovery/retry.
+- If retries are exhausted, inspect `FailedJob`/DLQ.
+
+### Whisper timeout
+- Preserve the processing job.
+- Record the provider failure.
+- Retry within policy.
+- If cloud Whisper is unavailable/over threshold, use local Whisper fallback.
+- Never mark subtitle processing complete without valid output.
+
+### Storage write failure
+- Keep source asset.
+- Retry provider write.
+- Verify checksum after retry.
+- Do not delete the primary copy until references/recovery are confirmed.
+
+### Provider outage
+- Mark provider operation failed.
+- Apply configured fallback where supported.
+- Record provider and failure reason.
+- Do not silently switch a provider when commercial/quality policy forbids it.
+
+### Worker unavailable
+- Queue remains the durable pending boundary.
+- Do not fake completion from the API.
+- Provision/restart worker and verify Celery heartbeat before replaying production jobs.

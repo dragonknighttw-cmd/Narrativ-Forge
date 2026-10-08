@@ -73,7 +73,7 @@ A manifest is not proof of a live deployment.
 The repository worker is deployable as a Docker background worker:
 
 - Dockerfile: `web-platform/backend/Dockerfile.worker`
-- Command: `celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --concurrency=1 --beat`
+- Command: `celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --beat` (concurrency is configured by `WORKER_MAX_CONCURRENCY`, default `1`)
 - Broker: `REDIS_URL`
 - State: `DATABASE_URL`
 - Media runtime: FFmpeg + OpenAI Whisper

@@ -71,6 +71,8 @@ def test_release_maturity_store_persists_and_updates_idempotently(session):
     session.commit()
 
     assert provider.provider == "stripe"
-    assert billing.remaining_units if hasattr(billing, "remaining_units") else billing.quota_units == 100
+    assert billing.quota_units == 100
+    assert billing.reserved_units == 10
+    assert billing.usage_units == 20
     assert candidate.frozen_at is not None
     assert watch.event_type == "watch_started"

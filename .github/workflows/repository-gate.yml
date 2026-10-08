@@ -58,7 +58,7 @@ jobs:
                 .[]
                 | select(.name != $self and .status == "completed")
                 | select(.conclusion != "success" and .conclusion != "neutral" and .conclusion != "skipped")
-                | "- (.name): (.conclusion)"
+                | "- \(.name): \(.conclusion)"
               ' <<<"${payload}"
               exit 1
             fi
@@ -68,7 +68,7 @@ jobs:
               jq --arg self "${self_name}" -r '
                 .[]
                 | select(.name != $self)
-                | "- (.name): (.status)/(.conclusion // "pending")"
+                | "- \(.name): \(.status)/\(.conclusion // "pending")"
               ' <<<"${payload}"
               exit 0
             fi

@@ -4,7 +4,7 @@ name: Real Worker Evidence
 on:
   workflow_dispatch:
   push:
-    branches: ["main", "chore/close-worker-evidence"]
+    branches: ["main"]
     paths:
       - "web-platform/backend/**"
       - ".github/workflows/worker-evidence.yml"

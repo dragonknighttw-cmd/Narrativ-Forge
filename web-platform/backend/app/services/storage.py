@@ -1069,8 +1069,8 @@ def materialize_asset(asset, destination_dir: Path) -> Path:
 def _safe_key_component(value: str, field_name: str) -> str:
     component = re.sub(r"[^A-Za-z0-9._-]", "_", (value or "").strip())
     component = re.sub(r"_+", "_", component)
-    component = component.strip("._-")
-    if not component:
+    component = component.strip(".-")
+    if not component or not component.replace("_", ""):
         raise StorageError(f"Invalid {field_name}")
     return component
 

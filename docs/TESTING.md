@@ -92,3 +92,17 @@ Use one representative Burmese audio/video asset that is safe to process.
 ### Gate 12 — load/performance
 
 Use representative API and media-job volumes. Record p50/p95 latency, worker processing time, CPU, memory, queue depth and failure rate. The 15–30 minute MVP processing target is a product target, not evidence until measured.
+
+## Automated real-worker evidence gate
+
+The repository now contains an automated worker evidence path:
+
+- `.github/workflows/worker-evidence.yml`
+- `web-platform/backend/scripts/worker_smoke.py`
+- `web-platform/backend/Dockerfile.worker`
+
+The CI gate builds the real worker image, applies Alembic migrations against PostgreSQL, verifies retry/DLQ integration against PostgreSQL + Redis, starts the real Celery worker, generates a deterministic media fixture with FFmpeg, runs the real Whisper CLI, and verifies processed video, transcript, database state, and current subtitle creation.
+
+This is **automated evidence**, not production-provider evidence. It intentionally uses local storage and a generated fixture so production credentials are not required.
+
+Manual/live gates remain separate and include real B2/Supabase/Cloudinary lifecycle, Cloudflare Whisper authenticated E2E, Google Drive OAuth/export/recovery, SMTP, Stripe, Sentry, backup/restore, production auth/tenant isolation, and representative real-user media verification.

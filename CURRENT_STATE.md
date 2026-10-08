@@ -9,7 +9,7 @@
 
 **Status: PENDING / not Production Ready.**
 
-The repository is deployed on Render and the current `main` release is live at the API layer, with PostgreSQL and Redis readiness confirmed. Production readiness is still blocked by real worker/media execution, external integrations, recovery, performance, security, accessibility, legal, and final E2E evidence.
+The latest live application deploy is on Render at release SHA `1369d9a3e4d8896cf6024fa45fa6810cc3cee890`; subsequent commits in `main` are documentation-only verification records and are being deployed separately. PostgreSQL and Redis readiness are confirmed on the live service. Production readiness is still blocked by real worker/media execution, external integrations, recovery, performance, security, accessibility, legal, and final E2E evidence.
 
 ## 2. Current Phase
 

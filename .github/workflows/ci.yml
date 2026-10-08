@@ -38,7 +38,14 @@ jobs:
           DATABASE_URL=sqlite:////tmp/narrativ-ci.db PYTHONPATH=. python -m alembic upgrade head
           DATABASE_URL=sqlite:////tmp/narrativ-ci.db PYTHONPATH=. python -m alembic current
       - name: Run backend unit + security regression tests
-        run: PYTHONPATH=. pytest -m "unit or security" -q
+        run: PYTHONPATH=. pytest -m "unit or security" -vv --junitxml=/tmp/backend-unit-security.xml
+      - name: Upload backend unit/security test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-unit-security-test-report
+          path: /tmp/backend-unit-security.xml
+          if-no-files-found: ignore
 
   backend-integration:
     runs-on: ubuntu-latest
@@ -82,7 +89,14 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:ci-test-password@localhost:5432/narrativ_test
           REDIS_URL: redis://localhost:6379/0
-        run: PYTHONPATH=. pytest -m integration -q
+        run: PYTHONPATH=. pytest -m integration -vv --junitxml=/tmp/backend-integration.xml
+      - name: Upload backend integration test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-integration-test-report
+          path: /tmp/backend-integration.xml
+          if-no-files-found: ignore
 
   frontend:
     runs-on: ubuntu-latest

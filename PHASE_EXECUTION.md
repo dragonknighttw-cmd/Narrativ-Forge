@@ -277,3 +277,8 @@ Implemented in `web-platform/backend/app/services/phase_61_68.py` with `tests/te
 - 68 SLO/error-budget severity contract.
 
 These are code/test foundations only; production telemetry, real provider adapters, billing sandbox/live reconciliation, enterprise browser acceptance and incident-owner sign-off remain external gates.
+
+
+## Phase 61–68 code-foundation progress — 2026-10-08
+
+Code-only foundations are now staged in `web-platform/backend/app/services/phase_61_68.py` with unit coverage in `tests/test_phase_61_68.py`: performance/cost budgets, worker autoscaling policy, provenance lineage, enterprise permissions, provider capability discovery, localization quality thresholds, billing metering validation, SLO budgets and incident/rollback policy. Live telemetry, billing, provider, enterprise and post-launch acceptance remain external gates.

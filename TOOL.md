@@ -44,6 +44,7 @@ Update documentation in the same logical change when a production-relevant fact 
 |---|---|
 | Architecture change | PROJECT_OVERVIEW + ARCHITECTURE |
 | Current status/evidence change | CURRENT_STATE |
+| VERIFY resolution or blocker change | CURRENT_STATE + affected domain doc + ROADMAP when a release gate changes |
 | Requirement/phase/gate change | ROADMAP |
 | UI token/component/state change | UI_DESIGN_SYSTEM |
 | Security control/incident change | SECURITY |
@@ -55,12 +56,15 @@ Update documentation in the same logical change when a production-relevant fact 
 | Failure/recovery procedure change | TROUBLESHOOTING |
 
 ### Session start
+
 Read README → CURRENT_STATE → ROADMAP, then the relevant domain doc.
 
 ### Session end
+
 Confirm code status, tests/evidence, current-state status, roadmap impact, and links.
 
 ### Documentation drift rule
+
 If a supporting document conflicts with canonical ownership, reconcile it rather than creating another competing source.
 
 ## 5. Tools matrix

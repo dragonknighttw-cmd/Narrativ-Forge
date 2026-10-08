@@ -1,4 +1,5 @@
 import pytest
+from types import SimpleNamespace
 
 from app.main import app
 from app.models import Organization, OrganizationMembership, Series, User
@@ -36,11 +37,14 @@ def test_second_tenant_cannot_read_or_mutate_first_tenant_series():
         db.add(series)
         db.commit()
         series_id = series.id
+        user_b_id = user_b.id
+        user_b_email = user_b.email
+        org_b_id = org_b.id
 
     second = create_test_client(app)
     original_overrides = dict(app.dependency_overrides)
-    app.dependency_overrides[get_current_user] = lambda: {"id": user_b.id, "email": user_b.email, "role": "owner"}
-    app.dependency_overrides[get_current_membership] = lambda: membership_b
+    app.dependency_overrides[get_current_user] = lambda: {"id": user_b_id, "email": user_b_email, "role": "owner"}
+    app.dependency_overrides[get_current_membership] = lambda: SimpleNamespace(organization_id=org_b_id, user_id=user_b_id, role="owner")
     try:
         assert second.get(f"/api/v1/series/{series_id}").status_code == 404
         assert second.patch(

@@ -37,10 +37,7 @@ def test_second_tenant_cannot_read_or_mutate_first_tenant_series():
 
     second = create_test_client(app)
     try:
-        second.cookies.set(
-            settings.session_cookie_name,
-            issue_session("tenant-b-owner@narrativ.local", "owner"),
-        )
+        second.headers.update({"Authorization": f"Bearer {issue_session('tenant-b-owner@narrativ.local', 'owner')}"})
         assert second.get(f"/api/v1/series/{series_id}").status_code == 404
         assert second.patch(
             f"/api/v1/series/{series_id}",

@@ -45,6 +45,9 @@ def test_cloudflare_whisper_uses_signed_bearer_wav_contract(monkeypatch, tmp_pat
         def first(self):
             return None
 
+        def all(self):
+            return []
+
     class Db:
         def query(self, model):
             return Query()

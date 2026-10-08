@@ -38,3 +38,19 @@ python -m alembic heads
 ## Backup/recovery
 
 Backup and restore must be tested against a real managed PostgreSQL environment before production readiness is claimed. Restore must preserve workflow state, tenant isolation, and storage references.
+
+## Live Alembic head verification
+
+**Status: VERIFY — 2026-10-08.**
+
+The live API is connected to PostgreSQL and Render logs show `alembic upgrade head` during startup. However, the connected Render account exposes **no Render-managed Postgres instance**, so the production `DATABASE_URL` is necessarily an external/provider-managed connection from the evidence available here.
+
+Current tools cannot reveal the production secret value or directly query that external PostgreSQL instance. Therefore the exact live `alembic_version.version_num` remains unverified.
+
+Owner verification command against the actual production database:
+
+```sql
+SELECT version_num FROM alembic_version;
+```
+
+Record the result and compare it with repository head `0017_asset_deleted_at`.

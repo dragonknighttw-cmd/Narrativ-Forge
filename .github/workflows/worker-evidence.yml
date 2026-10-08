@@ -16,6 +16,10 @@ on:
       - ".github/workflows/worker-evidence.yml"
       - "render.worker.yaml"
 
+concurrency:
+  group: worker-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

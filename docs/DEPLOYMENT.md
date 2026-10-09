@@ -15,12 +15,12 @@
 
 ### Current repository/deployment checkpoint — 2026-10-09
 
-- Repository main SHA: `b67d4620038cb9207180a737815fc0a1213ee6ca`.
+- Repository main SHA at the 2026-10-09 workflow run: `adeb425185f163775f03b779553a8e148284f363`.
 - Render deployment `dep-db47rg0ae00c739pgs90` is live at that SHA: [Render deploy](https://dashboard.render.com/web/srv-davrqtu7bikc73f7isbg).
 - Current-head GitHub checks are green: [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515865), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515817), [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515813), and [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515819).
 - Windows portable package persistence passed on the immediately preceding main SHA `ee448cb82ccd4b68235c9264ac474019c961a994`; it is still a prototype API/UI bundle, not an installer or media-worker package.
 - No separately provisioned continuous background worker exists. Production media processing remains blocked.
-- Cloudflare Whisper live evidence run [#37895020420](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37895020420) failed before authenticated inference: the unauthenticated POST returned HTTP 403 instead of the expected 401. Treat the endpoint contract as unverified until a fresh run passes.
+- Cloudflare Whisper live evidence run [#37907157973](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37907157973) failed before authenticated inference: unauthenticated POST returned HTTP 403 `text/plain` with a Cloudflare `CF-Ray`, and no recognized Worker JSON error. Treat the endpoint contract as unverified; this is not evidence of a shared-secret mismatch.
 - Owner steps and secret-handling instructions: [Owner Action Checklist](OWNER_ACTION_CHECKLIST.md).
 
 The 2026-10-08 live health/readiness observations below are historical evidence for that date; do not treat them as a fresh HTTP probe of every later deployment.
@@ -131,6 +131,14 @@ Exact worker setup:
 Fly charges provisioned compute by usage; this is not a free-only assumption. citeturn1search7
 
  
+## Latest Cloudflare Whisper 403 diagnosis — 2026-10-09
+
+Run [#37907157973](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37907157973) used merge SHA `adeb425185f163775f03b779553a8e148284f363`. Its redacted evidence artifact reports HTTP 403, `Content-Type: text/plain`, a Cloudflare `CF-Ray`, and no recognized Worker JSON error. The authenticated request never ran and no Workers AI inference success is claimed.
+
+The repository Worker source returns JSON for its own origin guard and method/authentication errors. A non-JSON 403 with a CF-Ray is therefore consistent with a Cloudflare edge/access layer rejecting the request or the hostname reaching a different handler/version; it is not enough to identify which of those occurred. Cloudflare API metadata also showed the `narrativ-forge-whisper` script and expected `ALLOWED_ORIGIN` binding, with a dashboard-sourced deployment on 2026-10-09. That metadata does not prove the public endpoint executes the intended code or that the secret value matches.
+
+Use the non-billable [Cloudflare Whisper Preflight workflow](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/cloudflare-whisper-preflight.yml) first. It sends only an unauthenticated GET and expects the Worker JSON `405 Method not allowed` response; it sends no audio and cannot call Workers AI. If it receives non-JSON 403 plus CF-Ray, inspect Cloudflare account/edge controls and the public hostname/deployed script before secret rotation or inference. The manual deployment workflow now includes the same GET-only smoke check. Only run the live-evidence workflow after preflight passes and the owner explicitly approves potential Workers AI quota use.
+
 ## Cloudflare Whisper live acceptance and secret rotation
 
 The manual workflow `.github/workflows/cloudflare-whisper-live-evidence.yml` verifies the signed-token contract with one synthetic two-second WAV. It checks the canonical workers.dev hostname, sends the allowed Origin configured in `web-platform/cloudflare/whisper-worker/wrangler.jsonc`, does not follow redirects, checks unauthenticated rejection, then performs one authenticated inference. The inference may consume Workers AI quota, so run it only with explicit owner approval.

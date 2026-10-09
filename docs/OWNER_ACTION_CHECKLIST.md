@@ -5,7 +5,7 @@
 
 ## Current verified baseline
 
-- Repository main at the latest checkpoint: `b67d4620038cb9207180a737815fc0a1213ee6ca`.
+- Repository main at the latest checkpoint: `adeb425185f163775f03b779553a8e148284f363` (Cloudflare evidence workflow hardening merged; fresh CI checks for this merge must be checked separately).
 - Current-head GitHub CI, Security, CodeQL, and Repository Gate are green:
   - [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515865)
   - [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515817)
@@ -13,13 +13,13 @@
   - [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515819)
 - [Windows portable package persistence gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889063839) passed on the immediately preceding main SHA `ee448cb82ccd4b68235c9264ac474019c961a994`. It verifies API/UI start-stop-restart and local data persistence only; it is not a standalone installer and does not include Celery/FFmpeg/Whisper.
 - [Render API deployment](https://dashboard.render.com/web/srv-davrqtu7bikc73f7isbg) is live at the current main SHA. No separate background worker exists yet.
-- [Cloudflare Whisper live evidence workflow](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/cloudflare-whisper-live-evidence.yml) was run at [run #37895020420](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37895020420) and failed before authenticated inference: the unauthenticated request received HTTP 403 instead of the expected 401. The redacted artifact records the status only; the shared secret has not yet been validated by that run.
+- [Cloudflare Whisper live evidence workflow](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/cloudflare-whisper-live-evidence.yml) was run at [run #37907157973](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37907157973) on merge SHA `adeb425185f163775f03b779553a8e148284f363` and failed before authenticated inference: the unauthenticated request received HTTP 403 with `text/plain`, a Cloudflare `CF-Ray`, and no recognized Worker JSON error. This points to an edge/deployment/access-layer rejection or a different deployed handler; it does not validate or invalidate the shared secret.
 
 **Release is still NOT Production Ready.** Do not treat green CI or a live API as proof that production media processing works end to end.
 
 ## Step 1 — Repair and re-run Cloudflare Whisper live acceptance
 
-The previous run [#37895020420](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37895020420) stopped at the unauthenticated request: HTTP 403 was returned where the Worker contract expects HTTP 401. The authenticated request never ran, so this is not yet evidence that the shared secret is wrong or right.
+The latest run [#37907157973](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37907157973) stopped at the unauthenticated request: HTTP 403 with `text/plain` and a Cloudflare `CF-Ray` was returned where the Worker contract expects HTTP 401. The authenticated request never ran. The redacted artifact now records safe response metadata and a short sanitized preview; do not treat this as a shared-secret failure.
 
 This check uses one synthetic two-second WAV and may consume Workers AI quota. Do not run it until you explicitly approve the inference request.
 
@@ -29,9 +29,10 @@ This check uses one synthetic two-second WAV and may consume Workers AI quota. D
 2. If the original secret is lost, treat this as a coordinated rotation—not a guess. Generate one new random value locally (for example, 32 random bytes encoded as 64 hexadecimal characters). Never send it in chat or commit it.
 3. Set that **same exact value** in the Render API service's environment variable `CLOUDFLARE_WHISPER_SHARED_SECRET`. This is required because the API signs processing tokens. Keep the URL in Render's `CLOUDFLARE_WHISPER_WORKER_URL` as the same workers.dev endpoint.
 4. Ensure `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are available to the protected production deployment job (repository secrets are fine; do not paste their values into logs).
-5. Open **Actions → Deploy Cloudflare Whisper Worker → Run workflow**. Set `confirm_render_secret_synced` to **true** only after verifying Render API has the exact same value. This workflow is intentionally manual-only: it deploys the source and synchronizes `NARRATIV_SHARED_SECRET` from the protected GitHub `production` secret. Wait for success before continuing. If you have not updated Render, leave the input false and stop.
-6. The live-evidence workflow validates the exact Worker hostname and sends the configured allowed Origin from `web-platform/cloudflare/whisper-worker/wrangler.jsonc`; it does not follow redirects. Open **Actions → Cloudflare Whisper Live Evidence → Run workflow**, select `main`, set `confirm_live_inference` to **true**, and start the run only after approving the possible Workers AI quota use.
-7. Inspect the conclusion and download `cloudflare-whisper-live-evidence`. The artifact records safe status/error codes and field-presence checks only; it never stores transcript text, the signed token, or the shared secret. A pass proves only the synthetic endpoint contract—not Burmese quality, production database usage accounting, subtitle persistence, fallback, or release readiness.
+5. First open **Actions → Cloudflare Whisper Preflight → Run workflow** on `main`. This is a non-billable GET-only check: no secret, audio, or Workers AI inference is used. Expected result is Worker JSON HTTP 405 with `error=Method not allowed`. If it returns HTTP 403 `text/plain` with a Cloudflare `CF-Ray`, stop: investigate Cloudflare edge/account controls, the canonical hostname, and the deployed script before attempting inference. Do not rotate secrets based on that response.
+6. Open **Actions → Deploy Cloudflare Whisper Worker → Run workflow**. Set `confirm_render_secret_synced` to **true** only after verifying Render API has the exact same shared-secret value. This workflow is intentionally manual-only: it deploys the source, synchronizes `NARRATIV_SHARED_SECRET` from the protected GitHub `production` secret, then runs a non-billable GET smoke check. If Render has not been updated, leave the input false and stop.
+7. Only after the preflight/deployment smoke returns the expected Worker JSON 405, open **Actions → Cloudflare Whisper Live Evidence → Run workflow**, select `main`, set `confirm_live_inference` to **true**, and start the run only after approving the possible Workers AI quota use.
+8. Inspect the conclusion and download `cloudflare-whisper-live-evidence`. The artifact records safe status/error codes, response metadata, a short sanitized preview, and field-presence checks only; it never stores transcript text, the signed token, or the shared secret. A pass proves only the synthetic endpoint contract—not Burmese quality, production database usage accounting, subtitle persistence, fallback, or release readiness.
 
 If you cannot set the Render API secret yet, stop after code/config review and do not run authenticated inference. Do not share secret values in screenshots; redact them.
 

@@ -25,15 +25,17 @@ Do not equate implemented code, passing unit tests, deployed service reachabilit
 ### 1.1 Establish an exact baseline
 - [x] Read the current roadmap and current-state documents.
 - [x] Inspect open PRs #23 and #24 and recent main-branch workflow runs.
-- [x] Record that the current inspected main SHA `1e468adf215c12dcb2314ff7aff948c426f2bfb9` had successful CI, Security, CodeQL, and Repository Gate runs on 2026-10-09.
-- [ ] Re-check main SHA and latest checks immediately before any merge/release decision.
+- [x] Record that inspected main SHA `1e468adf215c12dcb2314ff7aff948c426f2bfb9` had successful CI, Security, CodeQL, and Repository Gate runs on 2026-10-09; subsequent main commits require fresh checks.
+- [x] Re-check main SHA and latest checks immediately before merge decisions.
 - [x] Inspect PR #24 diff, existing checks, model allowlist, no-paid-fallback guarantees, tests, and documentation consistency.
 - [x] PR #24 follow-up: removed Thinking Machines Inkling/Inkling Small from the direct chat-completions allowlist because they are intended for agentic harnesses; added a regression test and clarified the model audit.
 - [x] PR #24 security follow-up: pinned the OpenRouter route to HTTPS `openrouter.ai/api/v1` so a custom compatible URL cannot receive the OpenRouter API key; added negative tests for HTTP, foreign hosts, deceptive hosts, URL credentials, and wrong paths.
-- [ ] Await CI/backend integration, worker, package, security and CodeQL evidence for PR head `2dad26e037b35b5f6726f2cf036e7047395d625c`. At last check, Repository Gate and Local Runtime Evidence passed; the other workflows were still running. Do not merge until required checks finish and the current main/PR base relationship is reviewed.
-- [ ] Inspect PR #23 diff, required checks, safe GET-only preflight, diagnostics redaction, workflow permissions, and documentation consistency.
-- [ ] Resolve PR review/check failures; do not merge solely because the PR is open or its description says tests exist.
-- [ ] After any merge, verify the new exact main SHA and all relevant checks again.
+- [x] PR #24 merged as `3cffc55c5ab96c164e89af37a13a58b03ef4c9cc` after its exact head `2dad26e037b35b5f6726f2cf036e7047395d625c` passed CI, backend integration, E2E, Security, CodeQL, Repository Gate, real-worker E2E, local runtime, Windows local runtime and Windows package evidence.
+- [x] Inspect PR #23 diff, required checks, safe GET-only preflight, diagnostics redaction, workflow permissions, and documentation consistency.
+- [x] PR #23 merged as `6eaa41668d0d49d4380c0bb2a9e3a1e6f2122ce2` after its PR-head CI, backend integration, E2E, Security, CodeQL and Repository Gate checks passed.
+- [ ] Run the manual **Cloudflare Whisper Preflight** workflow (GET-only, no credentials/audio/inference) and record artifact evidence; it was not triggered automatically by merging PR #23.
+- [x] Resolve PR review/check failures before merge; no failed required checks remained on either PR head at merge time.
+- [ ] Verify the new exact main SHA `6eaa41668d0d49d4380c0bb2a9e3a1e6f2122ce2` and all relevant checks after PR #23 merge; these checks are pending.
 
 ### 1.2 Worker and media pipeline
 - [ ] Audit `web-platform/backend/Dockerfile.worker`, Celery registration, Redis queue, PostgreSQL state, FFmpeg/Whisper availability, retry policy, DLQ, late ACK, duplicate dispatch, stale-job recovery, and shutdown behavior.

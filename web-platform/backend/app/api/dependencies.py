@@ -50,8 +50,13 @@ def verify_session(value: str) -> dict:
         raise HTTPException(status_code=401, detail="Authentication required") from exc
 
 
-def issue_session(email: str, role: str = "owner") -> str:
-    return _sign_session(email, role)
+def issue_session(email: str, role: str = "owner", organization_id: str | None = None) -> str:
+    """Issue a session bound to a workspace when one is selected.
+
+    The optional argument preserves compatibility with legacy callers while
+    allowing login, magic-link, and workspace-switch flows to use v2 sessions.
+    """
+    return _sign_session(email, role, organization_id)
 
 
 def get_current_user(

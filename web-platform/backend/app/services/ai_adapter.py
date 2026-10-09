@@ -4,6 +4,7 @@ import json
 import logging
 from dataclasses import dataclass
 from typing import Any, Protocol
+from urllib.parse import urlparse
 
 import httpx
 
@@ -103,6 +104,21 @@ def _is_free_openrouter_model(model: str) -> bool:
     return normalized == "openrouter/free" or normalized in FREE_OPENROUTER_CHAT_MODELS
 
 
+def _is_safe_openrouter_base_url(base_url: str) -> bool:
+    """Prevent sending the OpenRouter credential to an arbitrary compatible endpoint."""
+    parsed = urlparse(base_url.strip())
+    return (
+        parsed.scheme == "https"
+        and parsed.hostname == "openrouter.ai"
+        and parsed.port in (None, 443)
+        and parsed.path.rstrip("/") == "/api/v1"
+        and not parsed.username
+        and not parsed.password
+        and not parsed.query
+        and not parsed.fragment
+    )
+
+
 class OpenAICompatibleAdapter:
     """Adapter for OpenAI-compatible chat-completions APIs.
 
@@ -113,8 +129,11 @@ class OpenAICompatibleAdapter:
         self.provider = provider
 
     def create_content_plan(self, *, idea: str, category: str | None = None) -> ContentPlan:
-        if self.provider.name.startswith("openrouter") and not _is_free_openrouter_model(self.provider.model):
-            raise ValueError("OpenRouter free-only policy blocked a non-free model")
+        if self.provider.name.startswith("openrouter"):
+            if not _is_free_openrouter_model(self.provider.model):
+                raise ValueError("OpenRouter free-only policy blocked a non-free model")
+            if not _is_safe_openrouter_base_url(self.provider.base_url):
+                raise ValueError("OpenRouter free-only policy requires HTTPS https://openrouter.ai/api/v1")
         prompt = ("Create a Burmese short-form video content plan. Return ONLY valid JSON with keys "
                   "hook, script, scenes. scenes must contain scene_number, purpose, description, dialogue, "
                   "duration_seconds. Target about 180 seconds. Idea: " + idea.strip() +

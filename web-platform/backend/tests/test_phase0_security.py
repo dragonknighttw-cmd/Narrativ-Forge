@@ -29,11 +29,21 @@ def test_login_email_validation_rejects_malformed_address(email):
 
 @pytest.mark.integration
 def test_login_cookie_is_secure_and_samesite_strict(monkeypatch):
+    from app.models import OrganizationMembership, User
+
     class FakeQuery:
+        def __init__(self, model):
+            self.model = model
+
         def filter(self, *_args):
             return self
 
+        def order_by(self, *_args):
+            return self
+
         def first(self):
+            if self.model is OrganizationMembership:
+                return type("MembershipStub", (), {"role": "owner", "organization_id": "test-workspace"})()
             return type(
                 "UserStub",
                 (),
@@ -41,14 +51,15 @@ def test_login_cookie_is_secure_and_samesite_strict(monkeypatch):
             )()
 
     class FakeDB:
-        def query(self, *_args):
-            return FakeQuery()
+        def query(self, model, *_args):
+            return FakeQuery(model)
 
     monkeypatch.setattr(settings, "session_cookie_secure", True)
     monkeypatch.setattr(settings, "session_cookie_name", "nf_session_test")
-    monkeypatch.setattr(auth, "issue_session", lambda email, role: "signed-test-session")
+    monkeypatch.setattr(auth, "issue_session", lambda email, role, organization_id=None: "signed-test-session")
     monkeypatch.setattr(auth, "verify_password", lambda password, password_hash: True)
 
+    original_db_override = app.dependency_overrides.get(get_db)
     app.dependency_overrides[get_db] = lambda: FakeDB()
     try:
         response = create_test_client(app).post(
@@ -56,7 +67,10 @@ def test_login_cookie_is_secure_and_samesite_strict(monkeypatch):
             json={"email": "admin@narrativ.local", "password": "test-password"},
         )
     finally:
-        app.dependency_overrides.pop(get_db, None)
+        if original_db_override is None:
+            app.dependency_overrides.pop(get_db, None)
+        else:
+            app.dependency_overrides[get_db] = original_db_override
 
     assert response.status_code == 200
     cookie = response.headers["set-cookie"]

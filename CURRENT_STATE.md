@@ -384,3 +384,16 @@ This section supersedes earlier historical statements about pending CI runs or t
 - The related workflows are being hardened on PR #22: validate the exact workers.dev hostname and secret length; send the configured allowed Origin; do not follow redirects; record safe error/status codes without saving response bodies; make Worker deployment manual-only, require an explicit confirmation that Render's secret is already synchronized, and use the protected production environment for secret synchronization.
 - The exact same shared secret must be configured in GitHub `production/CLOUDFLARE_WHISPER_SHARED_SECRET`, Cloudflare Worker `NARRATIV_SHARED_SECRET`, and Render API `CLOUDFLARE_WHISPER_SHARED_SECRET`. If the old value is lost, rotate all three together before testing.
 - **Whisper authenticated E2E remains NOT VERIFIED.** Do not run another quota-consuming inference until the coordinated secret setup and manual Worker deployment are complete and the owner approves the test.
+
+
+## 2026-10-09 latest Cloudflare Whisper 403 investigation
+
+- Latest live-evidence job: [run #37907157973, job 113743278697](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37907157973/job/113743278697), commit `adeb425185f163775f03b779553a8e148284f363`.
+- Failure point: the unauthenticated POST received HTTP 403 rather than the Worker contract's HTTP 401. The redacted artifact reports `Content-Type: text/plain`, a Cloudflare `CF-Ray`, and no recognized Worker JSON error. The authenticated request did not run; inference success is false.
+- Read-only Cloudflare API metadata showed the `narrativ-forge-whisper` script exists, workers.dev is enabled, and `ALLOWED_ORIGIN` is configured as the same Netlify origin as repository `wrangler.jsonc`. Latest deployment metadata was dashboard-sourced on 2026-10-09. This does not establish the exact public response path or the secret value.
+- Diagnosis: the observed response is consistent with an edge/access-layer rejection or a public hostname/deployed handler mismatch. It does **not** prove a shared-secret mismatch. Do not rotate secrets or rerun billable inference based on this result alone.
+- Added `.github/workflows/cloudflare-whisper-preflight.yml`: GET-only, unauthenticated, no audio and no Workers AI call. Expected result is the Worker JSON 405 method guard. It records only safe response metadata and a short sanitized preview.
+- Hardened live-evidence diagnostics to record CF-Ray, content type, server, body hash, and sanitized preview; non-JSON Cloudflare 403 now produces an explicit edge/deployment diagnosis.
+- Hardened the manual Worker deploy workflow with a GET-only post-deploy smoke check. It still requires explicit owner confirmation that Render's API secret is already synchronized.
+- Updated `docs/OWNER_ACTION_CHECKLIST.md`, `docs/DEPLOYMENT.md`, and `docs/TROUBLESHOOTING.md` with the latest evidence and ordered recovery path.
+- **Still blocked:** public Worker handler preflight has not yet passed. Do not run authenticated inference until preflight passes and the owner explicitly approves possible Workers AI quota use. Production readiness remains NOT VERIFIED.

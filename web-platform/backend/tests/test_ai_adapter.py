@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.ai_adapter import ContentPlan, MockAIAdapter, OpenAICompatibleAdapter, RoutedAIAdapter, ChatProvider
+from app.services.ai_adapter import ContentPlan, MockAIAdapter, OpenAICompatibleAdapter, RoutedAIAdapter, ChatProvider, _configured_chat_providers
 
 
 pytestmark = pytest.mark.unit
@@ -62,3 +62,43 @@ def test_openai_compatible_adapter_normalizes_json(monkeypatch):
     assert plan.hook == "Hook"
     assert plan.script == "Script"
     assert plan.scenes[0]["duration_seconds"] == 5
+
+
+def test_openrouter_free_only_policy_blocks_paid_model_before_network(monkeypatch):
+    called = False
+
+    def fake_post(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("network must not be called for a paid model")
+
+    monkeypatch.setattr("app.services.ai_adapter.httpx.post", fake_post)
+    provider = ChatProvider("openrouter-1", "key", "https://openrouter.ai/api/v1", "openai/gpt-4o", 1)
+    with pytest.raises(ValueError, match="free-only policy"):
+        OpenAICompatibleAdapter(provider).create_content_plan(idea="test")
+    assert called is False
+
+
+def test_openrouter_configuration_filters_nonfree_models(monkeypatch):
+    from app.services import ai_adapter
+
+    monkeypatch.setattr(ai_adapter.settings, "openrouter_api_key", "test-key")
+    monkeypatch.setattr(ai_adapter.settings, "openrouter_base_url", "https://openrouter.ai/api/v1")
+    monkeypatch.setattr(
+        ai_adapter.settings,
+        "openrouter_models",
+        "cohere/north-mini-code:free,openai/gpt-4o,openrouter/free",
+    )
+    providers = _configured_chat_providers()
+    assert [provider.model for provider in providers] == [
+        "cohere/north-mini-code:free",
+        "openrouter/free",
+    ]
+    assert all(provider.name.startswith("openrouter-") for provider in providers)
+
+
+def test_no_openrouter_key_means_mock_fallback_only(monkeypatch):
+    from app.services import ai_adapter
+
+    monkeypatch.setattr(ai_adapter.settings, "openrouter_api_key", "")
+    assert _configured_chat_providers() == []

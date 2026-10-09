@@ -5,7 +5,7 @@ This is the implementation queue for work that can be completed without producti
 ## Active parallel tracks
 
 ### Track A — Worker / processing
-- Phase 1: [Real Worker Evidence #190](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37963422875) passed on `b231e2d` for worker image, migrations, local storage, Celery readiness and synthetic-media smoke. Fresh [run #191](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669286) is running on main `4dd3d4f`; record its final result before refreshing the status. This remains ephemeral CI evidence, not a persistent live worker.
+- Phase 1: [Real Worker Evidence #191](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669286) passed on main `4dd3d4f` for worker image, migrations, local storage, Celery readiness and synthetic-media smoke. This remains ephemeral CI evidence, not a persistent live worker.
 - Phase 3: retry/DLQ/recovery — unit/integration coverage exists; keep PostgreSQL concurrency tests and failure-recovery drills in the CI gate, and require live/staging evidence before closing production acceptance.
 - Dispatcher: [Kaggle run #12](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37962902195) passed config/database checks but launched no kernel because no due job existed. Do not treat it as worker E2E.
 

@@ -98,7 +98,7 @@ jobs:
           Get-FileHash $zip -Algorithm SHA256 | Format-List | Out-String | Set-Content -Encoding utf8 "$zip.sha256.txt"
           "PACKAGE_ZIP=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "PACKAGE_STAGE=$stage" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-      - name: Install and launch the exact packaged ZIP
+      - name: Install, restart, verify data persistence, and clean up the exact packaged ZIP
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -106,17 +106,41 @@ jobs:
           Remove-Item $install -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path $install | Out-Null
           Expand-Archive -Path $env:PACKAGE_ZIP -DestinationPath $install -Force
-          & (Join-Path $install "Start-NarrativForge.ps1") -Root $install -NoBrowser
-          try {
+          $start = Join-Path $install "Start-NarrativForge.ps1"
+          $stop = Join-Path $install "Stop-NarrativForge.ps1"
+          $marker = Join-Path $install "data/uploads/package-persistence.marker"
+          $checkEndpoints = {
             $health = Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/v1/health" -TimeoutSec 10
             if ($health.status -ne "ok") { throw "API health response is not ok." }
             $ready = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:8000/api/v1/ready" -TimeoutSec 10
             if ($ready.StatusCode -ne 200) { throw "API readiness failed." }
             $login = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:3000/login" -TimeoutSec 10
             if ($login.StatusCode -ne 200) { throw "Frontend login route failed." }
-            Write-Host "PORTABLE_PACKAGE_SMOKE_OK"
+          }
+          try {
+            & $start -Root $install -NoBrowser
+            & $checkEndpoints
+            New-Item -ItemType Directory -Force -Path (Split-Path $marker) | Out-Null
+            "preserve-me" | Set-Content -Encoding ascii $marker
+            $firstManifest = Get-Content (Join-Path $install ".runtime/runtime-manifest.json") -Raw | ConvertFrom-Json
+            & $stop -Root $install
+            Start-Sleep -Seconds 2
+            foreach ($oldPid in @([int]$firstManifest.api_pid, [int]$firstManifest.frontend_pid)) {
+              if (Get-Process -Id $oldPid -ErrorAction SilentlyContinue) {
+                throw "Runtime process $oldPid remained after Stop-NarrativForge.ps1."
+              }
+            }
+            if (-not (Test-Path $marker) -or (Get-Content $marker -Raw).Trim() -ne "preserve-me") {
+              throw "User data did not survive runtime shutdown."
+            }
+            & $start -Root $install -NoBrowser
+            & $checkEndpoints
+            if (-not (Test-Path $marker) -or (Get-Content $marker -Raw).Trim() -ne "preserve-me") {
+              throw "User data did not survive runtime restart."
+            }
+            Write-Host "PORTABLE_PACKAGE_RESTART_AND_PERSISTENCE_OK"
           } finally {
-            & (Join-Path $install "Stop-NarrativForge.ps1") -Root $install
+            & $stop -Root $install
           }
       - name: Collect runtime evidence
         if: always()

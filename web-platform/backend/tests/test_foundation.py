@@ -18,9 +18,22 @@ engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, p
 TestingSession = sessionmaker(bind=engine)
 Base.metadata.create_all(bind=engine)
 with TestingSession() as _seed_db:
-    if not _seed_db.query(User).filter(User.email == "admin@narrativ.local").first():
-        _seed_db.add(User(email="admin@narrativ.local", role="owner", password_hash=hash_password("change-me-123456"), is_active=True))
-        _seed_db.commit()
+    organization = _seed_db.query(Organization).filter(Organization.slug == "test-workspace").first()
+    if not organization:
+        organization = Organization(name="Test Workspace", slug="test-workspace", plan="trial")
+        _seed_db.add(organization)
+        _seed_db.flush()
+    admin = _seed_db.query(User).filter(User.email == "admin@narrativ.local").first()
+    if not admin:
+        admin = User(email="admin@narrativ.local", role="owner", password_hash=hash_password("change-me-123456"), is_active=True)
+        _seed_db.add(admin)
+        _seed_db.flush()
+    if not _seed_db.query(OrganizationMembership).filter(
+        OrganizationMembership.organization_id == organization.id,
+        OrganizationMembership.user_id == admin.id,
+    ).first():
+        _seed_db.add(OrganizationMembership(organization_id=organization.id, user_id=admin.id, role="owner"))
+    _seed_db.commit()
 
 def override_db():
     db = TestingSession()

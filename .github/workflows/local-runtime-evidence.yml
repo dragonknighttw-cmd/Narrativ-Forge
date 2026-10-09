@@ -95,7 +95,7 @@ jobs:
               else:
                   raise SystemExit(f"{path} did not become healthy: {last_error}")
           Path(__import__("os").environ["RUNNER_TEMP"], "local-runtime-evidence", "http-checks.json").write_text(
-              json.dumps(checks, indent=2) + "\\n", encoding="utf-8"
+              json.dumps(checks, indent=2) + "\n", encoding="utf-8"
           )
           print(json.dumps(checks, indent=2))
           PY

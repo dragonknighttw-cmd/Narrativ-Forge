@@ -52,9 +52,24 @@ def test_task_registration_and_config(testing_db):
     celery = make_celery("memory://")
     assert "narrativ.process_real_job" in celery.tasks
     assert "narrativ.dead_letter" in celery.tasks
+    assert "narrativ.dispatch_due_real_jobs" in celery.tasks
+    dispatch_schedule = celery.conf.beat_schedule["dispatch-due-real-jobs"]
+    assert dispatch_schedule["task"] == "narrativ.dispatch_due_real_jobs"
+    assert dispatch_schedule["schedule"] == 15.0
     assert celery.conf.result_backend is None
     assert not celery.conf.task_annotations
     assert celery.conf.task_serializer == "json"
+
+
+def test_periodic_dispatch_task_calls_real_worker_dispatcher(testing_db, monkeypatch):
+    celery = make_celery("memory://")
+    dispatched = []
+    monkeypatch.setattr(real_worker, "run_once", lambda db: dispatched.append(db) or 3)
+
+    result = celery.tasks["narrativ.dispatch_due_real_jobs"].run()
+
+    assert result == 3
+    assert len(dispatched) == 1
 
 
 def test_real_worker_dispatches_queued_jobs_without_running_them(testing_db, monkeypatch):

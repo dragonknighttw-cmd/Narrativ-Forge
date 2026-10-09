@@ -344,3 +344,34 @@ Next: inspect the local-runtime and backup/restore workflow runs; add determinis
 - **Local runtime evidence: VERIFIED for this SHA.** https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888111994.
 - The package is a **portable API/UI bundle**, not a standalone installer or offline desktop application. It requires Python 3.12, Node.js 20, and internet access for first-run dependency installation. It does not include the Celery worker, Redis, FFmpeg/Whisper model, PyICU, or myanmartools; Burmese processing, offline media processing, installer/uninstaller, code signing, and production-provider E2E remain NOT VERIFIED.
 - Ephemeral PostgreSQL backup/restore was verified previously, but no live managed-production restore or credentialed provider E2E is claimed. Production readiness remains gated on provider secrets/environments and external acceptance work.
+
+
+## 2026-10-09 current-head verification checkpoint — `b67d4620038cb9207180a737815fc0a1213ee6ca`
+
+This section supersedes earlier historical statements about pending CI runs or the older repository head. Earlier dated entries are retained as history; use this checkpoint for the current state.
+
+### Verified at current main SHA
+
+- GitHub [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515865): success.
+- GitHub [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515817): success.
+- GitHub [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515813): success.
+- GitHub [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515819): success.
+- Render deployment `dep-db47rg0ae00c739pgs90` is live at this repository SHA. This confirms deploy state, not a fresh HTTP health/readiness probe.
+- The Windows portable package persistence gate succeeded on the immediately preceding main SHA `ee448cb82ccd4b68235c9264ac474019c961a994`. Scope remains API/UI start-stop-restart and local marker persistence; no packaged worker/media runtime.
+
+### Newly merged workflow and operational documentation
+
+- `.github/workflows/cloudflare-whisper-live-evidence.yml` provides a manual-only, explicit-confirmation authenticated request against the deployed Cloudflare Whisper Worker. It has **not been run** as of this checkpoint; no live inference success is claimed.
+- `docs/DEPLOYMENT.md` describes the current deployment checkpoint and the opt-in live test.
+- `docs/OWNER_ACTION_CHECKLIST.md` is the ordered owner runbook for adding GitHub environment secrets, running live Whisper acceptance, provisioning the optional paid worker, and closing remaining release gates.
+- `.github/workflows/worker-evidence.yml` is being improved to upload a redacted manifest and worker/smoke logs with a 14-day retention window. Its result must be confirmed by the PR workflow run before this evidence-collection change is treated as verified.
+
+### Remaining blockers / owner actions
+
+1. Run Cloudflare Whisper live evidence only after setting `CLOUDFLARE_WHISPER_WORKER_URL` and `CLOUDFLARE_WHISPER_SHARED_SECRET` as protected `production` environment secrets and explicitly approving the quota-consuming inference.
+2. Decide whether to approve paid compute for a continuous Render Background Worker. The separate `render.worker.yaml` is a reference blueprint and is not provisioned. Without that service, production asynchronous media processing and live retry/DLQ/failover remain blocked.
+3. Run/inspect fresh backup/restore evidence for the intended release SHA; the existing PostgreSQL 16 test is ephemeral CI evidence, not a production managed-database restore.
+4. Keep the Windows package marked prototype until worker/media dependencies, ICU-dependent Burmese processing, installer lifecycle, upgrades, backup/restore, and full media E2E are covered.
+5. Complete live provider lifecycle, production tenant E2E, OAuth/Drive, SMTP, Stripe, Sentry, security/container scans, performance, accessibility, legal/privacy, and external penetration testing with exact evidence.
+
+**Release status remains NOT Production Ready.** Configuration, source tests, a live API deployment, and synthetic CI fixtures do not independently verify production media processing or external-provider behavior.

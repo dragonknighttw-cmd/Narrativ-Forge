@@ -27,7 +27,8 @@ Do not equate implemented code, passing unit tests, deployed service reachabilit
 - [x] Inspect open PRs #23 and #24 and recent main-branch workflow runs.
 - [x] Record that the current inspected main SHA `1e468adf215c12dcb2314ff7aff948c426f2bfb9` had successful CI, Security, CodeQL, and Repository Gate runs on 2026-10-09.
 - [ ] Re-check main SHA and latest checks immediately before any merge/release decision.
-- [ ] Inspect PR #24 diff, required checks, model allowlist, no-paid-fallback guarantees, tests, and documentation consistency.
+- [x] Inspect PR #24 diff, existing checks, model allowlist, no-paid-fallback guarantees, tests, and documentation consistency.
+- [x] PR #24 follow-up: removed Thinking Machines Inkling/Inkling Small from the direct chat-completions allowlist because they are intended for agentic harnesses; added a regression test and clarified the model audit. Changes are on PR branch through `c32167930007eec1d6cdae395e0a1516cd49b393`; CI/security/repository evidence workflows are running on the preceding test commit `c3ae7fb9de5a300997c500346a14d97d97c4f3cc`.
 - [ ] Inspect PR #23 diff, required checks, safe GET-only preflight, diagnostics redaction, workflow permissions, and documentation consistency.
 - [ ] Resolve PR review/check failures; do not merge solely because the PR is open or its description says tests exist.
 - [ ] After any merge, verify the new exact main SHA and all relevant checks again.

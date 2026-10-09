@@ -7,7 +7,7 @@
 
 ## Authority
 
-This is the **only master execution roadmap**. Supporting documents contain implementation-specific detail. Code existence is not production evidence.
+This is the **only master execution roadmap**. Supporting documents contain implementation-specific detail. Code existence is not production evidence. The detailed item-by-item checklist lives in [`docs/MASTER_REMAINING_WORK.md`](docs/MASTER_REMAINING_WORK.md); keep phase authority and execution priority here.
 
 ## Completed Phases
 

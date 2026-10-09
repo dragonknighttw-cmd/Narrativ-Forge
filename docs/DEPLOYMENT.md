@@ -145,3 +145,14 @@ These three values must match for production token signing/verification:
 The original Worker secret cannot be recovered from the binding list. If lost, generate one new strong value and set it consistently in GitHub `production` and the Render API service, then manually run **Deploy Cloudflare Whisper Worker** with `confirm_render_secret_synced=true` to synchronize the Worker secret from the protected GitHub environment. Do not confirm until Render API is updated. That deploy workflow is manual-only to prevent an ordinary source/workflow push from silently rotating production credentials. Keep `CLOUDFLARE_WHISPER_WORKER_URL` set to `https://narrativ-forge-whisper.narrativ-forge.workers.dev` in both GitHub and Render.
 
 The evidence artifact stores safe status/error codes, provider/model metadata, the synthetic fixture hash, and field-presence checks. It does not save transcript text, the signed token, or secret values. A pass verifies only the synthetic endpoint contract—not Burmese transcription quality, full video processing, production database usage accounting, fallback, subtitle persistence, or release readiness.
+
+
+## AI text generation — free-only OpenRouter
+
+The content-plan route is intentionally configured to use only OpenRouter free model variants. Set OPENROUTER_API_KEY on the Render API service and keep OPENROUTER_BASE_URL=https://openrouter.ai/api/v1. OPENROUTER_MODELS accepts a comma-separated ordered fallback list, but runtime filtering allows only an explicit allowlist of vetted chat-capable IDs from the owner’s list or exactly openrouter/free; arbitrary IDs ending in :free are rejected too. The route does not call Groq or OpenAI even if those keys remain configured. With no OpenRouter key or no allowed models, it uses deterministic Mock AI rather than a paid provider.
+
+Default list: google/gemma-4-31b-it:free,cohere/north-mini-code:free,nvidia/nemotron-3-super-120b-a12b:free,liquid/lfm-2.5-2.6b:free. The dynamic openrouter/free router is allowed only when explicitly configured because it can choose a different free model at runtime.
+
+Free endpoints can be rate-limited or unavailable; failover is only across the explicitly configured free IDs. A :free model endpoint is zero-priced according to OpenRouter's current listing, but provider terms/privacy may permit prompt logging or training. Do not send credentials, secrets, personal data, or confidential production content to trial/free models. Free status and model availability can change, so re-check OpenRouter's official model page before changing the allowlist.
+
+The current production key's validity and runtime behavior are **not verified by code inspection alone**. After the change is merged and OPENROUTER_API_KEY is set in Render, run a controlled health/AI smoke test that records only status, model ID, and success—not the key or prompt contents. Do not add paid model IDs to recover from rate limits.

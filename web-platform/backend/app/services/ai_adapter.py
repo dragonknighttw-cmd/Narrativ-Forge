@@ -4,11 +4,12 @@ import json
 import logging
 from dataclasses import dataclass
 from typing import Any, Protocol
+from urllib.parse import urlparse
 
 import httpx
 
 from ..core.config import settings
-from .provider_fallback import run_with_fallback
+from .provider_fallback import is_retryable_provider_error, run_with_fallback
 from .provider_registry import ProviderRegistry, ProviderSpec
 
 logger = logging.getLogger(__name__)
@@ -82,12 +83,57 @@ def _normalize_plan(value: dict[str, Any], idea: str) -> ContentPlan:
     return ContentPlan(hook=hook, script=script, scenes=scenes)
 
 
+FREE_OPENROUTER_CHAT_MODELS = frozenset({
+    "apodex/apodex-1.1-mini:free",
+    "liquid/lfm-2.5-2.6b:free",
+    "nvidia/nemotron-3.5-lightning:free",
+    "poolside/laguna-s-2.1:free",
+    "cohere/north-mini-code:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "google/gemma-4-31b-it:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    # dots-studio/dots-3-note-preview:free was sunset on 2026-09-30 and is excluded.
+})
+
+
+def _is_free_openrouter_model(model: str) -> bool:
+    """Fail closed to vetted chat-capable IDs from the owner's list."""
+    normalized = model.strip()
+    return normalized == "openrouter/free" or normalized in FREE_OPENROUTER_CHAT_MODELS
+
+
+def _is_safe_openrouter_base_url(base_url: str) -> bool:
+    """Prevent sending the OpenRouter credential to an arbitrary compatible endpoint."""
+    parsed = urlparse(base_url.strip())
+    return (
+        parsed.scheme == "https"
+        and parsed.hostname == "openrouter.ai"
+        and parsed.port in (None, 443)
+        and parsed.path.rstrip("/") == "/api/v1"
+        and not parsed.username
+        and not parsed.password
+        and not parsed.query
+        and not parsed.fragment
+    )
+
+
 class OpenAICompatibleAdapter:
-    """Adapter for OpenAI-compatible chat-completions APIs such as OpenAI and Groq."""
+    """Adapter for OpenAI-compatible chat-completions APIs.
+
+    OpenRouter calls are guarded at the last possible point so a bad environment
+    value cannot silently route traffic to a paid model.
+    """
     def __init__(self, provider: ChatProvider) -> None:
         self.provider = provider
 
     def create_content_plan(self, *, idea: str, category: str | None = None) -> ContentPlan:
+        if self.provider.name.startswith("openrouter"):
+            if not _is_free_openrouter_model(self.provider.model):
+                raise ValueError("OpenRouter free-only policy blocked a non-free model")
+            if not _is_safe_openrouter_base_url(self.provider.base_url):
+                raise ValueError("OpenRouter free-only policy requires HTTPS https://openrouter.ai/api/v1")
         prompt = ("Create a Burmese short-form video content plan. Return ONLY valid JSON with keys "
                   "hook, script, scenes. scenes must contain scene_number, purpose, description, dialogue, "
                   "duration_seconds. Target about 180 seconds. Idea: " + idea.strip() +
@@ -124,8 +170,28 @@ class RoutedAIAdapter:
         operations = [(spec.name, lambda spec=spec: spec.operation(idea=idea, category=category)) for spec in registry.candidates("script")]
         if not operations:
             return self.fallback.create_content_plan(idea=idea, category=category)
+        def should_try_next_free_model(exc: BaseException) -> bool:
+            # Model retirement / unsupported-model responses should not stop the free-only chain.
+            response = getattr(exc, "response", None)
+            status = (
+                getattr(exc, "status_code", None)
+                or getattr(exc, "status", None)
+                or getattr(response, "status_code", None)
+            )
+            if status is not None:
+                try:
+                    if int(status) in {400, 404, 408, 409, 422, 425, 429, 500, 502, 503, 504}:
+                        return True
+                    if int(status) in {401, 403}:
+                        return False
+                except (TypeError, ValueError):
+                    pass
+            return is_retryable_provider_error(exc)
+
         try:
-            value, provider, attempts = run_with_fallback(operations)
+            value, provider, attempts = run_with_fallback(
+                operations, should_fallback=should_try_next_free_model
+            )
             logger.info("AI content plan generated", extra={"provider": provider, "attempts": [a.provider for a in attempts]})
             return value
         except Exception:
@@ -134,11 +200,27 @@ class RoutedAIAdapter:
 
 
 def _configured_chat_providers() -> list[ChatProvider]:
+    """Configure only explicitly free OpenRouter chat models.
+
+    Groq/OpenAI credentials may remain configured for other experiments, but are
+    intentionally never used by this production content-generation route.
+    """
+    if not settings.openrouter_api_key:
+        return []
+
     providers: list[ChatProvider] = []
-    if settings.groq_api_key:
-        providers.append(ChatProvider("groq", settings.groq_api_key, settings.groq_base_url, settings.groq_model, 10))
-    if settings.openai_api_key:
-        providers.append(ChatProvider("openai", settings.openai_api_key, settings.openai_base_url, settings.openai_model, 20))
+    models = [item.strip() for item in settings.openrouter_models.split(",") if item.strip()]
+    for index, model in enumerate(models):
+        if not _is_free_openrouter_model(model):
+            logger.error("Skipping non-free OpenRouter model due to free-only policy", extra={"model": model})
+            continue
+        providers.append(ChatProvider(
+            name=f"openrouter-{index + 1}",
+            api_key=settings.openrouter_api_key,
+            base_url=settings.openrouter_base_url,
+            model=model,
+            priority=index + 1,
+        ))
     return providers
 
 

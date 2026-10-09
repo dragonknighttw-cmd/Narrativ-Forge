@@ -84,6 +84,10 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str = "gpt-4o-mini"
+    # Free-only OpenRouter routing. The runtime rejects model IDs that are not explicitly free.
+    openrouter_api_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_models: str = "google/gemma-4-31b-it:free,cohere/north-mini-code:free,nvidia/nemotron-3-super-120b-a12b:free,liquid/lfm-2.5-2.6b:free"
     ai_provider_timeout_seconds: float = Field(default=45.0, ge=1, le=300)
     provider_quota_warning_threshold: float = Field(default=0.80, ge=0, le=1)
     provider_quota_fallback_threshold: float = Field(default=0.95, ge=0, le=1)

@@ -3,6 +3,12 @@ name: Deploy Cloudflare Whisper Worker
 # Manual-only: updating a production shared secret must be an explicit owner action.
 on:
   workflow_dispatch:
+    inputs:
+      confirm_render_secret_synced:
+        description: "Confirm Render API CLOUDFLARE_WHISPER_SHARED_SECRET already matches the GitHub production secret"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -13,6 +19,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ inputs.confirm_render_secret_synced == true }}
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 10

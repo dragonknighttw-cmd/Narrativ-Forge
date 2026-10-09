@@ -1,5 +1,8 @@
 import pytest
 from types import SimpleNamespace
+import base64
+
+from fastapi import HTTPException
 
 from app.main import app
 from app.models import Organization, OrganizationMembership, Series, User
@@ -108,3 +111,23 @@ def test_authenticated_session_is_bound_to_selected_membership():
         app.dependency_overrides.clear()
         app.dependency_overrides.update(original_overrides)
         client.close()
+
+
+@pytest.mark.unit
+@pytest.mark.security
+def test_session_payload_versions_are_shape_checked():
+    from app.api.dependencies import issue_session, verify_session
+
+    legacy = verify_session(issue_session("legacy@narrativ.local", "viewer"))
+    assert legacy["organization_id"] is None
+    assert legacy["role"] == "viewer"
+
+    workspace = verify_session(issue_session("workspace@narrativ.local", "editor", "workspace-123"))
+    assert workspace["organization_id"] == "workspace-123"
+    assert workspace["role"] == "editor"
+
+    malformed_payload = "v1|workspace@narrativ.local|owner|workspace-123|9999999999|not-a-signature"
+    malformed_token = base64.urlsafe_b64encode(malformed_payload.encode()).decode().rstrip("=")
+    with pytest.raises(HTTPException) as error:
+        verify_session(malformed_token)
+    assert error.value.status_code == 401

@@ -1,12 +1,13 @@
 import pytest
 from types import SimpleNamespace
+from uuid import uuid4
 import base64
 
 from fastapi import HTTPException
 
 from app.main import app
 from app.db import get_db
-from app.models import Organization, OrganizationMembership, Series, User
+from app.models import Episode, Organization, OrganizationMembership, ProcessingJob, Series, User
 from app.services.passwords import hash_password
 from app.api.dependencies import get_current_membership, get_current_user
 from client_utils import create_test_client
@@ -147,3 +148,95 @@ def test_session_payload_versions_are_shape_checked():
     with pytest.raises(HTTPException) as error:
         verify_session(malformed_token)
     assert error.value.status_code == 401
+
+
+
+@pytest.mark.integration
+@pytest.mark.security
+def test_second_tenant_cannot_access_episode_children_or_processing_jobs():
+    suffix = uuid4().hex
+    with TestingSession() as db:
+        org_a = Organization(name="Tenant A", slug=f"tenant-a-resource-{suffix}", plan="trial")
+        org_b = Organization(name="Tenant B", slug=f"tenant-b-resource-{suffix}", plan="trial")
+        db.add_all([org_a, org_b])
+        db.flush()
+
+        user_b = User(
+            email=f"tenant-b-resource-{suffix}@narrativ.local",
+            role="owner",
+            password_hash=hash_password("tenant-b-resource-password-123456"),
+            is_active=True,
+        )
+        db.add(user_b)
+        db.flush()
+        db.add(OrganizationMembership(organization_id=org_b.id, user_id=user_b.id, role="owner"))
+
+        series_a = Series(
+            organization_id=org_a.id,
+            title="Tenant A private series",
+            status="draft",
+        )
+        db.add(series_a)
+        db.flush()
+        episode_a = Episode(
+            organization_id=org_a.id,
+            public_id=f"TST-TENANT-{suffix}",
+            series_id=series_a.id,
+            episode_number=1,
+            title="Tenant A private episode",
+            status="draft",
+        )
+        db.add(episode_a)
+        db.flush()
+        job_a = ProcessingJob(
+            episode_id=episode_a.id,
+            job_type="real_processing",
+            status="queued",
+            progress=0,
+        )
+        db.add(job_a)
+        db.commit()
+
+        user_b_id = user_b.id
+        user_b_email = user_b.email
+        org_b_id = org_b.id
+        series_a_id = series_a.id
+        episode_a_id = episode_a.id
+        job_a_id = job_a.id
+
+    second = create_test_client(app)
+    original_overrides = dict(app.dependency_overrides)
+    app.dependency_overrides[get_current_user] = lambda: {
+        "id": user_b_id,
+        "email": user_b_email,
+        "role": "owner",
+    }
+    app.dependency_overrides[get_current_membership] = lambda: SimpleNamespace(
+        organization_id=org_b_id,
+        user_id=user_b_id,
+        role="owner",
+    )
+    try:
+        # Direct resource reads and writes must not reveal another tenant's IDs.
+        assert second.get(f"/api/v1/series/{series_a_id}").status_code == 404
+        assert second.patch(
+            f"/api/v1/series/{series_a_id}",
+            json={"title": "cross-tenant mutation"},
+        ).status_code == 404
+        assert second.get(f"/api/v1/episodes/{episode_a_id}").status_code == 404
+        assert second.patch(
+            f"/api/v1/episodes/{episode_a_id}",
+            json={"title": "cross-tenant mutation", "expected_row_version": 1},
+        ).status_code == 404
+        assert second.get(f"/api/v1/jobs/{job_a_id}").status_code == 404
+        assert second.post(f"/api/v1/jobs/{job_a_id}/retry").status_code == 404
+
+        # Child collection routes must reject the foreign episode before querying
+        # its scripts, scenes, assets, or subtitles.
+        for suffix_path in ("assets", "scripts", "scenes", "subtitles"):
+            response = second.get(f"/api/v1/episodes/{episode_a_id}/{suffix_path}")
+            assert response.status_code == 404, (suffix_path, response.status_code, response.text)
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(original_overrides)
+        second.close()

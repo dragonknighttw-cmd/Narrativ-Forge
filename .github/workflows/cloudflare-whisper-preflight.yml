@@ -1,0 +1,114 @@
+name: Cloudflare Whisper Preflight
+
+# Non-billable diagnostic: GET only, no credentials, no audio, no Workers AI inference.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-whisper-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Non-billable Worker edge preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Probe Worker handler without authentication or inference
+        env:
+          WORKER_URL: https://narrativ-forge-whisper.narrativ-forge.workers.dev
+          EVIDENCE_PATH: ${{ runner.temp }}/cloudflare-whisper-preflight.json
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          opener = urllib.request.build_opener(NoRedirect)
+          url = os.environ["WORKER_URL"].rstrip("/")
+          config = json.loads(Path("web-platform/cloudflare/whisper-worker/wrangler.jsonc").read_text(encoding="utf-8"))
+          origin = config.get("vars", {}).get("ALLOWED_ORIGIN", "")
+          if not origin.startswith("https://"):
+              raise SystemExit("::error::Repository ALLOWED_ORIGIN must be a valid HTTPS origin.")
+
+          evidence = {
+              "commit_sha": os.environ["GITHUB_SHA"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+              "worker_host": "narrativ-forge-whisper.narrativ-forge.workers.dev",
+              "test_scope": "GET-only unauthenticated handler reachability; no audio and no Workers AI inference",
+              "workers_ai_inference_attempted": False,
+              "production_verified": False,
+          }
+          try:
+              request = urllib.request.Request(url, method="GET", headers={
+                  "Origin": origin,
+                  "Accept": "application/json",
+                  "User-Agent": "Narrativ-Forge-Whisper-Preflight/1.0",
+              })
+              try:
+                  with opener.open(request, timeout=20) as response:
+                      status, headers, body = response.status, response.headers, response.read(2048)
+              except urllib.error.HTTPError as exc:
+                  status, headers, body = exc.code, exc.headers, exc.read(2048)
+
+              content_type = headers.get("Content-Type", "").split(";")[0].lower()
+              try:
+                  payload = json.loads(body)
+              except (json.JSONDecodeError, UnicodeDecodeError):
+                  payload = {}
+              error = payload.get("error") if isinstance(payload, dict) else None
+              preview = body[:512].decode("utf-8", errors="replace")
+              evidence.update({
+                  "http_status": status,
+                  "content_type": content_type,
+                  "server": headers.get("Server", "")[:80] or None,
+                  "cf_ray": headers.get("CF-Ray", "")[:128] or None,
+                  "cf_mitigated": headers.get("cf-mitigated", "")[:80] or None,
+                  "body_sha256": hashlib.sha256(body).hexdigest(),
+                  "safe_body_preview": "".join(ch if ch.isprintable() else " " for ch in preview)[:160] or None,
+                  "worker_error": error if error in {"Method not allowed", "Origin not allowed"} else None,
+                  "handler_reached": status == 405 and error == "Method not allowed",
+              })
+
+              if evidence["handler_reached"]:
+                  print("WHISPER_PREFLIGHT_OK: Worker handler returned its expected JSON method guard; no AI inference was made.")
+              elif status == 403 and content_type != "application/json" and headers.get("CF-Ray"):
+                  raise RuntimeError("Cloudflare edge returned a non-JSON HTTP 403 with CF-Ray before the Worker handler response. Check Cloudflare workers.dev/account access or edge controls and confirm the deployed script/URL. This is not a shared-secret diagnosis. Do not run live inference yet.")
+              elif status == 403 and error == "Origin not allowed":
+                  raise RuntimeError("The deployed Worker rejected ALLOWED_ORIGIN. Compare the deployed binding with web-platform/cloudflare/whisper-worker/wrangler.jsonc, then deploy the intended Worker configuration.")
+              else:
+                  raise RuntimeError(f"Expected Worker JSON HTTP 405 with error='Method not allowed'; got HTTP {status}, content_type={content_type!r}, worker_error={error!r}, cf_ray_present={bool(headers.get('CF-Ray'))}.")
+          except urllib.error.URLError as exc:
+              evidence["network_error_type"] = type(exc).__name__
+              raise RuntimeError(f"Could not reach the canonical Worker URL ({type(exc).__name__}). Check DNS/network and Worker hostname.") from exc
+          finally:
+              Path(os.environ["EVIDENCE_PATH"]).write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload redacted preflight evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-whisper-preflight
+          path: ${{ runner.temp }}/cloudflare-whisper-preflight.json
+          if-no-files-found: warn
+          retention-days: 14

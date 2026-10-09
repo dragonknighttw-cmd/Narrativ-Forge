@@ -35,7 +35,22 @@ jobs:
           sleep 20
           deadline=$((SECONDS + 1380))
           required_workflows=("CI" "Security" "CodeQL")
+
+          # New pushes cancel older runs through workflow concurrency. A gate for a
+          # superseded commit must not turn that expected cancellation into a red
+          # check on the repository's current branch.
+          current_head="$(gh api "repos/${REPOSITORY}/branches/main" --jq '.commit.sha')"
+          if [[ "${current_head}" != "${SHA}" ]]; then
+            echo "Repository Gate: ${SHA} was superseded by main@${current_head}; current-head checks own the result."
+            exit 0
+          fi
+
           while (( SECONDS < deadline )); do
+            current_head="$(gh api "repos/${REPOSITORY}/branches/main" --jq '.commit.sha')"
+            if [[ "${current_head}" != "${SHA}" ]]; then
+              echo "Repository Gate: commit superseded during checks; exiting without misreporting a stale cancellation."
+              exit 0
+            fi
             runs="$(gh api --paginate --slurp "repos/${REPOSITORY}/actions/runs?head_sha=${SHA}&per_page=100" | jq '[.[].workflow_runs[]]')"
 
             missing=0

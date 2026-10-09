@@ -98,7 +98,8 @@ Read in this order:
 4. `UI_DESIGN_SYSTEM.md` — UI rules.
 5. `TOOL.md` — engineering/documentation workflow.
 6. `SECURITY.md` — security policy.
-7. `docs/*` — domain references.
+7. `docs/OPENCODE_FREE_MODELS.md` — OpenCode + OpenRouter free coding model setup and privacy notes.
+8. `docs/*` — domain references.
 
 Canonical domain documents:
 

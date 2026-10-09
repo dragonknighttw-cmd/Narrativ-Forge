@@ -498,6 +498,18 @@ def register_tasks(celery_app):
 
 
 
+    @celery_app.task(name="narrativ.dispatch_due_real_jobs")
+    def dispatch_due_real_jobs_task() -> int:
+        """Dispatch due jobs and recover stale leases from the periodic beat schedule."""
+        # Import at task execution time to avoid the real_worker/tasks import cycle.
+        from .real_worker import run_once
+
+        db = app_db.SessionLocal()
+        try:
+            return run_once(db)
+        finally:
+            db.close()
+
     @celery_app.task(name="narrativ.purge_storage_lifecycle")
     def purge_storage_lifecycle_task():
         db = app_db.SessionLocal()

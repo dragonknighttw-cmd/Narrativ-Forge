@@ -21,6 +21,11 @@ def make_celery(broker_url: Optional[str] = None) -> Celery:
 
     app = Celery("narrativ", broker=broker)
     app.conf.beat_schedule = {
+        # Retry and stale-job recovery depend on the dispatcher polling due jobs.
+        "dispatch-due-real-jobs": {
+            "task": "narrativ.dispatch_due_real_jobs",
+            "schedule": 15.0,
+        },
         "purge-storage-lifecycle": {
             "task": "narrativ.purge_storage_lifecycle",
             "schedule": 21600.0,

@@ -1,21 +1,43 @@
 name: Deploy Cloudflare Whisper Worker
 
+# Manual-only: updating a production shared secret must be an explicit owner action.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "web-platform/cloudflare/whisper-worker/**"
-      - ".github/workflows/cloudflare-whisper.yml"
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-whisper-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: web-platform/cloudflare/whisper-worker
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate deployment credentials without printing values
+        env:
+          CF_API_TOKEN_RAW: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID_RAW: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_WHISPER_SHARED_SECRET_RAW: ${{ secrets.CLOUDFLARE_WHISPER_SHARED_SECRET }}
+        run: |
+          set -euo pipefail
+          test -n "$CF_API_TOKEN_RAW" || { echo "::error::Missing CLOUDFLARE_API_TOKEN (repository or production environment secret)"; exit 1; }
+          test -n "$CF_ACCOUNT_ID_RAW" || { echo "::error::Missing CLOUDFLARE_ACCOUNT_ID (repository or production environment secret)"; exit 1; }
+          test -n "$CF_WHISPER_SHARED_SECRET_RAW" || { echo "::error::Missing production environment secret CLOUDFLARE_WHISPER_SHARED_SECRET"; exit 1; }
+          SECRET_LENGTH="$(printf '%s' "$CF_WHISPER_SHARED_SECRET_RAW" | tr -d '\r\n' | wc -c | tr -d ' ')"
+          if [ "$SECRET_LENGTH" -lt 32 ]; then
+            echo "::error::CLOUDFLARE_WHISPER_SHARED_SECRET must be at least 32 characters. Use the same strong value in GitHub production secrets and the Render API environment."
+            exit 1
+          fi
+          echo "Cloudflare credentials are present and shared-secret length is acceptable; values remain redacted."
 
       - uses: actions/setup-node@v4
         with:
@@ -24,21 +46,24 @@ jobs:
       - name: Install Wrangler
         run: npm install --no-save wrangler@latest typescript
 
-      - name: Deploy Worker
+      - name: Deploy Worker source
         env:
           CF_API_TOKEN_RAW: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID_RAW: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          export CLOUDFLARE_API_TOKEN="$(printf '%s' "$CF_API_TOKEN_RAW" | tr -d '[:space:]')"
-          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CF_ACCOUNT_ID_RAW" | tr -d '[:space:]')"
+          set -euo pipefail
+          export CLOUDFLARE_API_TOKEN="$(printf '%s' "$CF_API_TOKEN_RAW" | tr -d '\r\n')"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CF_ACCOUNT_ID_RAW" | tr -d '\r\n')"
           npx wrangler deploy
 
-      - name: Configure Worker secret
+      - name: Configure the matching Worker secret
         env:
           CF_API_TOKEN_RAW: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID_RAW: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CF_WHISPER_SHARED_SECRET_RAW: ${{ secrets.CLOUDFLARE_WHISPER_SHARED_SECRET }}
         run: |
-          export CLOUDFLARE_API_TOKEN="$(printf '%s' "$CF_API_TOKEN_RAW" | tr -d '[:space:]')"
-          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CF_ACCOUNT_ID_RAW" | tr -d '[:space:]')"
+          set -euo pipefail
+          export CLOUDFLARE_API_TOKEN="$(printf '%s' "$CF_API_TOKEN_RAW" | tr -d '\r\n')"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CF_ACCOUNT_ID_RAW" | tr -d '\r\n')"
           printf '%s' "$CF_WHISPER_SHARED_SECRET_RAW" | tr -d '\r\n' | npx wrangler secret put NARRATIV_SHARED_SECRET
+          echo "Worker secret synchronized from the protected production environment (value redacted)."

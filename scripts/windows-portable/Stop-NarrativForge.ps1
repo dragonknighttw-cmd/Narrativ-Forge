@@ -3,8 +3,8 @@ param([string]$Root = $PSScriptRoot)
 $ErrorActionPreference = "Continue"
 $Root = (Resolve-Path $Root).Path
 $Runtime = Join-Path $Root ".runtime"
-$expectedApiPython = [System.IO.Path]::GetFullPath((Join-Path $Root "backend/.venv/Scripts/python.exe")).Replace("/", "\\")
-$expectedFrontendServer = [System.IO.Path]::GetFullPath((Join-Path $Root "frontend/server.js")).Replace("/", "\\")
+$expectedApiPython = [System.IO.Path]::GetFullPath((Join-Path $Root "backend/.venv/Scripts/python.exe")).Replace("/", [string][char]92)
+$expectedFrontendServer = [System.IO.Path]::GetFullPath((Join-Path $Root "frontend/server.js")).Replace("/", [string][char]92)
 foreach ($name in @("web.pid", "api.pid")) {
     $pidFile = Join-Path $Runtime $name
     if (-not (Test-Path $pidFile)) { continue }
@@ -18,7 +18,7 @@ foreach ($name in @("web.pid", "api.pid")) {
             if ($name -eq "api.pid") {
                 $isExpected = ($proc.Name -ieq "python.exe") -and
                     ($commandLine.IndexOf($expectedApiPython, [StringComparison]::OrdinalIgnoreCase) -ge 0) -and
-                    ($commandLine -match "uvicorn\\s+app\\.main:app")
+                    ($commandLine -match "uvicorn\s+app\.main:app")
             } else {
                 $isExpected = ($proc.Name -ieq "node.exe") -and
                     ($commandLine.IndexOf($expectedFrontendServer, [StringComparison]::OrdinalIgnoreCase) -ge 0)

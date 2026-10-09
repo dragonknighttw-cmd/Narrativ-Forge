@@ -290,3 +290,12 @@ Evidence status:
 3. Add explicit local-runtime configuration and a Windows package build/install/smoke workflow, keeping the desktop framework decision evidence-driven.
 4. Add opt-in credentialed cloud/provider E2E with GitHub Environments, least-privilege secrets, redacted logs, and guaranteed cleanup.
 5. Complete live gates separately: continuous worker, provider lifecycle, auth/cross-tenant, backup/restore, billing/email/Drive/Sentry, security, accessibility, legal, and penetration testing.
+
+
+## Local runtime verification increment (2026-10-09)
+
+- Added `.github/workflows/local-runtime-evidence.yml` for a fresh SQLite/local-storage API smoke: migrate, start FastAPI, check health/readiness, verify DB and local storage, upload logs and JSON evidence, and stop the API during cleanup.
+- Added `docs/LOCAL_RUNTIME.md` describing what the current local API gate proves and what remains required for a Windows package and offline media worker.
+- This workflow has not yet been confirmed green in GitHub Actions. Status: IMPLEMENTED / VERIFY. It does not prove a Windows installer or production providers.
+
+Next: inspect the local-runtime and backup/restore workflow runs; add deterministic local worker/media smoke; prototype Windows sidecar lifecycle; then build and test install/launch/E2E/cleanup. Credentialed cloud E2E and production acceptance remain separate gates.

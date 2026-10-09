@@ -1,0 +1,141 @@
+name: Windows Local Runtime Evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "web-platform/backend/**"
+      - ".github/workflows/windows-local-runtime-evidence.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "web-platform/backend/**"
+      - ".github/workflows/windows-local-runtime-evidence.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-local-runtime-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-local-runtime:
+    name: Windows API + SQLite smoke
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: web-platform/backend
+    env:
+      APP_ENV: development
+      DATABASE_URL: sqlite:///C:/narrativ-local-runtime/narrativ_forge.db
+      SESSION_SECRET: windows-local-runtime-evidence-secret-at-least-32-characters
+      STORAGE_PROVIDER: local
+      UPLOAD_DIR: C:/narrativ-local-runtime/uploads
+      CORS_ORIGINS: http://localhost:3000
+      TRUSTED_HOSTS: localhost,127.0.0.1
+    steps:
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: web-platform/backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Prepare evidence and local directories
+        run: |
+          New-Item -ItemType Directory -Force -Path "C:/narrativ-local-runtime", "$env:RUNNER_TEMP/windows-local-runtime-evidence" | Out-Null
+
+      - name: Apply migrations to fresh SQLite database
+        run: |
+          python -m alembic upgrade head
+          python -m alembic current | Tee-Object -FilePath "$env:RUNNER_TEMP/windows-local-runtime-evidence/alembic-current.txt"
+          if (-not (Test-Path "$env:RUNNER_TEMP/windows-local-runtime-evidence/alembic-current.txt")) { throw "Alembic evidence missing" }
+
+      - name: Start API and verify readiness
+        run: |
+          $evidence = "$env:RUNNER_TEMP/windows-local-runtime-evidence"
+          $process = Start-Process -FilePath "python" -ArgumentList @("-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000") -WorkingDirectory (Get-Location).Path -RedirectStandardOutput "$evidence/api.stdout.log" -RedirectStandardError "$evidence/api.stderr.log" -PassThru
+          Set-Content -Path "$evidence/api.pid" -Value $process.Id
+          $checks = @{}
+          foreach ($path in @("/api/v1/health", "/api/v1/ready")) {
+            $ok = $false
+            for ($i = 0; $i -lt 45; $i++) {
+              try {
+                $response = Invoke-RestMethod -Uri "http://127.0.0.1:8000$path" -TimeoutSec 3
+                $checks[$path] = $response
+                if ($path.EndsWith("/health") -and $response.status -ne "ok") { throw "Unexpected health status" }
+                if ($path.EndsWith("/ready") -and $response.status -ne "ready") { throw "Unexpected readiness status" }
+                $ok = $true
+                break
+              } catch {
+                Start-Sleep -Seconds 1
+              }
+            }
+            if (-not $ok) { throw "API endpoint failed readiness check: $path" }
+          }
+          $checks | ConvertTo-Json -Depth 8 | Set-Content -Encoding utf8 "$evidence/http-checks.json"
+          $checks | ConvertTo-Json -Depth 8
+
+      - name: Verify local SQLite and filesystem storage
+        run: |
+          if (-not $env:DATABASE_URL.StartsWith("sqlite:")) { throw "Local runtime must use SQLite" }
+          if ($env:STORAGE_PROVIDER -ne "local") { throw "Local storage provider is not selected" }
+          $marker = Join-Path $env:UPLOAD_DIR ".local-runtime-write-check"
+          Set-Content -Path $marker -Value "local-storage-write-ok" -NoNewline
+          if ((Get-Content -Raw $marker) -ne "local-storage-write-ok") { throw "Storage write/read failed" }
+          python -c "from sqlalchemy import create_engine, text; import os; e=create_engine(os.environ['DATABASE_URL']); c=e.connect(); c.execute(text('SELECT 1')); c.close(); e.dispose(); print('SQLite connection: PASS')"
+
+      - name: Write verification manifest
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          GIT_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          $out = "$env:RUNNER_TEMP/windows-local-runtime-evidence"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $manifest = @{
+            gate = "windows-local-runtime-smoke"
+            status = $env:JOB_STATUS
+            commit_sha = $env:GIT_SHA
+            workflow_run_id = $env:RUN_ID
+            workflow_run_attempt = $env:RUN_ATTEMPT
+            trigger = $env:EVENT_NAME
+            environment = "ephemeral-github-actions-windows"
+            runtime = @{ api = "FastAPI/Uvicorn"; database = "SQLite"; storage = "local" }
+            checks = @("alembic-upgrade", "health-endpoint", "readiness-database", "local-storage-write")
+            package_installed = $false
+            production_verified = $false
+            timestamp_utc = [DateTime]::UtcNow.ToString("o")
+          }
+          $manifest | ConvertTo-Json -Depth 8 | Set-Content -Encoding utf8 "$out/manifest.json"
+
+      - name: Stop API process
+        if: always()
+        run: |
+          $pidFile = "$env:RUNNER_TEMP/windows-local-runtime-evidence/api.pid"
+          if (Test-Path $pidFile) {
+            $apiPid = [int](Get-Content -Raw $pidFile)
+            Stop-Process -Id $apiPid -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Upload Windows local runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-local-runtime-evidence
+          path: ${{ runner.temp }}/windows-local-runtime-evidence/
+          if-no-files-found: warn

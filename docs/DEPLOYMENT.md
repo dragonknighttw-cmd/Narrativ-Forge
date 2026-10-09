@@ -117,3 +117,16 @@ Exact worker setup:
 - Keep HTTP routing limited to the web process group.
 
 Fly charges provisioned compute by usage; this is not a free-only assumption. citeturn1search7
+
+ 
+## Opt-in Cloudflare Whisper live acceptance
+
+The manual workflow .github/workflows/cloudflare-whisper-live-evidence.yml verifies the deployed Worker's signed-token contract with one synthetic two-second WAV. It first proves an unauthenticated request is rejected, then signs a short-lived episode token and checks that the live inference response includes provider, episode identity, transcript, and VTT fields.
+
+To run it, configure the protected GitHub production environment with:
+- CLOUDFLARE_WHISPER_WORKER_URL
+- CLOUDFLARE_WHISPER_SHARED_SECRET
+
+Then manually dispatch **Cloudflare Whisper Live Evidence** and explicitly set confirm_live_inference=true. The default is false so pushes and ordinary CI never trigger provider inference. This test consumes Workers AI quota and must be run only with approval.
+
+The evidence artifact records the tested SHA, response status, provider/model metadata, synthetic fixture hash, and field-presence checks. It deliberately does not save transcript text, the signed token, or the shared secret. A passing request verifies only this endpoint contract for a tiny synthetic sample; it does not verify Burmese transcription quality, full video processing, usage accounting in production PostgreSQL, fallback behavior, subtitle persistence, or production readiness.

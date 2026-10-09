@@ -1,0 +1,141 @@
+name: Cloudflare Whisper Live Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_live_inference:
+        description: "Confirm one small real Cloudflare Workers AI inference request (may consume quota)"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-whisper-live-evidence
+  cancel-in-progress: false
+
+jobs:
+  live-authenticated-audio:
+    if: ${{ inputs.confirm_live_inference == true }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Validate opt-in credentials without printing values
+        env:
+          WORKER_URL: ${{ secrets.CLOUDFLARE_WHISPER_WORKER_URL }}
+          SHARED_SECRET: ${{ secrets.CLOUDFLARE_WHISPER_SHARED_SECRET }}
+        run: |
+          test -n "$WORKER_URL" || { echo "::error::Missing CLOUDFLARE_WHISPER_WORKER_URL"; exit 1; }
+          test -n "$SHARED_SECRET" || { echo "::error::Missing CLOUDFLARE_WHISPER_SHARED_SECRET"; exit 1; }
+          case "$WORKER_URL" in https://*) ;; *) echo "::error::Worker URL must use HTTPS"; exit 1;; esac
+          echo "Opt-in live test credentials are configured (values redacted)."
+      - name: Generate a two-second synthetic WAV fixture
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          ffmpeg -hide_banner -loglevel error -f lavfi -i "sine=frequency=440:sample_rate=16000:duration=2" -ac 1 -c:a pcm_s16le -y "$RUNNER_TEMP/whisper-live-fixture.wav"
+          test -s "$RUNNER_TEMP/whisper-live-fixture.wav"
+      - name: Verify unauthenticated rejection and authenticated audio inference
+        env:
+          WORKER_URL: ${{ secrets.CLOUDFLARE_WHISPER_WORKER_URL }}
+          SHARED_SECRET: ${{ secrets.CLOUDFLARE_WHISPER_SHARED_SECRET }}
+          AUDIO_PATH: ${{ runner.temp }}/whisper-live-fixture.wav
+          EVIDENCE_PATH: ${{ runner.temp }}/cloudflare-whisper-live-evidence.json
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          import hmac
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+          from datetime import datetime, timezone
+          from uuid import uuid4
+
+          url = os.environ["WORKER_URL"].rstrip("/")
+          secret = os.environ["SHARED_SECRET"]
+          episode_id = "live-evidence-" + uuid4().hex
+          audio = Path(os.environ["AUDIO_PATH"]).read_bytes()
+          evidence = {
+              "commit_sha": os.environ["GITHUB_SHA"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+              "production_verified": False,
+              "test_scope": "one synthetic 2-second WAV; authenticated Cloudflare Whisper endpoint contract",
+              "fixture_sha256": hashlib.sha256(audio).hexdigest(),
+              "unauthenticated_rejected": False,
+              "authenticated_inference_succeeded": False,
+              "transcript_text_saved": False,
+          }
+          try:
+              req = urllib.request.Request(url, data=audio, method="POST", headers={"Content-Type": "audio/wav", "X-Narrativ-Episode": episode_id})
+              try:
+                  with urllib.request.urlopen(req, timeout=90) as response:
+                      evidence["unauthenticated_status"] = response.status
+              except urllib.error.HTTPError as exc:
+                  evidence["unauthenticated_status"] = exc.code
+              if evidence["unauthenticated_status"] != 401:
+                  raise RuntimeError("Worker did not reject a request without a signed token.")
+              evidence["unauthenticated_rejected"] = True
+
+              payload = {
+                  "sub": "narrativ-live-evidence",
+                  "episode_id": episode_id,
+                  "exp": int(time.time()) + 180,
+                  "jti": str(uuid4()),
+                  "max_audio_seconds": 3,
+              }
+              encoded = base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode()).decode().rstrip("=")
+              signature = hmac.new(secret.encode(), encoded.encode(), hashlib.sha256).digest()
+              token = encoded + "." + base64.urlsafe_b64encode(signature).decode().rstrip("=")
+              req = urllib.request.Request(url, data=audio, method="POST", headers={
+                  "Authorization": "Bearer " + token,
+                  "Content-Type": "audio/wav",
+                  "X-Narrativ-Episode": episode_id,
+              })
+              try:
+                  with urllib.request.urlopen(req, timeout=90) as response:
+                      status = response.status
+                      result = json.loads(response.read())
+              except urllib.error.HTTPError as exc:
+                  evidence["authenticated_status"] = exc.code
+                  raise RuntimeError(f"Authenticated inference returned HTTP {exc.code}.") from None
+              evidence["authenticated_status"] = status
+              if status != 200:
+                  raise RuntimeError(f"Authenticated inference returned HTTP {status}.")
+              if result.get("provider") != "cloudflare_workers_ai" or result.get("episode_id") != episode_id:
+                  raise RuntimeError("Provider or episode identity in response did not match the request.")
+              if not isinstance(result.get("text"), str) or not isinstance(result.get("vtt"), str):
+                  raise RuntimeError("Response omitted expected transcript/VTT string fields.")
+              evidence.update({
+                  "authenticated_inference_succeeded": True,
+                  "provider": result.get("provider"),
+                  "model": result.get("model"),
+                  "response_episode_matches": True,
+                  "transcript_field_present": "text" in result,
+                  "vtt_field_present": "vtt" in result,
+                  "word_count": result.get("word_count") if isinstance(result.get("word_count"), int) else None,
+              })
+              print("CLOUDFLARE_WHISPER_LIVE_EVIDENCE_OK")
+          finally:
+              Path(os.environ["EVIDENCE_PATH"]).write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
+          PY
+      - name: Upload redacted live evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-whisper-live-evidence
+          path: ${{ runner.temp }}/cloudflare-whisper-live-evidence.json
+          if-no-files-found: warn

@@ -9,7 +9,7 @@ import secrets
 import pytest
 
 from app.api.routes import auth
-from app.models import MagicLinkToken, User
+from app.models import MagicLinkToken, Organization, OrganizationMembership, User
 from app.db import get_db
 from app.main import app
 from client_utils import create_test_client
@@ -23,9 +23,13 @@ def test_magic_link_unknown_user_does_not_enumerate(db_session):
 
 def test_magic_link_consumes_once(monkeypatch, db_session):
     raw = secrets.token_urlsafe(24)
+    organization = Organization(name="Magic Link Workspace", slug="magic-link-workspace", plan="trial")
+    db_session.add(organization)
+    db_session.flush()
     user = User(email="magic@example.com", password_hash="x", role="editor", is_active=True)
     db_session.add(user)
     db_session.flush()
+    db_session.add(OrganizationMembership(organization_id=organization.id, user_id=user.id, role="editor"))
     db_session.add(MagicLinkToken(
         email=user.email,
         token_hash=hashlib.sha256(raw.encode()).hexdigest(),

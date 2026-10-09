@@ -128,3 +128,18 @@ def test_router_tries_next_free_model_when_endpoint_is_unavailable(monkeypatch):
     plan = RoutedAIAdapter(providers).create_content_plan(idea="test")
     assert plan.script == "script"
     assert calls == ["openrouter-1", "openrouter-2"]
+
+
+def test_openrouter_free_suffix_alone_is_not_enough(monkeypatch):
+    called = False
+
+    def fake_post(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("network must not be called for an unapproved model ID")
+
+    monkeypatch.setattr("app.services.ai_adapter.httpx.post", fake_post)
+    provider = ChatProvider("openrouter-1", "key", "https://openrouter.ai/api/v1", "unknown/unapproved:free", 1)
+    with pytest.raises(ValueError, match="free-only policy"):
+        OpenAICompatibleAdapter(provider).create_content_plan(idea="test")
+    assert called is False

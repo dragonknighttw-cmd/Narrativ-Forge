@@ -58,8 +58,6 @@ jobs:
           allowed_origin = config.get("vars", {}).get("ALLOWED_ORIGIN", "")
           if not allowed_origin.startswith("https://"):
               raise SystemExit("::error::ALLOWED_ORIGIN must be an HTTPS origin in wrangler.jsonc.")
-          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
-              env_file.write("ALLOWED_ORIGIN=" + allowed_origin + "\n")
           print("Worker host, HTTPS URL, and secret presence/length checks passed; values remain redacted.")
           PY
 
@@ -74,7 +72,6 @@ jobs:
         env:
           WORKER_URL: ${{ secrets.CLOUDFLARE_WHISPER_WORKER_URL }}
           SHARED_SECRET: ${{ secrets.CLOUDFLARE_WHISPER_SHARED_SECRET }}
-          ALLOWED_ORIGIN: ${{ env.ALLOWED_ORIGIN }}
           AUDIO_PATH: ${{ runner.temp }}/whisper-live-fixture.wav
           EVIDENCE_PATH: ${{ runner.temp }}/cloudflare-whisper-live-evidence.json
           GITHUB_SHA: ${{ github.sha }}
@@ -129,7 +126,8 @@ jobs:
           url = os.environ["WORKER_URL"].rstrip("/")
           parsed_url = urlsplit(url)
           secret = os.environ["SHARED_SECRET"]
-          allowed_origin = os.environ["ALLOWED_ORIGIN"]
+          config = json.loads(Path("web-platform/cloudflare/whisper-worker/wrangler.jsonc").read_text(encoding="utf-8"))
+          allowed_origin = config["vars"]["ALLOWED_ORIGIN"]
           episode_id = "live-evidence-" + uuid4().hex
           audio = Path(os.environ["AUDIO_PATH"]).read_bytes()
           evidence = {

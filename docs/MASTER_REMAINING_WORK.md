@@ -1,9 +1,18 @@
 # Narrativ Forge — Detailed Remaining Work Checklist
 
 > Companion checklist to `ROADMAP.md`; `ROADMAP.md` remains the sole master execution roadmap.
-> Last reconciled: 2026-10-09
+> Last reconciled: 2026-10-09 (UTC; reconciled after PR #26 merge)
 > Rule: never mark an item VERIFIED without evidence tied to the exact commit, environment, and run.
 > Current release status: **PENDING — NOT PRODUCTION READY**.
+
+## Latest evidence snapshot — 2026-10-09 UTC
+
+- Main SHA `4dd3d4f0b761858c83047263a310dfa5429ab48b` (PR #26 merged) now has fresh passing checks: [CI #1217](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669315), [Security #982](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669353), [CodeQL #589](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669249), [Repository Gate #241](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669199), [Backup Restore Evidence #8](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669190), [Real Worker Evidence #191](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669286), [Local Runtime Evidence #33](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669461), [Windows Local Runtime #30](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669304), and [Windows Portable Package #31](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669256) all completed successfully.
+- PR #26 merged as `4dd3d4f0b761858c83047263a310dfa5429ab48b`: SQLite restore now stages the backup and only replaces the target after `PRAGMA integrity_check` returns exactly `("ok",)`; regression tests preserve the existing target on failure. This is code/CI evidence, not a managed production database restore drill.
+- On parent SHA `b231e2d7c2cf5b2114edcf4d9ecd2a59e509f7f0`, [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37961092861), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37961092885), [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37961092877), and [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37961092923) passed.
+- [Real Worker Evidence #190](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37963422875) passed in ephemeral CI (worker image, migration, local storage and synthetic media smoke). This does not establish a persistent production worker or live provider acceptance.
+- [Cloudflare Whisper Preflight #2](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37964550063) passed as a non-inference preflight; authenticated real-audio transcription, VTT correctness, fallback and persistence remain open.
+- [Kaggle Dispatcher #12](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37962902195) passed configuration/database checks but found no due `real_processing` jobs and did not launch a Kaggle session. Do not count this as Kaggle worker E2E.
 
 ## How to use this checklist
 
@@ -38,11 +47,11 @@ Do not equate implemented code, passing unit tests, deployed service reachabilit
 - [x] Verify main SHA `4ec6a36adb1014f116f51aaa9dedd546132a7a30` after PR #23 merge and the checklist update: [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37948941340), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37948941603), [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37948941526), and [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37948941277) all completed successfully. Any later commit requires fresh checks.
 
 ### 1.2 Worker and media pipeline
-- [ ] Kaggle dispatcher run [#37958580462](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37958580462) failed at configuration validation because the workflow received an empty `KAGGLE_KERNEL_ID` while the database URL and Kaggle token were present. PR for multi-file fix: accept repository variable or secret, validate ID format without printing values, fail closed on unknown Kaggle status, add regression tests and operator triage. Re-run only after checks pass and owner confirms queued-work/quota risk.
+- [x] Follow-up [Kaggle Dispatcher #12](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37962902195) on `b231e2d` passed configuration and database checks; it found no due `real_processing` jobs, so it intentionally did not launch Kaggle. Dispatcher code/config checks are verified; actual Kaggle execution and completed media processing are not.
 - [ ] Audit `web-platform/backend/Dockerfile.worker`, Celery registration, Redis queue, PostgreSQL state, FFmpeg/Whisper availability, retry policy, DLQ, late ACK, duplicate dispatch, stale-job recovery, and shutdown behavior.
-- [ ] Inspect the latest Worker Evidence workflow failure logs and fix reproducible code/CI failures.
-- [ ] Pass worker Docker build and Alembic migration step in CI.
-- [ ] Pass PostgreSQL/Redis integration tests and task registration tests.
+- [x] [Real Worker Evidence #190](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37963422875) passed on `b231e2d`: worker image build, migrations, local storage permissions, Celery readiness, and synthetic media smoke succeeded in an isolated CI environment.
+- [x] Worker Docker build and Alembic migration CI step passed in that run; refresh evidence after every later worker/runtime code change.
+- [x] PostgreSQL/Redis-backed integration and worker smoke checks passed in isolated CI; persistent production worker, external storage, and representative user-media acceptance remain open.
 - [ ] Verify representative media: upload → enqueue → worker → FFmpeg → Whisper → subtitles/VTT → DB/storage → UI.
 - [ ] Run retry, DLQ, duplicate-dispatch, worker-loss, timeout, and recovery drills.
 - [ ] Provision a continuously running worker runtime only after the owner explicitly approves any cost; current Render Free web service is not a background worker.
@@ -58,9 +67,9 @@ Do not equate implemented code, passing unit tests, deployed service reachabilit
 - [ ] Recheck current model availability, chat capability, free status, terms, quota, and sunset notices before describing a model as usable.
 
 ### 1.4 Cloudflare Whisper 403
-- [ ] Inspect the PR #23 changes and workflow checks.
-- [ ] Use only a non-billable unauthenticated GET preflight to classify the edge/deployment/access-layer response.
-- [ ] Confirm the expected Worker method-guard JSON response; record status, content type, CF-Ray, body hash, and sanitized preview.
+- [x] PR #23 changes and workflow checks were reviewed and merged.
+- [x] [Cloudflare Whisper Preflight #2](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37964550063) passed on `b231e2d` as a non-inference GET/method-guard check.
+- [x] Preflight evidence exists; it proves only the method-guard/deployment contract, not authenticated audio transcription, subtitle persistence, fallback or quota accounting.
 - [ ] Do not send audio, invoke Workers AI, change production secrets, or deploy a Worker without explicit approval.
 - [ ] After approved deployment/configuration, test authenticated real-audio transcription, VTT correctness, usage idempotency, fallback, and persistence.
 
@@ -252,12 +261,12 @@ Before Manual Mode can be called production-ready, collect:
 
 ## 12. One-at-a-time execution order
 
-1. Establish current repository/PR/check baseline and keep this checklist synchronized.
-2. Audit and finish PR #24 (OpenRouter Free-only) without merging until evidence is sufficient.
-3. Audit and finish PR #23 (Cloudflare Whisper 403) without triggering paid inference or production changes.
-4. Fix any reproducible CI/worker-evidence failures against the current exact SHA.
-5. Continue cloud-only code gaps and automated evidence.
-6. Identify owner/external blockers and request a decision only when needed.
-7. Complete live release gates in dependency order and record evidence.
-8. Perform final release audit.
+1. Establish current repository/PR/check baseline and keep this checklist synchronized; PRs #23, #24, #26, and #27 are already merged.
+2. Wait for and inspect every fresh workflow on main SHA `4dd3d4f0b761858c83047263a310dfa5429ab48b`; fix any reproducible failures and rerun affected checks.
+3. Refresh this evidence ledger and the current-state/roadmap docs with exact run URLs and scope limitations.
+4. Continue cloud-only code gaps and automated evidence in parallel where tasks are independent (tests, security/dependency scans, runtime smoke, docs/evidence).
+5. Complete non-billable provider checks first; keep authenticated inference, paid compute, production deployment, and quota-consuming tests gated by explicit owner approval.
+6. Complete live release gates in dependency order and record exact environment, SHA, run/deploy ID, result, artifact and timestamp.
+7. Identify owner/external blockers only when code-side work and safe automation are exhausted.
+8. Perform final release audit; production remains blocked until all applicable gates have fresh evidence and approvals.
 9. **Only after cloud-side work is exhausted and verified, begin Windows Local setup.**

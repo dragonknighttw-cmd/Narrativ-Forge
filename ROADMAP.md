@@ -2,7 +2,7 @@
 
 > Owner: Project maintainers  
 > Update when: requirements, phase status, gates, or release criteria change  
-> Last Updated: 2026-10-08  
+> Last Updated: 2026-10-09  
 > Do NOT put here: provider secrets, detailed runbook commands, or unsupported live-health claims
 
 ## Authority
@@ -28,7 +28,7 @@ This is the **only master execution roadmap**. Supporting documents contain impl
 
 ## Active Phase
 
-**Verification and evidence.**
+**Verification and evidence.** Main SHA `4dd3d4f0b761858c83047263a310dfa5429ab48b` includes merged PR #26 (SQLite restore integrity guard). Fresh main CI, Security, CodeQL, Repository Gate, backup/restore, worker and Windows/runtime evidence workflows are running; see [`docs/MASTER_REMAINING_WORK.md`](docs/MASTER_REMAINING_WORK.md) for run links and do not mark them passed until conclusions are recorded.
 
 ### Verified at the 2026-10-08 checkpoint
 

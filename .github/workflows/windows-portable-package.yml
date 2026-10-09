@@ -1,0 +1,150 @@
+name: Windows Portable Package Evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "web-platform/frontend/**"
+      - "web-platform/backend/**"
+      - "scripts/windows-portable/**"
+      - "docs/WINDOWS_PORTABLE_PACKAGE.md"
+      - ".github/workflows/windows-portable-package.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "web-platform/frontend/**"
+      - "web-platform/backend/**"
+      - "scripts/windows-portable/**"
+      - "docs/WINDOWS_PORTABLE_PACKAGE.md"
+      - ".github/workflows/windows-portable-package.yml"
+
+concurrency:
+  group: windows-portable-package-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  package-and-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Build standalone frontend
+        working-directory: web-platform/frontend
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000/api/v1
+        run: |
+          npm ci
+          npm run typecheck
+          npm run build
+      - name: Assemble portable runtime bundle
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $stage = Join-Path $env:RUNNER_TEMP "narrativ-forge-portable"
+          Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item "web-platform/backend" (Join-Path $stage "backend") -Recurse
+          Remove-Item (Join-Path $stage "backend/tests") -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item (Join-Path $stage "backend/.env") -Force -ErrorAction SilentlyContinue
+          Remove-Item (Join-Path $stage "backend/.venv") -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item (Join-Path $stage "backend/storage") -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item (Join-Path $stage "backend/narrativ_forge.db") -Force -ErrorAction SilentlyContinue
+          Get-ChildItem (Join-Path $stage "backend") -Directory -Recurse -Filter "__pycache__" | Remove-Item -Recurse -Force
+          $requirements = Get-Content (Join-Path $stage "backend/requirements.txt") |
+            Where-Object { $_.Trim() -and $_ -notmatch '^\s*#' -and $_ -notmatch '^(?i:PyICU|myanmartools)([<>=!~].*)?$' }
+          $requirements | Set-Content -Encoding utf8 (Join-Path $stage "backend/requirements-windows-portable.txt")
+          $frontend = Join-Path $stage "frontend"
+          New-Item -ItemType Directory -Force -Path $frontend | Out-Null
+          Copy-Item "web-platform/frontend/.next/standalone/*" $frontend -Recurse -Force
+          New-Item -ItemType Directory -Force -Path (Join-Path $frontend ".next/static") | Out-Null
+          Copy-Item "web-platform/frontend/.next/static/*" (Join-Path $frontend ".next/static") -Recurse -Force
+          if (Test-Path "web-platform/frontend/public") { Copy-Item "web-platform/frontend/public" $frontend -Recurse -Force }
+          Copy-Item "scripts/windows-portable/Start-NarrativForge.ps1" $stage
+          Copy-Item "scripts/windows-portable/Stop-NarrativForge.ps1" $stage
+          Copy-Item "docs/WINDOWS_PORTABLE_PACKAGE.md" (Join-Path $stage "PACKAGE-README.md")
+          $manifest = [ordered]@{
+            repository = $env:GITHUB_REPOSITORY
+            commit_sha = $env:GITHUB_SHA
+            workflow_run_id = $env:GITHUB_RUN_ID
+            created_at_utc = (Get-Date).ToUniversalTime().ToString("o")
+            package_type = "windows-portable-api-ui-bundle"
+            production_verified = $false
+            requires_python = "3.12"
+            requires_node = "20"
+            uses_sqlite = $true
+            local_filesystem_storage = $true
+            worker_included = $false
+            ffmpeg_whisper_included = $false
+            icu_dependent_burmese_processing_tested = $false
+            internet_required_for_first_dependency_install = $true
+          }
+          $manifest | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $stage "package-manifest.json")
+          $zip = Join-Path $env:RUNNER_TEMP "NarrativForge-Windows-Portable-$env:GITHUB_SHA.zip"
+          Remove-Item $zip -Force -ErrorAction SilentlyContinue
+          Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $zip -CompressionLevel Optimal
+          Get-FileHash $zip -Algorithm SHA256 | Format-List | Out-String | Set-Content -Encoding utf8 "$zip.sha256.txt"
+          "PACKAGE_ZIP=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "PACKAGE_STAGE=$stage" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Install and launch the exact packaged ZIP
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $install = Join-Path $env:RUNNER_TEMP "narrativ-forge-installed"
+          Remove-Item $install -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $install | Out-Null
+          Expand-Archive -Path $env:PACKAGE_ZIP -DestinationPath $install -Force
+          & (Join-Path $install "Start-NarrativForge.ps1") -Root $install -NoBrowser
+          try {
+            $health = Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/v1/health" -TimeoutSec 10
+            if ($health.status -ne "ok") { throw "API health response is not ok." }
+            $ready = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:8000/api/v1/ready" -TimeoutSec 10
+            if ($ready.StatusCode -ne 200) { throw "API readiness failed." }
+            $login = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:3000/login" -TimeoutSec 10
+            if ($login.StatusCode -ne 200) { throw "Frontend login route failed." }
+            Write-Host "PORTABLE_PACKAGE_SMOKE_OK"
+          } finally {
+            & (Join-Path $install "Stop-NarrativForge.ps1") -Root $install
+          }
+      - name: Collect runtime evidence
+        if: always()
+        shell: pwsh
+        run: |
+          $evidence = Join-Path $env:RUNNER_TEMP "narrativ-forge-package-evidence"
+          New-Item -ItemType Directory -Force -Path $evidence | Out-Null
+          if ($env:PACKAGE_ZIP -and (Test-Path $env:PACKAGE_ZIP)) {
+            Copy-Item $env:PACKAGE_ZIP $evidence
+            Copy-Item "$env:PACKAGE_ZIP.sha256.txt" $evidence
+          }
+          if ($env:PACKAGE_STAGE -and (Test-Path (Join-Path $env:PACKAGE_STAGE ".runtime"))) {
+            Copy-Item (Join-Path $env:PACKAGE_STAGE ".runtime") (Join-Path $evidence "runtime-logs") -Recurse -Force
+          }
+          $summary = [ordered]@{
+            commit_sha = $env:GITHUB_SHA
+            workflow_run_id = $env:GITHUB_RUN_ID
+            timestamp_utc = (Get-Date).ToUniversalTime().ToString("o")
+            production_verified = $false
+            package_installed_from_zip = Test-Path (Join-Path $env:RUNNER_TEMP "narrativ-forge-installed/package-manifest.json")
+            package_scope = "portable API/UI bundle; not installer; no worker/media"
+          }
+          $summary | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $evidence "evidence-manifest.json")
+          "EVIDENCE_DIR=$evidence" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Upload package and smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable-package-evidence
+          path: ${{ runner.temp }}/narrativ-forge-package-evidence/**
+          if-no-files-found: warn

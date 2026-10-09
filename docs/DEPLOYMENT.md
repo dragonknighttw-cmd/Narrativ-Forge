@@ -151,7 +151,7 @@ The evidence artifact stores safe status/error codes, provider/model metadata, t
 
 The content-plan route is intentionally configured to use only OpenRouter free model variants. Set OPENROUTER_API_KEY on the Render API service and keep OPENROUTER_BASE_URL=https://openrouter.ai/api/v1. OPENROUTER_MODELS accepts a comma-separated ordered fallback list, but runtime filtering allows only an explicit allowlist of vetted chat-capable IDs from the owner’s list or exactly openrouter/free; arbitrary IDs ending in :free are rejected too. The route does not call Groq or OpenAI even if those keys remain configured. With no OpenRouter key or no allowed models, it uses deterministic Mock AI rather than a paid provider.
 
-Default list: google/gemma-4-31b-it:free,cohere/north-mini-code:free,nvidia/nemotron-3-super-120b-a12b:free,liquid/lfm-2.5-2.6b:free,openrouter/free.
+Default list: google/gemma-4-31b-it:free,cohere/north-mini-code:free,nvidia/nemotron-3-super-120b-a12b:free,liquid/lfm-2.5-2.6b:free. The dynamic openrouter/free router is allowed only when explicitly configured because it can choose a different free model at runtime.
 
 Free endpoints can be rate-limited or unavailable; failover is only across the explicitly configured free IDs. A :free model endpoint is zero-priced according to OpenRouter's current listing, but provider terms/privacy may permit prompt logging or training. Do not send credentials, secrets, personal data, or confidential production content to trial/free models. Free status and model availability can change, so re-check OpenRouter's official model page before changing the allowlist.
 

@@ -45,7 +45,7 @@ Official listings: [Gemma 4 31B free](https://openrouter.ai/google/gemma-4-31b-i
 ## Billing guardrails
 
 - A model ID ending in :free is the free variant; a similarly named ID without that suffix can be paid. Example: nvidia/nemotron-3-ultra-550b-a55b is listed at paid token rates, while nvidia/nemotron-3-ultra-550b-a55b:free is listed free.
-- The application enforces a last-line check: OpenRouter calls are rejected unless the model ID ends in :free or is exactly openrouter/free. The default fallback chain contains only those forms.
+- The application enforces a last-line exact allowlist of vetted chat-capable free IDs from the owner's list, plus the exact openrouter/free router. Arbitrary IDs are rejected even if they end in :free. The default fallback chain contains only allowlisted forms.
 - This prevents accidental paid-model calls from this content-plan route, but it does not prevent rate limits, provider outages, changes to model availability, or disclosure of prompts to providers.
 - Do not send API keys, private customer data, unpublished confidential scripts, or personal data to trial/free models unless their data terms are acceptable.
 - Free endpoints are currently listed at $0 per token by OpenRouter, but free availability and rate limits can change. Never remove the suffix to “fix” an unavailable model.

@@ -74,3 +74,43 @@ jobs:
           export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CF_ACCOUNT_ID_RAW" | tr -d '\r\n')"
           printf '%s' "$CF_WHISPER_SHARED_SECRET_RAW" | tr -d '\r\n' | npx wrangler secret put NARRATIV_SHARED_SECRET
           echo "Worker secret synchronized from the protected production environment (value redacted)."
+
+      - name: Verify deployed Worker handler without AI inference
+        env:
+          WORKER_URL: https://narrativ-forge-whisper.narrativ-forge.workers.dev
+        run: |
+          python - <<'PY'
+          import json
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          config = json.loads(Path("wrangler.jsonc").read_text(encoding="utf-8"))
+          origin = config.get("vars", {}).get("ALLOWED_ORIGIN", "")
+          request = urllib.request.Request(
+              __import__("os").environ["WORKER_URL"],
+              method="GET",
+              headers={"Origin": origin, "Accept": "application/json", "User-Agent": "Narrativ-Forge-Deploy-Smoke/1.0"},
+          )
+          opener = urllib.request.build_opener(NoRedirect)
+          try:
+              with opener.open(request, timeout=20) as response:
+                  status, headers, body = response.status, response.headers, response.read(2048)
+          except urllib.error.HTTPError as exc:
+              status, headers, body = exc.code, exc.headers, exc.read(2048)
+          try:
+              payload = json.loads(body)
+          except (json.JSONDecodeError, UnicodeDecodeError):
+              payload = {}
+          error = payload.get("error") if isinstance(payload, dict) else None
+          if status == 405 and error == "Method not allowed":
+              print("Worker handler smoke passed; no audio or AI inference was sent.")
+          elif status == 403 and headers.get("Content-Type", "").split(";")[0].lower() != "application/json" and headers.get("CF-Ray"):
+              raise SystemExit(f"::error::Cloudflare edge returned non-JSON HTTP 403 before the Worker handler; CF-Ray={headers.get('CF-Ray')}. Check edge/account access and deployed hostname. No AI inference was sent.")
+          else:
+              raise SystemExit(f"::error::Expected Worker JSON HTTP 405 method guard, got HTTP {status}, content_type={headers.get('Content-Type', '').split(';')[0]!r}, error={error!r}, CF-Ray={headers.get('CF-Ray', 'absent')}. No AI inference was sent.")
+          PY

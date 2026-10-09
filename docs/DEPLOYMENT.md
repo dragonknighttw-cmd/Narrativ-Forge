@@ -2,7 +2,7 @@
 
 > Owner: Platform maintainers  
 > Update when: deployment targets, runtime services, or environment configuration changes  
-> Last Updated: 2026-10-08  
+> Last Updated: 2026-10-09  
 > Do NOT put here: secret values
 
 ## Current target
@@ -12,6 +12,18 @@
 - Database: managed PostgreSQL via `DATABASE_URL`.
 - Redis/delivery: external managed service where enabled.
 - Approved output: user-owned Google Drive.
+
+### Current repository/deployment checkpoint — 2026-10-09
+
+- Repository main SHA: `b67d4620038cb9207180a737815fc0a1213ee6ca`.
+- Render deployment `dep-db47rg0ae00c739pgs90` is live at that SHA: [Render deploy](https://dashboard.render.com/web/srv-davrqtu7bikc73f7isbg).
+- Current-head GitHub checks are green: [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515865), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515817), [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515813), and [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515819).
+- Windows portable package persistence passed on the immediately preceding main SHA `ee448cb82ccd4b68235c9264ac474019c961a994`; it is still a prototype API/UI bundle, not an installer or media-worker package.
+- No separately provisioned continuous background worker exists. Production media processing remains blocked.
+- The manual Cloudflare Whisper live acceptance workflow has been merged but has not been run; it needs protected GitHub `production` environment secrets and explicit quota approval.
+- Owner steps and secret-handling instructions: [Owner Action Checklist](OWNER_ACTION_CHECKLIST.md).
+
+The 2026-10-08 live health/readiness observations below are historical evidence for that date; do not treat them as a fresh HTTP probe of every later deployment.
 
 ### Live evidence checkpoint — 2026-10-08
 

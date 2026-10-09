@@ -82,10 +82,27 @@ def _normalize_plan(value: dict[str, Any], idea: str) -> ContentPlan:
     return ContentPlan(hook=hook, script=script, scenes=scenes)
 
 
+FREE_OPENROUTER_CHAT_MODELS = frozenset({
+    "apodex/apodex-1.1-mini:free",
+    "liquid/lfm-2.5-2.6b:free",
+    "nvidia/nemotron-3.5-lightning:free",
+    "thinkingmachines/inkling-small:free",
+    "poolside/laguna-s-2.1:free",
+    "thinkingmachines/inkling:free",
+    "cohere/north-mini-code:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "google/gemma-4-31b-it:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    # dots-studio/dots-3-note-preview:free was sunset on 2026-09-30 and is excluded.
+})
+
+
 def _is_free_openrouter_model(model: str) -> bool:
-    """Fail closed: only explicit OpenRouter free variants or its free-only router are allowed."""
+    """Fail closed to vetted chat-capable IDs from the owner's list."""
     normalized = model.strip()
-    return normalized == "openrouter/free" or normalized.endswith(":free")
+    return normalized == "openrouter/free" or normalized in FREE_OPENROUTER_CHAT_MODELS
 
 
 class OpenAICompatibleAdapter:

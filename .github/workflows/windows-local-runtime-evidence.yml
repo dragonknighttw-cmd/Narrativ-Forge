@@ -98,6 +98,7 @@ jobs:
         run: |
           if (-not $env:DATABASE_URL.StartsWith("sqlite:")) { throw "Local runtime must use SQLite" }
           if ($env:STORAGE_PROVIDER -ne "local") { throw "Local storage provider is not selected" }
+          New-Item -ItemType Directory -Force -Path $env:UPLOAD_DIR | Out-Null
           $marker = Join-Path $env:UPLOAD_DIR ".local-runtime-write-check"
           Set-Content -Path $marker -Value "local-storage-write-ok" -NoNewline
           if ((Get-Content -Raw $marker) -ne "local-storage-write-ok") { throw "Storage write/read failed" }

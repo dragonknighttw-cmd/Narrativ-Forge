@@ -77,3 +77,33 @@ Start with one worker and concurrency 1. Increase worker count/concurrency only 
 ### Failure/recovery
 
 Late acknowledgements, worker-loss rejection, bounded concurrency, retry backoff, stale-job recovery and failed-job/DLQ publication are implemented in the repository. They still require live failure-injection evidence before release.
+
+
+## Kaggle ephemeral dispatcher configuration and recovery
+
+The scheduled dispatcher is a best-effort, quota-sensitive fallback. It checks PostgreSQL for a due `real_processing` job before querying/pushing the Kaggle kernel. A successful run that reports no queued work means no Kaggle session was launched.
+
+### Required GitHub Actions settings
+
+Open **Repository → Settings → Secrets and variables → Actions** for this repository. Configure repository-level entries (not an Environment-only variable unless the workflow is explicitly assigned to that Environment):
+
+- **Variable** `KAGGLE_KERNEL_ID`: `thuwon/narrativ-forge` (owner/kernel-slug format; use the exact kernel owner and slug shown by Kaggle).
+- **Secret** `KAGGLE_DISPATCH_DATABASE_URL`: PostgreSQL connection URI for the dispatch database, from the Supabase project's database connection details.
+- **Secret** `KAGGLE_API_TOKEN`: Kaggle API token supported by the installed Kaggle CLI.
+
+The workflow accepts `KAGGLE_KERNEL_ID` as either a repository Actions variable or a repository Actions secret. Prefer the variable because the kernel ID is not a credential. Do not put database URLs or API tokens in variables, source files, workflow output, issues, or chat.
+
+After changing settings, a workflow run only proves the settings are present if the configuration preflight step passes. It does not prove the database schema, Kaggle access, kernel execution, or media processing works.
+
+### Failure triage
+
+- `KAGGLE_KERNEL_ID is empty`: confirm the exact name and repository scope; if it was created under an Environment, move it to repository Actions variables or configure a matching repository secret. The workflow intentionally does not print its value.
+- `Missing Actions secret KAGGLE_DISPATCH_DATABASE_URL`: verify the secret name and scope; use the PostgreSQL connection URI, not the Supabase HTTPS project URL.
+- Database connection or `processing_jobs` query failure: verify the URI, password URL-encoding, network/pooler option, and that the target schema has the expected `processing_jobs` fields. Never run destructive SQL to troubleshoot.
+- Kaggle status lookup failure: verify the token and that the token owner can access the exact kernel ID. The dispatcher fails closed rather than pushing when status cannot be identified.
+- `No due real_processing jobs are queued`: the configuration check may be successful; the dispatcher intentionally exits without launching Kaggle.
+- `Kaggle kernel status` is active: duplicate dispatch is skipped. A terminal state may permit a new push if due work remains.
+
+### Quota and production boundaries
+
+The scheduled workflow runs every ten minutes and may launch Kaggle compute when due work is queued. Inspect logs and queue state before manually rerunning it. Do not use production media for a diagnostic run. A successful push is not proof of worker completion or end-to-end media processing; verify job state, worker logs, and output separately. No production-ready claim is allowed without linked live evidence.

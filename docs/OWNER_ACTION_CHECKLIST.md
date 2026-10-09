@@ -109,3 +109,17 @@ If you want to stay free-only, do not create the Render worker yet. Use the exis
 6. Do not run a paid model as a fallback. If free endpoints are rate-limited, keep Mock fallback or retry later.
 
 Do not mark the key verified until a real authenticated request succeeds. A configured environment variable is not proof that the key is valid or that production is using it.
+
+
+## Kaggle ephemeral worker — configuration follow-up
+
+The manual dispatcher run [#37958580462](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37958580462) received the database URL and Kaggle API token but an empty `KAGGLE_KERNEL_ID`. This proves that the value was not available through the workflow's original `vars.KAGGLE_KERNEL_ID` expression for that run; it does not prove the other two credentials are valid.
+
+1. Open [Repository Actions secrets and variables](https://github.com/dragonknighttw-cmd/Narrativ-Forge/settings/secrets/actions).
+2. Confirm there is a **repository-level Actions variable** named exactly `KAGGLE_KERNEL_ID` with value `thuwon/narrativ-forge`. If it was added under an Environment instead, it will not be available to a job that does not declare that Environment.
+3. The proposed workflow also accepts a repository-level Actions secret named `KAGGLE_KERNEL_ID` as a fallback. Prefer the variable, because the identifier is not secret.
+4. Keep `KAGGLE_DISPATCH_DATABASE_URL` and `KAGGLE_API_TOKEN` as Actions **secrets**. Never paste their values into chat or logs.
+5. Wait for the multi-file dispatcher fix PR and its required checks before rerunning. The workflow can launch Kaggle compute when due jobs exist; rerun only when you are ready for that possible quota use.
+6. Review the log for configuration preflight, database connectivity/query, Kaggle status lookup, and whether a session was actually pushed. A successful workflow or push alone is not proof that a job completed or produced valid media.
+
+Do not run a production media job until the dispatcher configuration passes and quota/provider constraints are understood.

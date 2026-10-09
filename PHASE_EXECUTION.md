@@ -18,6 +18,8 @@ This is the implementation queue for work that can be completed without producti
 - Phase 8: billing — Stripe webhook/idempotency/live payment verification remains a credential gate.
 
 ### Track C — Production hardening
+- Tenant isolation: [PR #29](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/29) merged additional negative-case tests for foreign Series/Episode reads and writes, ProcessingJob read/retry, and child collections (assets/scripts/scenes/subtitles). PR-head checks passed; fresh main checks on merge SHA `04bfedd5a79ee6eb90eaed83517c12c48282feb8` are running. Production browser E2E and broader authorization audit remain open.
+
 - Phase 9: auth/tenant isolation — cross-tenant series access regression coverage is prepared; broader resource-by-resource isolation and live auth remain gates.
 - Phase 10: backup/restore — non-destructive pg_restore archive verification tooling is prepared; staging restore drill remains a gate.
 - Phase 11: observability — Prometheus/structured logging/Sentry hooks exist and security/observability regression coverage is prepared; live Sentry delivery remains a credential gate.

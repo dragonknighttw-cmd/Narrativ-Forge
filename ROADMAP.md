@@ -30,6 +30,8 @@ This is the **only master execution roadmap**. Supporting documents contain impl
 
 **Verification and evidence.** Main SHA `4dd3d4f0b761858c83047263a310dfa5429ab48b` includes merged PR #26 (SQLite restore integrity guard). Fresh CI, Security, CodeQL, Repository Gate, backup/restore, worker and Windows/local runtime evidence all passed on this SHA. See [`docs/MASTER_REMAINING_WORK.md`](docs/MASTER_REMAINING_WORK.md) for exact run links and scope limits; passing CI does not close live production gates.
 
+Latest code/test update: PR #29 merged as `04bfedd5a79ee6eb90eaed83517c12c48282feb8`, expanding cross-tenant negative-case regression coverage. Its PR-head CI, security, CodeQL, worker evidence and repository gate passed; fresh main checks on this SHA are running. Details and scope limits are recorded in [`docs/MASTER_REMAINING_WORK.md`](docs/MASTER_REMAINING_WORK.md).
+
 ### Verified at the 2026-10-08 checkpoint
 
 - Render API deployment is live from release SHA `1369d9a3e4d8896cf6024fa45fa6810cc3cee890`.

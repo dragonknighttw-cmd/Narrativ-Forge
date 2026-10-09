@@ -67,9 +67,9 @@ jobs:
         env:
           PGPASSWORD: ci-test-password
         run: |
-          psql "host=127.0.0.1 port=5432 user=postgres dbname=narrativ_backup_source"             -v ON_ERROR_STOP=1             -c "INSERT INTO organizations (id,name,slug,plan) VALUES ('backup-evidence-org','Backup Evidence','backup-evidence','trial');"
-          psql "host=127.0.0.1 port=5432 user=postgres dbname=narrativ_backup_source"             -v ON_ERROR_STOP=1             -c "INSERT INTO users (id,email,role,password_hash,is_active) VALUES ('backup-evidence-user','backup-evidence@narrativ.local','owner','backup-evidence-password',true);"
-          psql "host=127.0.0.1 port=5432 user=postgres dbname=narrativ_backup_source"             -v ON_ERROR_STOP=1             -c "INSERT INTO organization_memberships (id,organization_id,user_id,role) VALUES ('backup-evidence-membership','backup-evidence-org','backup-evidence-user','owner');"
+          psql "host=127.0.0.1 port=5432 user=postgres dbname=narrativ_backup_source"             -v ON_ERROR_STOP=1             -c "INSERT INTO organizations (id,name,slug,plan,created_at,updated_at) VALUES ('backup-evidence-org','Backup Evidence','backup-evidence','trial',now(),now());"
+          psql "host=127.0.0.1 port=5432 user=postgres dbname=narrativ_backup_source"             -v ON_ERROR_STOP=1             -c "INSERT INTO users (id,email,role,password_hash,is_active,created_at,updated_at) VALUES ('backup-evidence-user','backup-evidence@narrativ.local','owner','backup-evidence-password',true,now(),now());"
+          psql "host=127.0.0.1 port=5432 user=postgres dbname=narrativ_backup_source"             -v ON_ERROR_STOP=1             -c "INSERT INTO organization_memberships (id,organization_id,user_id,role,created_at) VALUES ('backup-evidence-membership','backup-evidence-org','backup-evidence-user','owner',now());"
 
       - name: Create PostgreSQL backup
         env:

@@ -330,3 +330,17 @@ Next: inspect the local-runtime and backup/restore workflow runs; add determinis
 - **Windows local API + SQLite smoke: VERIFIED for its defined scope.** Run: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37883392980/job/113667914332. ICU-dependent Burmese processing and package installation are explicitly outside this smoke.
 - Updated Repository Gate so a commit superseded by a newer `main` commit exits without misreporting expected concurrency cancellations as a current-head failure. The new gate logic itself still needs a fresh run to verify.
 - Auth/tenant integration changes remain VERIFY because their full integration/security suite has not yet been confirmed green on the latest main SHA.
+
+
+## 2026-10-09 verified auth, worker, and Windows portable bundle checkpoint
+
+- **Current main SHA:** 5ca18fedae2277f8e3a9137c3fb69f2d467a00d3.
+- **CI: VERIFIED for this SHA.** Backend unit/security, PostgreSQL backend integration, frontend typecheck/build, and Playwright E2E all passed: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888111841.
+- **Security: VERIFIED for this SHA.** SAST, dependency audit, and container scan passed: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888111873.
+- **CodeQL: VERIFIED for this SHA.** https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888112026.
+- **Repository Gate: VERIFIED for this SHA.** https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888111887.
+- **Real worker evidence: VERIFIED on the parent code SHA 92e0b36bd026201999f3ef791fa7ed1c2537ae06.** The worker image built, the retry/DLQ/tenant integration suite passed, the Whisper tiny model cache was prepared, a real Celery worker processed generated media through FFmpeg/Whisper, output/transcript/subtitle integrity passed, and worker cleanup passed: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37886970008. The package/docs-only merge did not change backend or worker code.
+- **Windows portable API/UI package: VERIFIED for its explicitly limited scope on this SHA.** The workflow built a Next.js standalone frontend, assembled a ZIP, extracted that exact ZIP into a clean Windows directory, installed the API dependencies, applied SQLite migrations, started API + UI, checked health/readiness/login, stopped processes, and uploaded a checksum/evidence artifact: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888111933. Evidence artifact: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888111933/artifacts/11596658431.
+- **Local runtime evidence: VERIFIED for this SHA.** https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888111994.
+- The package is a **portable API/UI bundle**, not a standalone installer or offline desktop application. It requires Python 3.12, Node.js 20, and internet access for first-run dependency installation. It does not include the Celery worker, Redis, FFmpeg/Whisper model, PyICU, or myanmartools; Burmese processing, offline media processing, installer/uninstaller, code signing, and production-provider E2E remain NOT VERIFIED.
+- Ephemeral PostgreSQL backup/restore was verified previously, but no live managed-production restore or credentialed provider E2E is claimed. Production readiness remains gated on provider secrets/environments and external acceptance work.

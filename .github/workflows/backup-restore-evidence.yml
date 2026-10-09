@@ -111,6 +111,43 @@ jobs:
           test "$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM alembic_version;")" = "1"
           echo "backup -> fresh PostgreSQL restore -> integrity verification: PASS"
 
+      - name: Write machine-readable verification manifest
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          GIT_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          manifest = {
+              "gate": "postgres-backup-restore",
+              "status": os.environ["JOB_STATUS"],
+              "commit_sha": os.environ["GIT_SHA"],
+              "workflow_run_id": os.environ["RUN_ID"],
+              "workflow_run_attempt": os.environ["RUN_ATTEMPT"],
+              "trigger": os.environ["EVENT_NAME"],
+              "environment": "ephemeral-github-actions-postgres-16",
+              "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+              "checks": [
+                  "alembic-upgrade-head",
+                  "custom-format-backup-readable",
+                  "restore-to-fresh-database",
+                  "restored-alembic-head",
+                  "deterministic-marker-integrity",
+              ],
+              "production_verified": False,
+          }
+          path = Path(os.environ["RUNNER_TEMP"]) / "backup-restore-manifest.json"
+          path.write_text(json.dumps(manifest, indent=2) + "\\n", encoding="utf-8")
+          print(f"wrote evidence manifest: {path}")
+          PY
+
       - name: Upload backup evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -119,4 +156,5 @@ jobs:
           path: |
             ${{ runner.temp }}/backup-contents.txt
             ${{ runner.temp }}/restored-alembic.txt
+            ${{ runner.temp }}/backup-restore-manifest.json
           if-no-files-found: ignore

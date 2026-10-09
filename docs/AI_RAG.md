@@ -71,3 +71,10 @@ Fallback policy:
 4. Record failure/retry evidence.
 
 A live authenticated audio → VTT → Subtitle Studio test is required before Gate 4 can become VERIFIED.
+
+
+## Free-only OpenRouter content planning
+
+The content-plan adapter now routes only through configured OpenRouter IDs ending in :free or the exact free-only router ID openrouter/free. The production route intentionally ignores Groq/OpenAI credentials. If OpenRouter is not configured, the deterministic Mock adapter is used; it must not silently fall back to a paid provider.
+
+Use chat-capable free text models for script generation. Do not use embedding, reranking, content-safety, audio-generation, or decision-only endpoints as chat models; they require different APIs or return non-prose outputs. The owner-maintained model inventory and privacy cautions are in [OPENROUTER_FREE_MODEL_AUDIT.md](OPENROUTER_FREE_MODEL_AUDIT.md). Free endpoints may log prompts/outputs under their respective provider terms, so exclude confidential data.

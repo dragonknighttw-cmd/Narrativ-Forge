@@ -274,3 +274,19 @@ Evidence status:
 - Auth hardening: DONE at repository level; production authentication/cross-tenant behavior remains VERIFY until a fresh credentialed environment run.
 - Backup/restore CI drill: IMPLEMENTED; remains VERIFY until the workflow completes successfully and uploads evidence.
 - Production/provider gates are not promoted by these code changes alone.
+
+
+## 2026-10-09 follow-up implementation checkpoint
+
+- Fixed a compatibility defect found during source review: `issue_session()` now accepts the optional `organization_id` used by login, magic-link, and workspace-switch flows. Without this fix, those flows would raise a runtime argument error.
+- Session verification now requires v1 tokens to use the legacy payload shape and v2 tokens to include an organization ID; mismatched version/payload shapes are rejected.
+- Backup/restore evidence now includes a machine-readable JSON manifest with the exact commit SHA, workflow run/attempt, trigger, ephemeral database environment, check scope, timestamp, and an explicit `production_verified: false` marker.
+- These changes are committed to `main`; this editing session has not executed GitHub Actions or run the backend test suite. The new backup/restore workflow and the auth integration test therefore remain **VERIFY**, not **VERIFIED**.
+
+### Next implementation sequence
+
+1. Confirm current-head CI and the backup/restore evidence workflow pass; fix any failures before adding more layers.
+2. Add a shared verification entrypoint/evidence format for local runtime and package smoke tests.
+3. Add explicit local-runtime configuration and a Windows package build/install/smoke workflow, keeping the desktop framework decision evidence-driven.
+4. Add opt-in credentialed cloud/provider E2E with GitHub Environments, least-privilege secrets, redacted logs, and guaranteed cleanup.
+5. Complete live gates separately: continuous worker, provider lifecycle, auth/cross-tenant, backup/restore, billing/email/Drive/Sentry, security, accessibility, legal, and penetration testing.

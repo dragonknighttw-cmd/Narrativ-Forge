@@ -157,3 +157,33 @@ def test_openrouter_agentic_harness_only_models_are_not_allowed_for_chat_complet
     )
     providers = _configured_chat_providers()
     assert [provider.model for provider in providers] == ["cohere/north-mini-code:free"]
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://openrouter.ai/api/v1",
+        "https://example.test/api/v1",
+        "https://openrouter.ai.evil.test/api/v1",
+        "https://user:password@openrouter.ai/api/v1",
+        "https://openrouter.ai/other-path",
+    ],
+)
+def test_openrouter_free_only_policy_blocks_unsafe_base_url_before_network(monkeypatch, base_url):
+    called = False
+
+    def fake_post(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("network must not be called for an unsafe OpenRouter endpoint")
+
+    monkeypatch.setattr("app.services.ai_adapter.httpx.post", fake_post)
+    provider = ChatProvider(
+        "openrouter-1",
+        "test-key",
+        base_url,
+        "cohere/north-mini-code:free",
+        1,
+    )
+    with pytest.raises(ValueError, match="requires HTTPS"):
+        OpenAICompatibleAdapter(provider).create_content_plan(idea="test")
+    assert called is False

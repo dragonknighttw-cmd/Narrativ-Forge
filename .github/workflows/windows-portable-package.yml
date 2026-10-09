@@ -137,7 +137,7 @@ jobs:
             workflow_run_id = $env:GITHUB_RUN_ID
             timestamp_utc = (Get-Date).ToUniversalTime().ToString("o")
             production_verified = $false
-            package_installed_from_zip = Test-Path (Join-Path $env:RUNNER_TEMP "narrativ-forge-installed/package-manifest.json")
+            package_installed_from_zip = Test-Path (Join-Path (Join-Path $env:RUNNER_TEMP "narrativ-forge-installed") "package-manifest.json")
             package_scope = "portable API/UI bundle; not installer; no worker/media"
           }
           $summary | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $evidence "evidence-manifest.json")

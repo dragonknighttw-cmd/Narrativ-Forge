@@ -26,7 +26,7 @@ if (-not (Test-Path $VenvPython)) {
 if ($LASTEXITCODE -ne 0) { throw "Could not install portable API dependencies." }
 
 $env:APP_ENV = "development"
-$env:DATABASE_URL = "sqlite:///./narrativ_forge.db"
+$env:DATABASE_URL = "sqlite:///" + ((Join-Path $Data "narrativ_forge.db") -replace '\\', '/')
 $env:STORAGE_PROVIDER = "local"
 $env:UPLOAD_DIR = (Join-Path $Data "uploads")
 $env:SESSION_SECRET = ([guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N"))

@@ -143,3 +143,17 @@ def test_openrouter_free_suffix_alone_is_not_enough(monkeypatch):
     with pytest.raises(ValueError, match="free-only policy"):
         OpenAICompatibleAdapter(provider).create_content_plan(idea="test")
     assert called is False
+
+
+def test_openrouter_agentic_harness_only_models_are_not_allowed_for_chat_completions(monkeypatch):
+    from app.services import ai_adapter
+
+    monkeypatch.setattr(ai_adapter.settings, "openrouter_api_key", "test-key")
+    monkeypatch.setattr(ai_adapter.settings, "openrouter_base_url", "https://openrouter.ai/api/v1")
+    monkeypatch.setattr(
+        ai_adapter.settings,
+        "openrouter_models",
+        "thinkingmachines/inkling-small:free,thinkingmachines/inkling:free,cohere/north-mini-code:free",
+    )
+    providers = _configured_chat_providers()
+    assert [provider.model for provider in providers] == ["cohere/north-mini-code:free"]

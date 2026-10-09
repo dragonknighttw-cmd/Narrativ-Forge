@@ -1,0 +1,172 @@
+name: Local Runtime Evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "web-platform/backend/**"
+      - "web-platform/frontend/**"
+      - ".github/workflows/local-runtime-evidence.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "web-platform/backend/**"
+      - "web-platform/frontend/**"
+      - ".github/workflows/local-runtime-evidence.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: local-runtime-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  local-runtime:
+    name: Local API + SQLite runtime smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web-platform/backend
+    env:
+      APP_ENV: development
+      DATABASE_URL: sqlite:////tmp/narrativ-local-runtime.db
+      SESSION_SECRET: local-runtime-evidence-secret-at-least-32-characters
+      STORAGE_PROVIDER: local
+      UPLOAD_DIR: /tmp/narrativ-local-runtime/uploads
+      CORS_ORIGINS: http://localhost:3000
+      TRUSTED_HOSTS: localhost,127.0.0.1
+    steps:
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: web-platform/backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: pip install -r requirements.txt
+
+      - name: Prepare local runtime directories
+        run: mkdir -p "$UPLOAD_DIR" "$RUNNER_TEMP/local-runtime-evidence"
+
+      - name: Apply migrations to fresh local SQLite database
+        run: |
+          PYTHONPATH=. python -m alembic upgrade head
+          PYTHONPATH=. python -m alembic current | tee "$RUNNER_TEMP/local-runtime-evidence/alembic-current.txt"
+          test -s "$RUNNER_TEMP/local-runtime-evidence/alembic-current.txt"
+
+      - name: Start local API runtime
+        run: |
+          PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/local-runtime-evidence/api.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/local-runtime-evidence/api.pid"
+          python - <<'PY'
+          import json
+          import time
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+
+          base = "http://127.0.0.1:8000"
+          checks = {}
+          for path in ("/api/v1/health", "/api/v1/ready"):
+              last_error = None
+              for _ in range(45):
+                  try:
+                      with urllib.request.urlopen(base + path, timeout=2) as response:
+                          body = json.loads(response.read().decode("utf-8"))
+                          checks[path] = {"http_status": response.status, "body": body}
+                          if response.status != 200:
+                              raise RuntimeError(f"{path}: HTTP {response.status}")
+                          if path.endswith("/health") and body.get("status") != "ok":
+                              raise RuntimeError(f"unexpected health body: {body}")
+                          if path.endswith("/ready") and body.get("status") != "ready":
+                              raise RuntimeError(f"unexpected readiness body: {body}")
+                          break
+                  except Exception as exc:
+                      last_error = exc
+                      time.sleep(1)
+              else:
+                  raise SystemExit(f"{path} did not become healthy: {last_error}")
+          Path(__import__("os").environ["RUNNER_TEMP"], "local-runtime-evidence", "http-checks.json").write_text(
+              json.dumps(checks, indent=2) + "\\n", encoding="utf-8"
+          )
+          print(json.dumps(checks, indent=2))
+          PY
+
+      - name: Verify local-mode configuration and writable storage
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from sqlalchemy import create_engine, text
+
+          database_url = os.environ["DATABASE_URL"]
+          assert database_url.startswith("sqlite:"), "local runtime must use SQLite in this gate"
+          assert os.environ["STORAGE_PROVIDER"] == "local", "local storage provider must be selected"
+          upload_dir = Path(os.environ["UPLOAD_DIR"])
+          upload_dir.mkdir(parents=True, exist_ok=True)
+          marker = upload_dir / ".local-runtime-write-check"
+          marker.write_text("local-storage-write-ok", encoding="utf-8")
+          assert marker.read_text(encoding="utf-8") == "local-storage-write-ok"
+          engine = create_engine(database_url)
+          with engine.connect() as connection:
+              connection.execute(text("SELECT 1"))
+          engine.dispose()
+          print("local config, SQLite connection, and local storage write: PASS")
+          PY
+
+      - name: Write verification manifest
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          GIT_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          out = Path(os.environ["RUNNER_TEMP"]) / "local-runtime-evidence"
+          out.mkdir(parents=True, exist_ok=True)
+          manifest = {
+              "gate": "local-runtime-smoke",
+              "status": os.environ["JOB_STATUS"],
+              "commit_sha": os.environ["GIT_SHA"],
+              "workflow_run_id": os.environ["RUN_ID"],
+              "workflow_run_attempt": os.environ["RUN_ATTEMPT"],
+              "trigger": os.environ["EVENT_NAME"],
+              "environment": "ephemeral-github-actions-ubuntu",
+              "runtime": {"api": "FastAPI/Uvicorn", "database": "SQLite", "storage": "local"},
+              "checks": ["alembic-upgrade", "health-endpoint", "readiness-database", "local-storage-write"],
+              "package_installed": False,
+              "production_verified": False,
+              "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+          }
+          (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\\n", encoding="utf-8")
+          print(json.dumps(manifest, indent=2))
+          PY
+
+      - name: Stop local API runtime
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/local-runtime-evidence/api.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/local-runtime-evidence/api.pid")" 2>/dev/null || true
+          fi
+
+      - name: Upload local runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-runtime-evidence
+          path: ${{ runner.temp }}/local-runtime-evidence/
+          if-no-files-found: warn

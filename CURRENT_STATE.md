@@ -1,8 +1,16 @@
 # Narrativ Forge — Current State
 
 > Owner: Project maintainers
-> Last Updated: 2026-10-09
+> Last Updated: 2026-10-09 (UTC; reconciled after PR #26 merge)
 > Status evidence is environment-specific. Code/config alone never promotes a gate to VERIFIED.
+
+## Latest CI / evidence snapshot
+
+Main SHA: `4dd3d4f0b761858c83047263a310dfa5429ab48b` (PR #26 merged). Fresh main workflows are running and must not be called passed until completed: [CI #1217](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669315), [Security #982](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669353), [CodeQL #589](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669249), [Repository Gate #241](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669199), [Backup Restore #8](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669190), [Real Worker #191](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669286), and Windows/local runtime evidence.
+
+The parent SHA `b231e2d7c2cf5b2114edcf4d9ecd2a59e509f7f0` passed [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37961092861), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37961092885), [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37961092877), and [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37961092923). [Real Worker Evidence #190](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37963422875) passed using isolated CI services and synthetic media. [Cloudflare Whisper Preflight #2](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37964550063) passed without inference. [Kaggle Dispatcher #12](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37962902195) passed configuration/database checks but did not launch because no due jobs were queued.
+
+PR #26 is merged as `4dd3d4f`; SQLite restore now checks `PRAGMA integrity_check` before replacing a target. This does not prove a managed production restore.
 
 ## 1. Release status
 

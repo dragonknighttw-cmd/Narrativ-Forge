@@ -59,3 +59,7 @@ Before calling the local product packaged or offline-capable, implement and veri
 - install -> launch -> E2E -> collect logs -> uninstall/cleanup smoke on a clean Windows runner.
 
 A successful Ubuntu local API smoke is necessary groundwork but cannot substitute for these Windows/package checks.
+
+## Windows runner compatibility smoke
+
+The workflow `.github/workflows/windows-local-runtime-evidence.yml` repeats the API + SQLite + local-filesystem smoke on a clean `windows-latest` runner. It is a Windows runtime compatibility check only: it does not install a desktop package, bundle Python/FFmpeg/Whisper, or prove offline media processing. Its manifest keeps `package_installed=false` and `production_verified=false` until those separate gates exist.

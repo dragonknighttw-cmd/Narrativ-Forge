@@ -102,3 +102,29 @@ def test_no_openrouter_key_means_mock_fallback_only(monkeypatch):
 
     monkeypatch.setattr(ai_adapter.settings, "openrouter_api_key", "")
     assert _configured_chat_providers() == []
+
+
+def test_router_tries_next_free_model_when_endpoint_is_unavailable(monkeypatch):
+    calls = []
+
+    class ModelUnavailableError(RuntimeError):
+        status_code = 404
+
+    class FakeAdapter:
+        def __init__(self, provider):
+            self.provider = provider
+
+        def create_content_plan(self, **kwargs):
+            calls.append(self.provider.name)
+            if self.provider.name == "openrouter-1":
+                raise ModelUnavailableError("model not found")
+            return ContentPlan("hook", "script", [])
+
+    monkeypatch.setattr("app.services.ai_adapter.OpenAICompatibleAdapter", FakeAdapter)
+    providers = [
+        ChatProvider("openrouter-1", "key", "https://example.test/v1", "retired:free", 1),
+        ChatProvider("openrouter-2", "key", "https://example.test/v1", "active:free", 2),
+    ]
+    plan = RoutedAIAdapter(providers).create_content_plan(idea="test")
+    assert plan.script == "script"
+    assert calls == ["openrouter-1", "openrouter-2"]

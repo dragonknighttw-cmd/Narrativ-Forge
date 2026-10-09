@@ -82,12 +82,24 @@ def _normalize_plan(value: dict[str, Any], idea: str) -> ContentPlan:
     return ContentPlan(hook=hook, script=script, scenes=scenes)
 
 
+def _is_free_openrouter_model(model: str) -> bool:
+    """Fail closed: only explicit OpenRouter free variants or its free-only router are allowed."""
+    normalized = model.strip()
+    return normalized == "openrouter/free" or normalized.endswith(":free")
+
+
 class OpenAICompatibleAdapter:
-    """Adapter for OpenAI-compatible chat-completions APIs such as OpenAI and Groq."""
+    """Adapter for OpenAI-compatible chat-completions APIs.
+
+    OpenRouter calls are guarded at the last possible point so a bad environment
+    value cannot silently route traffic to a paid model.
+    """
     def __init__(self, provider: ChatProvider) -> None:
         self.provider = provider
 
     def create_content_plan(self, *, idea: str, category: str | None = None) -> ContentPlan:
+        if self.provider.name.startswith("openrouter") and not _is_free_openrouter_model(self.provider.model):
+            raise ValueError("OpenRouter free-only policy blocked a non-free model")
         prompt = ("Create a Burmese short-form video content plan. Return ONLY valid JSON with keys "
                   "hook, script, scenes. scenes must contain scene_number, purpose, description, dialogue, "
                   "duration_seconds. Target about 180 seconds. Idea: " + idea.strip() +
@@ -134,11 +146,27 @@ class RoutedAIAdapter:
 
 
 def _configured_chat_providers() -> list[ChatProvider]:
+    """Configure only explicitly free OpenRouter chat models.
+
+    Groq/OpenAI credentials may remain configured for other experiments, but are
+    intentionally never used by this production content-generation route.
+    """
+    if not settings.openrouter_api_key:
+        return []
+
     providers: list[ChatProvider] = []
-    if settings.groq_api_key:
-        providers.append(ChatProvider("groq", settings.groq_api_key, settings.groq_base_url, settings.groq_model, 10))
-    if settings.openai_api_key:
-        providers.append(ChatProvider("openai", settings.openai_api_key, settings.openai_base_url, settings.openai_model, 20))
+    models = [item.strip() for item in settings.openrouter_models.split(",") if item.strip()]
+    for index, model in enumerate(models):
+        if not _is_free_openrouter_model(model):
+            logger.error("Skipping non-free OpenRouter model due to free-only policy", extra={"model": model})
+            continue
+        providers.append(ChatProvider(
+            name=f"openrouter-{index + 1}",
+            api_key=settings.openrouter_api_key,
+            base_url=settings.openrouter_base_url,
+            model=model,
+            priority=index + 1,
+        ))
     return providers
 
 

@@ -5,6 +5,7 @@ import base64
 from fastapi import HTTPException
 
 from app.main import app
+from app.db import get_db
 from app.models import Organization, OrganizationMembership, Series, User
 from app.services.passwords import hash_password
 from app.api.dependencies import get_current_membership, get_current_user
@@ -64,7 +65,7 @@ def test_second_tenant_cannot_read_or_mutate_first_tenant_series():
 @pytest.mark.integration
 @pytest.mark.security
 def test_authenticated_session_is_bound_to_selected_membership():
-    from app.api.dependencies import issue_session
+    from app.api.dependencies import issue_session, verify_session
 
     with TestingSession() as db:
         org_a = Organization(name="Tenant A", slug="tenant-a-session", plan="trial")
@@ -85,17 +86,32 @@ def test_authenticated_session_is_bound_to_selected_membership():
             OrganizationMembership(organization_id=org_b.id, user_id=user.id, role="owner"),
         ])
         db.commit()
-        user_id = user.id
         user_email = user.email
         org_a_id = org_a.id
         org_b_id = org_b.id
 
+    def override_test_db():
+        with TestingSession() as session_db:
+            yield session_db
+
     client = create_test_client(app)
     original_overrides = dict(app.dependency_overrides)
+    app.dependency_overrides[get_db] = override_test_db
     try:
         session = issue_session(user_email, "owner", org_b_id)
+        assert verify_session(session)["organization_id"] == org_b_id
+
+        # Confirm the exact database dependency used by the request can see the
+        # user and selected membership before asserting the HTTP behavior.
+        with TestingSession() as db:
+            assert db.query(User).filter(User.email == user_email, User.is_active.is_(True)).first()
+            assert db.query(OrganizationMembership).filter(
+                OrganizationMembership.user_id == db.query(User).filter(User.email == user_email).first().id,
+                OrganizationMembership.organization_id == org_b_id,
+            ).first()
+
         me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {session}"})
-        assert me.status_code == 200
+        assert me.status_code == 200, me.text
         assert me.json()["organization_id"] == org_b_id
         assert me.json()["role"] == "owner"
 
@@ -104,7 +120,7 @@ def test_authenticated_session_is_bound_to_selected_membership():
             json={"organization_id": org_a_id},
             headers={"Authorization": f"Bearer {session}"},
         )
-        assert switched.status_code == 200
+        assert switched.status_code == 200, switched.text
         assert switched.json()["organization_id"] == org_a_id
         assert switched.json()["role"] == "viewer"
     finally:

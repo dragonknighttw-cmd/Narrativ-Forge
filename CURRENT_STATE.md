@@ -321,3 +321,12 @@ Next: inspect the local-runtime and backup/restore workflow runs; add determinis
 4. Prototype Windows sidecar lifecycle, then select a desktop shell only after a repeatable artifact build works.
 5. Add install -> launch -> API/UI E2E -> evidence -> shutdown/cleanup on a clean Windows runner.
 6. Add opt-in, credentialed cloud/provider E2E and live production acceptance as separate gates.
+
+
+## Verification results update (2026-10-09)
+
+- **PostgreSQL backup/restore CI: VERIFIED for the ephemeral PostgreSQL 16 drill.** Run: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37883550172/job/113668073504. Migration to head, required marker seed, custom-format backup, restore into a fresh database, Alembic-head check, and marker-row integrity all passed. Evidence artifact: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37883550172/artifacts/11594979796. This is not a live managed-production restore.
+- **Ubuntu local API + SQLite smoke: VERIFIED for its defined scope.** Run: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37883066599/job/113667129807.
+- **Windows local API + SQLite smoke: VERIFIED for its defined scope.** Run: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37883392980/job/113667914332. ICU-dependent Burmese processing and package installation are explicitly outside this smoke.
+- Updated Repository Gate so a commit superseded by a newer `main` commit exits without misreporting expected concurrency cancellations as a current-head failure. The new gate logic itself still needs a fresh run to verify.
+- Auth/tenant integration changes remain VERIFY because their full integration/security suite has not yet been confirmed green on the latest main SHA.

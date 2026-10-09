@@ -302,3 +302,22 @@ Next: inspect the local-runtime and backup/restore workflow runs; add determinis
 
 
 - Added `.github/workflows/windows-local-runtime-evidence.yml` to check FastAPI + SQLite + local filesystem behavior on a clean Windows runner, with API process cleanup and evidence artifact collection. This is a compatibility smoke, not an installer/package test. Execution remains VERIFY until the workflow run and artifact are inspected.
+
+
+## 2026-10-09 local runtime evidence results and backup gate corrections
+
+- **Ubuntu local runtime smoke: VERIFIED for the narrow API gate.** Run: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37883066599/job/113667129807. Fresh SQLite migrations, API health/readiness, database connectivity, and local filesystem write/read passed. This does not prove package installation or media-worker/offline processing.
+- **Windows local API smoke: VERIFIED for the narrow API gate.** Run: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37883392980/job/113667914332. Windows dependency installation (excluding PyICU/myanmartools), migrations, API health/readiness, SQLite connectivity, local filesystem write/read, and cleanup passed. ICU-dependent Burmese normalization and packaged media processing remain untested.
+- The first Windows attempt exposed that stock Windows runners cannot compile PyICU without an ICU/pkg-config toolchain. The smoke now explicitly excludes PyICU and myanmartools rather than disguising that gap; a future Windows media/package gate must solve and verify these dependencies.
+- The backup/restore workflow exposed two real issues and has been corrected: deterministic seed rows now include required timestamps, and the migration assertion now uses the actual current Alembic head `0017_release_maturity` (not the stale `0017_asset_deleted_at` value).
+- The latest backup/restore run is still in progress while installing its narrowed migration-only dependency set. Do not mark backup/restore VERIFIED until that run succeeds and its evidence artifact is inspected.
+- The current Windows API smoke does not install a desktop package and is not evidence of a finished Windows installer.
+
+### Remaining implementation order
+
+1. Finish and inspect the current PostgreSQL backup -> fresh restore run; fix any remaining failure and rerun until green.
+2. Confirm the current-head Repository Gate / CI / Security / CodeQL checks settle successfully; rerun the required gates if a stale commit's run was cancelled by a newer push.
+3. Add a deterministic local worker/media test, including explicit FFmpeg/Whisper availability and honest skip reasons.
+4. Prototype Windows sidecar lifecycle, then select a desktop shell only after a repeatable artifact build works.
+5. Add install -> launch -> API/UI E2E -> evidence -> shutdown/cleanup on a clean Windows runner.
+6. Add opt-in, credentialed cloud/provider E2E and live production acceptance as separate gates.

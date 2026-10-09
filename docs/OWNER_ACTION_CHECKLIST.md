@@ -1,16 +1,22 @@
 # Narrativ Forge — Owner Action Checklist
 
-> Last updated: 2026-10-09  
+> Last updated: 2026-10-09 (UTC; reconciled after PR #26 merge)  
 > Purpose: move from repository/CI foundations to live acceptance without guessing, leaking credentials, or silently creating billable services.
+
+## Latest verified evidence snapshot
+
+- Main SHA: `4dd3d4f0b761858c83047263a310dfa5429ab48b` (PR #26 merged). Fresh main checks are in progress, not yet marked green: [CI #1217](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669315), [Security #982](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669353), [CodeQL #589](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669249), [Repository Gate #241](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669199), [Backup Restore #8](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669190), [Real Worker #191](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37965669286).
+- PR #26 merged as `4dd3d4f`; SQLite restore verifies integrity before replacing the target. The PR's [backup/restore evidence](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37954212710) passed on the PR SHA; this is isolated CI evidence, not a managed production restore.
+- On parent SHA `b231e2d`, main [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37961092861), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37961092885), [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37961092877), and [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37961092923) passed.
+- [Real Worker Evidence #190](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37963422875) passed with synthetic media in isolated CI; no persistent production worker is deployed.
+- [Cloudflare Whisper Preflight #2](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37964550063) passed without audio or inference. Live authenticated transcription and downstream acceptance remain pending.
+- [Kaggle Dispatcher #12](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37962902195) passed config/database checks but found no due jobs and did not launch Kaggle.
+
+**Release status remains PENDING / NOT PRODUCTION READY.**
 
 ## Current verified baseline
 
-- Repository main at the latest checkpoint: `adeb425185f163775f03b779553a8e148284f363` (Cloudflare evidence workflow hardening merged; fresh CI checks for this merge must be checked separately).
-- Current-head GitHub CI, Security, CodeQL, and Repository Gate are green:
-  - [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515865)
-  - [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515817)
-  - [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515813)
-  - [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515819)
+- Historical baseline: `adeb425185f163775f03b779553a8e148284f363` and its earlier checks are retained below for incident context; use the **Latest verified evidence snapshot** above for current status.
 - [Windows portable package persistence gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889063839) passed on the immediately preceding main SHA `ee448cb82ccd4b68235c9264ac474019c961a994`. It verifies API/UI start-stop-restart and local data persistence only; it is not a standalone installer and does not include Celery/FFmpeg/Whisper.
 - [Render API deployment](https://dashboard.render.com/web/srv-davrqtu7bikc73f7isbg) is live at the current main SHA. No separate background worker exists yet.
 - [Cloudflare Whisper live evidence workflow](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/cloudflare-whisper-live-evidence.yml) was run at [run #37907157973](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37907157973) on merge SHA `adeb425185f163775f03b779553a8e148284f363` and failed before authenticated inference: the unauthenticated request received HTTP 403 with `text/plain`, a Cloudflare `CF-Ray`, and no recognized Worker JSON error. This points to an edge/deployment/access-layer rejection or a different deployed handler; it does not validate or invalidate the shared secret.

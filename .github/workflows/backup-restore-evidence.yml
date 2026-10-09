@@ -51,11 +51,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install PostgreSQL client and backend dependencies
+      - name: Install PostgreSQL client and migration-only dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-          pip install -r web-platform/backend/requirements.txt
+          # This gate runs Alembic and pg_dump/pg_restore only; avoid compiling the
+          # optional native ICU/media stack just to verify database backup integrity.
+          python -m pip install "SQLAlchemy>=2.0,<3" "psycopg2-binary>=2.9,<3" "pydantic-settings>=2.6,<3" "cryptography>=50,<51" "alembic>=1.16,<2"
 
       - name: Apply migrations to source database
         working-directory: web-platform/backend

@@ -31,13 +31,15 @@ def verify_session(value: str) -> dict:
         if len(parts) == 5:
             version, email, role, expires_at, signature = parts
             organization_id = None
+            if version != "v1":
+                raise ValueError("invalid session version")
         elif len(parts) == 6:
             version, email, role, organization_id, expires_at, signature = parts
+            if version != "v2" or not organization_id:
+                raise ValueError("invalid session version")
         else:
             raise ValueError("invalid session")
-        if version not in {"v1", "v2"} or not email or role not in {"owner", "editor", "viewer"}:
-            raise ValueError("invalid session")
-        if version == "v2" and not organization_id:
+        if not email or role not in {"owner", "editor", "viewer"}:
             raise ValueError("invalid session")
         if int(expires_at) < int(time.time()):
             raise ValueError("expired session")

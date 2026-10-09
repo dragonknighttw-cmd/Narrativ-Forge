@@ -19,7 +19,7 @@ These are the supplied free IDs that are suitable candidates for ordinary text/c
 | apodex/apodex-1.1-mini:free | Research/reasoning and tool workflows | Optional; validate JSON reliability before production |
 | poolside/laguna-s-2.1:free | Coding/agentic coding | Not a default script writer; avoid confidential prompts because provider may use free-tier inputs/outputs to improve models |
 | thinkingmachines/inkling:free | General reasoning, coding and agent use | Not a default; free endpoint is intended for agentic harnesses and prompts/outputs may be logged for model improvement |
-| thinkingmachines/inkling-small:free | Small-model/agentic use | Optional only after verifying the current listing and terms |
+| thinkingmachines/inkling-small:free | Small-model/agentic use | Optional only for agentic harnesses; prompts/outputs are logged for model improvement, so do not send confidential data |
 | openrouter/free | OpenRouter's free-only model router | Safe as a final free-only fallback, but output model can vary and quality is less deterministic |
 
 Official listings: [Gemma 4 31B free](https://openrouter.ai/google/gemma-4-31b-it%3Afree), [Gemma 4 26B A4B free](https://openrouter.ai/google/gemma-4-26b-a4b-it%3Afree), [North Mini Code free](https://openrouter.ai/cohere/north-mini-code%3Afree), [Nemotron 3 Super free](https://openrouter.ai/nvidia/nemotron-3-super-120b-a12b%3Afree), [Nemotron 3 Ultra free](https://openrouter.ai/nvidia/nemotron-3-ultra-550b-a55b%3Afree), [Nemotron 3 Nano Omni free](https://openrouter.ai/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning%3Afree), [Nemotron 3.5 Lightning free](https://openrouter.ai/nvidia/nemotron-3.5-lightning%3Afree), [LFM 2.5 2.6B free](https://openrouter.ai/liquid/lfm-2.5-2.6b%3Afree), [Apodex 1.1 Mini free](https://openrouter.ai/apodex/apodex-1.1-mini%3Afree), [Laguna S 2.1 free](https://openrouter.ai/poolside/laguna-s-2.1%3Afree), [Inkling free](https://openrouter.ai/thinkingmachines/inkling%3Afree), [OpenRouter free collection](https://openrouter.ai/collections/free-models).
@@ -39,7 +39,7 @@ Official listings: [Gemma 4 31B free](https://openrouter.ai/google/gemma-4-31b-i
 
 | Model ID | Actual purpose / issue | Decision |
 |---|---|---|
-| fish-audio/s2.1-pro-free:free | Audio/voice generation, not ordinary text chat | Do not put in script-generation fallback; use only in an audio pipeline after checking its current endpoint/pricing |
+| fish-audio/s2.1-pro-free:free | Text-to-speech/audio generation, not ordinary text chat; no production latency or availability guarantees | Do not put in script-generation fallback; use only for low-volume testing/prototyping after checking current terms |
 | dots-studio/dots-3-note-preview:free | It was listed as free, but OpenRouter's listing says it was going away on September 30, 2026 | Remove from any active configuration; do not rely on it |
 
 ## Billing guardrails

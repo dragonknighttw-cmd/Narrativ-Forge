@@ -149,7 +149,7 @@ The evidence artifact stores safe status/error codes, provider/model metadata, t
 
 ## AI text generation — free-only OpenRouter
 
-The content-plan route is intentionally configured to use only OpenRouter free model variants. Set OPENROUTER_API_KEY on the Render API service and keep OPENROUTER_BASE_URL=https://openrouter.ai/api/v1. OPENROUTER_MODELS accepts a comma-separated ordered fallback list, but runtime filtering rejects every entry unless it ends in :free or is exactly openrouter/free. The route does not call Groq or OpenAI even if those keys remain configured. With no OpenRouter key or no allowed models, it uses deterministic Mock AI rather than a paid provider.
+The content-plan route is intentionally configured to use only OpenRouter free model variants. Set OPENROUTER_API_KEY on the Render API service and keep OPENROUTER_BASE_URL=https://openrouter.ai/api/v1. OPENROUTER_MODELS accepts a comma-separated ordered fallback list, but runtime filtering allows only an explicit allowlist of vetted chat-capable IDs from the owner’s list or exactly openrouter/free; arbitrary IDs ending in :free are rejected too. The route does not call Groq or OpenAI even if those keys remain configured. With no OpenRouter key or no allowed models, it uses deterministic Mock AI rather than a paid provider.
 
 Default list: google/gemma-4-31b-it:free,cohere/north-mini-code:free,nvidia/nemotron-3-super-120b-a12b:free,liquid/lfm-2.5-2.6b:free,openrouter/free.
 

@@ -2,7 +2,7 @@
 
 > Owner: AI/platform maintainers  
 > Update when: providers, prompts, retrieval, quotas, or AI safety gates change  
-> Last Updated: 2026-10-08  
+> Last Updated: 2026-10-09  
 > Do NOT put here: provider secrets
 
 ## Provider architecture
@@ -58,9 +58,11 @@ Agnes/Kling/Magic Hour and similar candidates remain candidate/planning provider
 
 ## Whisper close-out status
 
-**Deployment VERIFIED; real transcription E2E BLOCKED.**
+**Deployment VERIFIED; authenticated live endpoint acceptance FAILED / UNVERIFIED.**
 
-Cloudflare Whisper is deployed and reachable, but no authenticated representative audio has been processed through the production worker path.
+Cloudflare Worker `narrativ-forge-whisper` is deployed and the `NARRATIV_SHARED_SECRET` binding exists. However, live evidence run [#37895020420](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37895020420) failed before authenticated inference: the unauthenticated request returned HTTP 403 instead of the expected 401. Do not treat the shared-secret match or real transcription as verified yet.
+
+The GitHub production secret `CLOUDFLARE_WHISPER_SHARED_SECRET`, Render API environment variable of the same name, and Cloudflare Worker secret `NARRATIV_SHARED_SECRET` must contain the same exact value. If the original value is lost, rotate the value consistently and manually run the protected Worker deployment workflow before the quota-consuming live evidence test.
 
 Fallback policy:
 1. Prefer Cloudflare Whisper when configured and within the budget threshold.

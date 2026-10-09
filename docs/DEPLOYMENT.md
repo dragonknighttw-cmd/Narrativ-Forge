@@ -2,7 +2,7 @@
 
 > Owner: Platform maintainers  
 > Update when: deployment targets, runtime services, or environment configuration changes  
-> Last Updated: 2026-10-08  
+> Last Updated: 2026-10-09  
 > Do NOT put here: secret values
 
 ## Current target
@@ -12,6 +12,18 @@
 - Database: managed PostgreSQL via `DATABASE_URL`.
 - Redis/delivery: external managed service where enabled.
 - Approved output: user-owned Google Drive.
+
+### Current repository/deployment checkpoint — 2026-10-09
+
+- Repository main SHA: `b67d4620038cb9207180a737815fc0a1213ee6ca`.
+- Render deployment `dep-db47rg0ae00c739pgs90` is live at that SHA: [Render deploy](https://dashboard.render.com/web/srv-davrqtu7bikc73f7isbg).
+- Current-head GitHub checks are green: [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515865), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515817), [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515813), and [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889515819).
+- Windows portable package persistence passed on the immediately preceding main SHA `ee448cb82ccd4b68235c9264ac474019c961a994`; it is still a prototype API/UI bundle, not an installer or media-worker package.
+- No separately provisioned continuous background worker exists. Production media processing remains blocked.
+- Cloudflare Whisper live evidence run [#37895020420](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37895020420) failed before authenticated inference: the unauthenticated POST returned HTTP 403 instead of the expected 401. Treat the endpoint contract as unverified until a fresh run passes.
+- Owner steps and secret-handling instructions: [Owner Action Checklist](OWNER_ACTION_CHECKLIST.md).
+
+The 2026-10-08 live health/readiness observations below are historical evidence for that date; do not treat them as a fresh HTTP probe of every later deployment.
 
 ### Live evidence checkpoint — 2026-10-08
 
@@ -119,14 +131,17 @@ Exact worker setup:
 Fly charges provisioned compute by usage; this is not a free-only assumption. citeturn1search7
 
  
-## Opt-in Cloudflare Whisper live acceptance
+## Cloudflare Whisper live acceptance and secret rotation
 
-The manual workflow .github/workflows/cloudflare-whisper-live-evidence.yml verifies the deployed Worker's signed-token contract with one synthetic two-second WAV. It first proves an unauthenticated request is rejected, then signs a short-lived episode token and checks that the live inference response includes provider, episode identity, transcript, and VTT fields.
+The manual workflow `.github/workflows/cloudflare-whisper-live-evidence.yml` verifies the signed-token contract with one synthetic two-second WAV. It checks the canonical workers.dev hostname, sends the allowed Origin configured in `web-platform/cloudflare/whisper-worker/wrangler.jsonc`, does not follow redirects, checks unauthenticated rejection, then performs one authenticated inference. The inference may consume Workers AI quota, so run it only with explicit owner approval.
 
-To run it, configure the protected GitHub production environment with:
-- CLOUDFLARE_WHISPER_WORKER_URL
-- CLOUDFLARE_WHISPER_SHARED_SECRET
+**Latest observed result:** [run #37895020420](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37895020420) failed at the first unauthenticated request with HTTP 403 instead of 401. Authenticated inference was not reached; the shared secret was not tested by that run.
 
-Then manually dispatch **Cloudflare Whisper Live Evidence** and explicitly set confirm_live_inference=true. The default is false so pushes and ordinary CI never trigger provider inference. This test consumes Workers AI quota and must be run only with approval.
+These three values must match for production token signing/verification:
+- GitHub Environment secret `production/CLOUDFLARE_WHISPER_SHARED_SECRET`
+- Cloudflare Worker secret `NARRATIV_SHARED_SECRET`
+- Render API environment variable `CLOUDFLARE_WHISPER_SHARED_SECRET`
 
-The evidence artifact records the tested SHA, response status, provider/model metadata, synthetic fixture hash, and field-presence checks. It deliberately does not save transcript text, the signed token, or the shared secret. A passing request verifies only this endpoint contract for a tiny synthetic sample; it does not verify Burmese transcription quality, full video processing, usage accounting in production PostgreSQL, fallback behavior, subtitle persistence, or production readiness.
+The original Worker secret cannot be recovered from the binding list. If lost, generate one new strong value and set it consistently in GitHub `production` and the Render API service, then manually run **Deploy Cloudflare Whisper Worker** with `confirm_render_secret_synced=true` to synchronize the Worker secret from the protected GitHub environment. Do not confirm until Render API is updated. That deploy workflow is manual-only to prevent an ordinary source/workflow push from silently rotating production credentials. Keep `CLOUDFLARE_WHISPER_WORKER_URL` set to `https://narrativ-forge-whisper.narrativ-forge.workers.dev` in both GitHub and Render.
+
+The evidence artifact stores safe status/error codes, provider/model metadata, the synthetic fixture hash, and field-presence checks. It does not save transcript text, the signed token, or secret values. A pass verifies only the synthetic endpoint contract—not Burmese transcription quality, full video processing, production database usage accounting, fallback, subtitle persistence, or release readiness.

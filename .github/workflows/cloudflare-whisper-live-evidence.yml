@@ -27,21 +27,47 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-      - name: Validate opt-in credentials without printing values
+
+      - name: Validate target and credentials without printing values
         env:
           WORKER_URL: ${{ secrets.CLOUDFLARE_WHISPER_WORKER_URL }}
           SHARED_SECRET: ${{ secrets.CLOUDFLARE_WHISPER_SHARED_SECRET }}
+          EXPECTED_WORKER_HOST: narrativ-forge-whisper.narrativ-forge.workers.dev
         run: |
-          test -n "$WORKER_URL" || { echo "::error::Missing CLOUDFLARE_WHISPER_WORKER_URL"; exit 1; }
-          test -n "$SHARED_SECRET" || { echo "::error::Missing CLOUDFLARE_WHISPER_SHARED_SECRET"; exit 1; }
-          case "$WORKER_URL" in https://*) ;; *) echo "::error::Worker URL must use HTTPS"; exit 1;; esac
-          echo "Opt-in live test credentials are configured (values redacted)."
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from urllib.parse import urlsplit
+
+          raw_url = os.environ.get("WORKER_URL", "")
+          secret = os.environ.get("SHARED_SECRET", "")
+          if not raw_url:
+              raise SystemExit("::error::Missing production environment secret CLOUDFLARE_WHISPER_WORKER_URL")
+          if not secret:
+              raise SystemExit("::error::Missing production environment secret CLOUDFLARE_WHISPER_SHARED_SECRET")
+          if len(secret) < 32:
+              raise SystemExit("::error::Shared secret must be at least 32 characters; rotate it consistently across GitHub, Render API, and Cloudflare Worker.")
+          parsed = urlsplit(raw_url)
+          if parsed.scheme != "https" or parsed.hostname != os.environ["EXPECTED_WORKER_HOST"]:
+              raise SystemExit("::error::Worker URL must be the expected HTTPS workers.dev hostname; check CLOUDFLARE_WHISPER_WORKER_URL.")
+          if parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.path not in ("", "/"):
+              raise SystemExit("::error::Worker URL must contain only the HTTPS origin, with no credentials, query, fragment, or custom path.")
+          config_path = Path("web-platform/cloudflare/whisper-worker/wrangler.jsonc")
+          config = json.loads(config_path.read_text(encoding="utf-8"))
+          allowed_origin = config.get("vars", {}).get("ALLOWED_ORIGIN", "")
+          if not allowed_origin.startswith("https://"):
+              raise SystemExit("::error::ALLOWED_ORIGIN must be an HTTPS origin in wrangler.jsonc.")
+          print("Worker host, HTTPS URL, and secret presence/length checks passed; values remain redacted.")
+          PY
+
       - name: Generate a two-second synthetic WAV fixture
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ffmpeg
           ffmpeg -hide_banner -loglevel error -f lavfi -i "sine=frequency=440:sample_rate=16000:duration=2" -ac 1 -c:a pcm_s16le -y "$RUNNER_TEMP/whisper-live-fixture.wav"
           test -s "$RUNNER_TEMP/whisper-live-fixture.wav"
+
       - name: Verify unauthenticated rejection and authenticated audio inference
         env:
           WORKER_URL: ${{ secrets.CLOUDFLARE_WHISPER_WORKER_URL }}
@@ -62,10 +88,46 @@ jobs:
           import urllib.request
           from pathlib import Path
           from datetime import datetime, timezone
+          from urllib.parse import urlsplit
           from uuid import uuid4
 
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          opener = urllib.request.build_opener(NoRedirect)
+
+          def send(req):
+              try:
+                  with opener.open(req, timeout=90) as response:
+                      return response.status, response.headers, response.read()
+              except urllib.error.HTTPError as exc:
+                  return exc.code, exc.headers, exc.read()
+
+          def safe_error(body):
+              try:
+                  value = json.loads(body)
+              except (json.JSONDecodeError, UnicodeDecodeError):
+                  return None
+              allowed = {
+                  "Origin not allowed",
+                  "Invalid or expired processing token",
+                  "Episode token mismatch",
+                  "Method not allowed",
+                  "WAV audio is required",
+                  "Empty audio payload",
+                  "Audio payload exceeds 50 MB",
+                  "Audio payload exceeds the signed duration estimate",
+                  "Whisper inference failed",
+              }
+              error = value.get("error") if isinstance(value, dict) else None
+              return error if error in allowed else None
+
           url = os.environ["WORKER_URL"].rstrip("/")
+          parsed_url = urlsplit(url)
           secret = os.environ["SHARED_SECRET"]
+          config = json.loads(Path("web-platform/cloudflare/whisper-worker/wrangler.jsonc").read_text(encoding="utf-8"))
+          allowed_origin = config["vars"]["ALLOWED_ORIGIN"]
           episode_id = "live-evidence-" + uuid4().hex
           audio = Path(os.environ["AUDIO_PATH"]).read_bytes()
           evidence = {
@@ -74,20 +136,30 @@ jobs:
               "checked_at_utc": datetime.now(timezone.utc).isoformat(),
               "production_verified": False,
               "test_scope": "one synthetic 2-second WAV; authenticated Cloudflare Whisper endpoint contract",
+              "worker_host": parsed_url.hostname,
               "fixture_sha256": hashlib.sha256(audio).hexdigest(),
               "unauthenticated_rejected": False,
               "authenticated_inference_succeeded": False,
               "transcript_text_saved": False,
+              "redirects_followed": False,
           }
           try:
-              req = urllib.request.Request(url, data=audio, method="POST", headers={"Content-Type": "audio/wav", "X-Narrativ-Episode": episode_id})
-              try:
-                  with urllib.request.urlopen(req, timeout=90) as response:
-                      evidence["unauthenticated_status"] = response.status
-              except urllib.error.HTTPError as exc:
-                  evidence["unauthenticated_status"] = exc.code
-              if evidence["unauthenticated_status"] != 401:
-                  raise RuntimeError("Worker did not reject a request without a signed token.")
+              req = urllib.request.Request(url, data=audio, method="POST", headers={
+                  "Content-Type": "audio/wav",
+                  "X-Narrativ-Episode": episode_id,
+                  "Origin": allowed_origin,
+              })
+              status, headers, body = send(req)
+              evidence["unauthenticated_status"] = status
+              evidence["unauthenticated_error"] = safe_error(body)
+              evidence["unauthenticated_content_type"] = headers.get("Content-Type", "").split(";")[0]
+              evidence["unauthenticated_cf_ray_present"] = bool(headers.get("CF-Ray"))
+              if status != 401:
+                  if status == 403 and evidence["unauthenticated_error"] == "Origin not allowed":
+                      raise RuntimeError("Worker rejected the configured Origin. Check ALLOWED_ORIGIN in wrangler.jsonc and redeploy the Worker.")
+                  if status in (301, 302, 303, 307, 308):
+                      raise RuntimeError("Worker URL redirected; use the canonical workers.dev URL without redirects.")
+                  raise RuntimeError(f"Expected unauthenticated HTTP 401, got HTTP {status}; safe_error={evidence['unauthenticated_error']!r}.")
               evidence["unauthenticated_rejected"] = True
 
               payload = {
@@ -104,17 +176,17 @@ jobs:
                   "Authorization": "Bearer " + token,
                   "Content-Type": "audio/wav",
                   "X-Narrativ-Episode": episode_id,
+                  "Origin": allowed_origin,
               })
-              try:
-                  with urllib.request.urlopen(req, timeout=90) as response:
-                      status = response.status
-                      result = json.loads(response.read())
-              except urllib.error.HTTPError as exc:
-                  evidence["authenticated_status"] = exc.code
-                  raise RuntimeError(f"Authenticated inference returned HTTP {exc.code}.") from None
+              status, headers, body = send(req)
               evidence["authenticated_status"] = status
+              evidence["authenticated_error"] = safe_error(body)
+              evidence["authenticated_content_type"] = headers.get("Content-Type", "").split(";")[0]
               if status != 200:
-                  raise RuntimeError(f"Authenticated inference returned HTTP {status}.")
+                  if status == 401:
+                      raise RuntimeError("Authenticated request returned HTTP 401. GitHub's shared secret does not match the deployed Worker secret.")
+                  raise RuntimeError(f"Authenticated inference returned HTTP {status}; safe_error={evidence['authenticated_error']!r}.")
+              result = json.loads(body)
               if result.get("provider") != "cloudflare_workers_ai" or result.get("episode_id") != episode_id:
                   raise RuntimeError("Provider or episode identity in response did not match the request.")
               if not isinstance(result.get("text"), str) or not isinstance(result.get("vtt"), str):
@@ -132,6 +204,7 @@ jobs:
           finally:
               Path(os.environ["EVIDENCE_PATH"]).write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
           PY
+
       - name: Upload redacted live evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -139,3 +212,4 @@ jobs:
           name: cloudflare-whisper-live-evidence
           path: ${{ runner.temp }}/cloudflare-whisper-live-evidence.json
           if-no-files-found: warn
+          retention-days: 14

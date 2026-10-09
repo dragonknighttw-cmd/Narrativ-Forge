@@ -69,7 +69,7 @@ jobs:
 
       - name: Prepare shared local storage
         run: |
-          mkdir -p "$RUNNER_TEMP/narrativ-storage"
+          mkdir -p "$RUNNER_TEMP/narrativ-storage" "$RUNNER_TEMP/worker-evidence"
           # The production image runs as a non-root user; make the CI bind mount
           # writable without changing the production image's runtime user.
           chmod 0777 "$RUNNER_TEMP/narrativ-storage"
@@ -149,12 +149,66 @@ jobs:
             docker logs narrativ-worker-evidence || true
             exit 1
           }
-          docker run --rm --network host             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -e XDG_CACHE_HOME=/app/storage/whisper-cache             -e PROCESSING_TIMEOUT_SECONDS=600             -e WORKER_EVIDENCE_QUEUE=worker_evidence             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             env PYTHONPATH=/app python scripts/worker_smoke.py --work-dir /app/storage/worker-smoke --timeout 900
+          docker run --rm --network host             -e DATABASE_URL=postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_worker             -e REDIS_URL=redis://127.0.0.1:6379/0             -e STORAGE_PROVIDER=local             -e UPLOAD_DIR=/app/storage             -e XDG_CACHE_HOME=/app/storage/whisper-cache             -e PROCESSING_TIMEOUT_SECONDS=600             -e WORKER_EVIDENCE_QUEUE=worker_evidence             -v "$RUNNER_TEMP/narrativ-storage:/app/storage"             narrativ-forge-worker-evidence             env PYTHONPATH=/app python scripts/worker_smoke.py --work-dir /app/storage/worker-smoke --timeout 900 2>&1 | tee "$RUNNER_TEMP/worker-evidence/worker-smoke.log"
 
       - name: Show worker logs on failure
         if: failure()
         run: docker logs narrativ-worker-evidence || true
 
+      - name: Collect redacted worker evidence
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          GIT_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set +e
+          EVIDENCE_DIR="$RUNNER_TEMP/worker-evidence"
+          mkdir -p "$EVIDENCE_DIR"
+          if docker ps -a --format '{{.Names}}' | grep -qx 'narrativ-worker-evidence'; then
+            docker logs narrativ-worker-evidence > "$EVIDENCE_DIR/worker-container.log" 2>&1
+          else
+            printf 'Worker container was not created.\n' > "$EVIDENCE_DIR/worker-container.log"
+          fi
+          if [ -d "$RUNNER_TEMP/narrativ-storage" ]; then
+            find "$RUNNER_TEMP/narrativ-storage" -type f -printf '%P\t%s bytes\n' | sort > "$EVIDENCE_DIR/storage-inventory.txt"
+          fi
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root = Path(os.environ["RUNNER_TEMP"]) / "worker-evidence"
+          smoke_log = root / "worker-smoke.log"
+          manifest = {
+              "gate": "real-worker-e2e",
+              "job_status_at_collection": os.environ["JOB_STATUS"],
+              "commit_sha": os.environ["GIT_SHA"],
+              "workflow_run_id": os.environ["RUN_ID"],
+              "workflow_run_attempt": os.environ["RUN_ATTEMPT"],
+              "trigger": os.environ["EVENT_NAME"],
+              "environment": "ephemeral-github-actions-postgres-16-redis-7",
+              "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+              "worker_smoke_passed": smoke_log.exists() and "WORKER_SMOKE_OK" in smoke_log.read_text(encoding="utf-8", errors="replace"),
+              "production_verified": False,
+              "evidence_files": ["worker-container.log", "worker-smoke.log", "storage-inventory.txt"],
+              "privacy": "No production credentials or production user data are used; generated media contents are not uploaded.",
+          }
+          (root / "worker-evidence-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          print("Worker evidence manifest collected; production_verified=false.")
+          PY
+
       - name: Stop worker
         if: always()
         run: docker rm -f narrativ-worker-evidence || true
+
+      - name: Upload worker evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-worker-evidence
+          path: ${{ runner.temp }}/worker-evidence/**
+          if-no-files-found: warn
+          retention-days: 14

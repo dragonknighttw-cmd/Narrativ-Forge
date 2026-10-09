@@ -22,6 +22,8 @@ jobs:
           python-version: "3.12"
       - name: Install dispatcher dependencies
         run: python -m pip install --disable-pip-version-check psycopg2-binary kaggle
+      - name: Test dispatcher validation and failure handling
+        run: python -m unittest discover -s infra/kaggle -p 'test_*.py' -v
       - name: Validate dispatcher configuration
         env:
           DATABASE_URL: ${{ secrets.KAGGLE_DISPATCH_DATABASE_URL }}

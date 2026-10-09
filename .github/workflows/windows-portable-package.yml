@@ -128,8 +128,9 @@ jobs:
             Copy-Item $env:PACKAGE_ZIP $evidence
             Copy-Item "$env:PACKAGE_ZIP.sha256.txt" $evidence
           }
-          if ($env:PACKAGE_STAGE -and (Test-Path (Join-Path $env:PACKAGE_STAGE ".runtime"))) {
-            Copy-Item (Join-Path $env:PACKAGE_STAGE ".runtime") (Join-Path $evidence "runtime-logs") -Recurse -Force
+          $installedRuntime = Join-Path $env:RUNNER_TEMP "narrativ-forge-installed/.runtime"
+          if (Test-Path $installedRuntime) {
+            Copy-Item $installedRuntime (Join-Path $evidence "runtime-logs") -Recurse -Force
           }
           $summary = [ordered]@{
             commit_sha = $env:GITHUB_SHA

@@ -63,7 +63,7 @@ try {
 
     $env:PORT = "3000"
     $env:HOSTNAME = "127.0.0.1"
-    $web = Start-Process -FilePath (Get-Command node).Source -ArgumentList @("server.js") -WorkingDirectory $Frontend -PassThru -RedirectStandardOutput $webOut -RedirectStandardError $webErr
+    $web = Start-Process -FilePath (Get-Command node).Source -ArgumentList @((Join-Path $Frontend "server.js")) -WorkingDirectory $Frontend -PassThru -RedirectStandardOutput $webOut -RedirectStandardError $webErr
     $web.Id | Set-Content -Encoding ascii (Join-Path $Runtime "web.pid")
     $webReady = $false
     for ($i = 0; $i -lt 45; $i++) {

@@ -1,6 +1,25 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "shell": "pwsh",
+  "model": "openrouter/cohere/north-mini-code:free",
+  "provider": {
+    "openrouter": {
+      "models": {
+        "cohere/north-mini-code:free": {
+          "name": "Cohere North Mini Code (Free)"
+        },
+        "nvidia/nemotron-3.5-lightning:free": {
+          "name": "NVIDIA Nemotron 3.5 Lightning (Free)"
+        },
+        "nvidia/nemotron-3-ultra-550b-a55b:free": {
+          "name": "NVIDIA Nemotron 3 Ultra (Free)"
+        },
+        "thinkingmachines/inkling-small:free": {
+          "name": "Thinking Machines Inkling Small (Free)"
+        }
+      }
+    }
+  },
   "instructions": [
     "AGENTS.md",
     "README.md",

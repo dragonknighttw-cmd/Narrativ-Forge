@@ -153,14 +153,22 @@ jobs:
               evidence["unauthenticated_status"] = status
               evidence["unauthenticated_error"] = safe_error(body)
               evidence["unauthenticated_content_type"] = headers.get("Content-Type", "").split(";")[0]
-              evidence["unauthenticated_cf_ray_present"] = bool(headers.get("CF-Ray"))
-              if status != 401:
-                  if status == 403 and evidence["unauthenticated_error"] == "Origin not allowed":
-                      raise RuntimeError("Worker rejected the configured Origin. Check ALLOWED_ORIGIN in wrangler.jsonc and redeploy the Worker.")
-                  if status in (301, 302, 303, 307, 308):
-                      raise RuntimeError("Worker URL redirected; use the canonical workers.dev URL without redirects.")
-                  raise RuntimeError(f"Expected unauthenticated HTTP 401, got HTTP {status}; safe_error={evidence['unauthenticated_error']!r}.")
-              evidence["unauthenticated_rejected"] = True
+          evidence["unauthenticated_server"] = headers.get("Server", "")[:80] or None
+          evidence["unauthenticated_cf_ray"] = headers.get("CF-Ray", "")[:128] or None
+          evidence["unauthenticated_cf_mitigated"] = headers.get("cf-mitigated", "")[:80] or None
+          evidence["unauthenticated_cf_ray_present"] = bool(headers.get("CF-Ray"))
+          evidence["unauthenticated_body_sha256"] = hashlib.sha256(body).hexdigest()
+          preview = body[:512].decode("utf-8", errors="replace")
+          evidence["unauthenticated_body_preview"] = "".join(ch if ch.isprintable() else " " for ch in preview)[:160] or None
+          if status != 401:
+              if status == 403 and evidence["unauthenticated_error"] == "Origin not allowed":
+                  raise RuntimeError("Worker rejected the configured Origin. Compare the deployed Worker ALLOWED_ORIGIN binding with wrangler.jsonc.")
+              if status == 403 and evidence["unauthenticated_content_type"] != "application/json" and evidence["unauthenticated_cf_ray_present"]:
+                  raise RuntimeError("Cloudflare returned a non-JSON HTTP 403 before the expected Worker auth response. This is an edge/deployment/access-layer failure, not evidence of a shared-secret mismatch. Run the non-billable Cloudflare Whisper Preflight workflow; do not retry inference yet.")
+              if status in (301, 302, 303, 307, 308):
+                  raise RuntimeError("Worker URL redirected; use the canonical workers.dev URL without redirects.")
+              raise RuntimeError(f"Expected unauthenticated HTTP 401, got HTTP {status}; content_type={evidence['unauthenticated_content_type']!r}; safe_error={evidence['unauthenticated_error']!r}; cf_ray_present={evidence['unauthenticated_cf_ray_present']}.")
+          evidence["unauthenticated_rejected"] = True
 
               payload = {
                   "sub": "narrativ-live-evidence",

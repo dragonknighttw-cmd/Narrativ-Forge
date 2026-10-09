@@ -299,3 +299,6 @@ Evidence status:
 - This workflow has not yet been confirmed green in GitHub Actions. Status: IMPLEMENTED / VERIFY. It does not prove a Windows installer or production providers.
 
 Next: inspect the local-runtime and backup/restore workflow runs; add deterministic local worker/media smoke; prototype Windows sidecar lifecycle; then build and test install/launch/E2E/cleanup. Credentialed cloud E2E and production acceptance remain separate gates.
+
+
+- Added `.github/workflows/windows-local-runtime-evidence.yml` to check FastAPI + SQLite + local filesystem behavior on a clean Windows runner, with API process cleanup and evidence artifact collection. This is a compatibility smoke, not an installer/package test. Execution remains VERIFY until the workflow run and artifact are inspected.

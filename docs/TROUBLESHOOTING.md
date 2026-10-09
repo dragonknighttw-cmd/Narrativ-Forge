@@ -68,3 +68,15 @@ If a failure depends on a real provider, worker, credential, mailbox, or product
 - Queue remains the durable pending boundary.
 - Do not fake completion from the API.
 - Provision/restart worker and verify Celery heartbeat before replaying production jobs.
+
+
+## Cloudflare Whisper returns HTTP 403 before authentication
+
+Latest evidence: [live run #37907157973](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37907157973) returned HTTP 403 with `Content-Type: text/plain`, a Cloudflare `CF-Ray`, and no recognized Worker JSON error. The authenticated request and AI inference were never reached.
+
+1. Run [Cloudflare Whisper Preflight](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/cloudflare-whisper-preflight.yml). It sends an unauthenticated GET only—no audio, secret, or Workers AI inference.
+2. Expected result: HTTP 405 with JSON `{"error":"Method not allowed"}`. This proves the public URL reached the Worker handler's method guard, not that authentication or inference works.
+3. If the result is HTTP 403 `text/plain` with a `CF-Ray`, capture the Ray ID and timestamp and inspect Cloudflare account/edge access controls, the workers.dev hostname, and the deployed Worker script/version. Do not rotate the shared secret based only on this result.
+4. If the result is JSON `403 Origin not allowed`, compare the deployed `ALLOWED_ORIGIN` binding with `web-platform/cloudflare/whisper-worker/wrangler.jsonc`.
+5. Only diagnose a secret mismatch after the unauthenticated request reaches the Worker and returns the expected 401, then an authenticated request returns 401. That authenticated request may require an approved inference test.
+6. Never include secret values, bearer tokens, or transcript text in logs or screenshots. Do not repeat live inference until the non-billable preflight passes and quota use is explicitly approved.

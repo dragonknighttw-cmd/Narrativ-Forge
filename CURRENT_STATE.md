@@ -375,3 +375,12 @@ This section supersedes earlier historical statements about pending CI runs or t
 5. Complete live provider lifecycle, production tenant E2E, OAuth/Drive, SMTP, Stripe, Sentry, security/container scans, performance, accessibility, legal/privacy, and external penetration testing with exact evidence.
 
 **Release status remains NOT Production Ready.** Configuration, source tests, a live API deployment, and synthetic CI fixtures do not independently verify production media processing or external-provider behavior.
+
+
+## 2026-10-09 Cloudflare Whisper live acceptance failure
+
+- Live evidence run [#37895020420](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37895020420) failed before authenticated inference. The unauthenticated POST returned HTTP 403; the expected Worker contract is HTTP 401. The signed-token request was not reached, so this run does not establish whether the configured shared secret matches.
+- Cloudflare API metadata confirms the Worker has the `NARRATIV_SHARED_SECRET` secret binding, but the secret value is not retrievable from the binding listing. Do not claim the value is known.
+- The related workflows are being hardened on PR #22: validate the exact workers.dev hostname and secret length; send the configured allowed Origin; do not follow redirects; record safe error/status codes without saving response bodies; make Worker deployment manual-only and use the protected production environment for secret synchronization.
+- The exact same shared secret must be configured in GitHub `production/CLOUDFLARE_WHISPER_SHARED_SECRET`, Cloudflare Worker `NARRATIV_SHARED_SECRET`, and Render API `CLOUDFLARE_WHISPER_SHARED_SECRET`. If the old value is lost, rotate all three together before testing.
+- **Whisper authenticated E2E remains NOT VERIFIED.** Do not run another quota-consuming inference until the coordinated secret setup and manual Worker deployment are complete and the owner approves the test.

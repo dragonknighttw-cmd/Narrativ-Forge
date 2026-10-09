@@ -8,7 +8,7 @@ from typing import Any, Protocol
 import httpx
 
 from ..core.config import settings
-from .provider_fallback import run_with_fallback
+from .provider_fallback import is_retryable_provider_error, run_with_fallback
 from .provider_registry import ProviderRegistry, ProviderSpec
 
 logger = logging.getLogger(__name__)
@@ -136,8 +136,28 @@ class RoutedAIAdapter:
         operations = [(spec.name, lambda spec=spec: spec.operation(idea=idea, category=category)) for spec in registry.candidates("script")]
         if not operations:
             return self.fallback.create_content_plan(idea=idea, category=category)
+        def should_try_next_free_model(exc: BaseException) -> bool:
+            # Model retirement / unsupported-model responses should not stop the free-only chain.
+            response = getattr(exc, "response", None)
+            status = (
+                getattr(exc, "status_code", None)
+                or getattr(exc, "status", None)
+                or getattr(response, "status_code", None)
+            )
+            if status is not None:
+                try:
+                    if int(status) in {400, 404, 408, 409, 422, 425, 429, 500, 502, 503, 504}:
+                        return True
+                    if int(status) in {401, 403}:
+                        return False
+                except (TypeError, ValueError):
+                    pass
+            return is_retryable_provider_error(exc)
+
         try:
-            value, provider, attempts = run_with_fallback(operations)
+            value, provider, attempts = run_with_fallback(
+                operations, should_fallback=should_try_next_free_model
+            )
             logger.info("AI content plan generated", extra={"provider": provider, "attempts": [a.provider for a in attempts]})
             return value
         except Exception:

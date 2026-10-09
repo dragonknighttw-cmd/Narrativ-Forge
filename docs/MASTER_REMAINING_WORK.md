@@ -35,7 +35,7 @@ Do not equate implemented code, passing unit tests, deployed service reachabilit
 - [x] PR #23 merged as `6eaa41668d0d49d4380c0bb2a9e3a1e6f2122ce2` after its PR-head CI, backend integration, E2E, Security, CodeQL and Repository Gate checks passed.
 - [ ] Run the manual **Cloudflare Whisper Preflight** workflow (GET-only, no credentials/audio/inference) and record artifact evidence; it was not triggered automatically by merging PR #23.
 - [x] Resolve PR review/check failures before merge; no failed required checks remained on either PR head at merge time.
-- [ ] Verify the new exact main SHA `6eaa41668d0d49d4380c0bb2a9e3a1e6f2122ce2` and all relevant checks after PR #23 merge; these checks are pending.
+- [ ] Verify the current exact main SHA and all relevant checks after PR #23 merge and this checklist update; fresh checks must finish before moving on.
 
 ### 1.2 Worker and media pipeline
 - [ ] Audit `web-platform/backend/Dockerfile.worker`, Celery registration, Redis queue, PostgreSQL state, FFmpeg/Whisper availability, retry policy, DLQ, late ACK, duplicate dispatch, stale-job recovery, and shutdown behavior.

@@ -1,7 +1,7 @@
 # Free-first production-readiness checkpoint
 
-**Checkpoint date:** 2026-10-10 UTC  
-**Current main SHA:** 1b6baad0df7f8b0ad5080381143288de62ba16a7  
+**Checkpoint date:** 2026-10-11 UTC  
+**Main SHA at this checkpoint:** e672bf0c5f75441e0bd9556db6811320a33a7a5e  
 **Release status:** PENDING — NOT PRODUCTION READY  
 **Policy:** Do not run Cloudflare Whisper live inference, consume provider quota, or provision potentially billable resources without explicit owner approval.
 
@@ -13,7 +13,7 @@
 - PR #52 merged: Kaggle scheduled launches require repository Actions variable ENABLE_KAGGLE_DISPATCH=true; manual dispatch requires explicit confirm_kaggle_dispatch=true.
 - PR #53 merged: concurrent requests that bootstrap a missing billing subscription recover from the uniqueness race without hiding unrelated integrity failures.
 - PR #52 and #53 PR-head checks passed. PR #53's real-worker synthetic-media smoke passed and the worker/containers were stopped; this is ephemeral CI evidence, not a persistent production worker.
-- Current main SHA `1b6baad0df7f8b0ad5080381143288de62ba16a7` has fresh successful CI, Security, CodeQL, Repository Gate, and non-billable Cloudflare Whisper Preflight evidence. The preflight reached the deployed Worker handler and received its expected JSON method guard (HTTP 405); it sent no audio and did not invoke Workers AI. This confirms edge/handler reachability only, not authenticated inference or production readiness.
+- Main SHA `e672bf0c5f75441e0bd9556db6811320a33a7a5e` has fresh successful post-merge CI, Security, CodeQL, and Repository Gate evidence. Cloudflare Whisper Preflight passed on its parent SHA `1b6baad0df7f8b0ad5080381143288de62ba16a7`, reaching the deployed Worker handler and receiving the expected JSON method guard (HTTP 405) without audio or Workers AI inference. This is handler reachability evidence only, not authenticated inference or production readiness.
 
 ## Historical workflow evidence
 
@@ -48,8 +48,8 @@ These checks validate the PR branch commit only. They do not replace fresh evide
 ## Quota-free work queue
 
 ### 1. Repository and CI baseline
-- [x] Refresh current-main CI, Security, CodeQL, and Repository Gate runs for SHA `1b6baad0df7f8b0ad5080381143288de62ba16a7`; all succeeded. The non-billable Cloudflare Whisper Preflight also succeeded on this exact SHA.
-- [ ] Run fresh main-branch backup/restore, real-worker synthetic-media, local runtime, Windows runtime, and portable-package evidence against the current SHA where the workflow supports manual dispatch or relevant path triggers.
+- [x] Refresh current-main CI, Security, CodeQL, and Repository Gate runs for SHA `e672bf0c5f75441e0bd9556db6811320a33a7a5e`; all succeeded. The non-billable Cloudflare Whisper Preflight last succeeded on parent SHA `1b6baad0df7f8b0ad5080381143288de62ba16a7`.
+- [ ] Run fresh main-branch backup/restore, real-worker synthetic-media, local runtime, Windows runtime, and portable-package evidence against `e672bf0c5f75441e0bd9556db6811320a33a7a5e`. These evidence workflows are manual-dispatch or path-triggered; the connected GitHub tool here does not expose workflow dispatch, so existing artifacts below remain tied to their recorded older SHAs.
 - [x] Reconcile the top-level current-checkpoint metadata in `ROADMAP.md` and `docs/MASTER_REMAINING_WORK.md` with the current SHA and latest evidence.
 - [x] Keep live inference and paid-resource workflows separate from default CI, with explicit manual confirmation and minimal permissions.
 

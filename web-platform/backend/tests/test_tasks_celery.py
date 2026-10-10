@@ -948,7 +948,10 @@ def test_concurrent_postgresql_dlq_publish_sends_only_once():
     failed_job_id = failed_job.id
     seed.close()
 
+    import time
+
     first_send_started = Event()
+    second_attempting = Event()
     allow_send_to_finish = Event()
     sent = []
 
@@ -958,9 +961,11 @@ def test_concurrent_postgresql_dlq_publish_sends_only_once():
             first_send_started.set()
             assert allow_send_to_finish.wait(timeout=5)
 
-    def publish():
+    def publish(second_call=False):
         session = Session()
         try:
+            if second_call:
+                second_attempting.set()
             return tasks_module.publish_dead_letter(FakeCelery(), session, failed_job_id)
         finally:
             session.close()
@@ -968,7 +973,11 @@ def test_concurrent_postgresql_dlq_publish_sends_only_once():
     with ThreadPoolExecutor(max_workers=2) as executor:
         first = executor.submit(publish)
         assert first_send_started.wait(timeout=5)
-        second = executor.submit(publish)
+        second = executor.submit(publish, True)
+        assert second_attempting.wait(timeout=5)
+        # Give the second session time to reach the row lock while the first
+        # publisher deliberately holds its transaction open.
+        time.sleep(0.1)
         allow_send_to_finish.set()
         outcomes = [first.result(timeout=10), second.result(timeout=10)]
 

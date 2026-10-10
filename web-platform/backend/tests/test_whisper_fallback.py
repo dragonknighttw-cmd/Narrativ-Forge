@@ -50,7 +50,12 @@ def test_cloudflare_whisper_uses_signed_bearer_wav_contract(monkeypatch, tmp_pat
 
     class Db:
         def query(self, model):
+            calls.append(("db_query", model))
             return Query()
+
+        def execute(self, statement):
+            calls.append(("db_lock", statement))
+            return SimpleNamespace(first=lambda: None)
 
         def add(self, value):
             calls.append(("db_add", value))
@@ -95,6 +100,20 @@ def test_cloudflare_whisper_uses_signed_bearer_wav_contract(monkeypatch, tmp_pat
     assert payload["source"] == "cloudflare_whisper"
     assert payload["text"] == "မင်္ဂလာပါ"
     request = next(item for item in calls if item[0] == "https://whisper.example.test")
+    lock_index = next(index for index, item in enumerate(calls) if item[0] == "db_lock")
+    reservation_index = next(
+        index for index, item in enumerate(calls)
+        if item[0] == "db_add" and item[1].metric == "cloudflare_whisper_audio_seconds"
+    )
+    commit_index = next(
+        index for index, item in enumerate(calls)
+        if item[0] == "db_commit"
+    )
+    request_index = next(index for index, item in enumerate(calls) if item[0] == "https://whisper.example.test")
+    reservation = calls[reservation_index][1]
+    assert lock_index < reservation_index < commit_index < request_index
+    assert reservation.quantity == 4
+    assert reservation.idempotency_key.startswith("cloud-whisper-worker:")
     assert request[1]["headers"]["Content-Type"] == "audio/wav"
     assert request[1]["headers"]["X-Narrativ-Episode"] == "episode-42"
     assert request[1]["headers"]["Authorization"].startswith("Bearer ")

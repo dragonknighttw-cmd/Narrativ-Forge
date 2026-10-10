@@ -118,3 +118,67 @@ def test_cloudflare_whisper_uses_signed_bearer_wav_contract(monkeypatch, tmp_pat
     assert request[1]["headers"]["X-Narrativ-Episode"] == "episode-42"
     assert request[1]["headers"]["Authorization"].startswith("Bearer ")
     assert request[1]["body_bytes"] == b"RIFF-WAV"
+
+
+@pytest.mark.unit
+def test_cloudflare_whisper_skips_remote_when_daily_quota_threshold_reached(monkeypatch, tmp_path):
+    from pathlib import Path
+
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"video-fixture")
+    transcript_dir = tmp_path / "whisper"
+    transcript_dir.mkdir()
+    episode = SimpleNamespace(id="episode-quota", organization_id="org-quota")
+    db_calls = []
+
+    class Query:
+        def filter(self, *args, **kwargs):
+            return self
+
+        def all(self):
+            return []
+
+    class Db:
+        def query(self, model):
+            return Query()
+
+        def execute(self, statement):
+            db_calls.append(("lock", statement))
+            return SimpleNamespace(first=lambda: None)
+
+        def add(self, value):
+            db_calls.append(("add", value))
+
+        def commit(self):
+            db_calls.append(("commit", None))
+
+    monkeypatch.setattr(real_processing.settings, "cloudflare_whisper_worker_url", "https://whisper.example.test")
+    monkeypatch.setattr(real_processing.settings, "cloudflare_whisper_shared_secret", "test-secret")
+    monkeypatch.setattr(real_processing.settings, "cloudflare_whisper_daily_neuron_budget", 100)
+    monkeypatch.setattr(real_processing.settings, "cloudflare_whisper_neurons_per_audio_minute", 60)
+    monkeypatch.setattr(real_processing.settings, "cloudflare_whisper_fallback_threshold", 0.95)
+    monkeypatch.setattr(real_processing.settings, "ffprobe_binary", "ffprobe")
+    monkeypatch.setattr(real_processing.settings, "ffmpeg_binary", "ffmpeg")
+    monkeypatch.setattr(real_processing, "_daily_whisper_usage_seconds", lambda db, org_id: 91)
+
+    def fake_run(command, *, timeout):
+        if command[0] == "ffprobe":
+            return SimpleNamespace(stdout="3.2\\n")
+        if command[0] == "ffmpeg":
+            Path(command[-1]).write_bytes(b"RIFF-WAV")
+            return SimpleNamespace(stdout="", stderr="")
+        raise AssertionError(command)
+
+    monkeypatch.setattr(real_processing, "_run", fake_run)
+
+    def unexpected_post(*args, **kwargs):
+        raise AssertionError("remote inference must not run after quota threshold is reached")
+
+    monkeypatch.setattr(real_processing.requests, "post", unexpected_post)
+
+    with pytest.raises(RuntimeError, match="quota requires local fallback"):
+        real_processing._transcribe_cloudflare(source, transcript_dir, episode, Db())
+
+    assert any(item[0] == "lock" for item in db_calls)
+    assert not any(item[0] == "add" for item in db_calls)
+    assert not any(item[0] == "commit" for item in db_calls)

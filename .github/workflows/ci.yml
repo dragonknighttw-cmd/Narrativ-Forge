@@ -153,6 +153,8 @@ jobs:
           CORS_ORIGINS=http://localhost:3000 DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python -m alembic upgrade head
           BOOTSTRAP_ADMIN_EMAIL="$E2E_EMAIL" BOOTSTRAP_ADMIN_PASSWORD="$E2E_PASSWORD" DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python scripts/bootstrap_admin.py
           E2E_SECOND_EMAIL=e2e-second-tenant@example.test E2E_SECOND_PASSWORD='E2e-Second-Password-ChangeMe1!' DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python scripts/seed_e2e_tenant.py
+          # Generate an ephemeral encryption key for this disposable E2E backend only.
+          export OAUTH_ENCRYPTION_KEY="$(PYTHONPATH=. python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
           CORS_ORIGINS=http://localhost:3000 PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &
           python - <<'PY'
           import time

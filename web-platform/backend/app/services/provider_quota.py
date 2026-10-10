@@ -88,6 +88,16 @@ def reserve_provider_quota(
     period = _period_start(now)
     metric = f"provider:{provider.lower()}"
 
+    # Serialize reservations per organization on PostgreSQL before checking
+    # idempotency. A concurrent request using the same key can commit while
+    # this request waits for the lock, so the lookup must happen after locking.
+    # SQLite remains covered by the transaction used by the caller.
+    db.execute(
+        select(Organization.id)
+        .where(Organization.id == organization_id)
+        .with_for_update()
+    ).first()
+
     existing = db.scalar(
         select(UsageEvent).where(UsageEvent.idempotency_key == idempotency_key)
     )
@@ -104,14 +114,6 @@ def reserve_provider_quota(
         ):
             raise ValueError("Idempotency key is already bound to a different provider quota reservation")
         return get_provider_quota(db, organization_id, provider, now=now)
-
-    # Serialize reservations per organization on PostgreSQL. SQLite remains
-    # covered by the normal transaction used by the caller.
-    db.execute(
-        select(Organization.id)
-        .where(Organization.id == organization_id)
-        .with_for_update()
-    ).first()
 
     used = int(
         db.scalar(

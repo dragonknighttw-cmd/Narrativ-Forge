@@ -113,3 +113,39 @@ def test_provider_quota_exposes_warning_and_fallback_thresholds(db_session, monk
     assert quota.warning is True
     assert quota.fallback is True
     assert quota.remaining == 5
+
+
+
+def test_provider_quota_reused_key_cannot_change_quantity(db_session):
+    db = db_session
+    from app.models import Organization
+
+    org = Organization(name="quota5", slug="quota-test-5")
+    db.add(org)
+    db.commit()
+    now = datetime(2026, 10, 7, 12, tzinfo=timezone.utc)
+
+    reserve_provider_quota(
+        db,
+        org.id,
+        "groq",
+        10,
+        idempotency_key="quantity-bound-key",
+        now=now,
+    )
+    db.commit()
+
+    with pytest.raises(ValueError, match="different provider quota reservation"):
+        reserve_provider_quota(
+            db,
+            org.id,
+            "groq",
+            11,
+            idempotency_key="quantity-bound-key",
+            now=now,
+        )
+
+    quota = get_provider_quota(db, org.id, "groq", now=now)
+    assert quota.used == 10
+    assert quota.remaining == 990
+    db.close()

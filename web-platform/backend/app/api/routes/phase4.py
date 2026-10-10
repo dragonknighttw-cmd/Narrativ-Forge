@@ -49,11 +49,10 @@ def ensure_membership(db: Session, user: dict) -> OrganizationMembership:
     if membership:
         # Older/bootstrap-created workspaces may predate billing subscription rows.
         # Keep billing reads safe and consistent for every existing membership.
-        subscription = (
-            db.query(BillingSubscription)
-            .filter(BillingSubscription.organization_id == membership.organization_id)
-            .first()
+        subscription_query = db.query(BillingSubscription).filter(
+            BillingSubscription.organization_id == membership.organization_id
         )
+        subscription = subscription_query.first()
         if subscription is None:
             organization = db.get(Organization, membership.organization_id)
             plan = organization.plan if organization else "trial"
@@ -64,7 +63,20 @@ def ensure_membership(db: Session, user: dict) -> OrganizationMembership:
                     status="trialing" if plan == "trial" else "active",
                 )
             )
-            db.commit()
+            try:
+                db.commit()
+            except IntegrityError:
+                # Concurrent workspace requests can both observe the missing row.
+                # Only suppress the uniqueness race if the other request actually
+                # created the subscription; preserve unrelated integrity failures.
+                db.rollback()
+                subscription = (
+                    db.query(BillingSubscription)
+                    .filter(BillingSubscription.organization_id == membership.organization_id)
+                    .first()
+                )
+                if subscription is None:
+                    raise
             db.refresh(membership)
         return membership
     base = _slug(user["email"].split("@", 1)[0])

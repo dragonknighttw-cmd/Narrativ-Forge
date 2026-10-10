@@ -807,8 +807,6 @@ def test_stale_real_processing_job_is_requeued_with_retry_metadata(testing_db, m
     )
     db.add(job)
     db.commit()
-    job_id = job.id
-
     try:
         assert real_worker.recover_stale_real_jobs(db) == 1
         db.refresh(job)

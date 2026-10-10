@@ -14,7 +14,7 @@ from app import db
 pytestmark = pytest.mark.integration
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
-HEAD_REVISION = "0017_asset_deleted_at"
+HEAD_REVISION = "0018_tenant_backfill_guard"
 PREVIOUS_REVISION = "0008_storage_replicas"
 
 

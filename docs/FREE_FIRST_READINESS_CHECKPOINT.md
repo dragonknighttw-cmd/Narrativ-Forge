@@ -1,11 +1,21 @@
 # Free-first production-readiness checkpoint
 
 **Checkpoint date:** 2026-10-10 UTC  
+**Current main SHA:** c3a91d03ff67aacecd8519d65d7893b75ea1527c  
 **Release status:** PENDING — NOT PRODUCTION READY  
 **Policy:** Do not run Cloudflare Whisper live inference, consume provider quota, or provision potentially billable resources without explicit owner approval.
 
-This checkpoint is a concise operational supplement to `ROADMAP.md` and `docs/MASTER_REMAINING_WORK.md`. It does not replace either document or mark any external integration as production-verified.
+## Latest implementation checkpoint
 
+- PR #49 merged: reserves Whisper audio usage before remote inference so ambiguous provider outcomes are accounted for.
+- PR #50 merged: Redis dispatch locks are released only by the matching dispatch token.
+- PR #51 merged: roll back the SQLAlchemy transaction before entering local Whisper fallback.
+- PR #52 merged: Kaggle scheduled launches require repository Actions variable ENABLE_KAGGLE_DISPATCH=true; manual dispatch requires explicit confirm_kaggle_dispatch=true.
+- PR #53 merged: concurrent requests that bootstrap a missing billing subscription recover from the uniqueness race without hiding unrelated integrity failures.
+- PR #52 and #53 PR-head checks passed. PR #53's real-worker synthetic-media smoke passed and the worker/containers were stopped; this is ephemeral CI evidence, not a persistent production worker.
+- The immediately preceding main SHA fdb583dd660c399a1497292acf5ac4981c6d051a had passing CI, Security, CodeQL, and Repository Gate. Fresh post-merge checks for the current SHA were not yet visible when this checkpoint was written; re-check them before treating the current main baseline as green.
+
+## Verified scope versus still blocked
 ## Verified evidence available at this checkpoint
 
 - Cloudflare Whisper Worker deployment workflow succeeded in [run 38035662514](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38035662514). The run validated deployment credentials, deployed the Worker, configured the Worker secret, and completed a handler smoke test without AI inference. This does **not** prove authenticated transcription works.
@@ -17,11 +27,11 @@ This checkpoint is a concise operational supplement to `ROADMAP.md` and `docs/MA
 
 These run links are evidence for the specific workflow runs and their tested scope, not a claim that every run used the current default-branch SHA or that production providers passed end-to-end acceptance. Re-check latest main-branch runs before release decisions.
 
-## Documentation freshness finding
+## Historical documentation freshness finding (prior main baseline)
 
 The headers of `ROADMAP.md` and `docs/MASTER_REMAINING_WORK.md` still describe the baseline immediately after PR #43 (main SHA `5da1625c031ec235e636b8875be5bee9d368f7b2`) and include older historical checkpoints. The current default-branch commit observed during this audit is `ae6d3036443262b62271e9012fd78f5b5956ad69` (PR #44). The connector returned no PR-triggered workflow records for that main SHA, so its fresh checks are **not verified here**. Treat older main-checkpoint statements as historical until reconciled against current run evidence; do not mark the main baseline fully green from older evidence alone.
 
-## Checkpoint documentation PR validation
+## Historical checkpoint documentation PR validation
 
 The latest checkpoint branch commit checked was `aaf9d95bb87030de651a9d4bd15d3990530e90c5`. The following PR workflow runs completed with conclusion `success` for that commit:
 

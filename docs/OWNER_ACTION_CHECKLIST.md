@@ -1,6 +1,26 @@
 # Narrativ Forge — Owner Action Checklist
 
-## Current post-merge checkpoint — 2026-10-10 UTC
+## Current checkpoint — 2026-10-10 UTC
+
+- Current main SHA: c3a91d03ff67aacecd8519d65d7893b75ea1527c (PR #53 merge).
+- Merged fixes since older checkpoints: PR #49 Whisper quota reservation; PR #50 Redis dispatch-lock ownership; PR #51 database rollback before local Whisper fallback; PR #52 explicit opt-in for scheduled/manual Kaggle dispatch; PR #53 concurrent billing-subscription bootstrap race handling.
+- PR #52 checks passed. PR #53 checks passed on its PR head, including CI, security, CodeQL, Repository Gate, real-worker synthetic-media evidence, and local/Windows runtime/package evidence.
+- Fresh post-merge checks for main SHA c3a91d03ff67aacecd8519d65d7893b75ea1527c were not yet visible at the time this checkpoint was written. The immediately preceding main SHA fdb583dd660c399a1497292acf5ac4981c6d051a had passing CI, Security, CodeQL, and Repository Gate. Recheck current main before release acceptance.
+- No open PRs were returned at checkpoint time.
+- Release status remains **PENDING — NOT PRODUCTION READY**. CI evidence is not live-provider or full production acceptance.
+- Safety policy: do not run Cloudflare Whisper live inference, consume provider quota, change production data, or provision potentially billable resources without explicit owner approval.
+
+### Remaining owner / external acceptance gates
+
+1. **Cloudflare Whisper:** resolve the previously observed edge-level HTTP 403 (text/plain with CF-Ray) using non-inference diagnostics first. Do not infer a shared-secret mismatch from that response. Only run the live inference workflow after explicit approval.
+2. **Worker runtime:** production still has no verified persistent background worker. Keep the free-first local/ephemeral options; any paid always-on worker requires explicit approval. Kaggle scheduled dispatch is now opt-in via repository Actions variable ENABLE_KAGGLE_DISPATCH=true; manual dispatch requires confirm_kaggle_dispatch=true.
+3. **Storage/restore:** complete a target-provider lifecycle and isolated restore drill; CI PostgreSQL/SQLite evidence is not proof of a managed production restore.
+4. **External integrations:** verify Google OAuth/Drive export, SMTP delivery, Stripe webhook/subscription acceptance, and Sentry alert delivery in their intended environments.
+5. **Release quality:** complete role/membership/tenant acceptance, accessibility, representative load/performance testing, legal review, independent penetration testing, rollback checks, and fresh main checks.
+6. **Owner configuration:** verify the protected GitHub/Render/Cloudflare secret names and values match where required, without printing or sharing secret values.
+
+---
+## Historical post-PR #43 checkpoint — 2026-10-10 UTC
 
 - Current main commit after PR #43 merge: `5da1625c031ec235e636b8875be5bee9d368f7b2`.
 - PR #42 (authenticated tenant-isolation E2E and disposable-backend OAuth key setup) and PR #43 (safe tenant-scope backfill migration `0018_tenant_backfill_guard`) are merged.
@@ -22,7 +42,7 @@
 - These changes improve automated regression coverage only. They do not establish live external-storage lifecycle/restore acceptance, a persistent production worker, authenticated real-audio Whisper inference, or full production end-to-end acceptance.
 - Release status remains **PENDING — NOT PRODUCTION READY**. Do not run quota-consuming inference or provision billable worker capacity without explicit owner approval.
 
-## Latest verified evidence snapshot
+## Historical evidence snapshot (before PRs #49–#53)
 
 ### Latest implementation change — cross-tenant negative-case coverage
 
@@ -41,7 +61,7 @@
 
 **Release status remains PENDING / NOT PRODUCTION READY.**
 
-## Current verified baseline
+## Historical verified baseline (before PRs #49–#53)
 
 - Historical baseline: `adeb425185f163775f03b779553a8e148284f363` and its earlier checks are retained below for incident context; use the **Latest verified evidence snapshot** above for current status.
 - [Windows portable package persistence gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889063839) passed on the immediately preceding main SHA `ee448cb82ccd4b68235c9264ac474019c961a994`. It verifies API/UI start-stop-restart and local data persistence only; it is not a standalone installer and does not include Celery/FFmpeg/Whisper.

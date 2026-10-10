@@ -2,7 +2,7 @@
 
 > Owner: Operations maintainers  
 > Update when: worker/runtime/recovery procedures change  
-> Last Updated: 2026-10-08  
+> Last Updated: 2026-10-10  
 > Do NOT put here: secret values
 
 ## Runtime
@@ -82,6 +82,8 @@ Late acknowledgements, worker-loss rejection, bounded concurrency, retry backoff
 ## Kaggle ephemeral dispatcher configuration and recovery
 
 The scheduled dispatcher is a best-effort, quota-sensitive fallback. It checks PostgreSQL for a due `real_processing` job before querying/pushing the Kaggle kernel. A successful run that reports no queued work means no Kaggle session was launched.
+
+**Dispatch is opt-in.** Scheduled runs do not execute the dispatch job unless the repository Actions variable `ENABLE_KAGGLE_DISPATCH` is exactly `true`. A manual `workflow_dispatch` run must set the boolean input `confirm_kaggle_dispatch` to `true`. Leave both disabled until the owner explicitly wants unattended or one-off Kaggle launches. This gate prevents an unattended schedule from querying/pushing the external Kaggle runtime unexpectedly.
 
 ### Required GitHub Actions settings
 

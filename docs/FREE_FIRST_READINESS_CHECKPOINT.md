@@ -17,25 +17,39 @@ This checkpoint is a concise operational supplement to `ROADMAP.md` and `docs/MA
 
 These run links are evidence for the specific workflow runs and their tested scope, not a claim that every run used the current default-branch SHA or that production providers passed end-to-end acceptance. Re-check latest main-branch runs before release decisions.
 
+## Checkpoint documentation PR validation
+
+The documentation branch head `3d63b035daccd9359191b600086c1a892908d4a3` was checked by the following pull-request workflow runs, all with conclusion `success`:
+
+- [Repository Gate 38038943299](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38038943299)
+- [CodeQL 38038943307](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38038943307)
+- [Security 38038943302](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38038943302)
+- [CI 38038943311](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38038943311)
+
+These checks validate the PR branch only. They do not replace fresh evidence for the latest default-branch commit, do not constitute a production provider test, and do not prove that a deployed service is healthy.
+
 ## Quota-free work queue
 
 ### 1. Repository and CI baseline
 - [ ] Refresh the latest Actions runs on `main`; record the exact head SHA and conclusion for CI, Security, CodeQL, Repository Gate, backup/restore, worker evidence, local runtime, Windows runtime, and package evidence.
+- [x] Check the documentation-only readiness PR with CI, Security, CodeQL, and Repository Gate; all four checks passed for the PR head above.
 - [ ] Investigate and fix only confirmed failures; do not repeat already-successful deployment/configuration steps without a reason.
 - [ ] Keep live inference and paid-resource workflows separate from default CI, with explicit manual confirmation and minimal permissions.
 
 ### 2. Cloudflare Whisper — no-inference checks only
 - [x] Deploy the Worker and configure `NARRATIV_SHARED_SECRET` from the protected GitHub Environment secret.
 - [x] Run a non-inference handler smoke test after deployment.
+- [x] Review the live-evidence workflow statically: it requires the explicit `confirm_live_inference` boolean to be true and is not part of this audit.
 - [ ] Keep `cloudflare-whisper-live-evidence.yml` undispatched until the owner explicitly approves quota-consuming inference.
 - [ ] Continue only with safe static review and GET/preflight checks that do not send audio or call the AI binding.
 - [ ] Never print secret values, request authorization headers, audio, or raw provider responses in logs/artifacts.
 
 ### 3. Free-first worker/runtime strategy
-- [ ] Review the existing worker evidence workflow and Kaggle dispatcher configuration without launching a paid or quota-consuming job.
-- [ ] **Safety finding:** `.github/workflows/kaggle-worker.yml` has a `*/10 * * * *` schedule and its final step runs `infra/kaggle/dispatch.py`, which can launch a Kaggle session when eligible jobs are queued. Do not manually dispatch this workflow during a no-quota audit; decide separately whether unattended scheduled launches should be gated behind an explicit boolean confirmation.
+- [x] Review the worker evidence workflow and Kaggle dispatcher configuration statically; no worker was launched.
+- [x] Confirm the dispatcher unit tests are included by the workflow's `unittest discover -s infra/kaggle -p 'test_*.py'` command.
 - [ ] Clearly distinguish ephemeral CI synthetic-media tests from a persistent production background worker.
 - [ ] Document the cheapest viable execution path, its limits, persistence assumptions, and owner actions before enabling a runtime.
+- [ ] Decide separately whether unattended scheduled Kaggle launches should be gated behind an explicit boolean confirmation. The current `.github/workflows/kaggle-worker.yml` schedule is `*/10 * * * *`; its final step runs `infra/kaggle/dispatch.py`, which can push a Kaggle session when due `real_processing` jobs are queued and the kernel is not active. Do not manually dispatch it during a no-quota audit. Adding a gate would change automatic queue processing and should be a deliberate owner decision.
 - [ ] Do not create a paid Render worker or other billable resource without explicit owner approval.
 
 ### 4. Production acceptance dependencies

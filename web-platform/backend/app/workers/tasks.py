@@ -206,8 +206,15 @@ def handle_attempt_failure(
 
 
 def publish_dead_letter(celery_app, db: Session, failed_job_id: str) -> bool:
-    failed_job = db.get(FailedJob, failed_job_id)
+    # Serialize publishers for this row. Without the row lock, two dispatchers
+    # can both publish before either records dlq_published_at.
+    failed_job = db.execute(
+        select(FailedJob)
+        .where(FailedJob.id == failed_job_id)
+        .with_for_update()
+    ).scalar_one_or_none()
     if failed_job is None or failed_job.resolved_at is not None or failed_job.dlq_published_at is not None:
+        db.rollback()
         return False
     try:
         celery_app.send_task(
@@ -216,6 +223,7 @@ def publish_dead_letter(celery_app, db: Session, failed_job_id: str) -> bool:
             queue="dead_letter",
         )
     except Exception:
+        db.rollback()
         logger.exception("Dead-letter queue publication failed for failed_job_id=%s", failed_job_id)
         return False
 
@@ -228,8 +236,11 @@ def publish_dead_letter(celery_app, db: Session, failed_job_id: str) -> bool:
         )
         .values(dlq_published_at=_now())
     )
+    if result.rowcount != 1:
+        db.rollback()
+        return False
     db.commit()
-    return result.rowcount == 1
+    return True
 
 
 def enqueue_asset_replica(celery_app, asset_id: str) -> bool:

@@ -12,16 +12,16 @@ import base64
 import hashlib
 import hmac
 import math
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
 from fastapi import HTTPException
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
-from ..models import Asset, Episode, ProcessingJob, UploadSession, UsageEvent
+from ..models import Asset, Episode, Organization, ProcessingJob, UploadSession, UsageEvent
 from .storage import StorageError, build_object_key, get_storage, materialize_asset, storage_provider_for_asset
 from .subtitles import generate_subtitle_for_episode
 
@@ -224,16 +224,15 @@ def _sign_whisper_claims(payload: dict) -> str:
 
 
 def _daily_whisper_usage_seconds(db: Session, organization_id: str) -> int:
-    today = datetime.now(timezone.utc).date()
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_start = today_start + timedelta(days=1)
     rows = db.query(UsageEvent).filter(
         UsageEvent.organization_id == organization_id,
         UsageEvent.metric == "cloudflare_whisper_audio_seconds",
+        UsageEvent.created_at >= today_start,
+        UsageEvent.created_at < tomorrow_start,
     ).all()
-    return sum(
-        int(row.quantity)
-        for row in rows
-        if row.created_at and row.created_at.astimezone(timezone.utc).date() == today
-    )
+    return sum(int(row.quantity) for row in rows)
 
 
 def _transcribe_cloudflare(source: Path, transcript_dir: Path, episode: Episode, db: Session) -> Path:
@@ -245,19 +244,38 @@ def _transcribe_cloudflare(source: Path, transcript_dir: Path, episode: Episode,
         "-of", "default=noprint_wrappers=1:nokey=1", str(source),
     ], timeout=settings.processing_timeout_seconds)
     duration_seconds = max(1, math.ceil(float((duration_probe.stdout or "0").strip())))
-    used_seconds = _daily_whisper_usage_seconds(db, episode.organization_id)
-    estimated_neurons = ((used_seconds + duration_seconds) / 60.0) * settings.cloudflare_whisper_neurons_per_audio_minute
-    if estimated_neurons >= float(settings.cloudflare_whisper_daily_neuron_budget or 1) * settings.cloudflare_whisper_fallback_threshold:
-        raise RuntimeError("Cloudflare Whisper quota requires local fallback")
-
     wav_path = transcript_dir / f"{source.stem}.wav"
     _run([
         settings.ffmpeg_binary, "-y", "-i", str(source), "-vn", "-ac", "1", "-ar", "16000",
         "-c:a", "pcm_s16le", str(wav_path),
     ], timeout=settings.processing_timeout_seconds)
 
+    # Reserve daily usage before sending audio. On PostgreSQL the organization
+    # row lock serializes concurrent reservations; committing the reservation
+    # first means another worker sees it when calculating remaining budget.
+    db.execute(
+        select(Organization.id)
+        .where(Organization.id == episode.organization_id)
+        .with_for_update()
+    ).first()
+    used_seconds = _daily_whisper_usage_seconds(db, episode.organization_id)
+    estimated_neurons = ((used_seconds + duration_seconds) / 60.0) * settings.cloudflare_whisper_neurons_per_audio_minute
+    if estimated_neurons >= float(settings.cloudflare_whisper_daily_neuron_budget or 1) * settings.cloudflare_whisper_fallback_threshold:
+        raise RuntimeError("Cloudflare Whisper quota requires local fallback")
+
     now = int(time.time())
     jti = str(uuid4())
+    period = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    db.add(UsageEvent(
+        organization_id=episode.organization_id,
+        metric="cloudflare_whisper_audio_seconds",
+        quantity=duration_seconds,
+        unit="second",
+        idempotency_key=f"cloud-whisper-worker:{jti}",
+        period_start=period,
+        metadata_json=json.dumps({"episode_id": episode.id, "jti": jti, "status": "reserved"}, separators=(",", ":")),
+    ))
+    db.commit()
     token = _sign_whisper_claims({
         "sub": "narrativ-worker",
         "episode_id": episode.id,
@@ -284,20 +302,6 @@ def _transcribe_cloudflare(source: Path, transcript_dir: Path, episode: Episode,
     payload["language"] = "my"
     payload.setdefault("audio_seconds", duration_seconds)
     payload.setdefault("jti", jti)
-
-    existing = db.query(UsageEvent).filter(UsageEvent.idempotency_key == f"cloud-whisper-worker:{jti}").first()
-    if existing is None:
-        period = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        db.add(UsageEvent(
-            organization_id=episode.organization_id,
-            metric="cloudflare_whisper_audio_seconds",
-            quantity=duration_seconds,
-            unit="second",
-            idempotency_key=f"cloud-whisper-worker:{jti}",
-            period_start=period,
-            metadata_json=json.dumps({"episode_id": episode.id, "jti": jti}, separators=(",", ":")),
-        ))
-        db.commit()
 
     output = transcript_dir / f"{source.stem}.json"
     output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

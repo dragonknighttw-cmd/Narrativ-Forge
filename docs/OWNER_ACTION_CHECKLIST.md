@@ -1,13 +1,13 @@
 # Narrativ Forge — Owner Action Checklist
 
-## Current checkpoint — 2026-10-10 UTC
+## Current checkpoint — 2026-10-11 UTC
 
-- Current main SHA: `1b6baad0df7f8b0ad5080381143288de62ba16a7`.
-- Merged implementation fixes: PR #49 Whisper quota reservation; PR #50 Redis dispatch-lock ownership; PR #51 database rollback before local Whisper fallback; PR #52 explicit opt-in for scheduled/manual Kaggle dispatch; PR #53 concurrent billing-subscription bootstrap race handling. PR #54 and #55 reconciled readiness documentation.
-- Current main CI, Security, CodeQL, and Repository Gate runs passed on this exact SHA. Cloudflare Whisper Preflight run [38071946053](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38071946053) also passed on this SHA.
+- Main SHA at this checkpoint: `e672bf0c5f75441e0bd9556db6811320a33a7a5e`.
+- Merged implementation fixes: PR #49 Whisper quota reservation; PR #50 Redis dispatch-lock ownership; PR #51 database rollback before local Whisper fallback; PR #52 explicit opt-in for scheduled/manual Kaggle dispatch; PR #53 concurrent billing-subscription bootstrap race handling. PR #54, #55, and #56 reconciled readiness documentation.
+- Fresh post-merge CI [38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355) all passed on this exact SHA. Cloudflare Whisper Preflight [38071946053](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38071946053) passed on parent SHA `1b6baad0df7f8b0ad5080381143288de62ba16a7` only.
 - Preflight confirmed the deployed Worker handler is reachable and returned its expected JSON method guard (HTTP 405). It sent no audio and did not invoke Workers AI; authenticated transcription is still unverified.
 - Cloudflare API read-only checks confirmed the Worker script and expected binding names exist. Secret values were not read and cross-platform secret-value equality remains unverified.
-- No open PRs were returned at checkpoint time.
+- PR #56 is merged. Fresh checks on its merge commit `e672bf0c5f75441e0bd9556db6811320a33a7a5e` passed; this documentation refresh is now being prepared, so the branch state may change again.
 - Release status remains **PENDING — NOT PRODUCTION READY**. CI/preflight evidence is not live-provider or full production acceptance.
 - Safety policy: do not run Cloudflare Whisper live inference, consume provider quota, change production data, or provision potentially billable resources without explicit owner approval.
 

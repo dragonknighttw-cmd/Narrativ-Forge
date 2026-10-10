@@ -2,10 +2,10 @@
 
 ## Current repository checkpoint — 2026-10-10 UTC
 
-- Current default-branch commit: `990ddce32a47f6925599df507563d517737c19ff` (PR #45 merged).
-- PR #45 head `9d04128e0b924d867adbd1c79029fb8e74800fd9` passed CI [38046872486](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38046872486), Security [38046872505](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38046872505), CodeQL [38046872519](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38046872519), and Repository Gate [38046872492](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38046872492); all four passed.
-- These checks ran against the PR head, not the post-merge default-branch commit. The available status/run lookup returned no records for the merge commit; main-branch verification remains **NOT VERIFIED** until fresh checks are available.
-- Historical snapshots below are retained as history, not current-state claims.
+- Current default-branch commit: `1b6baad0df7f8b0ad5080381143288de62ba16a7`.
+- Fresh current-main CI [38070872639](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872639), Security [38070872682](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872682), CodeQL [38070872654](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872654), and Repository Gate [38070872621](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872621) all passed on this exact SHA.
+- Non-billable Cloudflare Whisper Preflight [38071946053](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38071946053) reached the Worker handler and passed without sending audio or invoking Workers AI.
+- Historical snapshots below are retained as history, not current-state claims. The current evidence does not prove authenticated provider inference, persistent worker availability, production storage lifecycle/restore, or external integration acceptance.
 - Release remains **PENDING — NOT PRODUCTION READY**. Keep live Whisper inference, provider-quota consumption, paid worker capacity, production data changes, and other billable/destructive operations behind explicit approval.
 
 > Companion checklist to `ROADMAP.md`; `ROADMAP.md` remains the sole master execution roadmap.

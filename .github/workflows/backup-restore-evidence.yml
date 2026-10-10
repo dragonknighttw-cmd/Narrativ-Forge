@@ -95,6 +95,9 @@ jobs:
       - name: Restore backup into fresh database
         env:
           DATABASE_URL: postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_backup_restore
+          # This disposable CI target is created in the preceding step. Real restores
+          # must set this acknowledgement only after verifying the destination.
+          ALLOW_DESTRUCTIVE_POSTGRES_RESTORE: "1"
         run: python scripts/restore_db.py "$BACKUP_FILE"
 
       - name: Verify restored schema, marker data, and Alembic head

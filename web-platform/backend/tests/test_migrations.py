@@ -14,7 +14,7 @@ from app import db
 pytestmark = pytest.mark.integration
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
-HEAD_REVISION = "0017_asset_deleted_at"
+HEAD_REVISION = "0018_tenant_backfill_guard"
 PREVIOUS_REVISION = "0008_storage_replicas"
 
 
@@ -238,3 +238,75 @@ def test_non_development_startup_does_not_create_schema(monkeypatch, app_env):
     db.init_db()
 
     assert calls == []
+
+
+def test_tenant_backfill_guard_never_assigns_ambiguous_memberships(tmp_path):
+    database_path = tmp_path / "tenant_backfill_guard.db"
+    run_alembic(database_path, "upgrade", "0013_tenant_scope_integrations")
+
+    engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+    try:
+        with engine.begin() as connection:
+            for org_id, slug in (("org-a", "org-a"), ("org-b", "org-b"), ("org-c", "org-c")):
+                connection.exec_driver_sql(
+                    "INSERT INTO organizations (id, name, slug, plan, created_at, updated_at) "
+                    "VALUES (?, ?, ?, 'trial', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                    (org_id, slug, slug),
+                )
+            for user_id, email in (
+                ("user-ambiguous", "ambiguous@example.test"),
+                ("user-single", "single@example.test"),
+            ):
+                connection.exec_driver_sql(
+                    "INSERT INTO users (id, email, role, password_hash, is_active, created_at, updated_at) "
+                    "VALUES (?, ?, 'owner', 'test-hash', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                    (user_id, email),
+                )
+            for membership_id, org_id, user_id in (
+                ("m-a", "org-a", "user-ambiguous"),
+                ("m-b", "org-b", "user-ambiguous"),
+                ("m-c", "org-c", "user-single"),
+            ):
+                connection.exec_driver_sql(
+                    "INSERT INTO organization_memberships (id, organization_id, user_id, role, created_at) "
+                    "VALUES (?, ?, ?, 'owner', CURRENT_TIMESTAMP)",
+                    (membership_id, org_id, user_id),
+                )
+
+            connection.exec_driver_sql(
+                "INSERT INTO audit_events (id, actor_email, action, resource_type, resource_id, metadata_json, created_at, organization_id) "
+                "VALUES ('audit-ambiguous', 'ambiguous@example.test', 'read', 'series', 'series-a', '{}', CURRENT_TIMESTAMP, 'org-a')"
+            )
+            connection.exec_driver_sql(
+                "INSERT INTO audit_events (id, actor_email, action, resource_type, resource_id, metadata_json, created_at, organization_id) "
+                "VALUES ('audit-single', 'single@example.test', 'read', 'series', 'series-c', '{}', CURRENT_TIMESTAMP, NULL)"
+            )
+            connection.exec_driver_sql(
+                "INSERT INTO google_drive_connections (id, user_email, refresh_token_encrypted, organization_id, scope, created_at, updated_at) "
+                "VALUES ('drive-ambiguous', 'ambiguous@example.test', 'encrypted-test', 'org-a', '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+            )
+            connection.exec_driver_sql(
+                "INSERT INTO google_drive_connections (id, user_email, refresh_token_encrypted, organization_id, scope, created_at, updated_at) "
+                "VALUES ('drive-single', 'single@example.test', 'encrypted-test', NULL, '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+            )
+
+    finally:
+        engine.dispose()
+
+    run_alembic(database_path, "upgrade", "0018_tenant_backfill_guard")
+
+    engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+    try:
+        with engine.connect() as connection:
+            audit = dict(connection.exec_driver_sql(
+                "SELECT id, organization_id FROM audit_events"
+            ).all())
+            drive = dict(connection.exec_driver_sql(
+                "SELECT id, organization_id FROM google_drive_connections"
+            ).all())
+        assert audit["audit-ambiguous"] is None
+        assert audit["audit-single"] == "org-c"
+        assert drive["drive-ambiguous"] is None
+        assert drive["drive-single"] == "org-c"
+    finally:
+        engine.dispose()

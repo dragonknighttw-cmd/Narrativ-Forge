@@ -899,3 +899,84 @@ def test_stale_real_processing_job_exhaustion_creates_dlq_once(testing_db, monke
         assert db.query(FailedJob).filter_by(processing_job_id=job.id).count() == 1
     finally:
         db.close()
+
+
+@pytest.mark.integration
+def test_concurrent_postgresql_dlq_publish_sends_only_once():
+    if app_db.engine.dialect.name != "postgresql":
+        pytest.skip("PostgreSQL is required to verify concurrent DLQ publication")
+
+    from threading import Event
+
+    Session = sessionmaker(bind=app_db.engine)
+    seed = Session()
+    organization = Organization(
+        name="Concurrent DLQ workspace",
+        slug=f"concurrent-dlq-{uuid4().hex}",
+        plan="trial",
+    )
+    seed.add(organization)
+    seed.flush()
+    series = Series(title="Concurrent DLQ test", organization_id=organization.id)
+    seed.add(series)
+    seed.commit()
+    episode = Episode(
+        public_id=f"TST-CONCURRENT-DLQ-{uuid4().hex[:8]}",
+        series_id=series.id,
+        organization_id=organization.id,
+        episode_number=1,
+        title="concurrent DLQ",
+    )
+    seed.add(episode)
+    seed.commit()
+    job = ProcessingJob(
+        episode_id=episode.id,
+        job_type="real_processing",
+        status="failed",
+        retry_count=3,
+        max_retries=3,
+    )
+    seed.add(job)
+    seed.commit()
+    failed_job = FailedJob(
+        processing_job_id=job.id,
+        reason="terminal failure",
+        retry_count=3,
+    )
+    seed.add(failed_job)
+    seed.commit()
+    failed_job_id = failed_job.id
+    seed.close()
+
+    first_send_started = Event()
+    allow_send_to_finish = Event()
+    sent = []
+
+    class FakeCelery:
+        def send_task(self, *args, **kwargs):
+            sent.append((args, kwargs))
+            first_send_started.set()
+            assert allow_send_to_finish.wait(timeout=5)
+
+    def publish():
+        session = Session()
+        try:
+            return tasks_module.publish_dead_letter(FakeCelery(), session, failed_job_id)
+        finally:
+            session.close()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first = executor.submit(publish)
+        assert first_send_started.wait(timeout=5)
+        second = executor.submit(publish)
+        allow_send_to_finish.set()
+        outcomes = [first.result(timeout=10), second.result(timeout=10)]
+
+    verify = Session()
+    try:
+        stored = verify.get(FailedJob, failed_job_id)
+        assert sorted(outcomes) == [False, True]
+        assert len(sent) == 1
+        assert stored.dlq_published_at is not None
+    finally:
+        verify.close()

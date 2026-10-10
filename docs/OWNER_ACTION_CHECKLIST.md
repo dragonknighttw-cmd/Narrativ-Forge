@@ -2,10 +2,10 @@
 
 ## Current checkpoint — 2026-10-10 UTC
 
-- Current main SHA: c3a91d03ff67aacecd8519d65d7893b75ea1527c (PR #53 merge).
+- Current main SHA: a3be2983473c45618950cd226b940b06be5b9347 (PR #54 documentation merge).
 - Merged fixes since older checkpoints: PR #49 Whisper quota reservation; PR #50 Redis dispatch-lock ownership; PR #51 database rollback before local Whisper fallback; PR #52 explicit opt-in for scheduled/manual Kaggle dispatch; PR #53 concurrent billing-subscription bootstrap race handling.
 - PR #52 checks passed. PR #53 checks passed on its PR head, including CI, security, CodeQL, Repository Gate, real-worker synthetic-media evidence, and local/Windows runtime/package evidence.
-- Fresh post-merge checks for main SHA c3a91d03ff67aacecd8519d65d7893b75ea1527c were not yet visible at the time this checkpoint was written. The immediately preceding main SHA fdb583dd660c399a1497292acf5ac4981c6d051a had passing CI, Security, CodeQL, and Repository Gate. Recheck current main before release acceptance.
+- The code-bearing parent SHA c3a91d03ff67aacecd8519d65d7893b75ea1527c passed all 14 main checks, including CI, Security, CodeQL, Repository Gate, and real-worker synthetic-media evidence. Fresh checks for current main SHA a3be2983473c45618950cd226b940b06be5b9347 were queued after the documentation merge; verify them before release acceptance.
 - No open PRs were returned at checkpoint time.
 - Release status remains **PENDING — NOT PRODUCTION READY**. CI evidence is not live-provider or full production acceptance.
 - Safety policy: do not run Cloudflare Whisper live inference, consume provider quota, change production data, or provision potentially billable resources without explicit owner approval.
@@ -63,7 +63,7 @@
 
 ## Historical verified baseline (before PRs #49–#53)
 
-- Historical baseline: `adeb425185f163775f03b779553a8e148284f363` and its earlier checks are retained below for incident context; use the **Latest verified evidence snapshot** above for current status.
+- Historical baseline: `adeb425185f163775f03b779553a8e148284f363` and its earlier checks are retained below for incident context; use the **Current checkpoint** at the top for current status; this section is retained as historical context.
 - [Windows portable package persistence gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889063839) passed on the immediately preceding main SHA `ee448cb82ccd4b68235c9264ac474019c961a994`. It verifies API/UI start-stop-restart and local data persistence only; it is not a standalone installer and does not include Celery/FFmpeg/Whisper.
 - [Render API deployment](https://dashboard.render.com/web/srv-davrqtu7bikc73f7isbg) is live at the current main SHA. No separate background worker exists yet.
 - [Cloudflare Whisper live evidence workflow](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/cloudflare-whisper-live-evidence.yml) was run at [run #37907157973](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37907157973) on merge SHA `adeb425185f163775f03b779553a8e148284f363` and failed before authenticated inference: the unauthenticated request received HTTP 403 with `text/plain`, a Cloudflare `CF-Ray`, and no recognized Worker JSON error. This points to an edge/deployment/access-layer rejection or a different deployed handler; it does not validate or invalidate the shared secret.

@@ -1,7 +1,7 @@
 # Free-first production-readiness checkpoint
 
 **Checkpoint date:** 2026-10-10 UTC  
-**Current main SHA:** c3a91d03ff67aacecd8519d65d7893b75ea1527c  
+**Current main SHA:** a3be2983473c45618950cd226b940b06be5b9347  
 **Release status:** PENDING — NOT PRODUCTION READY  
 **Policy:** Do not run Cloudflare Whisper live inference, consume provider quota, or provision potentially billable resources without explicit owner approval.
 
@@ -13,10 +13,13 @@
 - PR #52 merged: Kaggle scheduled launches require repository Actions variable ENABLE_KAGGLE_DISPATCH=true; manual dispatch requires explicit confirm_kaggle_dispatch=true.
 - PR #53 merged: concurrent requests that bootstrap a missing billing subscription recover from the uniqueness race without hiding unrelated integrity failures.
 - PR #52 and #53 PR-head checks passed. PR #53's real-worker synthetic-media smoke passed and the worker/containers were stopped; this is ephemeral CI evidence, not a persistent production worker.
-- The immediately preceding main SHA fdb583dd660c399a1497292acf5ac4981c6d051a had passing CI, Security, CodeQL, and Repository Gate. Fresh post-merge checks for the current SHA were not yet visible when this checkpoint was written; re-check them before treating the current main baseline as green.
+- The code-bearing parent SHA c3a91d03ff67aacecd8519d65d7893b75ea1527c passed all 14 main checks, including CI, Security, CodeQL, Repository Gate, and real-worker synthetic-media evidence. This commit only adds readiness documentation; fresh checks for current main SHA a3be2983473c45618950cd226b940b06be5b9347 were queued after the documentation merge and must complete before the current default-branch baseline is called green.
 
-## Verified scope versus still blocked
-## Verified evidence available at this checkpoint
+## Historical workflow evidence
+
+The links below document prior runs and their specific test scope; they are not current-main or production-provider acceptance.
+
+### Evidence available at the previous checkpoint
 
 - Cloudflare Whisper Worker deployment workflow succeeded in [run 38035662514](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38035662514). The run validated deployment credentials, deployed the Worker, configured the Worker secret, and completed a handler smoke test without AI inference. This does **not** prove authenticated transcription works.
 - CI run [38032221181](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38032221181) reported successful backend, backend-integration, frontend, and E2E jobs.

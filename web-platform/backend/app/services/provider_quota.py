@@ -100,6 +100,7 @@ def reserve_provider_quota(
             or existing.metric != metric
             or existing_period != period
             or existing.unit != unit
+            or existing.quantity != quantity
         ):
             raise ValueError("Idempotency key is already bound to a different provider quota reservation")
         return get_provider_quota(db, organization_id, provider, now=now)

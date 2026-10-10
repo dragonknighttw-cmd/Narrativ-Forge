@@ -27,12 +27,13 @@ These run links are evidence for the specific workflow runs and their tested sco
 ### 2. Cloudflare Whisper — no-inference checks only
 - [x] Deploy the Worker and configure `NARRATIV_SHARED_SECRET` from the protected GitHub Environment secret.
 - [x] Run a non-inference handler smoke test after deployment.
-- [ ] Keep `cloudflare-whisper-live-evidence.yml` disabled/not dispatched until the owner explicitly approves quota-consuming inference.
+- [ ] Keep `cloudflare-whisper-live-evidence.yml` undispatched until the owner explicitly approves quota-consuming inference.
 - [ ] Continue only with safe static review and GET/preflight checks that do not send audio or call the AI binding.
 - [ ] Never print secret values, request authorization headers, audio, or raw provider responses in logs/artifacts.
 
 ### 3. Free-first worker/runtime strategy
 - [ ] Review the existing worker evidence workflow and Kaggle dispatcher configuration without launching a paid or quota-consuming job.
+- [ ] **Safety finding:** `.github/workflows/kaggle-worker.yml` has a `*/10 * * * *` schedule and its final step runs `infra/kaggle/dispatch.py`, which can launch a Kaggle session when eligible jobs are queued. Do not manually dispatch this workflow during a no-quota audit; decide separately whether unattended scheduled launches should be gated behind an explicit boolean confirmation.
 - [ ] Clearly distinguish ephemeral CI synthetic-media tests from a persistent production background worker.
 - [ ] Document the cheapest viable execution path, its limits, persistence assumptions, and owner actions before enabling a runtime.
 - [ ] Do not create a paid Render worker or other billable resource without explicit owner approval.

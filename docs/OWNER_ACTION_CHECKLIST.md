@@ -20,7 +20,7 @@
 6. **Owner configuration:** verify the protected GitHub/Render/Cloudflare secret names and values match where required, without printing or sharing secret values.
 
 ---
-## Current post-merge checkpoint — 2026-10-10 UTC
+## Historical post-PR #43 checkpoint — 2026-10-10 UTC
 
 - Current main commit after PR #43 merge: `5da1625c031ec235e636b8875be5bee9d368f7b2`.
 - PR #42 (authenticated tenant-isolation E2E and disposable-backend OAuth key setup) and PR #43 (safe tenant-scope backfill migration `0018_tenant_backfill_guard`) are merged.
@@ -42,7 +42,7 @@
 - These changes improve automated regression coverage only. They do not establish live external-storage lifecycle/restore acceptance, a persistent production worker, authenticated real-audio Whisper inference, or full production end-to-end acceptance.
 - Release status remains **PENDING — NOT PRODUCTION READY**. Do not run quota-consuming inference or provision billable worker capacity without explicit owner approval.
 
-## Latest verified evidence snapshot
+## Historical evidence snapshot (before PRs #49–#53)
 
 ### Latest implementation change — cross-tenant negative-case coverage
 
@@ -61,7 +61,7 @@
 
 **Release status remains PENDING / NOT PRODUCTION READY.**
 
-## Current verified baseline
+## Historical verified baseline (before PRs #49–#53)
 
 - Historical baseline: `adeb425185f163775f03b779553a8e148284f363` and its earlier checks are retained below for incident context; use the **Latest verified evidence snapshot** above for current status.
 - [Windows portable package persistence gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37889063839) passed on the immediately preceding main SHA `ee448cb82ccd4b68235c9264ac474019c961a994`. It verifies API/UI start-stop-restart and local data persistence only; it is not a standalone installer and does not include Celery/FFmpeg/Whisper.

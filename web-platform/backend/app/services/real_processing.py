@@ -316,6 +316,13 @@ def _transcribe_with_fallback(source: Path, transcript_dir: Path, episode: Episo
             return _transcribe_cloudflare(source, transcript_dir, episode, db)
         except Exception as exc:
             remote_error = exc
+            # Remote quota checks may have acquired a database row lock, and
+            # reservation failures may leave the SQLAlchemy transaction aborted.
+            # Release it before the potentially long local fallback begins.
+            try:
+                db.rollback()
+            except Exception:
+                logger.exception("whisper_fallback_database_rollback_failed")
             logger.warning(
                 "cloudflare_whisper_failed_using_local_fallback",
                 extra={"event": "whisper_fallback", "error_type": type(exc).__name__},

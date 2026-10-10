@@ -16,17 +16,21 @@ def test_whisper_falls_back_to_local_cli(monkeypatch, tmp_path):
 
     monkeypatch.setattr(real_processing.settings, "whisper_remote_enabled", True)
     monkeypatch.setattr(real_processing.settings, "cloudflare_whisper_worker_url", "https://whisper.example.test")
+    fallback_events = []
     monkeypatch.setattr(real_processing, "_transcribe_cloudflare", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("remote unavailable")))
 
     def fake_run(command, *, timeout):
+        fallback_events.append("local")
         output = transcript_dir / f"{source.stem}.json"
         output.write_text(json.dumps({"text": "fallback"}), encoding="utf-8")
         return None
 
     monkeypatch.setattr(real_processing, "_run", fake_run)
-    result = real_processing._transcribe_with_fallback(source, transcript_dir, episode, object())
+    db = SimpleNamespace(rollback=lambda: fallback_events.append("rollback"))
+    result = real_processing._transcribe_with_fallback(source, transcript_dir, episode, db)
     assert result.is_file()
     assert json.loads(result.read_text(encoding="utf-8"))["text"] == "fallback"
+    assert fallback_events == ["rollback", "local"]
 
 
 @pytest.mark.unit

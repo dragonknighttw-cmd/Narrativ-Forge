@@ -989,3 +989,60 @@ def test_concurrent_postgresql_dlq_publish_sends_only_once():
         assert stored.dlq_published_at is not None
     finally:
         verify.close()
+
+
+def test_dispatch_lock_release_requires_matching_owner_token(monkeypatch):
+    from app.workers import celery_app as celery_module
+
+    monkeypatch.setattr(tasks_module.settings, "redis_url", "redis://redis.example.test/0")
+    store = {}
+    expirations = {}
+
+    class FakeRedisClient:
+        def set(self, key, value, *, nx, ex):
+            expirations[key] = ex
+            if nx and key in store:
+                return False
+            store[key] = value
+            return True
+
+        def eval(self, _script, numkeys, key, token):
+            assert numkeys == 1
+            if store.get(key) == token:
+                del store[key]
+                return 1
+            return 0
+
+    client = FakeRedisClient()
+
+    class FakeRedis:
+        @staticmethod
+        def from_url(url):
+            assert url == "redis://redis.example.test/0"
+            return client
+
+    sent = []
+
+    class FakeCelery:
+        def send_task(self, name, args=None, **kwargs):
+            sent.append((name, args, kwargs))
+
+    monkeypatch.setattr(tasks_module.redis, "Redis", FakeRedis)
+    monkeypatch.setattr(celery_module, "get_celery", lambda allow_missing=True: FakeCelery())
+
+    assert tasks_module.enqueue_real_job("job-token-test") is True
+    name, args, kwargs = sent[0]
+    assert name == "narrativ.process_real_job"
+    assert args[0] == "job-token-test"
+    token = args[1]
+    assert token
+    assert kwargs["countdown"] == 0
+    key = tasks_module._dispatch_lock_key("job-token-test")
+    assert store[key] == token
+    assert expirations[key] == 300
+
+    tasks_module._release_dispatch_lock("job-token-test", "stale-token")
+    assert store[key] == token
+
+    tasks_module._release_dispatch_lock("job-token-test", token)
+    assert key not in store

@@ -17,7 +17,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import HTTPException
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..core.config import settings

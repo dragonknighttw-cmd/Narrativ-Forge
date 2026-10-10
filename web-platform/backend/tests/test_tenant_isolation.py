@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from app.main import app
 from app.db import get_db
-from app.models import Episode, Organization, OrganizationMembership, ProcessingJob, Series, User
+from app.models import Asset, Episode, Organization, OrganizationMembership, ProcessingJob, Scene, Script, Series, Subtitle, User
 from app.services.passwords import hash_password
 from app.api.dependencies import get_current_membership, get_current_user
 from client_utils import create_test_client
@@ -188,13 +188,45 @@ def test_second_tenant_cannot_access_episode_children_or_processing_jobs():
         )
         db.add(episode_a)
         db.flush()
+        script_a = Script(
+            episode_id=episode_a.id,
+            version=1,
+            title="Tenant A private script",
+            content="private script content",
+        )
+        db.add(script_a)
+        db.flush()
+        scene_a = Scene(
+            episode_id=episode_a.id,
+            script_id=script_a.id,
+            scene_number=1,
+            purpose="hook",
+            dialogue="private dialogue",
+        )
+        asset_a = Asset(
+            episode_id=episode_a.id,
+            scene_id=scene_a.id,
+            asset_type="video",
+            original_filename="private.mp4",
+            storage_provider="local",
+            mime_type="video/mp4",
+            file_size_bytes=0,
+            version=1,
+        )
+        subtitle_a = Subtitle(
+            episode_id=episode_a.id,
+            version=1,
+            language="my",
+            format="srt",
+            cues_json="[]",
+        )
         job_a = ProcessingJob(
             episode_id=episode_a.id,
             job_type="real_processing",
             status="queued",
             progress=0,
         )
-        db.add(job_a)
+        db.add_all([scene_a, asset_a, subtitle_a, job_a])
         db.commit()
 
         user_b_id = user_b.id
@@ -203,6 +235,10 @@ def test_second_tenant_cannot_access_episode_children_or_processing_jobs():
         series_a_id = series_a.id
         episode_a_id = episode_a.id
         job_a_id = job_a.id
+        script_a_id = script_a.id
+        scene_a_id = scene_a.id
+        asset_a_id = asset_a.id
+        subtitle_a_id = subtitle_a.id
 
     second = create_test_client(app)
     original_overrides = dict(app.dependency_overrides)
@@ -230,6 +266,30 @@ def test_second_tenant_cannot_access_episode_children_or_processing_jobs():
         ).status_code == 404
         assert second.get(f"/api/v1/jobs/{job_a_id}").status_code == 404
         assert second.post(f"/api/v1/jobs/{job_a_id}/retry").status_code == 404
+
+        # Direct child-resource IDs must also be scoped to the active tenant.
+        assert second.patch(
+            f"/api/v1/scripts/{script_a_id}",
+            json={"content": "cross-tenant mutation", "expected_row_version": 1},
+        ).status_code == 404
+        assert second.patch(
+            f"/api/v1/scenes/{scene_a_id}",
+            json={"purpose": "cross-tenant mutation"},
+        ).status_code == 404
+        assert second.get(f"/api/v1/assets/{asset_a_id}/download").status_code == 404
+        assert second.patch(
+            f"/api/v1/assets/{asset_a_id}",
+            json={"is_final": True},
+        ).status_code == 404
+        assert second.delete(f"/api/v1/assets/{asset_a_id}").status_code == 404
+        assert second.patch(
+            f"/api/v1/subtitles/{subtitle_a_id}",
+            json={"preset": "burmese_compact"},
+        ).status_code == 404
+        assert second.post(
+            f"/api/v1/subtitles/{subtitle_a_id}/versions",
+            json={"preset": "burmese_default"},
+        ).status_code == 404
 
         # Child collection routes must reject the foreign episode before querying
         # its scripts, scenes, assets, or subtitles.

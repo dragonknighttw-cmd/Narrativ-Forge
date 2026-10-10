@@ -2,17 +2,18 @@
 
 ## Current checkpoint — 2026-10-10 UTC
 
-- Current main SHA: a3be2983473c45618950cd226b940b06be5b9347 (PR #54 documentation merge).
-- Merged fixes since older checkpoints: PR #49 Whisper quota reservation; PR #50 Redis dispatch-lock ownership; PR #51 database rollback before local Whisper fallback; PR #52 explicit opt-in for scheduled/manual Kaggle dispatch; PR #53 concurrent billing-subscription bootstrap race handling.
-- PR #52 checks passed. PR #53 checks passed on its PR head, including CI, security, CodeQL, Repository Gate, real-worker synthetic-media evidence, and local/Windows runtime/package evidence.
-- The code-bearing parent SHA c3a91d03ff67aacecd8519d65d7893b75ea1527c passed all 14 main checks, including CI, Security, CodeQL, Repository Gate, and real-worker synthetic-media evidence. Fresh checks for current main SHA a3be2983473c45618950cd226b940b06be5b9347 were queued after the documentation merge; verify them before release acceptance.
+- Current main SHA: `1b6baad0df7f8b0ad5080381143288de62ba16a7`.
+- Merged implementation fixes: PR #49 Whisper quota reservation; PR #50 Redis dispatch-lock ownership; PR #51 database rollback before local Whisper fallback; PR #52 explicit opt-in for scheduled/manual Kaggle dispatch; PR #53 concurrent billing-subscription bootstrap race handling. PR #54 and #55 reconciled readiness documentation.
+- Current main CI, Security, CodeQL, and Repository Gate runs passed on this exact SHA. Cloudflare Whisper Preflight run [38071946053](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38071946053) also passed on this SHA.
+- Preflight confirmed the deployed Worker handler is reachable and returned its expected JSON method guard (HTTP 405). It sent no audio and did not invoke Workers AI; authenticated transcription is still unverified.
+- Cloudflare API read-only checks confirmed the Worker script and expected binding names exist. Secret values were not read and cross-platform secret-value equality remains unverified.
 - No open PRs were returned at checkpoint time.
-- Release status remains **PENDING — NOT PRODUCTION READY**. CI evidence is not live-provider or full production acceptance.
+- Release status remains **PENDING — NOT PRODUCTION READY**. CI/preflight evidence is not live-provider or full production acceptance.
 - Safety policy: do not run Cloudflare Whisper live inference, consume provider quota, change production data, or provision potentially billable resources without explicit owner approval.
 
 ### Remaining owner / external acceptance gates
 
-1. **Cloudflare Whisper:** resolve the previously observed edge-level HTTP 403 (text/plain with CF-Ray) using non-inference diagnostics first. Do not infer a shared-secret mismatch from that response. Only run the live inference workflow after explicit approval.
+1. **Cloudflare Whisper:** the latest non-inference preflight reached the Worker handler, so the previous edge-level 403 is not reproduced by that probe. Authenticated inference and matching secret values are still unverified. Only run the live inference workflow after explicit approval.
 2. **Worker runtime:** production still has no verified persistent background worker. Keep the free-first local/ephemeral options; any paid always-on worker requires explicit approval. Kaggle scheduled dispatch is now opt-in via repository Actions variable ENABLE_KAGGLE_DISPATCH=true; manual dispatch requires confirm_kaggle_dispatch=true.
 3. **Storage/restore:** complete a target-provider lifecycle and isolated restore drill; CI PostgreSQL/SQLite evidence is not proof of a managed production restore.
 4. **External integrations:** verify Google OAuth/Drive export, SMTP delivery, Stripe webhook/subscription acceptance, and Sentry alert delivery in their intended environments.

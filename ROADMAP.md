@@ -2,11 +2,11 @@
 
 ## Current repository checkpoint — 2026-10-10 UTC
 
-- Current default-branch commit: `990ddce32a47f6925599df507563d517737c19ff` (PR #45, “docs: add free-first production readiness checkpoint”, merged).
-- PR #45 head commit `9d04128e0b924d867adbd1c79029fb8e74800fd9` passed CI run [38046872486](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38046872486), Security run [38046872505](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38046872505), CodeQL run [38046872519](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38046872519), and Repository Gate run [38046872492](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38046872492); all four concluded successfully.
-- These are PR-head checks, not fresh default-branch checks on the merge commit. The connected GitHub status/run lookup returned no records for the merge commit, so post-merge main verification remains **NOT VERIFIED**.
-- Older checkpoint sections below are historical evidence and should not be interpreted as the current main SHA or current run status.
-- Release status remains **PENDING — NOT PRODUCTION READY**. CI does not prove live persistent worker/media execution, authenticated Whisper inference, production storage lifecycle/restore, OAuth/Drive export, SMTP/Stripe/Sentry acceptance, accessibility, load/performance, legal review, or independent penetration testing.
+- Current default-branch commit: `1b6baad0df7f8b0ad5080381143288de62ba16a7`.
+- Fresh current-main CI [38070872639](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872639), Security [38070872682](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872682), CodeQL [38070872654](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872654), and Repository Gate [38070872621](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872621) all concluded successfully on this exact SHA.
+- Non-billable Cloudflare Whisper Preflight [38071946053](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38071946053) succeeded on this exact SHA. It verified Worker handler reachability only; no audio or Workers AI inference was used.
+- Current-main backup/restore, persistent-worker, external integration, and full production acceptance are not established by these runs. Historical snapshots below are evidence of their own run/commit only.
+- Release status remains **PENDING — NOT PRODUCTION READY**. CI does not prove authenticated Whisper inference, production storage lifecycle/restore, OAuth/Drive export, SMTP/Stripe/Sentry acceptance, accessibility, load/performance, legal review, or independent penetration testing.
 - Free-first safety remains in force: no quota-consuming live inference or billable worker/resource provisioning without explicit owner approval.
 
 > Owner: Project maintainers  

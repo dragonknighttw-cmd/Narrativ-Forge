@@ -3,7 +3,8 @@
 
 SQLite restores are staged beside the target and only replace it after an explicit
 PRAGMA integrity_check result of "ok". PostgreSQL restore is destructive and must
-only target an intentionally selected restore database.
+only target an intentionally selected restore database. PostgreSQL restores require
+ALLOW_DESTRUCTIVE_POSTGRES_RESTORE=1 as an explicit safety acknowledgement.
 """
 from __future__ import annotations
 
@@ -32,6 +33,11 @@ def restore_sqlite(source: Path, destination: Path) -> None:
 
 
 def restore_postgres(source: Path, database_url: str) -> None:
+    if os.environ.get("ALLOW_DESTRUCTIVE_POSTGRES_RESTORE") != "1":
+        raise SystemExit(
+            "Refusing destructive PostgreSQL restore: set "
+            "ALLOW_DESTRUCTIVE_POSTGRES_RESTORE=1 only after verifying the target database."
+        )
     subprocess.run(
         ["pg_restore", "--clean", "--if-exists", "--no-owner", "--dbname", database_url, str(source)],
         check=True,

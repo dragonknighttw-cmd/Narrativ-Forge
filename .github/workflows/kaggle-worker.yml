@@ -2,6 +2,12 @@ name: Kaggle Ephemeral Worker Dispatcher
 
 on:
   workflow_dispatch:
+    inputs:
+      confirm_kaggle_dispatch:
+        description: "Confirm permission to query Kaggle and launch one ephemeral session if due work exists"
+        type: boolean
+        required: true
+        default: false
   schedule:
     - cron: "*/10 * * * *"
 
@@ -14,6 +20,12 @@ concurrency:
 
 jobs:
   dispatch:
+    # Scheduled launches are opt-in via the repository Actions variable
+    # ENABLE_KAGGLE_DISPATCH=true. Manual launches require explicit confirmation.
+    # This keeps an unattended schedule from consuming provider quota unexpectedly.
+    if: >-
+      (github.event_name == 'schedule' && vars.ENABLE_KAGGLE_DISPATCH == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.confirm_kaggle_dispatch == true)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

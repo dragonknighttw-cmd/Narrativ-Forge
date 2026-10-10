@@ -1,15 +1,15 @@
 # Narrativ Forge — Detailed Remaining Work Checklist
 
-## Current repository checkpoint — 2026-10-10 UTC
+## Current repository checkpoint — 2026-10-11 UTC
 
-- Current default-branch commit: `1b6baad0df7f8b0ad5080381143288de62ba16a7`.
-- Fresh current-main CI [38070872639](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872639), Security [38070872682](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872682), CodeQL [38070872654](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872654), and Repository Gate [38070872621](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872621) all passed on this exact SHA.
-- Non-billable Cloudflare Whisper Preflight [38071946053](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38071946053) reached the Worker handler and passed without sending audio or invoking Workers AI.
+- Current default-branch commit at this checkpoint: `e672bf0c5f75441e0bd9556db6811320a33a7a5e`.
+- Fresh post-merge CI [38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355) all passed on this exact SHA.
+- Cloudflare Whisper Preflight [38071946053](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38071946053) passed on parent SHA `1b6baad0df7f8b0ad5080381143288de62ba16a7` without audio or inference; do not treat it as a fresh preflight for `e672bf0`.
 - Historical snapshots below are retained as history, not current-state claims. The current evidence does not prove authenticated provider inference, persistent worker availability, production storage lifecycle/restore, or external integration acceptance.
 - Release remains **PENDING — NOT PRODUCTION READY**. Keep live Whisper inference, provider-quota consumption, paid worker capacity, production data changes, and other billable/destructive operations behind explicit approval.
 
 > Companion checklist to `ROADMAP.md`; `ROADMAP.md` remains the sole master execution roadmap.
-> Last reconciled: 2026-10-09 (UTC; reconciled after PR #26 merge)
+> Last reconciled: 2026-10-11 (UTC; refreshed after PR #56 and fresh main checks)
 > Rule: never mark an item VERIFIED without evidence tied to the exact commit, environment, and run.
 > Current release status: **PENDING — NOT PRODUCTION READY**.
 

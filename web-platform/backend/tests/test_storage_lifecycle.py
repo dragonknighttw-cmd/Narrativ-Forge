@@ -7,6 +7,11 @@ from pathlib import Path
 import pytest
 
 from app.services.storage import LocalStorageProvider, StorageError
+from app.services.storage_lifecycle import (
+    StorageThresholds,
+    can_delete_asset,
+    classify_storage_usage,
+)
 
 
 @pytest.mark.unit
@@ -64,13 +69,6 @@ def test_local_multipart_round_trip_is_resumable(tmp_path):
     provider.download_file(stored.object_key, output)
     assert output.read_bytes() == b"hello world"
 
-
-
-from app.services.storage_lifecycle import (
-    StorageThresholds,
-    can_delete_asset,
-    classify_storage_usage,
-)
 
 
 @pytest.mark.unit

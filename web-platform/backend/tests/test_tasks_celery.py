@@ -781,3 +781,75 @@ def test_manual_exhausted_retry_resets_budget_and_resolves_dlq(testing_db):
     assert db.query(FailedJob).filter_by(processing_job_id=job_id).one().resolved_at is not None
     assert db.query(ProcessingJob).filter_by(episode_id=episode.id).count() == 1
     db.close()
+
+def test_stale_real_processing_job_is_requeued_with_retry_metadata(testing_db, monkeypatch):
+    monkeypatch.setattr(real_worker.settings, "processing_timeout_seconds", 60)
+    monkeypatch.setattr(real_worker.settings, "processing_timeout_grace_seconds", 0)
+    Session = testing_db
+    db = Session()
+    episode = Episode(
+        public_id=f"TST-STALE-{uuid4().hex[:8]}",
+        series_id="s1",
+        episode_number=1,
+        title="stale worker job",
+    )
+    db.add(episode)
+    db.commit()
+    started_at = datetime.now(timezone.utc) - timedelta(hours=1)
+    job = ProcessingJob(
+        episode_id=episode.id,
+        job_type="real_processing",
+        status="running",
+        retry_count=0,
+        max_retries=3,
+        started_at=started_at,
+        progress=37,
+    )
+    db.add(job)
+    db.commit()
+    try:
+        assert real_worker.recover_stale_real_jobs(db) == 1
+        db.refresh(job)
+        assert job.status == "queued"
+        assert job.retry_count == 1
+        assert job.next_run_at is not None
+        assert job.progress == 0
+        assert "lease expired" in job.last_error.lower()
+    finally:
+        db.close()
+
+
+def test_recent_real_processing_job_is_not_recovered(testing_db, monkeypatch):
+    monkeypatch.setattr(real_worker.settings, "processing_timeout_seconds", 3600)
+    monkeypatch.setattr(real_worker.settings, "processing_timeout_grace_seconds", 120)
+    Session = testing_db
+    db = Session()
+    episode = Episode(
+        public_id=f"TST-NOT-STALE-{uuid4().hex[:8]}",
+        series_id="s1",
+        episode_number=1,
+        title="recent worker job",
+    )
+    db.add(episode)
+    db.commit()
+    job = ProcessingJob(
+        episode_id=episode.id,
+        job_type="real_processing",
+        status="running",
+        retry_count=0,
+        max_retries=3,
+        started_at=datetime.now(timezone.utc) - timedelta(seconds=30),
+        progress=37,
+    )
+    db.add(job)
+    db.commit()
+
+    try:
+        assert real_worker.recover_stale_real_jobs(db) == 0
+        db.refresh(job)
+        assert job.status == "running"
+        assert job.retry_count == 0
+        assert job.progress == 37
+    finally:
+        db.close()
+

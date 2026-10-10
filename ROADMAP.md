@@ -1,14 +1,13 @@
 # Narrativ Forge — Roadmap
 
-## Current post-merge checkpoint — 2026-10-10 UTC
+## Current repository checkpoint — 2026-10-10 UTC
 
-- Current main commit after PR #43 merge: `5da1625c031ec235e636b8875be5bee9d368f7b2`.
-- PR #42 (authenticated tenant-isolation E2E and disposable-backend OAuth key setup) and PR #43 (safe tenant-scope backfill migration `0018_tenant_backfill_guard`) are merged.
-- PR #43 head `2fb5c6ba1e5b9fc690cf4c382201ce7f8aebc264` passed all 9 listed workflows: CI, Security, CodeQL, Repository Gate, Backup Restore Evidence, Real Worker Evidence, Local Runtime Evidence, Windows Local Runtime Evidence, and Windows Portable Package Evidence.
-- Fresh main-commit workflows are being rerun after merge. Do not call the merged baseline fully green until those runs finish successfully.
-- Release status remains **PENDING — NOT PRODUCTION READY**. Automated tests do not prove live persistent worker/media execution, authenticated Whisper inference, production storage lifecycle/restore, OAuth/Drive export, SMTP/Stripe/Sentry acceptance, accessibility, load/performance, legal review, or independent penetration testing.
+- Current default-branch commit: `990ddce32a47f6925599df507563d517737c19ff` (PR #45, “docs: add free-first production readiness checkpoint”, merged).
+- PR #45 head commit `9d04128e0b924d867adbd1c79029fb8e74800fd9` passed CI run [38046872486](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38046872486), Security run [38046872505](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38046872505), CodeQL run [38046872519](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38046872519), and Repository Gate run [38046872492](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38046872492); all four concluded successfully.
+- These are PR-head checks, not fresh default-branch checks on the merge commit. The connected GitHub status/run lookup returned no records for the merge commit, so post-merge main verification remains **NOT VERIFIED**.
+- Older checkpoint sections below are historical evidence and should not be interpreted as the current main SHA or current run status.
+- Release status remains **PENDING — NOT PRODUCTION READY**. CI does not prove live persistent worker/media execution, authenticated Whisper inference, production storage lifecycle/restore, OAuth/Drive export, SMTP/Stripe/Sentry acceptance, accessibility, load/performance, legal review, or independent penetration testing.
 - Free-first safety remains in force: no quota-consuming live inference or billable worker/resource provisioning without explicit owner approval.
-
 
 > Owner: Project maintainers  
 > Update when: requirements, phase status, gates, or release criteria change  

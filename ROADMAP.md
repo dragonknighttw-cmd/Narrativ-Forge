@@ -1,17 +1,17 @@
 # Narrativ Forge — Roadmap
 
-## Current repository checkpoint — 2026-10-10 UTC
+## Current repository checkpoint — 2026-10-11 UTC
 
-- Current default-branch commit: `1b6baad0df7f8b0ad5080381143288de62ba16a7`.
-- Fresh current-main CI [38070872639](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872639), Security [38070872682](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872682), CodeQL [38070872654](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872654), and Repository Gate [38070872621](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38070872621) all concluded successfully on this exact SHA.
-- Non-billable Cloudflare Whisper Preflight [38071946053](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38071946053) succeeded on this exact SHA. It verified Worker handler reachability only; no audio or Workers AI inference was used.
+- Current default-branch commit at this checkpoint: `e672bf0c5f75441e0bd9556db6811320a33a7a5e`.
+- Fresh post-merge CI [38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355) all concluded successfully on this exact SHA.
+- Cloudflare Whisper Preflight [38071946053](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38071946053) succeeded on parent SHA `1b6baad0df7f8b0ad5080381143288de62ba16a7`; it verified Worker handler reachability only, with no audio or Workers AI inference. This non-billable check has not been rerun on `e672bf0`.
 - Current-main backup/restore, persistent-worker, external integration, and full production acceptance are not established by these runs. Historical snapshots below are evidence of their own run/commit only.
 - Release status remains **PENDING — NOT PRODUCTION READY**. CI does not prove authenticated Whisper inference, production storage lifecycle/restore, OAuth/Drive export, SMTP/Stripe/Sentry acceptance, accessibility, load/performance, legal review, or independent penetration testing.
 - Free-first safety remains in force: no quota-consuming live inference or billable worker/resource provisioning without explicit owner approval.
 
 > Owner: Project maintainers  
 > Update when: requirements, phase status, gates, or release criteria change  
-> Last Updated: 2026-10-09  
+> Last Updated: 2026-10-11  
 > Do NOT put here: provider secrets, detailed runbook commands, or unsupported live-health claims
 
 ## Authority

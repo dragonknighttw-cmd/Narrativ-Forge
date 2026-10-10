@@ -1,16 +1,16 @@
 # Narrativ Forge — Current State
 
 > Owner: Project maintainers
-> Last Updated: 2026-10-09 (UTC; reconciled after PR #26 merge)
+> Last Updated: 2026-10-10 (UTC; refreshed after PR #36 merge)
 > Status evidence is environment-specific. Code/config alone never promotes a gate to VERIFIED.
 
 ## Latest main snapshot — 2026-10-10 UTC
 
-- Current main SHA: `72154ae184f2316ee2c283be3184566edb91fe37` (PR #33 merge).
-- PR #31 merged tenant-isolation negative cases for direct child-resource IDs. PR #32 merged storage lifecycle threshold/deletion-safety boundary tests (`a3ee23467ea2111e18b35523e698464d12c47024`). PR #33 merged a regression test proving asset metadata and audit history are preserved when storage-provider purge fails (`72154ae184f2316ee2c283be3184566edb91fe37`).
-- PR-head checks for PR #32 and PR #33 passed, including backend, backend integration, E2E, CodeQL, Repository Gate, real-worker CI evidence, security scans, and local/Windows runtime/package smoke checks where present.
-- Fresh main-SHA checks for `72154ae184f2316ee2c283be3184566edb91fe37` are still running; refresh them before describing the merged baseline as fully green.
-- These changes improve automated regression coverage only. They do not establish live external-storage lifecycle/restore acceptance, a persistent production worker, authenticated real-audio Whisper inference, or full production end-to-end acceptance.
+- Current main SHA: `36d7fb6c4e53dd2ecbded0b78fbdfa45605631fe` (PR #36 merge; PR #34 documentation reconciliation is also included).
+- PR #31–#33 remain merged with tenant-isolation, storage deletion-safety, and purge-failure audit-history regression coverage. PR #34 reconciled the documentation snapshot. PR #36 added tests for stale real-processing job recovery (one retry plus recovery metadata) and for leaving recent running jobs untouched.
+- PR #36 head checks passed: CI, Security, CodeQL, Repository Gate, Local Runtime Evidence, Real Worker Evidence, Windows Local Runtime Evidence, and Windows Portable Package Evidence.
+- Fresh checks on the current main merge SHA `36d7fb6c4e53dd2ecbded0b78fbdfa45605631fe` were triggered and are still running; do not call the latest main baseline fully green until these checks finish.
+- These are repository/CI regression results only. They do not establish live external-storage lifecycle/restore acceptance, a persistent production worker, authenticated real-audio Whisper inference, or full production end-to-end acceptance.
 - Release status remains **PENDING — NOT PRODUCTION READY**. Do not run quota-consuming inference or provision billable worker capacity without explicit owner approval.
 
 ## Latest CI / evidence snapshot

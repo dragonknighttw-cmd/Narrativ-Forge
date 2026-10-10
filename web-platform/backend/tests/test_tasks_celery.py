@@ -853,3 +853,49 @@ def test_recent_real_processing_job_is_not_recovered(testing_db, monkeypatch):
     finally:
         db.close()
 
+
+
+def test_stale_real_processing_job_exhaustion_creates_dlq_once(testing_db, monkeypatch):
+    monkeypatch.setattr(real_worker.settings, "processing_timeout_seconds", 60)
+    monkeypatch.setattr(real_worker.settings, "processing_timeout_grace_seconds", 0)
+    Session = testing_db
+    db = Session()
+    episode = Episode(
+        public_id=f"TST-STALE-EXHAUST-{uuid4().hex[:8]}",
+        series_id="s1",
+        episode_number=1,
+        title="stale exhausted worker job",
+    )
+    db.add(episode)
+    db.commit()
+    started_at = datetime.now(timezone.utc) - timedelta(hours=1)
+    job = ProcessingJob(
+        episode_id=episode.id,
+        job_type="real_processing",
+        status="running",
+        retry_count=3,
+        max_retries=3,
+        started_at=started_at,
+        progress=37,
+    )
+    db.add(job)
+    db.commit()
+
+    try:
+        assert real_worker.recover_stale_real_jobs(db) == 1
+        db.refresh(job)
+        assert job.status == "failed"
+        assert job.retry_count == job.max_retries == 3
+        assert job.next_run_at is None
+        failed_job = db.query(FailedJob).filter_by(processing_job_id=job.id).one()
+        assert "lease expired" in failed_job.reason.lower()
+        event = db.query(AuditEvent).filter_by(
+            resource_id=job.id, action="processing.retry_exhausted"
+        ).one()
+        assert json.loads(event.metadata_json)["retry_count"] == 3
+
+        # A subsequent recovery pass must not create a second terminal failure/DLQ row.
+        assert real_worker.recover_stale_real_jobs(db) == 0
+        assert db.query(FailedJob).filter_by(processing_job_id=job.id).count() == 1
+    finally:
+        db.close()

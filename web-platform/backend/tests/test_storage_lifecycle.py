@@ -63,3 +63,65 @@ def test_local_multipart_round_trip_is_resumable(tmp_path):
     output = tmp_path / "multipart-out.bin"
     provider.download_file(stored.object_key, output)
     assert output.read_bytes() == b"hello world"
+
+
+
+from app.services.storage_lifecycle import (
+    StorageThresholds,
+    can_delete_asset,
+    classify_storage_usage,
+)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("used", "capacity", "expected"),
+    [
+        (0, 100, "normal"),
+        (79, 100, "normal"),
+        (80, 100, "warning"),
+        (89, 100, "warning"),
+        (90, 100, "critical"),
+        (94, 100, "critical"),
+        (95, 100, "emergency"),
+        (100, 100, "emergency"),
+        (101, 100, "emergency"),
+        (0, 0, "emergency"),
+    ],
+)
+def test_storage_usage_state_boundaries(used, capacity, expected):
+    usage = classify_storage_usage(used, capacity)
+    assert usage.state() == expected
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("used", "capacity"),
+    [(-1, 100), (1, -1)],
+)
+def test_storage_usage_rejects_negative_sizes(used, capacity):
+    with pytest.raises(ValueError, match="non-negative"):
+        classify_storage_usage(used, capacity)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("kwargs", "expected"),
+    [
+        ({"is_final": False, "is_approved": False, "is_only_copy": False, "retention_expired": True}, True),
+        ({"is_final": True, "is_approved": False, "is_only_copy": False, "retention_expired": True}, False),
+        ({"is_final": False, "is_approved": True, "is_only_copy": False, "retention_expired": True}, False),
+        ({"is_final": False, "is_approved": False, "is_only_copy": True, "retention_expired": True}, False),
+        ({"is_final": False, "is_approved": False, "is_only_copy": False, "retention_expired": False}, False),
+    ],
+)
+def test_asset_deletion_policy_preserves_approved_final_and_only_copies(kwargs, expected):
+    assert can_delete_asset(**kwargs) is expected
+
+
+@pytest.mark.unit
+def test_storage_thresholds_must_be_ordered_and_in_range():
+    with pytest.raises(ValueError, match="ordered"):
+        StorageThresholds(warning=0.9, critical=0.8, emergency=0.95)
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        StorageThresholds(warning=-0.1, critical=0.8, emergency=0.95)

@@ -207,18 +207,18 @@ Prepared blueprint: `render.worker.yaml`.
 No gate is promoted to VERIFIED by source-code or configuration evidence alone.
 \n\n## Consolidated continuation roadmap — Phases 15–60\n\nThe canonical roadmap now incorporates the execution/evidence queue used by `PHASE_EXECUTION.md`. These phases are implementation continuations, not claims that the corresponding live gates are verified.\n\n### Phases 15–36\n15 cross-platform export preparation; 16 trend adapter; 17 A/B testing + feedback; 18 publishing metadata/idempotency; 19 trend connectors; 20 experiment registry; 21 AI quality/provider ranking; 22 EDL/FCPXML/NLE manifests; 23 storage lifecycle/DR; 24 SRE/incident/compliance; 25 character/style bible; 26 hook recommendation/episode scoring; 27 Burmese subtitle evaluation; 28 selective regeneration; 29 quota-aware scheduling; 30 human-review learning; 31 collaboration; 32 realtime/presence; 33 usage quotas; 34 enterprise tenant policy; 35 demo/onboarding/support; 36 launch gate/pen-test remediation.\n\n### Phases 37–45\n37 release train/migration safety; 38 cost governance; 39 data lifecycle/privacy; 40 DR automation; 41 multi-region readiness; 42 advanced queue scheduling; 43 evaluation dataset governance; 44 model/provider change management; 45 final operating maturity.\n\n### Phases 46–51 — implemented foundations\n46 evidence ledger; 47 provider acceptance matrix; 48 production E2E rehearsal seam; 49 billing/entitlement reconciliation; 50 release-candidate freeze; 51 final launch/post-launch watch.\n\nImplementation evidence now exists in `web-platform/backend/app/services/release_maturity.py`, `app/models/core.py`, migration `0017_release_maturity`, unit tests, and `.github/workflows/repository-gate.yml`.\n\n**Important:** these are repository implementation foundations. They do not promote live worker/provider/billing/legal/security/manual gates to VERIFIED.\n\n### Phases 52–60 — pre-staged remaining backlog\n52 series trailer planning; 53 Burmese-first translation adapter; 54 sound/BGM workflow; 55 thumbnail candidate workflow; 56 LoRA/voice consistency seam; 57 social analytics import; 58 archive/cold-storage/PII purge; 59 Manual Mode production validation; 60 final UI/state/component audit.\n\nThe original requirements backlog remains covered: eight hook families, first-10-second structure, SEO metadata, retention/emotional arc, thumbnail 10→5 review, sound/BGM, subtitle styling, LoRA/voice consistency, Series Bible, five-episode planning, analytics/A-B feedback, video-generation fallback/watermark/commercial-use checks, quota accounting, subtitle correction metrics, social analytics import, archive/PII purge, backup/restore, monitoring/incident/on-call, and full testing/security/accessibility/legal/pen-test gates.\n\n### Execution rule\n\nCode-only foundations continue on `main` in parallel where independent. Live credentials, paid worker capacity, provider terms/limits, billing, legal/privacy approval, penetration testing, accessibility/manual acceptance, and real-media/browser evidence remain explicit gates. No secret is stored in the repository.
 
-### Phases 61–68 — pre-staged continuation
+### Phases 61–68 — code-only foundations implemented
 61 performance/cost optimization; 62 worker-fleet autoscaling; 63 content provenance/lineage; 64 advanced collaboration/enterprise audit; 65 provider adapter/marketplace seam; 66 localization quality operations; 67 monetization expansion; 68 post-launch SLO/error-budget operations.
 
 Code-only foundations exist for phases 52–84 in `phase_52_60.py`, `phase_61_68.py`, `phase_69_76.py`, and `phase_77_84.py`, with corresponding unit tests. Treat these as implementation foundations only—not completed production features. Live runtime, provider, billing, privacy/legal, security, accessibility, and human acceptance gates remain open until separately evidenced.
 
 
-## Phase 61–68 code-foundation progress — 2026-10-08
+## Phase 61–68 implementation evidence — 2026-10-08
 
 Code-only foundations are now staged in `web-platform/backend/app/services/phase_61_68.py` with unit coverage in `tests/test_phase_61_68.py`: performance/cost budgets, worker autoscaling policy, provenance lineage, enterprise permissions, provider capability discovery, localization quality thresholds, billing metering validation, SLO budgets and incident/rollback policy. Live telemetry, billing, provider, enterprise and post-launch acceptance remain external gates.
 
 
-## Phase 69–76 code-foundation progress — 2026-10-08
+## Phase 69–76 implementation evidence — 2026-10-08
 
 Code-only foundations are staged in `web-platform/backend/app/services/phase_69_76.py` with unit coverage in `tests/test_phase_69_76.py`: rollout/cohort policy, schema-drift detection, restore verification, privacy-request closure, secret/config readiness, dependency-license allowlisting, chaos-drill acceptance, and deterministic release evidence packs. These contracts do not claim live backup, privacy/legal, secret-manager, license, chaos or release acceptance.
 
@@ -226,10 +226,10 @@ Code-only foundations are staged in `web-platform/backend/app/services/phase_69_
 69 progressive rollout/cohort control; 70 schema/data-quality drift; 71 restore verification; 72 privacy/data-subject operations; 73 secret/config readiness; 74 dependency/license governance; 75 chaos/recovery drills; 76 final release evidence pack.
 
 
-### Phases 77–84 — pre-staged next queue
+### Phases 77–84 — code-only foundations implemented
 77 capacity/tenant quota forecasting; 78 API versioning/deprecation contracts; 79 migration retirement and data cleanup; 80 portable tenant export/import; 81 incident communications and status-page evidence; 82 support SLA/escalation operations; 83 provider marketplace billing/settlement seam; 84 final governance/ownership matrix and release evidence reconciliation.
 
-Implementation rule: these remain code/evidence work after 69–76 are exhausted. Any live provider, billing, legal, privacy, security, accessibility, human acceptance or production-runtime dependency remains an explicit external gate and is never inferred from unit tests.
+Implementation rule: code-only foundations for phases 77–84 are present with unit tests. Any live provider, billing, legal, privacy, security, accessibility, human acceptance or production-runtime dependency remains an explicit external gate and is never inferred from unit tests.
 
 
 ## Phases 77–84 — code-only foundations complete

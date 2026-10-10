@@ -17,6 +17,10 @@ This checkpoint is a concise operational supplement to `ROADMAP.md` and `docs/MA
 
 These run links are evidence for the specific workflow runs and their tested scope, not a claim that every run used the current default-branch SHA or that production providers passed end-to-end acceptance. Re-check latest main-branch runs before release decisions.
 
+## Documentation freshness finding
+
+The headers of `ROADMAP.md` and `docs/MASTER_REMAINING_WORK.md` still describe the baseline immediately after PR #43 (main SHA `5da1625c031ec235e636b8875be5bee9d368f7b2`) and include older historical checkpoints. The current default-branch commit observed during this audit is `ae6d3036443262b62271e9012fd78f5b5956ad69` (PR #44). Treat the existing documents' older “current main” references as historical until reconciled against fresh run evidence. Do not mark the main baseline fully green from the older evidence alone.
+
 ## Checkpoint documentation PR validation
 
 The documentation branch head `3d63b035daccd9359191b600086c1a892908d4a3` was checked by the following pull-request workflow runs, all with conclusion `success`:
@@ -26,14 +30,15 @@ The documentation branch head `3d63b035daccd9359191b600086c1a892908d4a3` was che
 - [Security 38038943302](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38038943302)
 - [CI 38038943311](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38038943311)
 
-These checks validate the PR branch only. They do not replace fresh evidence for the latest default-branch commit, do not constitute a production provider test, and do not prove that a deployed service is healthy.
+These checks validate the earlier PR branch commit only. The latest checkpoint edits trigger fresh checks and must be validated separately. PR checks do not replace fresh evidence for the latest default-branch commit, do not constitute a production provider test, and do not prove that a deployed service is healthy.
 
 ## Quota-free work queue
 
 ### 1. Repository and CI baseline
 - [ ] Refresh the latest Actions runs on `main`; record the exact head SHA and conclusion for CI, Security, CodeQL, Repository Gate, backup/restore, worker evidence, local runtime, Windows runtime, and package evidence.
-- [x] Check the documentation-only readiness PR with CI, Security, CodeQL, and Repository Gate; all four checks passed for the PR head above.
+- [x] Run CI, Security, CodeQL, and Repository Gate on the initial documentation PR head; all four passed on that commit.
 - [ ] Investigate and fix only confirmed failures; do not repeat already-successful deployment/configuration steps without a reason.
+- [ ] Reconcile the top-level “current checkpoint” metadata in `ROADMAP.md` and `docs/MASTER_REMAINING_WORK.md` to the latest main SHA and current evidence before using either as a release-status source.
 - [ ] Keep live inference and paid-resource workflows separate from default CI, with explicit manual confirmation and minimal permissions.
 
 ### 2. Cloudflare Whisper — no-inference checks only

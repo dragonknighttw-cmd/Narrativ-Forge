@@ -47,6 +47,25 @@ def ensure_membership(db: Session, user: dict) -> OrganizationMembership:
         .first()
     )
     if membership:
+        # Older/bootstrap-created workspaces may predate billing subscription rows.
+        # Keep billing reads safe and consistent for every existing membership.
+        subscription = (
+            db.query(BillingSubscription)
+            .filter(BillingSubscription.organization_id == membership.organization_id)
+            .first()
+        )
+        if subscription is None:
+            organization = db.get(Organization, membership.organization_id)
+            plan = organization.plan if organization else "trial"
+            db.add(
+                BillingSubscription(
+                    organization_id=membership.organization_id,
+                    plan=plan,
+                    status="trialing" if plan == "trial" else "active",
+                )
+            )
+            db.commit()
+            db.refresh(membership)
         return membership
     base = _slug(user["email"].split("@", 1)[0])
     slug = base

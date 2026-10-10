@@ -14,12 +14,8 @@ test.describe("Cross-tenant isolation", () => {
     expect(ownerLogin.ok()).toBeTruthy();
 
     const suffix = Date.now();
-    const secondEmail = `e2e-tenant-${suffix}@example.test`;
+    const secondEmail = process.env.E2E_SECOND_EMAIL ?? "e2e-second-tenant@example.test";
     const secondPassword = process.env.E2E_SECOND_PASSWORD ?? "E2e-Second-Password-ChangeMe1!";
-    const invite = await request.post(`${apiBase}/auth/invite`, {
-      data: { email: secondEmail, password: secondPassword, role: "owner" },
-    });
-    expect(invite.ok()).toBeTruthy();
 
     const series = await request.post(`${apiBase}/series`, {
       data: { title: `Tenant A ${suffix}` },

@@ -22,6 +22,15 @@
 - [Cloudflare Whisper Preflight #2](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37964550063) passed as a non-inference preflight; authenticated real-audio transcription, VTT correctness, fallback and persistence remain open.
 - [Kaggle Dispatcher #12](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37962902195) passed configuration/database checks but found no due `real_processing` jobs and did not launch a Kaggle session. Do not count this as Kaggle worker E2E.
 
+## Latest main snapshot — 2026-10-10 UTC
+
+- Current main SHA: `72154ae184f2316ee2c283be3184566edb91fe37` (PR #33 merge).
+- PR #31 merged tenant-isolation negative cases for direct child-resource IDs. PR #32 merged storage lifecycle threshold/deletion-safety boundary tests (`a3ee23467ea2111e18b35523e698464d12c47024`). PR #33 merged a regression test proving asset metadata and audit history are preserved when storage-provider purge fails (`72154ae184f2316ee2c283be3184566edb91fe37`).
+- PR-head checks for PR #32 and PR #33 passed, including backend, backend integration, E2E, CodeQL, Repository Gate, real-worker CI evidence, security scans, and local/Windows runtime/package smoke checks where present.
+- Fresh main-SHA checks for `72154ae184f2316ee2c283be3184566edb91fe37` are still running; refresh them before describing the merged baseline as fully green.
+- These changes improve automated regression coverage only. They do not establish live external-storage lifecycle/restore acceptance, a persistent production worker, authenticated real-audio Whisper inference, or full production end-to-end acceptance.
+- Release status remains **PENDING — NOT PRODUCTION READY**. Do not run quota-consuming inference or provision billable worker capacity without explicit owner approval.
+
 ## How to use this checklist
 
 Use these status labels consistently:

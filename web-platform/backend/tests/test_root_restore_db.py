@@ -64,3 +64,44 @@ def test_sqlite_restore_does_not_replace_target_when_integrity_check_fails(
 
     assert target.read_bytes() == b"preserve existing target"
     assert not target.with_suffix(".sqlite.restore").exists()
+
+
+@pytest.mark.unit
+def test_postgres_restore_requires_explicit_destructive_acknowledgement(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "backup.dump"
+    source.write_bytes(b"not used by this guard test")
+    monkeypatch.delenv("ALLOW_DESTRUCTIVE_POSTGRES_RESTORE", raising=False)
+    called = False
+
+    def unexpected_run(*_args, **_kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("pg_restore must not run without explicit acknowledgement")
+
+    monkeypatch.setattr(restore_db.subprocess, "run", unexpected_run)
+
+    with pytest.raises(SystemExit, match="Refusing destructive PostgreSQL restore"):
+        restore_db.restore_postgres(source, "postgresql://user:pass@localhost/production")
+
+    assert called is False
+
+
+@pytest.mark.unit
+def test_postgres_restore_runs_only_after_explicit_acknowledgement(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "backup.dump"
+    source.write_bytes(b"test")
+    calls = []
+    monkeypatch.setenv("ALLOW_DESTRUCTIVE_POSTGRES_RESTORE", "1")
+    monkeypatch.setattr(restore_db.subprocess, "run", lambda args, **kwargs: calls.append((args, kwargs)))
+
+    restore_db.restore_postgres(source, "postgresql://user:pass@localhost/restore_target")
+
+    assert len(calls) == 1
+    assert calls[0][1] == {"check": True}
+    assert calls[0][0][:5] == [
+        "pg_restore", "--clean", "--if-exists", "--no-owner", "--dbname"
+    ]

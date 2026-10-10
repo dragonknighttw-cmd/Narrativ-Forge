@@ -1,7 +1,7 @@
 # Free-first production-readiness checkpoint
 
 **Checkpoint date:** 2026-10-10 UTC  
-**Current main SHA:** a3be2983473c45618950cd226b940b06be5b9347  
+**Current main SHA:** 1b6baad0df7f8b0ad5080381143288de62ba16a7  
 **Release status:** PENDING — NOT PRODUCTION READY  
 **Policy:** Do not run Cloudflare Whisper live inference, consume provider quota, or provision potentially billable resources without explicit owner approval.
 
@@ -13,7 +13,7 @@
 - PR #52 merged: Kaggle scheduled launches require repository Actions variable ENABLE_KAGGLE_DISPATCH=true; manual dispatch requires explicit confirm_kaggle_dispatch=true.
 - PR #53 merged: concurrent requests that bootstrap a missing billing subscription recover from the uniqueness race without hiding unrelated integrity failures.
 - PR #52 and #53 PR-head checks passed. PR #53's real-worker synthetic-media smoke passed and the worker/containers were stopped; this is ephemeral CI evidence, not a persistent production worker.
-- The code-bearing parent SHA c3a91d03ff67aacecd8519d65d7893b75ea1527c passed all 14 main checks, including CI, Security, CodeQL, Repository Gate, and real-worker synthetic-media evidence. This commit only adds readiness documentation; fresh checks for current main SHA a3be2983473c45618950cd226b940b06be5b9347 were queued after the documentation merge and must complete before the current default-branch baseline is called green.
+- Current main SHA `1b6baad0df7f8b0ad5080381143288de62ba16a7` has fresh successful CI, Security, CodeQL, Repository Gate, and non-billable Cloudflare Whisper Preflight evidence. The preflight reached the deployed Worker handler and received its expected JSON method guard (HTTP 405); it sent no audio and did not invoke Workers AI. This confirms edge/handler reachability only, not authenticated inference or production readiness.
 
 ## Historical workflow evidence
 
@@ -48,33 +48,30 @@ These checks validate the PR branch commit only. They do not replace fresh evide
 ## Quota-free work queue
 
 ### 1. Repository and CI baseline
-- [ ] Refresh the latest Actions runs on `main`; record the exact head SHA and conclusion for CI, Security, CodeQL, Repository Gate, backup/restore, worker evidence, local runtime, Windows runtime, and package evidence.
-- [x] Run CI, Security, CodeQL, and Repository Gate on the latest checked checkpoint PR head `aaf9d95bb87030de651a9d4bd15d3990530e90c5`; all four passed.
-- [ ] Investigate and fix only confirmed failures; do not repeat already-successful deployment/configuration steps without a reason.
-- [ ] Reconcile the top-level “current checkpoint” metadata in `ROADMAP.md` and `docs/MASTER_REMAINING_WORK.md` to the latest main SHA and current evidence before using either as a release-status source.
-- [ ] Keep live inference and paid-resource workflows separate from default CI, with explicit manual confirmation and minimal permissions.
+- [x] Refresh current-main CI, Security, CodeQL, and Repository Gate runs for SHA `1b6baad0df7f8b0ad5080381143288de62ba16a7`; all succeeded. The non-billable Cloudflare Whisper Preflight also succeeded on this exact SHA.
+- [ ] Run fresh main-branch backup/restore, real-worker synthetic-media, local runtime, Windows runtime, and portable-package evidence against the current SHA where the workflow supports manual dispatch or relevant path triggers.
+- [x] Reconcile the top-level current-checkpoint metadata in `ROADMAP.md` and `docs/MASTER_REMAINING_WORK.md` with the current SHA and latest evidence.
+- [x] Keep live inference and paid-resource workflows separate from default CI, with explicit manual confirmation and minimal permissions.
 
 ### 2. Cloudflare Whisper — no-inference checks only
-- [x] Deploy the Worker and configure `NARRATIV_SHARED_SECRET` from the protected GitHub Environment secret.
-- [x] Run a non-inference handler smoke test after deployment.
-- [x] Review the live-evidence workflow statically: it requires the explicit `confirm_live_inference` boolean to be true and is not part of this audit.
+- [x] Cloudflare API confirms the deployed Worker script exists and has the `AI`, `ALLOWED_ORIGIN`, and secret binding names; the secret value was not read.
+- [x] Preflight run [38071946053](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38071946053) reached the Worker handler and received the expected JSON method guard; no audio or Workers AI inference was used.
 - [ ] Keep `cloudflare-whisper-live-evidence.yml` undispatched until the owner explicitly approves quota-consuming inference.
-- [ ] Continue only with safe static review and GET/preflight checks that do not send audio or call the AI binding.
-- [ ] Never print secret values, request authorization headers, audio, or raw provider responses in logs/artifacts.
+- [ ] Authenticated real-audio inference remains unverified; secret binding presence is not proof that GitHub/Render/Cloudflare secret values match.
+- [x] Never print secret values, request authorization headers, audio, or raw provider responses in logs/artifacts.
 
 ### 3. Free-first worker/runtime strategy
-- [x] Review the worker evidence workflow and Kaggle dispatcher configuration statically; no worker was launched.
+- [x] Review the worker evidence workflow and Kaggle dispatcher configuration statically; no persistent worker was provisioned.
 - [x] Confirm the dispatcher unit tests are included by the workflow's `unittest discover -s infra/kaggle -p 'test_*.py'` command.
-- [ ] Clearly distinguish ephemeral CI synthetic-media tests from a persistent production background worker.
-- [ ] Document the cheapest viable execution path, its limits, persistence assumptions, and owner actions before enabling a runtime.
-- [ ] Decide separately whether unattended scheduled Kaggle launches should be gated behind an explicit boolean confirmation. The current `.github/workflows/kaggle-worker.yml` schedule is `*/10 * * * *`; its final step runs `infra/kaggle/dispatch.py`, which can push a Kaggle session when due `real_processing` jobs are queued and the kernel is not active. Do not manually dispatch it during a no-quota audit. Adding a gate would change automatic queue processing and should be a deliberate owner decision.
+- [x] Kaggle scheduled dispatch now requires `ENABLE_KAGGLE_DISPATCH=true`; manual dispatch requires `confirm_kaggle_dispatch=true`. Leave disabled unless the owner deliberately opts in.
+- [x] Document the free-first local/ephemeral strategy and distinguish ephemeral CI evidence from a persistent production background worker.
 - [ ] Do not create a paid Render worker or other billable resource without explicit owner approval.
 
 ### 4. Production acceptance dependencies
 - [ ] Confirm production database migration head and tenant-scope safety using read-only checks where possible.
 - [ ] Validate backup/restore and storage lifecycle in the target environment only when safe credentials, a disposable target, and explicit approval are available.
 - [ ] Verify Google OAuth/Drive export, SMTP, Stripe, and Sentry integrations with provider-appropriate non-billable/test modes where available.
-- [ ] Schedule accessibility, load/performance, legal/compliance review, and independent penetration testing before production release.
+- [ ] Complete role/membership/tenant acceptance, accessibility, load/performance, rollback checks, legal/compliance review, and independent penetration testing before production release.
 
 ## Evidence and status rules
 

@@ -27,11 +27,11 @@
 
 These run links are evidence for the specific workflow runs and their tested scope, not a claim that every run used the current default-branch SHA or that production providers passed end-to-end acceptance. Re-check latest main-branch runs before release decisions.
 
-## Documentation freshness finding
+## Historical documentation freshness finding (prior main baseline)
 
 The headers of `ROADMAP.md` and `docs/MASTER_REMAINING_WORK.md` still describe the baseline immediately after PR #43 (main SHA `5da1625c031ec235e636b8875be5bee9d368f7b2`) and include older historical checkpoints. The current default-branch commit observed during this audit is `ae6d3036443262b62271e9012fd78f5b5956ad69` (PR #44). The connector returned no PR-triggered workflow records for that main SHA, so its fresh checks are **not verified here**. Treat older main-checkpoint statements as historical until reconciled against current run evidence; do not mark the main baseline fully green from older evidence alone.
 
-## Checkpoint documentation PR validation
+## Historical checkpoint documentation PR validation
 
 The latest checkpoint branch commit checked was `aaf9d95bb87030de651a9d4bd15d3990530e90c5`. The following PR workflow runs completed with conclusion `success` for that commit:
 

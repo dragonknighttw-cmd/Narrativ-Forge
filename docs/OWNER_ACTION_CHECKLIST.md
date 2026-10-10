@@ -1,5 +1,25 @@
 # Narrativ Forge — Owner Action Checklist
 
+## Current checkpoint — 2026-10-10 UTC
+
+- Current main SHA: c3a91d03ff67aacecd8519d65d7893b75ea1527c (PR #53 merge).
+- Merged fixes since older checkpoints: PR #49 Whisper quota reservation; PR #50 Redis dispatch-lock ownership; PR #51 database rollback before local Whisper fallback; PR #52 explicit opt-in for scheduled/manual Kaggle dispatch; PR #53 concurrent billing-subscription bootstrap race handling.
+- PR #52 checks passed. PR #53 checks passed on its PR head, including CI, security, CodeQL, Repository Gate, real-worker synthetic-media evidence, and local/Windows runtime/package evidence.
+- Fresh post-merge checks for main SHA c3a91d03ff67aacecd8519d65d7893b75ea1527c were not yet visible at the time this checkpoint was written. The immediately preceding main SHA fdb583dd660c399a1497292acf5ac4981c6d051a had passing CI, Security, CodeQL, and Repository Gate. Recheck current main before release acceptance.
+- No open PRs were returned at checkpoint time.
+- Release status remains **PENDING — NOT PRODUCTION READY**. CI evidence is not live-provider or full production acceptance.
+- Safety policy: do not run Cloudflare Whisper live inference, consume provider quota, change production data, or provision potentially billable resources without explicit owner approval.
+
+### Remaining owner / external acceptance gates
+
+1. **Cloudflare Whisper:** resolve the previously observed edge-level HTTP 403 (text/plain with CF-Ray) using non-inference diagnostics first. Do not infer a shared-secret mismatch from that response. Only run the live inference workflow after explicit approval.
+2. **Worker runtime:** production still has no verified persistent background worker. Keep the free-first local/ephemeral options; any paid always-on worker requires explicit approval. Kaggle scheduled dispatch is now opt-in via repository Actions variable ENABLE_KAGGLE_DISPATCH=true; manual dispatch requires confirm_kaggle_dispatch=true.
+3. **Storage/restore:** complete a target-provider lifecycle and isolated restore drill; CI PostgreSQL/SQLite evidence is not proof of a managed production restore.
+4. **External integrations:** verify Google OAuth/Drive export, SMTP delivery, Stripe webhook/subscription acceptance, and Sentry alert delivery in their intended environments.
+5. **Release quality:** complete role/membership/tenant acceptance, accessibility, representative load/performance testing, legal review, independent penetration testing, rollback checks, and fresh main checks.
+6. **Owner configuration:** verify the protected GitHub/Render/Cloudflare secret names and values match where required, without printing or sharing secret values.
+
+---
 ## Current post-merge checkpoint — 2026-10-10 UTC
 
 - Current main commit after PR #43 merge: `5da1625c031ec235e636b8875be5bee9d368f7b2`.

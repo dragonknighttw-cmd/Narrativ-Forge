@@ -210,7 +210,7 @@ No gate is promoted to VERIFIED by source-code or configuration evidence alone.
 ### Phases 61–68 — pre-staged continuation
 61 performance/cost optimization; 62 worker-fleet autoscaling; 63 content provenance/lineage; 64 advanced collaboration/enterprise audit; 65 provider adapter/marketplace seam; 66 localization quality operations; 67 monetization expansion; 68 post-launch SLO/error-budget operations.
 
-Implementation for 52–60 is now present in `phase_52_60.py` with unit coverage. Phases 61–68 are backlog contracts to be implemented next; their live acceptance gates remain explicit and cannot be inferred from code-only tests.
+Code-only foundations exist for phases 52–84 in `phase_52_60.py`, `phase_61_68.py`, `phase_69_76.py`, and `phase_77_84.py`, with corresponding unit tests. Treat these as implementation foundations only—not completed production features. Live runtime, provider, billing, privacy/legal, security, accessibility, and human acceptance gates remain open until separately evidenced.
 
 
 ## Phase 61–68 code-foundation progress — 2026-10-08
@@ -237,3 +237,15 @@ Implementation rule: these remain code/evidence work after 69–76 are exhausted
 77 capacity/quota forecasting; 78 API versioning/deprecation; 79 migration retirement/data cleanup; 80 portable tenant export/import; 81 incident communications/status evidence; 82 support SLA/escalation; 83 provider settlement seam; 84 governance/ownership/evidence reconciliation.
 
 Implementation is present in `phase_77_84.py` with unit coverage in `test_phase_77_84.py`. Live operational, provider, billing, privacy/legal, security and human acceptance gates remain separate and are not inferred from these tests.
+
+## Future candidates after Phase 84 — unnumbered backlog
+
+These candidates are not yet approved as numbered phases and should be prioritized only after the current release gates and product scope are reviewed:
+
+- Windows desktop installer, first-run setup, update and uninstall lifecycle.
+- Complete local media runtime/package parity: API, worker, FFmpeg, Whisper, ICU-dependent Burmese processing, database/storage and reproducible fixtures.
+- AI model routing, provider health checks, tool calling, rate limits, and verified free-only fallback.
+- Burmese quality evaluation and regression suite.
+- Production LoRA/video generation only after provider terms, cost, legal, watermark and runtime acceptance.
+- Direct social publishing and a full mobile client remain deferred unless explicitly reprioritized.
+

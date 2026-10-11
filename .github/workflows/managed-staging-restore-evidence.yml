@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm_restore:
-        description: "Type YES only after verifying the destination is a disposable staging database"
+        description: "Type YES only after verifying Narrativ-Forge-1 is the intended disposable restore target"
         required: true
         type: choice
         options:
@@ -18,14 +18,28 @@ concurrency:
   group: managed-staging-restore
   cancel-in-progress: false
 
-# Configure this GitHub Environment with required reviewers before adding secrets.
-# Do not point the destination secret at production or at the source database.
+# The source is an ephemeral PostgreSQL service owned by this GitHub Actions job.
+# The only managed database touched is the explicitly approved Narrativ-Forge-1 target.
 jobs:
   managed-staging-restore:
     if: ${{ inputs.confirm_restore == 'YES' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: managed-staging-restore
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout exact triggering SHA
         uses: actions/checkout@v4
@@ -42,75 +56,103 @@ jobs:
           sudo apt-get install -y postgresql-client
           python -m pip install "SQLAlchemy>=2.0,<3" "psycopg2-binary>=2.9,<3" "pydantic-settings>=2.6,<3" "cryptography>=50,<51" "alembic>=1.16,<2"
 
-      - name: Validate managed staging endpoints without printing credentials
+      - name: Validate the approved managed restore destination
         env:
-          SOURCE_URL: ${{ secrets.STAGING_SOURCE_DATABASE_URL }}
           RESTORE_URL: ${{ secrets.STAGING_RESTORE_DATABASE_URL }}
-          EXPECTED_SOURCE_HOST: ${{ vars.STAGING_SOURCE_HOST }}
           EXPECTED_RESTORE_HOST: ${{ vars.STAGING_RESTORE_HOST }}
         run: |
           python - <<'PY'
           import os
           from urllib.parse import urlparse
 
-          def parsed(name):
-              value = os.environ.get(name, "")
-              if not value:
-                  raise SystemExit(f"Required GitHub Environment secret is missing for {name}")
-              url = urlparse(value)
-              if url.scheme not in {"postgres", "postgresql"} or not url.hostname or not url.path.strip("/"):
-                  raise SystemExit(f"{name} must be a PostgreSQL connection URL")
-              return url
-
-          source = parsed("SOURCE_URL")
-          target = parsed("RESTORE_URL")
-          expected_source = os.environ.get("EXPECTED_SOURCE_HOST", "").strip().lower()
-          expected_target = os.environ.get("EXPECTED_RESTORE_HOST", "").strip().lower()
-          if not expected_source or not expected_target:
-              raise SystemExit("Set Environment variables STAGING_SOURCE_HOST and STAGING_RESTORE_HOST to the exact database hostnames")
-          if source.hostname.lower() != expected_source or target.hostname.lower() != expected_target:
-              raise SystemExit("Refusing restore: connection host does not match the explicitly approved staging host variable")
-          if (source.hostname, source.path) == (target.hostname, target.path):
-              raise SystemExit("Refusing restore: source and destination resolve to the same host/database")
-          if source.hostname.lower() == target.hostname.lower():
-              raise SystemExit("Refusing restore: source and destination must be separate managed database hosts/projects")
-          print("Managed PostgreSQL endpoints match the approved host variables and are separate; URLs withheld.")
+          value = os.environ.get("RESTORE_URL", "")
+          if not value:
+              raise SystemExit("Required GitHub Environment secret STAGING_RESTORE_DATABASE_URL is missing")
+          url = urlparse(value)
+          if url.scheme not in {"postgres", "postgresql"} or not url.hostname or not url.path.strip("/"):
+              raise SystemExit("STAGING_RESTORE_DATABASE_URL must be a PostgreSQL connection URL")
+          expected = os.environ.get("EXPECTED_RESTORE_HOST", "").strip().lower()
+          approved_host = "db.oeqyheycywqkgeeqmpxa.supabase.co"
+          if not expected or expected != approved_host:
+              raise SystemExit("STAGING_RESTORE_HOST must exactly match the approved Narrativ-Forge-1 database host")
+          if url.hostname.lower() != expected:
+              raise SystemExit("Refusing restore: connection host does not match the approved Narrativ-Forge-1 host")
+          if url.hostname.lower() in {"localhost", "127.0.0.1", "postgres"}:
+              raise SystemExit("Refusing restore: destination must be the approved managed database")
+          print("Destination host matches approved Narrativ-Forge-1; credentials withheld.")
           PY
 
-      - name: Create managed staging backup
+      - name: Prepare a minimal, deterministic PostgreSQL source fixture
         env:
-          DATABASE_URL: ${{ secrets.STAGING_SOURCE_DATABASE_URL }}
+          SOURCE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          psql "$SOURCE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE public.alembic_version (
+            version_num varchar(32) PRIMARY KEY
+          );
+          INSERT INTO public.alembic_version(version_num)
+          VALUES ('managed_restore_smoke_v1');
+          CREATE TABLE public.organizations (
+            id uuid PRIMARY KEY,
+            name text NOT NULL
+          );
+          INSERT INTO public.organizations(id, name)
+          VALUES ('00000000-0000-4000-8000-000000000001', 'managed-restore-smoke-fixture');
+          SQL
+          echo "Ephemeral source fixture created; no production database used."
+
+      - name: Refuse to overwrite unexpected public tables on the managed destination
+        env:
+          RESTORE_URL: ${{ secrets.STAGING_RESTORE_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          existing="$(psql "$RESTORE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT COALESCE(string_agg(table_name, ',' ORDER BY table_name), '') FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"
+          if [ -n "$existing" ]; then
+            IFS=',' read -r -a tables <<< "$existing"
+            for table in "${tables[@]}"; do
+              case "$table" in
+                alembic_version|organizations) ;;
+                *) echo "Refusing restore: unexpected public table exists on destination: $table" >&2; exit 1 ;;
+              esac
+            done
+            echo "Destination contains only the prior smoke-test tables; restore may replace them."
+          else
+            echo "Destination public schema has no base tables."
+          fi
+
+      - name: Create custom-format backup from the ephemeral PostgreSQL source
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
           BACKUP_DIR: ${{ runner.temp }}/managed-staging-backup
         run: |
+          set -euo pipefail
           mkdir -p "$BACKUP_DIR"
           BACKUP_FILE="$(python scripts/backup_db.py)"
           test -s "$BACKUP_FILE"
           echo "BACKUP_FILE=$BACKUP_FILE" >> "$GITHUB_ENV"
           pg_restore --list "$BACKUP_FILE" > "$RUNNER_TEMP/managed-backup-contents.txt"
           test -s "$RUNNER_TEMP/managed-backup-contents.txt"
-          echo "Managed staging backup created and archive listing is readable."
+          echo "Ephemeral PostgreSQL backup created and archive listing is readable."
 
-      - name: Restore into the separate disposable managed staging database
+      - name: Restore into approved Narrativ-Forge-1 managed database
         env:
           DATABASE_URL: ${{ secrets.STAGING_RESTORE_DATABASE_URL }}
           ALLOW_DESTRUCTIVE_POSTGRES_RESTORE: "1"
         run: python scripts/restore_db.py "$BACKUP_FILE"
 
-      - name: Verify restored schema and migration state
+      - name: Verify restored fixture schema and sentinel data
         env:
-          SOURCE_URL: ${{ secrets.STAGING_SOURCE_DATABASE_URL }}
           RESTORE_URL: ${{ secrets.STAGING_RESTORE_DATABASE_URL }}
         run: |
           set -euo pipefail
-          source_head="$(psql "$SOURCE_URL" -v ON_ERROR_STOP=1 -Atc 'SELECT version_num FROM alembic_version ORDER BY version_num LIMIT 1')"
-          restore_head="$(psql "$RESTORE_URL" -v ON_ERROR_STOP=1 -Atc 'SELECT version_num FROM alembic_version ORDER BY version_num LIMIT 1')"
-          test -n "$source_head"
-          test "$source_head" = "$restore_head"
+          restored_head="$(psql "$RESTORE_URL" -v ON_ERROR_STOP=1 -Atc 'SELECT version_num FROM public.alembic_version ORDER BY version_num LIMIT 1')"
+          test "$restored_head" = "managed_restore_smoke_v1"
+          restored_name="$(psql "$RESTORE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT name FROM public.organizations WHERE id='00000000-0000-4000-8000-000000000001'")"
+          test "$restored_name" = "managed-restore-smoke-fixture"
           target_tables="$(psql "$RESTORE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"
-          test "$target_tables" -gt 0
-          organization_table="$(psql "$RESTORE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='organizations'")"
-          test "$organization_table" = "1"
-          printf 'Restore verification passed. Alembic head matched; public base tables: %s.\n' "$target_tables"
+          test "$target_tables" = "2"
+          printf 'Managed destination restore smoke test passed. Fixture tables: %s; sentinel row verified.\n' "$target_tables"
 
       - name: Write managed restore evidence manifest
         if: always()
@@ -133,17 +175,21 @@ jobs:
               "workflow_run_id": os.environ["RUN_ID"],
               "workflow_run_attempt": os.environ["RUN_ATTEMPT"],
               "trigger": os.environ["EVENT_NAME"],
-              "environment": "managed-provider-staging",
+              "environment": "managed-provider-restore-destination",
+              "source": "ephemeral-github-actions-postgresql-fixture",
+              "destination_project_ref": "oeqyheycywqkgeeqmpxa",
               "timestamp_utc": datetime.now(timezone.utc).isoformat(),
               "checks": [
-                  "source-and-destination-are-separate-database-hosts",
-                  "managed-source-custom-format-backup",
-                  "backup-archive-readable",
-                  "restore-to-separate-disposable-managed-database",
-                  "source-and-restored-alembic-head-match",
-                  "restored-public-schema-present",
+                  "destination-host-matches-approved-narrativ-forge-1-project",
+                  "source-is-ephemeral-postgresql-not-production",
+                  "custom-format-backup-created-and-readable",
+                  "restore-to-approved-managed-destination",
+                  "restored-alembic-version-fixture-matches",
+                  "restored-organizations-sentinel-row-matches",
+                  "unexpected-destination-tables-refused-before-restore",
               ],
-              "managed_provider_verified": os.environ["JOB_STATUS"] == "success",
+              "managed_destination_restore_smoke_verified": os.environ["JOB_STATUS"] == "success",
+              "application_schema_verified": False,
               "production_verified": False,
           }
           path = Path(os.environ["RUNNER_TEMP"]) / "managed-staging-restore-manifest.json"

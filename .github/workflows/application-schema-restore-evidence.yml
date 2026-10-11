@@ -1,0 +1,240 @@
+name: Application Schema Restore Evidence
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/application-schema-restore-evidence.yml"
+      - "scripts/backup_db.py"
+      - "scripts/restore_db.py"
+      - "web-platform/backend/alembic/**"
+      - "web-platform/backend/app/models/**"
+      - "web-platform/backend/requirements.txt"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/application-schema-restore-evidence.yml"
+      - "scripts/backup_db.py"
+      - "scripts/restore_db.py"
+      - "web-platform/backend/alembic/**"
+      - "web-platform/backend/app/models/**"
+      - "web-platform/backend/requirements.txt"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: application-schema-restore-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application-schema-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-password
+          POSTGRES_DB: narrativ_source
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d narrativ_source"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SOURCE_URL: postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_source
+      RESTORE_URL: postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_restore
+      REDIS_URL: redis://127.0.0.1:6379/0
+      STORAGE_PROVIDER: local
+      UPLOAD_DIR: ${{ runner.temp }}/restore-evidence-storage
+      PYTHONPATH: web-platform/backend
+    steps:
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PostgreSQL 17 client and backend dependencies
+        run: |
+          set -euo pipefail
+          sudo install -d /usr/share/postgresql-common/pgdg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo gpg --dearmor --yes -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo "$VERSION_CODENAME")-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+          export PATH="/usr/lib/postgresql/17/bin:$PATH"
+          pg_dump --version
+          pg_restore --version
+          python -m pip install -r web-platform/backend/requirements.txt
+
+      - name: Apply the full application migration chain to ephemeral source
+        working-directory: web-platform/backend
+        env:
+          DATABASE_URL: ${{ env.SOURCE_URL }}
+          APP_ENV: test
+        run: |
+          set -euo pipefail
+          python -m alembic upgrade head
+          python -m alembic current
+
+      - name: Add a synthetic restore sentinel to the migrated application schema
+        run: |
+          set -euo pipefail
+          psql "$SOURCE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE public.restore_evidence_sentinel (
+            id text PRIMARY KEY,
+            payload text NOT NULL
+          );
+          INSERT INTO public.restore_evidence_sentinel(id, payload)
+          VALUES ('app-schema-restore-v1', 'synthetic-ci-only');
+          SQL
+          createdb --host=127.0.0.1 --username=postgres narrativ_restore
+          echo "Synthetic sentinel inserted; restore target is a new empty ephemeral database."
+
+      - name: Back up the full migrated application database
+        env:
+          DATABASE_URL: ${{ env.SOURCE_URL }}
+          BACKUP_DIR: ${{ runner.temp }}/application-schema-backup
+        run: |
+          set -euo pipefail
+          mkdir -p "$BACKUP_DIR"
+          backup_file="$(python scripts/backup_db.py)"
+          test -s "$backup_file"
+          pg_restore --list "$backup_file" > "$RUNNER_TEMP/backup-contents.txt"
+          test -s "$RUNNER_TEMP/backup-contents.txt"
+          echo "BACKUP_FILE=$backup_file" >> "$GITHUB_ENV"
+          echo "Full application database backup created and archive listing verified."
+
+      - name: Restore into a fresh ephemeral database
+        env:
+          DATABASE_URL: ${{ env.RESTORE_URL }}
+          ALLOW_DESTRUCTIVE_POSTGRES_RESTORE: "1"
+        run: |
+          set -euo pipefail
+          python scripts/restore_db.py "$BACKUP_FILE"
+
+      - name: Verify restored application schema, migration head, and sentinel data
+        env:
+          DATABASE_URL: ${{ env.RESTORE_URL }}
+          EVIDENCE_DIR: ${{ runner.temp }}/application-schema-restore-evidence
+        run: |
+          set -euo pipefail
+          mkdir -p "$EVIDENCE_DIR"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from sqlalchemy import create_engine, inspect, text
+
+          source_url = os.environ["SOURCE_URL"]
+          restored_url = os.environ["RESTORE_URL"]
+
+          def describe(url):
+              engine = create_engine(url, pool_pre_ping=True)
+              inspector = inspect(engine)
+              tables = sorted(inspector.get_table_names(schema="public"))
+              schema = {}
+              for table in tables:
+                  schema[table] = {
+                      "columns": [
+                          (c["name"], str(c["type"]), bool(c["nullable"]), str(c.get("default")))
+                          for c in inspector.get_columns(table, schema="public")
+                      ],
+                      "primary_key": inspector.get_pk_constraint(table, schema="public").get("constrained_columns") or [],
+                      "foreign_keys": sorted(
+                          (tuple(f.get("constrained_columns") or []), f.get("referred_table"), tuple(f.get("referred_columns") or []))
+                          for f in inspector.get_foreign_keys(table, schema="public")
+                      ),
+                      "unique_constraints": sorted(
+                          (u.get("name"), tuple(u.get("column_names") or []))
+                          for u in inspector.get_unique_constraints(table, schema="public")
+                      ),
+                      "checks": sorted(
+                          (c.get("name"), c.get("sqltext"))
+                          for c in inspector.get_check_constraints(table, schema="public")
+                      ),
+                      "indexes": sorted(
+                          (i.get("name"), tuple(i.get("column_names") or []), bool(i.get("unique")))
+                          for i in inspector.get_indexes(table, schema="public")
+                      ),
+                  }
+              with engine.connect() as conn:
+                  revision = conn.execute(text("SELECT version_num FROM public.alembic_version")).scalar_one()
+                  sentinel = conn.execute(
+                      text("SELECT payload FROM public.restore_evidence_sentinel WHERE id=:id"),
+                      {"id": "app-schema-restore-v1"},
+                  ).scalar_one()
+                  table_count = conn.execute(text(
+                      "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'"
+                  )).scalar_one()
+              engine.dispose()
+              return schema, revision, sentinel, table_count
+
+          source_schema, source_revision, source_sentinel, source_count = describe(source_url)
+          restored_schema, restored_revision, restored_sentinel, restored_count = describe(restored_url)
+
+          if source_count < 20:
+              raise SystemExit(f"Refusing to mark full schema verified: expected >=20 app tables, found {source_count}")
+          if source_schema != restored_schema:
+              missing = sorted(set(source_schema) - set(restored_schema))
+              extra = sorted(set(restored_schema) - set(source_schema))
+              differing = sorted(k for k in set(source_schema) & set(restored_schema) if source_schema[k] != restored_schema[k])
+              raise SystemExit(f"Restored schema differs: missing={missing}, extra={extra}, differing={differing}")
+          if source_revision != restored_revision:
+              raise SystemExit(f"Alembic head differs: source={source_revision}, restored={restored_revision}")
+          if source_sentinel != "synthetic-ci-only" or restored_sentinel != source_sentinel:
+              raise SystemExit("Synthetic restore sentinel missing or mismatched")
+
+          evidence = {
+              "gate": "application-schema-restore",
+              "commit_sha": os.environ["GITHUB_SHA"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "workflow_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "environment": "ephemeral-github-actions-postgresql-17-redis-7",
+              "source_table_count": source_count,
+              "restored_table_count": restored_count,
+              "source_alembic_revision": source_revision,
+              "restored_alembic_revision": restored_revision,
+              "schema_objects_verified_equal": True,
+              "synthetic_data_sentinel_verified": True,
+              "application_schema_verified": True,
+              "production_verified": False,
+              "timestamp_utc": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+              "scope_note": "Full migrated application schema backup/restore in ephemeral CI only; no managed or production database is accessed."
+          }
+          Path(os.environ["EVIDENCE_DIR"], "application-schema-restore-manifest.json").write_text(
+              json.dumps(evidence, indent=2) + "\n", encoding="utf-8"
+          )
+          print(json.dumps(evidence, indent=2))
+          PY
+          echo "APPLICATION_SCHEMA_VERIFIED=true" >> "$GITHUB_ENV"
+
+      - name: Upload application schema restore evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-schema-restore-evidence
+          path: ${{ runner.temp }}/application-schema-restore-evidence/
+          if-no-files-found: ignore
+          retention-days: 14

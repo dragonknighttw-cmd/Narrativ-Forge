@@ -175,7 +175,8 @@ jobs:
                               c.get("name"),
                               (c.get("sqltext") or "")
                                   .replace("::character varying::text", "")
-                                  .replace("::character varying", ""),
+                                  .replace("::character varying", "")
+                                  .replace("]::text[]", "]"),
                           )
                           for c in inspector.get_check_constraints(table, schema="public")
                       ),

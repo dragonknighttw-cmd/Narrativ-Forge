@@ -97,7 +97,7 @@ class Settings(BaseSettings):
     mistral_model: str = "mistral-small-latest"
     mistral_free_tier_enabled: bool = False
     cohere_api_key: str = ""
-    cohere_base_url: str = "https://api.cohere.com/compatibility/v1"
+    cohere_base_url: str = "https://api.cohere.ai/compatibility/v1"
     cohere_model: str = "command-r-08-2024"
     cohere_free_tier_enabled: bool = False
     nvidia_api_key: str = ""

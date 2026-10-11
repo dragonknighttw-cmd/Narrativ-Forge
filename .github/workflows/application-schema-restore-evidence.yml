@@ -109,7 +109,7 @@ jobs:
           INSERT INTO public.restore_evidence_sentinel(id, payload)
           VALUES ('app-schema-restore-v1', 'synthetic-ci-only');
           SQL
-          createdb --host=127.0.0.1 --username=postgres narrativ_restore
+          PGPASSWORD=ci-test-password createdb --host=127.0.0.1 --username=postgres narrativ_restore
           echo "Synthetic sentinel inserted; restore target is a new empty ephemeral database."
 
       - name: Back up the full migrated application database

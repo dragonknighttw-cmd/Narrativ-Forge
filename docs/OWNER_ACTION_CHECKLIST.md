@@ -162,9 +162,10 @@ If you want to stay free-only, do not create the Render worker yet. Use the exis
 1. In Render's Narrativ-Forge API service, add OPENROUTER_API_KEY using the secret manager (never paste the value into chat, source control, or logs).
 2. Set OPENROUTER_BASE_URL=https://openrouter.ai/api/v1.
 3. Optionally set OPENROUTER_MODELS to a comma-separated list of chat-capable free IDs from [the model audit](OPENROUTER_FREE_MODEL_AUDIT.md). Keep the :free suffix and use only IDs on the vetted allowlist; the application blocks arbitrary model IDs even if they end in :free.
-4. Leave GROQ_API_KEY / OPENAI_API_KEY unused for this content-plan route; remove them from Render only after checking no other service requires them. The route itself will not call those providers.
-5. After deployment, verify a single controlled content-plan request returns success and the reported provider/model is a configured free ID. Record only provider/model/status; never log the API key or prompt. Check OpenRouter key usage/limits in its dashboard.
-6. Do not run a paid model as a fallback. If free endpoints are rate-limited, keep Mock fallback or retry later.
+4. The content-plan route now tries OpenRouter first, then only providers that have both a key and an explicit `*_FREE_TIER_ENABLED=true` opt-in. Add runtime secrets for providers you intend to use; set each opt-in flag only after confirming the account/model has an acceptable free/trial quota and will not incur unwanted charges. OpenAI remains unused by this chain.
+5. Keep `GROQ_FREE_TIER_ENABLED=false` until you confirm Groq account limits; then set it to true in the backend runtime environment to allow Groq after OpenRouter. Apply the same process to `GEMINI_FREE_TIER_ENABLED`, `MISTRAL_FREE_TIER_ENABLED`, `COHERE_FREE_TIER_ENABLED`, and `NVIDIA_FREE_TIER_ENABLED` only if desired.
+6. After deployment, verify a controlled content-plan request and check safe provider/status metadata. Never log API key values or prompts. If providers are exhausted/unavailable, the route returns deterministic Mock content; it must not switch to a paid OpenAI model.
+7. Cloudflare Whisper and Voyage embeddings are separate capabilities and are not chat fallbacks. Do not count their keys as connected to content generation.
 
 Do not mark the key verified until a real authenticated request succeeds. A configured environment variable is not proof that the key is valid or that production is using it.
 

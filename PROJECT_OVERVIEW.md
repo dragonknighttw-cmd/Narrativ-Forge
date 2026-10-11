@@ -2,7 +2,7 @@
 
 > Owner: Project maintainers  
 > Update when: product boundary, architecture, or primary runtime changes  
-> Last Updated: 2026-10-08  
+> Last Updated: 2026-10-11 UTC  
 > Do NOT put here: detailed operational runbooks, test evidence, or the execution backlog
 
 ## What this is

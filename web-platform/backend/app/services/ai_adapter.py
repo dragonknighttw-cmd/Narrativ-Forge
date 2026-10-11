@@ -132,7 +132,7 @@ def _is_safe_compatible_base_url(provider_name: str, base_url: str) -> bool:
         "groq": ("api.groq.com", "/openai/v1"),
         "gemini": ("generativelanguage.googleapis.com", "/v1beta/openai"),
         "mistral": ("api.mistral.ai", "/v1"),
-        "cohere": ("api.cohere.com", "/compatibility/v1"),
+        "cohere": ("api.cohere.ai", "/compatibility/v1"),
         "nvidia": ("integrate.api.nvidia.com", "/v1"),
     }
     if family == "openrouter":

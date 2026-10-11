@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 from typing import Any, Protocol
 from urllib.parse import urlparse
@@ -200,6 +201,52 @@ class OpenAICompatibleAdapter:
         return _normalize_plan(_extract_json(content), idea)
 
 
+class CloudflareWorkersAIAdapter:
+    """Native Workers AI chat adapter; separate from the project's Whisper Worker."""
+    def __init__(self, provider: ChatProvider) -> None:
+        self.provider = provider
+
+    def create_content_plan(self, *, idea: str, category: str | None = None) -> ContentPlan:
+        parsed = urlparse(self.provider.base_url.strip())
+        account_path = parsed.path.rstrip("/")
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname != "api.cloudflare.com"
+            or parsed.port not in (None, 443)
+            or parsed.query
+            or parsed.fragment
+            or parsed.username
+            or parsed.password
+            or not re.fullmatch(r"/client/v4/accounts/[a-fA-F0-9]{32}/ai/run", account_path)
+            or not re.fullmatch(r"@cf/[A-Za-z0-9._/-]+", self.provider.model)
+        ):
+            raise ValueError("Cloudflare Workers AI requires a canonical HTTPS account endpoint and @cf model")
+
+        prompt = (
+            "Create a Burmese short-form video content plan. Return ONLY valid JSON with keys "
+            "hook, script, scenes. scenes must contain scene_number, purpose, description, dialogue, "
+            "duration_seconds. Target about 180 seconds. Idea: " + idea.strip()
+            + "\\nCategory: " + (category or "general")
+        )
+        response = httpx.post(
+            self.provider.base_url.rstrip("/") + "/" + self.provider.model,
+            headers={"Authorization": f"Bearer {self.provider.api_key}", "Content-Type": "application/json"},
+            json={"messages": [
+                {"role": "system", "content": "You are a Burmese short-form video production planner. Output JSON only."},
+                {"role": "user", "content": prompt},
+            ], "max_tokens": 1400},
+            timeout=settings.ai_provider_timeout_seconds,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        if payload.get("success") is False:
+            raise ValueError("Cloudflare Workers AI reported an unsuccessful inference")
+        content = (payload.get("result") or {}).get("response")
+        if not isinstance(content, str):
+            raise ValueError("Cloudflare Workers AI returned no text content")
+        return _normalize_plan(_extract_json(content), idea)
+
+
 class RoutedAIAdapter:
     """Choose a configured provider by capability/priority and fail over safely."""
     def __init__(self, providers: list[ChatProvider], fallback: AIAdapter | None = None) -> None:
@@ -209,7 +256,11 @@ class RoutedAIAdapter:
     def create_content_plan(self, *, idea: str, category: str | None = None) -> ContentPlan:
         registry = ProviderRegistry()
         for provider in self.providers:
-            adapter = OpenAICompatibleAdapter(provider)
+            adapter = (
+                CloudflareWorkersAIAdapter(provider)
+                if provider.name == "cloudflare-ai"
+                else OpenAICompatibleAdapter(provider)
+            )
             registry.register(ProviderSpec(
                 name=provider.name,
                 capability="script",
@@ -288,10 +339,35 @@ def _configured_chat_providers() -> list[ChatProvider]:
             ))
             priority += 1
 
+    # Groq follows OpenRouter. It is enabled only after the owner confirms the free tier.
+    if settings.groq_api_key and settings.groq_free_tier_enabled:
+        providers.append(ChatProvider(
+            name="groq",
+            api_key=settings.groq_api_key,
+            base_url=settings.groq_base_url,
+            model=settings.groq_model,
+            priority=priority,
+        ))
+        priority += 1
+
+    # Workers AI chat needs its own account ID/API token; the Whisper shared secret is unrelated.
+    if (
+        settings.cloudflare_account_id
+        and settings.cloudflare_api_token
+        and settings.cloudflare_ai_free_tier_enabled
+    ):
+        providers.append(ChatProvider(
+            name="cloudflare-ai",
+            api_key=settings.cloudflare_api_token,
+            base_url=f"https://api.cloudflare.com/client/v4/accounts/{settings.cloudflare_account_id}/ai/run",
+            model=settings.cloudflare_ai_model,
+            priority=priority,
+        ))
+        priority += 1
+
     # These APIs can have account-specific trial/free quotas. Do not call them just
     # because a key exists: the owner must explicitly confirm the intended free tier.
     configured = [
-        ("groq", settings.groq_api_key, settings.groq_base_url, settings.groq_model, settings.groq_free_tier_enabled),
         ("gemini", settings.gemini_api_key, settings.gemini_base_url, settings.gemini_model, settings.gemini_free_tier_enabled),
         ("mistral", settings.mistral_api_key, settings.mistral_base_url, settings.mistral_model, settings.mistral_free_tier_enabled),
         ("cohere", settings.cohere_api_key, settings.cohere_base_url, settings.cohere_model, settings.cohere_free_tier_enabled),

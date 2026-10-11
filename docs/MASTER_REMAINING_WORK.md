@@ -2,7 +2,7 @@
 
 ## Current repository checkpoint — 2026-10-11 UTC
 
-- Current main documentation checkpoint: bbbf9d7bfd54517c011cdbcba20f987dcbdd8e75 (documentation-only follow-up to code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e).
+- Source-code baseline reviewed for this reconciliation: e672bf0c5f75441e0bd9556db6811320a33a7a5e. The documentation updates in this sequence do not change application code; check the latest Actions run for the current documentation commit.
 - Fresh CI [#38073711960](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711960), Security [#38073711964](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711964), CodeQL [#38073711959](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711959), and Repository Gate [#38073711954](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711954) passed on the exact current documentation SHA.
 - The code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e separately passed CI [#38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [#38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [#38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [#38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355).
 - Latest scheduled Kaggle dispatcher run [#38104412274](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38104412274) was skipped; it is not worker execution evidence. The dispatcher is intentionally opt-in and only useful when a due job exists.
@@ -11,7 +11,7 @@
 - Release status remains **PENDING — NOT PRODUCTION READY**. No quota-consuming inference, paid worker/resource provisioning, production-data mutation, or destructive live drill without explicit owner approval.
 
 > Companion checklist to ROADMAP.md; ROADMAP.md remains the sole master execution roadmap.  
-> Last reconciled: 2026-10-11 UTC, current main SHA bbbf9d7bfd54517c011cdbcba20f987dcbdd8e75.  
+> Last reconciled: 2026-10-11 UTC, source-code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e.  
 > Rule: never mark an item VERIFIED without evidence tied to the exact commit, environment, and run.  
 > Current release status: **PENDING — NOT PRODUCTION READY**.
 

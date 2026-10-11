@@ -2,18 +2,22 @@
 
 ## Current checkpoint — 2026-10-11 UTC
 
-- Current `main` SHA: `43384efb3e414be000820bd59fda80dbca12d471` (PostgreSQL 17 client fix for the managed restore smoke workflow).
-- Fresh exact-SHA CI checks passed on this commit: [CI #38125615765](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38125615765), [Security #38125615856](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38125615856), [CodeQL #38125615814](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38125615814), and [Repository Gate #38125615875](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38125615875). Frontend, backend, backend integration, E2E, dependency audit, container scan, SAST, and both CodeQL language analyses passed.
-- [Managed Staging Restore Evidence #38126392496](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126392496) passed on the same SHA. This is a minimal fixture-based PostgreSQL backup/restore smoke test against the approved `Narrativ-Forge-1` destination; it is **not** full application-schema validation or production recovery evidence. The artifact manifest correctly leaves `application_schema_verified=false` and `production_verified=false`.
-- Latest scheduled [Kaggle Ephemeral Worker Dispatcher #38126973473](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126973473) was skipped. This is not evidence that a worker ran or processed a job.
-- No open pull requests were returned by the repository's current open-PR query.
-- Automated tests exist for tenant isolation, migrations, worker tasks/concurrency, retry/DLQ/recovery, storage lifecycle, and restore safety. Their existence and green CI are code-level evidence; they do not replace a full production authorization audit or live provider verification.
-- Release status remains **PENDING — NOT PRODUCTION READY**. Remaining external/live gates include persistent worker availability, real-media processing with production-like dependencies, authenticated provider behavior, full application-schema backup/restore, storage lifecycle, OAuth/Drive, SMTP, Stripe, Sentry, performance/load, accessibility, legal/security acceptance, and penetration testing.
+- Latest implementation commit verified: `e0ce675ea27f3b6d5aa4bb53e8a2bf5bb6698775` (PR #60; worker smoke pipeline now propagates failures through `tee` using Bash `pipefail`).
+- Fresh exact-SHA main checks passed on this commit:
+  - [CI #38129952180](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952180) — frontend, backend, backend integration, E2E passed.
+  - [Security #38129952150](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952150) — dependency audit, SAST, container scan passed.
+  - [CodeQL #38129952265](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952265) — JavaScript/TypeScript and Python passed.
+  - [Repository Gate #38129952183](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952183) passed.
+- [Real Worker Evidence #38129952195](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195) passed on this exact main SHA. The evidence artifact is [real-worker-evidence](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195/artifacts/11698084515). It records an ephemeral GitHub Actions PostgreSQL 16 + Redis 7 environment, worker build/startup, migrations, worker storage access, retry/DLQ/tenant integration, and a generated 3-second synthetic-media processing smoke that produced processed video, transcript, and subtitle output. The manifest correctly leaves `production_verified=false`. This is **ephemeral worker evidence**, not proof of a continuously running production worker or full live-provider processing.
+- [Managed Staging Restore Evidence #38126392496](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126392496) passed earlier. Scope remains a minimal fixture-based PostgreSQL backup/restore smoke against the approved `Narrativ-Forge-1` destination; it is **not** full application-schema validation or production recovery evidence. The artifact manifest leaves `application_schema_verified=false` and `production_verified=false`.
+- The scheduled [Kaggle Ephemeral Worker Dispatcher #38126973473](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126973473) was skipped. It must not be treated as a worker execution.
+- Automated regression coverage exists for tenant isolation, migrations, worker tasks/concurrency, retry/DLQ/recovery, storage lifecycle, and restore safety. Green CI and synthetic worker evidence do not replace full production authorization review or live provider verification.
+- Release status remains **PENDING — NOT PRODUCTION READY**. Remaining external/live gates include a persistent worker, full upload-to-transcription E2E with real approved media/provider configuration, full application-schema backup/restore and post-restore app tests, live storage lifecycle, OAuth/Drive, SMTP, Stripe, Sentry, performance/load, accessibility, legal/security acceptance, and penetration testing.
 - No paid worker/resource provisioning, quota-consuming inference, production-data mutation, or destructive live recovery drill is authorized by this checkpoint.
 
 > Owner: Project maintainers  
 > Last Updated: 2026-10-11 UTC  
-> Status rule: implementation, CI, reachability, authenticated provider behavior, and production acceptance are separate levels.
+> Status rule: implementation, CI, ephemeral worker evidence, authenticated provider behavior, and production acceptance are separate levels.
 
 ## Historical pre-PR #42/#43 main snapshot — 2026-10-10 UTC
 

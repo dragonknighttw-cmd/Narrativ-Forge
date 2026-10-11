@@ -9,6 +9,8 @@ on:
       - "scripts/restore_db.py"
       - "web-platform/backend/alembic/**"
       - "web-platform/backend/app/models/**"
+      - "web-platform/backend/tests/test_root_restore_db.py"
+      - "web-platform/backend/tests/test_tenant_isolation.py"
       - ".github/workflows/backup-restore-evidence.yml"
   pull_request:
     branches: ["main"]
@@ -17,6 +19,8 @@ on:
       - "scripts/restore_db.py"
       - "web-platform/backend/alembic/**"
       - "web-platform/backend/app/models/**"
+      - "web-platform/backend/tests/test_root_restore_db.py"
+      - "web-platform/backend/tests/test_tenant_isolation.py"
       - ".github/workflows/backup-restore-evidence.yml"
 
 permissions:

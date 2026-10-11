@@ -47,10 +47,23 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install PostgreSQL client and migration dependencies
+      - name: Install PostgreSQL 17 client and migration dependencies
         run: |
+          set -euo pipefail
+          # Ubuntu's default postgresql-client may be one major version behind
+          # the PostgreSQL 17 ephemeral source service. Install the matching
+          # official PGDG client so pg_dump can read the source server safely.
+          sudo install -d /usr/share/postgresql-common/pgdg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo gpg --dearmor --yes -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo "$VERSION_CODENAME")-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get update
-          sudo apt-get install -y postgresql-client
+          sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+          export PATH="/usr/lib/postgresql/17/bin:$PATH"
+          pg_dump --version
+          pg_restore --version
           python -m pip install "SQLAlchemy>=2.0,<3" "psycopg2-binary>=2.9,<3" "pydantic-settings>=2.6,<3" "cryptography>=50,<51" "alembic>=1.16,<2"
 
       - name: Validate the approved managed restore destination

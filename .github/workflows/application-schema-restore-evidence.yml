@@ -60,7 +60,7 @@ jobs:
       RESTORE_URL: postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_restore
       REDIS_URL: redis://127.0.0.1:6379/0
       STORAGE_PROVIDER: local
-      UPLOAD_DIR: ${{ runner.temp }}/restore-evidence-storage
+      UPLOAD_DIR: /tmp/restore-evidence-storage
       PYTHONPATH: web-platform/backend
     steps:
       - name: Checkout exact triggering SHA

@@ -226,7 +226,7 @@ class CloudflareWorkersAIAdapter:
             "Create a Burmese short-form video content plan. Return ONLY valid JSON with keys "
             "hook, script, scenes. scenes must contain scene_number, purpose, description, dialogue, "
             "duration_seconds. Target about 180 seconds. Idea: " + idea.strip()
-            + "\\nCategory: " + (category or "general")
+            + "\nCategory: " + (category or "general")
         )
         response = httpx.post(
             self.provider.base_url.rstrip("/") + "/" + self.provider.model,
@@ -239,9 +239,12 @@ class CloudflareWorkersAIAdapter:
         )
         response.raise_for_status()
         payload = response.json()
+        if not isinstance(payload, dict):
+            raise ValueError("Cloudflare Workers AI returned a non-object response")
         if payload.get("success") is False:
             raise ValueError("Cloudflare Workers AI reported an unsuccessful inference")
-        content = (payload.get("result") or {}).get("response")
+        result = payload.get("result")
+        content = result.get("response") if isinstance(result, dict) else None
         if not isinstance(content, str):
             raise ValueError("Cloudflare Workers AI returned no text content")
         return _normalize_plan(_extract_json(content), idea)

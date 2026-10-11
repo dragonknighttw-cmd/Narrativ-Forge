@@ -200,7 +200,15 @@ jobs:
               missing = sorted(set(source_schema) - set(restored_schema))
               extra = sorted(set(restored_schema) - set(source_schema))
               differing = sorted(k for k in set(source_schema) & set(restored_schema) if source_schema[k] != restored_schema[k])
-              raise SystemExit(f"Restored schema differs: missing={missing}, extra={extra}, differing={differing}")
+              detail = {
+                  table: {
+                      field: {"source": source_schema[table][field], "restored": restored_schema[table][field]}
+                      for field in source_schema[table]
+                      if source_schema[table][field] != restored_schema[table][field]
+                  }
+                  for table in differing
+              }
+              raise SystemExit(json.dumps({"missing": missing, "extra": extra, "differing": detail}, default=str))
           if source_revision != restored_revision:
               raise SystemExit(f"Alembic head differs: source={source_revision}, restored={restored_revision}")
           if source_sentinel != "synthetic-ci-only" or restored_sentinel != source_sentinel:

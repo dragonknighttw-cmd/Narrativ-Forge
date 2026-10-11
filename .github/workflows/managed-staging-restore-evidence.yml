@@ -67,12 +67,22 @@ jobs:
           url = urlparse(value)
           if url.scheme not in {"postgres", "postgresql"} or not url.hostname or not url.path.strip("/"):
               raise SystemExit("STAGING_RESTORE_DATABASE_URL must be a PostgreSQL connection URL")
-          approved_host = "db.oeqyheycywqkgeeqmpxa.supabase.co"
+          # This destination uses the Supabase Session Pooler (IPv4-compatible).
+          # Pin both the pooler host and project-specific database username so a
+          # different Supabase project cannot pass the destination guard.
+          approved_host = "aws-0-ap-northeast-1.pooler.supabase.com"
+          approved_user = "postgres.oeqyheycywqkgeeqmpxa"
           if url.hostname.lower() != approved_host:
-              raise SystemExit("Refusing restore: connection host does not match the approved Narrativ-Forge-1 host")
+              raise SystemExit("Refusing restore: connection host does not match the approved Narrativ-Forge-1 Session Pooler")
+          if url.port != 5432:
+              raise SystemExit("Refusing restore: expected the approved Session Pooler port 5432")
+          if url.username != approved_user:
+              raise SystemExit("Refusing restore: database username does not match the approved Narrativ-Forge-1 project")
+          if url.path.strip("/") != "postgres":
+              raise SystemExit("Refusing restore: expected the postgres database")
           if url.hostname.lower() in {"localhost", "127.0.0.1", "postgres"}:
               raise SystemExit("Refusing restore: destination must be the approved managed database")
-          print("Destination host matches approved Narrativ-Forge-1; credentials withheld.")
+          print("Session Pooler host, port, project username, and database match approved Narrativ-Forge-1; credentials withheld.")
           PY
 
       - name: Prepare a minimal, deterministic PostgreSQL source fixture

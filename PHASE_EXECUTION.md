@@ -2,12 +2,16 @@
 
 ## Latest main snapshot — 2026-10-11 UTC
 
-- Current `main` SHA: `43384efb3e414be000820bd59fda80dbca12d471`.
-- Exact-SHA checks passed: [CI #38125615765](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38125615765), [Security #38125615856](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38125615856), [CodeQL #38125615814](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38125615814), and [Repository Gate #38125615875](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38125615875). The CI run reports frontend, backend, backend integration, and E2E successful; Security reports dependency audit, container scan, and SAST successful; CodeQL reports JavaScript/TypeScript and Python analyses successful.
-- [Managed Staging Restore Evidence #38126392496](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126392496) passed. Scope is limited to a minimal PostgreSQL restore smoke fixture in `Narrativ-Forge-1`; full application schema and production recovery remain unverified.
-- [Kaggle Ephemeral Worker Dispatcher #38126973473](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126973473) was skipped and must not be treated as worker execution evidence.
-- No open PRs were returned by the current repository query.
-- Tenant isolation, migration, queue/retry/DLQ, worker, storage lifecycle, and restore-safety regression tests are present in the repository. Broader production authorization and live external-provider evidence remain open.
+- Current implementation SHA verified: `e0ce675ea27f3b6d5aa4bb53e8a2bf5bb6698775`.
+- Exact-SHA main checks passed:
+  - [CI #38129952180](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952180) — frontend, backend, backend integration, E2E passed.
+  - [Security #38129952150](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952150) — dependency audit, SAST, container scan passed.
+  - [CodeQL #38129952265](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952265) — JavaScript/TypeScript and Python passed.
+  - [Repository Gate #38129952183](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952183) passed.
+- [Real Worker Evidence #38129952195](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195) passed on the same SHA; [artifact](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195/artifacts/11698084515). The run verifies an ephemeral PostgreSQL 16 + Redis 7 worker environment, migrations, worker storage permissions, retry/DLQ/tenant integration, and generated synthetic-media processing through processed-video, transcript, and subtitle output. It does **not** verify a persistent production worker or live external provider behavior.
+- [Managed Staging Restore Evidence #38126392496](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126392496) passed only the minimal PostgreSQL restore fixture. Full application schema and production recovery remain unverified.
+- [Kaggle Ephemeral Worker Dispatcher #38126973473](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126973473) was skipped; no worker execution should be inferred from it.
+- Tenant isolation, migration, queue/retry/DLQ, worker, storage lifecycle, and restore-safety regression tests are present and pass in CI. Live external-provider and production acceptance remain open.
 - Release remains **PENDING — NOT PRODUCTION READY**. Do not provision billable resources, consume inference quota, mutate production data, or run destructive live drills without explicit owner approval.
 
 ## Execution priority

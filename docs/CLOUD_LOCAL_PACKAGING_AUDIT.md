@@ -89,15 +89,23 @@ Still required before multi-tenant auth can be marked production VERIFIED:
 3. Run credentialed staging E2E against the actual deployed auth/session configuration.
 4. Keep single-user local mode separate; it must not weaken cloud multi-tenant authorization.
 
-### B. Backup/restore — disposable PostgreSQL CI drill exists; managed-provider proof remains open
+### B. Backup/restore — ephemeral CI drill exists; managed-provider drill is wired but awaiting staging credentials
 
-`scripts/backup_db.py` and `scripts/restore_db.py` support SQLite and PostgreSQL. `.github/workflows/backup-restore-evidence.yml` now provides a reproducible disposable PostgreSQL source → backup → fresh restore target → schema/data/Alembic integrity check, and uploads a machine-readable evidence manifest. It is deliberately scoped to ephemeral GitHub Actions PostgreSQL and sets `production_verified: false`.
+`scripts/backup_db.py` and `scripts/restore_db.py` support SQLite and PostgreSQL. `.github/workflows/backup-restore-evidence.yml` verifies a disposable GitHub Actions PostgreSQL backup → fresh restore → schema/data/Alembic integrity and uploads a machine-readable manifest. It deliberately sets `production_verified: false`.
 
-Still required:
+`.github/workflows/managed-staging-restore-evidence.yml` now provides a manual, confirmation-gated managed-provider drill. It requires separate source and restore database hosts, creates a custom-format backup from the staging source, restores only to the separately configured disposable destination, checks that the Alembic version matches and expected schema exists, then uploads a machine-readable artifact. It never marks production as verified. The workflow is intentionally manual and requires the GitHub Environment `managed-staging-restore`.
 
-- run/inspect this workflow on the latest code and confirm the artifact is complete;
-- test managed-provider backup/restore on an explicitly approved staging/disposable database;
-- document RPO/RTO and owner approval for any destructive destination operation.
+Current account discovery found one active Supabase project (`Narrativ-Forge`) and no Supabase development branches. No new project/branch or billable resource was created. Therefore the managed-provider run is **not yet executed**: an isolated staging source and a separate disposable restore-target database must be provisioned/configured by the owner before credentials can be added. Do not reuse the production database as either target.
+
+Required owner setup before the first live run:
+
+1. In GitHub repository Settings → Environments, create `managed-staging-restore`; configure required reviewers if available.
+2. Add environment secrets `STAGING_SOURCE_DATABASE_URL` (staging source) and `STAGING_RESTORE_DATABASE_URL` (separate disposable restore target). Keep both values private; do not paste them into chat or logs.
+3. Confirm the target contains no needed data and is safe to overwrite; the restore script runs `pg_restore --clean --if-exists`.
+4. Set a documented recovery objective (RPO/RTO) and record the owner approval for this destructive staging restore.
+5. Open Actions → Managed Staging Restore Evidence → Run workflow, select `YES` only after verifying the destination. Inspect the uploaded `managed-staging-restore-evidence` artifact and exact-SHA result.
+
+Until that workflow succeeds, managed-provider recovery remains **pending**, and production recovery remains **unverified**.
 
 ### C. Windows portable package evidence exists; full desktop installer/runtime remains incomplete
 

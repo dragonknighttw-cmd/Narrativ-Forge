@@ -101,9 +101,10 @@ Required owner setup before the first live run:
 
 1. In GitHub repository Settings → Environments, create `managed-staging-restore`; configure required reviewers if available.
 2. Add environment secrets `STAGING_SOURCE_DATABASE_URL` (staging source) and `STAGING_RESTORE_DATABASE_URL` (separate disposable restore target). Keep both values private; do not paste them into chat or logs.
-3. Confirm the target contains no needed data and is safe to overwrite; the restore script runs `pg_restore --clean --if-exists`.
-4. Set a documented recovery objective (RPO/RTO) and record the owner approval for this destructive staging restore.
-5. Open Actions → Managed Staging Restore Evidence → Run workflow, select `YES` only after verifying the destination. Inspect the uploaded `managed-staging-restore-evidence` artifact and exact-SHA result.
+3. Add environment variables `STAGING_SOURCE_HOST` and `STAGING_RESTORE_HOST`, each set to the exact hostname in its corresponding URL. The workflow refuses to run if hostnames do not match these allowlisted values or are the same.
+4. Confirm the target contains no needed data and is safe to overwrite; the restore script runs `pg_restore --clean --if-exists`.
+5. Set a documented recovery objective (RPO/RTO) and record the owner approval for this destructive staging restore.
+6. Open Actions → Managed Staging Restore Evidence → Run workflow, select `YES` only after verifying the destination. Inspect the uploaded `managed-staging-restore-evidence` artifact and exact-SHA result.
 
 Until that workflow succeeds, managed-provider recovery remains **pending**, and production recovery remains **unverified**.
 

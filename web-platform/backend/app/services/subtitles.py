@@ -4,35 +4,47 @@ import tempfile
 import unicodedata
 from pathlib import Path
 
+from ..core.config import settings
+
 MYANMAR_RE = re.compile(r"[\u1000-\u109F]")
 
-try:
-    from myanmartools import ZawgyiDetector
-    from icu import Transliterator
-    _ZAWGYI_DETECTOR = ZawgyiDetector()
-    _ZAWGYI_CONVERTER = Transliterator.createInstance("Zawgyi-my")
-except ImportError:  # pragma: no cover
-    _ZAWGYI_DETECTOR = None
-    _ZAWGYI_CONVERTER = None
+
+class UnsupportedTextFormatError(ValueError):
+    """Raised when a caller requests the unsupported legacy Zawgyi path."""
+
+
+def normalization_contract() -> dict[str, str | bool]:
+    return {
+        "mode": settings.subtitle_normalization_mode,
+        "unicode_normalization": "NFC",
+        "zawgyi_conversion_supported": False,
+    }
+
 
 def zawgyi_probability(text: str) -> float:
-    if not text or _ZAWGYI_DETECTOR is None:
-        return 0.0
-    return float(_ZAWGYI_DETECTOR.get_zawgyi_probability(text))
+    raise UnsupportedTextFormatError(
+        "Zawgyi detection and conversion are unsupported; provide Unicode Burmese text."
+    )
 
-def normalize_burmese_text(text: str, *, zawgyi_threshold: float = 0.80) -> tuple[str, dict]:
+
+def normalize_burmese_text(
+    text: str,
+    *,
+    zawgyi_threshold: float | None = None,
+) -> tuple[str, dict]:
+    if zawgyi_threshold is not None:
+        raise UnsupportedTextFormatError(
+            "Zawgyi detection thresholds are unsupported in Unicode-only mode."
+        )
     original = text or ""
-    probability = zawgyi_probability(original)
-    converted = original
-    detected = probability >= zawgyi_threshold
-    if detected and _ZAWGYI_CONVERTER is not None:
-        converted = _ZAWGYI_CONVERTER.transliterate(original)
-    normalized = unicodedata.normalize("NFC", converted)
+    normalized = unicodedata.normalize("NFC", original)
     return normalized, {
-        "zawgyi_probability": round(probability, 6),
-        "zawgyi_detected": detected,
+        **normalization_contract(),
+        "zawgyi_probability": None,
+        "zawgyi_detected": None,
         "changed": normalized != original,
     }
+
 
 PRESETS = {
     "burmese_default": {"max_chars": 42, "min_seconds": 1.0, "max_seconds": 7.0, "max_lines": 2},

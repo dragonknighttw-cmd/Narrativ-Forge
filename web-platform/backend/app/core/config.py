@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import Field, SecretStr
 from cryptography.fernet import Fernet
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -61,6 +63,7 @@ class Settings(BaseSettings):
     ffprobe_binary: str = "ffprobe"
     whisper_command: str = "whisper"
     whisper_model: str = "small"
+    subtitle_normalization_mode: Literal["unicode_nfc_only"] = "unicode_nfc_only"
     processing_timeout_seconds: int = 3600
     processing_timeout_grace_seconds: int = 10
     worker_max_concurrency: int = Field(default=1, ge=1)

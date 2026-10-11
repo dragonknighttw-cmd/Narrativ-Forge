@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from ...db import get_db
 from ...models import Asset, Episode, Subtitle
 from ...services.storage import StorageError, materialize_asset
-from ...services.subtitles import load_transcript, normalize_burmese_text, preset_config, render_srt, render_vtt, validate_cues
+from ...services.subtitles import load_transcript, normalization_contract, normalize_burmese_text, preset_config, render_srt, render_vtt, validate_cues
 from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/episodes", tags=["subtitles"])
@@ -51,6 +51,7 @@ def _serialize(item: Subtitle):
         "id": item.id, "episode_id": item.episode_id, "version": item.version,
         "language": item.language, "format": item.format, "preset": item.preset,
         "cues": json.loads(item.cues_json or "[]"), "status": item.status,
+        "normalization": normalization_contract(),
         "is_current": item.is_current,
         "validation_errors": json.loads(item.validation_errors_json or "[]"),
         "created_at": item.created_at, "updated_at": item.updated_at,

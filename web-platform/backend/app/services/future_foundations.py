@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Literal
 import hashlib
 
 
@@ -40,11 +40,11 @@ class SubtitleQualityCase:
     source: str
     normalized: str
     expected_script: str
-    expected_zawgyi: bool
+    normalization_mode: Literal["unicode_nfc_only"] = "unicode_nfc_only"
 
 
 def fingerprint_quality_case(case: SubtitleQualityCase) -> str:
-    raw = f"{case.case_id}|{case.source}|{case.normalized}|{case.expected_script}|{case.expected_zawgyi}"
+    raw = f"{case.case_id}|{case.source}|{case.normalized}|{case.expected_script}|{case.normalization_mode}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 

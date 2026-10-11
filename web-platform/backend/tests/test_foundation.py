@@ -295,6 +295,11 @@ def test_subtitle_generation_validation_and_export(tmp_path):
         assert subtitle["language"] == "my"
         assert subtitle["version"] == 1
         assert subtitle["cues"]
+        assert subtitle["normalization"] == {
+            "mode": "unicode_nfc_only",
+            "unicode_normalization": "NFC",
+            "zawgyi_conversion_supported": False,
+        }
 
         invalid = client.patch(f"/api/v1/subtitles/{subtitle['id']}", json={
             "cues": [{"start": 0, "end": 8.5, "text": "မြန်မာစာ"}]

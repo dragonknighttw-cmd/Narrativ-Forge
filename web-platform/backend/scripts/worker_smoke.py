@@ -2,9 +2,9 @@
 """Automated real-worker smoke test used by CI and release verification.
 
 This intentionally uses local storage and a generated media fixture so it does not
-need production credentials. It still exercises the real Docker worker, Celery,
-PostgreSQL, Redis, FFmpeg, Whisper CLI, storage write path, transcript creation,
-and subtitle creation.
+need production credentials. It exercises the canonical Celery task, database,
+Redis, FFmpeg, Whisper CLI, storage write path, transcript creation, and subtitle
+creation.
 """
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.models import Asset, Episode, ProcessingJob, Series, Subtitle
+from app.services.storage import build_object_key, get_storage
 from app.workers.celery_app import get_celery
 
 
@@ -81,14 +82,18 @@ def main() -> int:
         )
         db.add(episode)
         db.flush()
+        input_key = build_object_key(episode.id, 1, source.name, "video")
+        stored_source = get_storage("local").upload_file(source, input_key, "video/mp4")
         asset = Asset(
             episode_id=episode.id,
             asset_type="video",
             original_filename=source.name,
-            storage_provider="local",
-            local_path=str(source),
+            storage_provider=stored_source.provider,
+            local_path=stored_source.local_path,
+            object_key=stored_source.object_key,
+            checksum_sha256=stored_source.checksum_sha256,
             mime_type="video/mp4",
-            file_size_bytes=source.stat().st_size,
+            file_size_bytes=stored_source.size_bytes,
             version=1,
             status="uploaded",
         )

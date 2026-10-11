@@ -13,7 +13,7 @@ The Windows workflow builds the existing Next.js frontend in standalone mode, bu
 
 Launch the extracted bundle by running Start-NarrativForge.ps1 in PowerShell. Stop the runtime with Stop-NarrativForge.ps1. Stopping processes preserves the user's data directory.
 
-The bundle uses SQLite and local filesystem storage. The first prototype intentionally excludes PyICU and myanmartools because stock Windows runners cannot install the ICU-dependent stack without native ICU build dependencies. Burmese normalization is therefore not verified in this bundle.
+The bundle uses SQLite and local filesystem storage. Burmese subtitle input is Unicode-only and uses Python's standard-library NFC normalization; Zawgyi detection/conversion is unsupported. This Unicode normalization contract does not by itself verify media processing or subtitle quality in the portable bundle.
 
 ## Explicit limitations
 

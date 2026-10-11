@@ -306,3 +306,75 @@ def test_known_provider_rejects_noncanonical_endpoint_before_network(monkeypatch
     with pytest.raises(ValueError, match="canonical HTTPS"):
         OpenAICompatibleAdapter(provider).create_content_plan(idea="test")
     assert called is False
+
+
+def test_cloudflare_workers_ai_adapter_parses_native_response(monkeypatch):
+    from app.services.ai_adapter import CloudflareWorkersAIAdapter
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "success": True,
+                "result": {
+                    "response": '{"hook":"Hook","script":"Cloudflare script","scenes":[{"scene_number":1,"purpose":"hook","description":"D","dialogue":"D","duration_seconds":5}]}'
+                },
+            }
+
+    def fake_post(url, **kwargs):
+        assert url == "https://api.cloudflare.com/client/v4/accounts/" + "a" * 32 + "/ai/run/@cf/meta/llama-3.1-8b-instruct"
+        assert kwargs["headers"]["Authorization"] == "Bearer cloudflare-test-token"
+        assert kwargs["json"]["messages"][1]["content"].endswith("\\nCategory: general")
+        return FakeResponse()
+
+    monkeypatch.setattr("app.services.ai_adapter.httpx.post", fake_post)
+    provider = ChatProvider(
+        "cloudflare-ai",
+        "cloudflare-test-token",
+        "https://api.cloudflare.com/client/v4/accounts/" + "a" * 32 + "/ai/run",
+        "@cf/meta/llama-3.1-8b-instruct",
+        1,
+    )
+    result = CloudflareWorkersAIAdapter(provider).create_content_plan(idea="test")
+    assert result.script == "Cloudflare script"
+
+
+def test_cloudflare_workers_ai_requires_canonical_account_endpoint(monkeypatch):
+    from app.services.ai_adapter import CloudflareWorkersAIAdapter
+
+    called = False
+
+    def fake_post(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("must not send token to an untrusted host")
+
+    monkeypatch.setattr("app.services.ai_adapter.httpx.post", fake_post)
+    provider = ChatProvider(
+        "cloudflare-ai",
+        "token",
+        "https://example.test/client/v4/accounts/" + "a" * 32 + "/ai/run",
+        "@cf/meta/llama-3.1-8b-instruct",
+        1,
+    )
+    with pytest.raises(ValueError, match="canonical HTTPS"):
+        CloudflareWorkersAIAdapter(provider).create_content_plan(idea="test")
+    assert called is False
+
+
+def test_cloudflare_workers_ai_provider_is_opt_in_and_ordered_after_groq(monkeypatch):
+    from app.services import ai_adapter
+
+    monkeypatch.setattr(ai_adapter.settings, "openrouter_api_key", "")
+    monkeypatch.setattr(ai_adapter.settings, "groq_api_key", "groq-test-key")
+    monkeypatch.setattr(ai_adapter.settings, "groq_free_tier_enabled", True)
+    monkeypatch.setattr(ai_adapter.settings, "cloudflare_account_id", "a" * 32)
+    monkeypatch.setattr(ai_adapter.settings, "cloudflare_api_token", "cf-test-token")
+    monkeypatch.setattr(ai_adapter.settings, "cloudflare_ai_free_tier_enabled", True)
+    monkeypatch.setattr(ai_adapter.settings, "gemini_api_key", "gemini-test-key")
+    monkeypatch.setattr(ai_adapter.settings, "gemini_free_tier_enabled", True)
+
+    providers = ai_adapter._configured_chat_providers()
+    assert [provider.name for provider in providers] == ["groq", "cloudflare-ai", "gemini"]

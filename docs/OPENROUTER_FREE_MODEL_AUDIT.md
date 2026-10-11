@@ -58,4 +58,17 @@ Official listings: [Gemma 4 31B free](https://openrouter.ai/google/gemma-4-31b-i
 - The backend content-plan route is OpenRouter-only when OPENROUTER_API_KEY is configured; it does not use the Groq → Cloudflare → Cohere → Gemini chain described in the historical report. Without the OpenRouter key, it uses a deterministic mock adapter. Do not describe the other providers as integrated into this route until adapter code and tests exist.
 - The app route exact allowlist excludes openrouter/free (dynamic routing) and poolside/laguna-s-2.1:free (privacy/retention acceptance pending). The route also excludes embedding, reranking, moderation, decision, and audio-only IDs from text generation.
 - The app retries the next allowlisted free model after transient HTTP failures or invalid/empty model output; authentication/authorization failures do not cascade through the model list.
-- A manual live smoke workflow exists for one model per run. It validates a minimal JSON content-plan response and stores only model ID, HTTP/result status, latency, and validation outcome—never prompt/response text or the API key.
+- A manual live smoke workflow exists for one model per run. It validates a minimal JSON content-plan response and stores only redacted metadata: model ID, HTTP/result status, latency, validation code, finish reason, response character count, token counts when supplied, structured provider error code/type, and Retry-After seconds. It never stores prompt/response text, raw provider error messages, or the API key. HTTP 429 is recorded as evidence; the workflow does not auto-retry and consume more free quota. A 200 response is not a success unless the required JSON fields validate.
+
+
+## Live smoke diagnostics update — 2026-10-11
+
+The opt-in smoke script now records additional redacted diagnostics so a failed run can be classified without storing generated text or raw provider messages:
+
+- `finish_reason`, response character count, and token usage when the provider returns them.
+- On HTTP errors, status, a structured machine-readable error code/type when available, and parsed `Retry-After` seconds.
+- HTTP 429 does not trigger an automatic retry; wait for the indicated delay and check the OpenRouter account/model limits before manually starting another run.
+- Invalid JSON, empty output, non-JSON API payload, network errors, and HTTP errors remain separate outcomes. Malformed JSON is reported as `invalid_api_json`; provider-specific schema/quality failures remain distinct.
+- The evidence artifact contains metadata only. Do not add raw response text or the full HTTP error body to logs or artifacts.
+
+Latest owner-reported smoke result for `google/gemma-4-31b-it:free`: HTTP 429, validation not run, failure. The captured response did not include a provider error body in the earlier artifact, so the exact cause is unconfirmed. This is not a successful model acceptance and does not justify repeatedly retrying the same endpoint.

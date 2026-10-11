@@ -4,12 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       confirm_restore:
-        description: "Type YES only after verifying Narrativ-Forge-1 is the intended disposable restore target"
+        description: "Set true only after verifying Narrativ-Forge-1 is the intended disposable restore target"
         required: true
-        type: choice
-        options:
-          - NO
-          - YES
+        type: boolean
 
 permissions:
   contents: read
@@ -22,7 +19,7 @@ concurrency:
 # The only managed database touched is the explicitly approved Narrativ-Forge-1 target.
 jobs:
   managed-staging-restore:
-    if: ${{ inputs.confirm_restore == 'YES' }}
+    if: ${{ inputs.confirm_restore == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: managed-staging-restore

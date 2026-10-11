@@ -162,7 +162,8 @@ def test_smoke_records_auth_failure_without_leaking_provider_message(monkeypatch
 @pytest.mark.unit
 def test_extract_json_accepts_fenced_object_but_still_validates_required_fields():
     fence = chr(96) * 3
-    parsed = smoke.extract_json(f'{fence}json\\n{"{\\"hook\\":\\"h\\",\\"script\\":\\"s\\",\\"scenes\\":[{}]}"}\\n{fence}')
+    payload = json.dumps({"hook": "h", "script": "s", "scenes": [{}]})
+    parsed = smoke.extract_json(f"{fence}json\n{payload}\n{fence}")
     assert parsed["hook"] == "h"
     with pytest.raises(ValueError, match="missing_script"):
         smoke.extract_json('{"hook":"h","scenes":[{}]}')

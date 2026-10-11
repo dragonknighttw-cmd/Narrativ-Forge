@@ -2,7 +2,7 @@
 
 > Owner: AI/platform maintainers  
 > Update when: providers, prompts, retrieval, quotas, or AI safety gates change  
-> Last Updated: 2026-10-09  
+> Last Updated: 2026-10-11  
 > Do NOT put here: provider secrets
 
 ## Provider architecture

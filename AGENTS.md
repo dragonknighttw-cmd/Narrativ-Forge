@@ -48,10 +48,9 @@ For security-sensitive work also read `SECURITY.md`.
 
 ## Git rules
 
-- Work directly on `main` when the user explicitly asks for direct repository changes.
-- Keep commits logically scoped.
-- Do not push changes automatically.
-- Before committing, inspect the diff and relevant tests.
+- For this repository, default to editing `main` directly for user-requested implementation work; do not create feature branches or pull requests unless the user explicitly asks.
+- Keep each direct-main commit logically scoped and review the diff and relevant tests before committing.
+- Do not perform unrelated pushes or publish local changes without the user's authorization. A direct-main edit explicitly requested by the user is authorized.
 - Never use a green local/unit result to claim production or provider verification.
 
 ## Implementation workflow

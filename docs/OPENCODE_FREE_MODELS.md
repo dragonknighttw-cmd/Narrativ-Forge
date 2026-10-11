@@ -44,7 +44,7 @@ Do not read, print, or reveal any .env files, credentials, tokens, or private us
 Cite the repository files that support your summary.
 ```
 
-Then, only after the model answers correctly, test a small isolated code change on a disposable branch or test file. Review `git diff`, run the narrowest relevant tests, and do not let the model push changes automatically.
+Then, only after the model answers correctly, test a small isolated code change. For this repository, follow the owner’s current workflow preference: work directly on `main` rather than creating a feature branch or PR unless the owner explicitly requests one. Review `git diff`, run the narrowest relevant tests, and do not let the model push changes automatically.
 
 ## Security and privacy
 

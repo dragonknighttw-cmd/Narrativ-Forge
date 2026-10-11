@@ -37,7 +37,8 @@ function loadScript(src: string): Promise<void> {
 
 async function loadFFmpeg(): Promise<FFmpegInstance> {
   if (ffmpegPromise) return ffmpegPromise;
-  ffmpegPromise = (async () => {
+
+  const pending = (async () => {
     await loadScript("https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js");
     await loadScript("https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/umd/index.js");
     const globals = window as unknown as { FFmpeg?: { FFmpeg: new () => FFmpegInstance }; FFmpegUtil?: { toBlobURL: (url: string, mime: string) => Promise<string> } };
@@ -52,7 +53,16 @@ async function loadFFmpeg(): Promise<FFmpegInstance> {
     });
     return ffmpeg;
   })();
-  return ffmpegPromise;
+
+  ffmpegPromise = pending;
+  try {
+    return await pending;
+  } catch (error) {
+    // A transient CDN/network/wasm load failure must not poison every later retry
+    // for the lifetime of this page. Keep a newer concurrent promise untouched.
+    if (ffmpegPromise === pending) ffmpegPromise = null;
+    throw error;
+  }
 }
 
 export async function transcribeVideoWithCloudflare(

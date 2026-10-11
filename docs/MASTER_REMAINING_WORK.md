@@ -2,16 +2,16 @@
 
 ## Current repository checkpoint — 2026-10-11 UTC
 
-- Source-code baseline reviewed for this reconciliation: e672bf0c5f75441e0bd9556db6811320a33a7a5e. The documentation updates in this sequence do not change application code; check the latest Actions run for the current documentation commit.
-- Fresh CI [#38073711960](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711960), Security [#38073711964](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711964), CodeQL [#38073711959](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711959), and Repository Gate [#38073711954](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711954) passed on the earlier documentation checkpoint bbbf9d7bfd54517c011cdbcba20f987dcbdd8e75; the run SHA matched that checkpoint.
-- The code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e separately passed CI [#38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [#38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [#38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [#38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355).
-- Latest scheduled Kaggle dispatcher run [#38104412274](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38104412274) was skipped; it is not worker execution evidence. The dispatcher is intentionally opt-in and only useful when a due job exists.
-- PRs #49–#53 added safeguards for Whisper quota reservation, Redis dispatch-lock ownership, SQL rollback before local Whisper fallback, opt-in Kaggle dispatch, and concurrent subscription bootstrap. PRs #54–#56 reconciled documentation; all four standard checks passed on the resulting main code baseline.
-- These checks establish repository CI/security status only. They do not prove persistent worker service, real-media processing, authenticated Whisper inference, production storage/restore, OAuth/Drive, SMTP, Stripe, Sentry, full browser E2E, performance, accessibility, legal acceptance, or penetration testing.
-- Release status remains **PENDING — NOT PRODUCTION READY**. No quota-consuming inference, paid worker/resource provisioning, production-data mutation, or destructive live drill without explicit owner approval.
+- Audit starting point: main `9b65b851b2151437354269730a586a82883142a4` (documentation-only PR #64). Exact-SHA [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132909154), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132909039), [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132909157), and [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132909119) all passed.
+- Application-code evidence baseline: `e0ce675ea27f3b6d5aa4bb53e8a2bf5bb6698775`; its [Real Worker Evidence](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195) passed with ephemeral services and synthetic media. It is not live production-worker evidence.
+- Full ephemeral application-schema restore evidence passed on `e96f26ef3b2f132d46bc95e87b28909de654a3f4` in [run #38132450389](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450389). Managed staging remains fixture-only; full application-schema restore and post-restore application checks are still pending.
+- No open pull requests were present at audit time. Per repository instructions, requested implementation work is now performed directly on `main`, without feature branches/PRs unless the owner explicitly asks.
+- A frontend FFmpeg/WASM retry defect was found and fixed in the same direct-main reconciliation: initialization failures no longer poison all later retries for the current page.
+- Green standard CI does not prove persistent production worker availability, live provider processing, managed full-schema recovery, OAuth/Drive, SMTP, Stripe, Sentry, performance/load, accessibility, legal/security acceptance, or penetration testing.
+- Release status remains **PENDING — NOT PRODUCTION READY**. Do not run quota-consuming inference, provision paid worker resources, mutate production data, or run destructive live recovery without explicit owner approval.
 
 > Companion checklist to ROADMAP.md; ROADMAP.md remains the sole master execution roadmap.  
-> Last reconciled: 2026-10-11 UTC, source-code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e.  
+> Last reconciled: 2026-10-11 UTC.  
 > Rule: never mark an item VERIFIED without evidence tied to the exact commit, environment, and run.  
 > Current release status: **PENDING — NOT PRODUCTION READY**.
 

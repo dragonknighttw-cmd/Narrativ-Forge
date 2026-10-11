@@ -1,18 +1,18 @@
 # Narrativ Forge — Current State
 
-## Current post-merge checkpoint — 2026-10-10 UTC
+## Current checkpoint — 2026-10-11 UTC
 
-- Current main commit after PR #43 merge: `5da1625c031ec235e636b8875be5bee9d368f7b2`.
-- PR #42 (authenticated tenant-isolation E2E and disposable-backend OAuth key setup) and PR #43 (safe tenant-scope backfill migration `0018_tenant_backfill_guard`) are merged.
-- PR #43 head `2fb5c6ba1e5b9fc690cf4c382201ce7f8aebc264` passed all 9 listed workflows: CI, Security, CodeQL, Repository Gate, Backup Restore Evidence, Real Worker Evidence, Local Runtime Evidence, Windows Local Runtime Evidence, and Windows Portable Package Evidence.
-- Fresh main-commit workflows are being rerun after merge. Do not call the merged baseline fully green until those runs finish successfully.
-- Release status remains **PENDING — NOT PRODUCTION READY**. Automated tests do not prove live persistent worker/media execution, authenticated Whisper inference, production storage lifecycle/restore, OAuth/Drive export, SMTP/Stripe/Sentry acceptance, accessibility, load/performance, legal review, or independent penetration testing.
-- Free-first safety remains in force: no quota-consuming live inference or billable worker/resource provisioning without explicit owner approval.
+- Current main documentation checkpoint: bbbf9d7bfd54517c011cdbcba20f987dcbdd8e75 (documentation-only follow-up to code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e).
+- Fresh CI [#38073711960](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711960), Security [#38073711964](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711964), CodeQL [#38073711959](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711959), and Repository Gate [#38073711954](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711954) passed on the exact current documentation SHA.
+- The code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e separately passed CI [#38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [#38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [#38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [#38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355).
+- Latest scheduled Kaggle dispatcher run [#38104412274](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38104412274) was skipped; it is not worker execution evidence. The dispatcher is intentionally opt-in and only useful when a due job exists.
+- PRs #49–#53 added safeguards for Whisper quota reservation, Redis dispatch-lock ownership, SQL rollback before local Whisper fallback, opt-in Kaggle dispatch, and concurrent subscription bootstrap. PRs #54–#56 reconciled documentation; all four standard checks passed on the resulting main code baseline.
+- These checks establish repository CI/security status only. They do not prove persistent worker service, real-media processing, authenticated Whisper inference, production storage/restore, OAuth/Drive, SMTP, Stripe, Sentry, full browser E2E, performance, accessibility, legal acceptance, or penetration testing.
+- Release status remains **PENDING — NOT PRODUCTION READY**. No quota-consuming inference, paid worker/resource provisioning, production-data mutation, or destructive live drill without explicit owner approval.
 
-
-> Owner: Project maintainers
-> Last Updated: 2026-10-10 (UTC; refreshed after PR #38 merge)
-> Status evidence is environment-specific. Code/config alone never promotes a gate to VERIFIED.
+> Owner: Project maintainers  
+> Last Updated: 2026-10-11 UTC  
+> Status rule: implementation, CI, reachability, authenticated provider behavior, and production acceptance are separate levels.
 
 ## Historical pre-PR #42/#43 main snapshot — 2026-10-10 UTC
 

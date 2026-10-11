@@ -300,3 +300,70 @@ def test_second_tenant_cannot_access_episode_children_or_processing_jobs():
         app.dependency_overrides.clear()
         app.dependency_overrides.update(original_overrides)
         second.close()
+
+@pytest.mark.integration
+@pytest.mark.security
+def test_multi_membership_session_scopes_resources_and_role_to_selected_workspace():
+    """A real signed session must scope both resource access and role to its active workspace."""
+    from app.api.dependencies import issue_session
+
+    suffix = uuid4().hex
+    with TestingSession() as db:
+        org_viewer = Organization(name="Multi-member viewer", slug=f"multi-viewer-{suffix}", plan="trial")
+        org_owner = Organization(name="Multi-member owner", slug=f"multi-owner-{suffix}", plan="trial")
+        db.add_all([org_viewer, org_owner])
+        db.flush()
+        user = User(
+            email=f"multi-workspace-{suffix}@narrativ.local",
+            role="owner",
+            password_hash=hash_password("multi-workspace-password-123456"),
+            is_active=True,
+        )
+        db.add(user)
+        db.flush()
+        db.add_all([
+            OrganizationMembership(organization_id=org_viewer.id, user_id=user.id, role="viewer"),
+            OrganizationMembership(organization_id=org_owner.id, user_id=user.id, role="owner"),
+        ])
+        series_viewer = Series(organization_id=org_viewer.id, title="Viewer workspace series", status="draft")
+        series_owner = Series(organization_id=org_owner.id, title="Owner workspace series", status="draft")
+        db.add_all([series_viewer, series_owner])
+        db.commit()
+        user_email = user.email
+        viewer_org_id = org_viewer.id
+        owner_org_id = org_owner.id
+        viewer_series_id = series_viewer.id
+        owner_series_id = series_owner.id
+
+    client = create_test_client(app)
+    original_overrides = dict(app.dependency_overrides)
+    try:
+        # Start in the owner workspace. The same user must not see the viewer
+        # workspace's resources until explicitly switching the signed session.
+        owner_session = issue_session(user_email, "owner", owner_org_id)
+        client.headers["Authorization"] = f"Bearer {owner_session}"
+        assert client.get("/api/v1/auth/me").json()["organization_id"] == owner_org_id
+        assert client.get(f"/api/v1/series/{owner_series_id}").status_code == 200
+        assert client.get(f"/api/v1/series/{viewer_series_id}").status_code == 404
+        assert [item["id"] for item in client.get("/api/v1/series").json()] == [owner_series_id]
+
+        switched = client.post(
+            "/api/v1/auth/switch-workspace",
+            json={"organization_id": viewer_org_id},
+        )
+        assert switched.status_code == 200, switched.text
+        assert switched.json()["role"] == "viewer"
+        assert switched.json()["organization_id"] == viewer_org_id
+
+        # The newly signed cookie takes precedence over the old bearer token.
+        assert client.get("/api/v1/auth/me").json()["organization_id"] == viewer_org_id
+        assert client.get(f"/api/v1/series/{viewer_series_id}").status_code == 200
+        assert client.get(f"/api/v1/series/{owner_series_id}").status_code == 404
+        assert [item["id"] for item in client.get("/api/v1/series").json()] == [viewer_series_id]
+        denied = client.patch(f"/api/v1/series/{viewer_series_id}", json={"title": "must not change"})
+        assert denied.status_code == 403
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(original_overrides)
+        client.close()
+

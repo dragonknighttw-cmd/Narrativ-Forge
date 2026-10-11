@@ -253,6 +253,22 @@ def test_second_tenant_cannot_access_episode_children_or_processing_jobs():
         role="owner",
     )
     try:
+        # Tenant-scoped collection endpoints must not leak foreign rows.
+        assert second.get("/api/v1/series").json() == []
+        assert second.get("/api/v1/episodes").json() == []
+        assert second.get("/api/v1/jobs").json() == []
+
+        # Job creation must validate the episode against the selected workspace
+        # before creating or dispatching either mock or real processing work.
+        assert second.post(
+            "/api/v1/jobs/mock",
+            json={"episode_id": episode_a_id, "job_type": "mock_processing"},
+        ).status_code == 404
+        assert second.post(
+            "/api/v1/jobs/real",
+            json={"episode_id": episode_a_id, "job_type": "real_processing"},
+        ).status_code == 404
+
         # Direct resource reads and writes must not reveal another tenant's IDs.
         assert second.get(f"/api/v1/series/{series_a_id}").status_code == 404
         assert second.patch(

@@ -10,7 +10,7 @@ Private, invite-only Burmese short-form video production workspace.
 
 > Owner: Project maintainers  
 > Update when: project boundary, current implementation, deployment topology, or release blockers change  
-> Last Updated: 2026-10-08  
+> Last Updated: 2026-10-11 UTC  
 > Do NOT put here: detailed domain specifications, full runbooks, or duplicate roadmaps
 
 ## What it is

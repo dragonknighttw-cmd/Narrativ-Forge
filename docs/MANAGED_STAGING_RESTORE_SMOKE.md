@@ -17,7 +17,7 @@ The workflow rejects a URL whose hostname differs from the approved destination 
 
 ## Run and evidence
 
-Open Actions → Managed Staging Restore Evidence → Run workflow. Select `YES` only after verifying that the destination is `Narrativ-Forge-1`. Review the `managed-staging-restore-evidence` artifact and the workflow's exact commit SHA.
+Open Actions → Managed Staging Restore Evidence → Run workflow. Set `confirm_restore` to `true` only after verifying that the destination is `Narrativ-Forge-1`; leave it `false` to skip the job. Review the `managed-staging-restore-evidence` artifact and the workflow's exact commit SHA.
 
 The evidence manifest marks `managed_destination_restore_smoke_verified` true only after success. It always leaves `application_schema_verified` and `production_verified` false. A successful smoke run is not proof of production recovery.
 

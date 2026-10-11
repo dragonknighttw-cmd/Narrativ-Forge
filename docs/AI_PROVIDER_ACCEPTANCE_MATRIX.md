@@ -48,6 +48,14 @@ Use the [OpenRouter free-model evidence workflow](../.github/workflows/openroute
 
 The OpenRouter free plan currently advertises 50 requests/day, but limits and available model endpoints can change by account and model. Sources: [Free models collection](https://openrouter.ai/collections/free-models), [Pricing and limits](https://openrouter.ai/pricing/), [API request format](https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request), and [provider data practices](https://openrouter.ai/docs/guides/privacy/provider-logging).
 
+## Free-first multi-provider routing implementation
+
+- OpenRouter remains first and only accepts the exact allowlisted free chat-model IDs.
+- Groq, Gemini, Mistral, Cohere, and NVIDIA are subsequent OpenAI-compatible chat providers, but each is skipped by default until its API key is present and its `*_FREE_TIER_ENABLED` flag is explicitly enabled.
+- HTTP 401/403/429 skips remaining model candidates sharing that provider family/key and continues to the next provider. Invalid output and model-specific/transient failures may advance to another candidate.
+- Cloudflare Workers AI chat uses a separate account ID/API token and explicit opt-in; the Whisper Worker shared secret is not an AI API token. Voyage embeddings are not chat providers and must be tested on their own capability path.
+- Unit tests cover cross-provider quota fallback and canonical endpoint validation. This code-level coverage is not live provider acceptance; each intended provider still needs a controlled live smoke test and quota/terms confirmation.
+
 ## Open blockers and future queue
 
 ### Current blockers

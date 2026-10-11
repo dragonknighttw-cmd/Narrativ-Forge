@@ -68,6 +68,11 @@ class Settings(BaseSettings):
     single_user_email: str = ""
     cloudflare_whisper_worker_url: str = ""
     cloudflare_whisper_shared_secret: str = ""
+    # Workers AI chat uses a separate API token/account ID; never reuse the Whisper shared secret.
+    cloudflare_account_id: str = ""
+    cloudflare_api_token: str = ""
+    cloudflare_ai_model: str = "@cf/meta/llama-3.1-8b-instruct"
+    cloudflare_ai_free_tier_enabled: bool = False
     cloudflare_whisper_token_ttl_seconds: int = 300
     cloudflare_whisper_daily_neuron_budget: int = 10000
     cloudflare_whisper_warning_threshold: float = 0.80
@@ -81,6 +86,24 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     groq_base_url: str = "https://api.groq.com/openai/v1"
     groq_model: str = "llama-3.3-70b-versatile"
+    # Non-OpenRouter providers are opt-in so a key with billing enabled is never used by surprise.
+    groq_free_tier_enabled: bool = False
+    gemini_api_key: str = ""
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_free_tier_enabled: bool = False
+    mistral_api_key: str = ""
+    mistral_base_url: str = "https://api.mistral.ai/v1"
+    mistral_model: str = "mistral-small-latest"
+    mistral_free_tier_enabled: bool = False
+    cohere_api_key: str = ""
+    cohere_base_url: str = "https://api.cohere.ai/compatibility/v1"
+    cohere_model: str = "command-r-08-2024"
+    cohere_free_tier_enabled: bool = False
+    nvidia_api_key: str = ""
+    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
+    nvidia_model: str = "meta/llama-3.3-70b-instruct"
+    nvidia_free_tier_enabled: bool = False
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str = "gpt-4o-mini"

@@ -12,7 +12,7 @@ In repository Settings → Environments → `managed-staging-restore`, configure
 
 - Secret: `STAGING_RESTORE_DATABASE_URL` — PostgreSQL connection URL for `Narrativ-Forge-1`; keep the value private.
 
-The workflow checks the URL hostname directly against the approved destination host (`db.oeqyheycywqkgeeqmpxa.supabase.co`), so no separate host variable is required. It rejects a URL whose hostname differs from that approved host. Before restore, it refuses unexpected public base tables; the only tables permitted for a repeat smoke run are `alembic_version` and `organizations`.
+The workflow checks the Supabase Session Pooler host (`aws-0-ap-northeast-1.pooler.supabase.com`), port (`5432`), project-specific username (`postgres.oeqyheycywqkgeeqmpxa`), and database path (`postgres`). It rejects URLs that do not match all four approved destination attributes; no separate host variable is required. Before restore, it refuses unexpected public base tables; the only tables permitted for a repeat smoke run are `alembic_version` and `organizations`.
 
 ## Run and evidence
 
@@ -20,7 +20,7 @@ Open Actions → Managed Staging Restore Evidence → Run workflow. Set `confirm
 
 The evidence manifest marks `managed_destination_restore_smoke_verified` true only after success. It always leaves `application_schema_verified` and `production_verified` false. A successful smoke run is not proof of production recovery.
 
-## Latest successful run
+## Latest successful run (last verified on 2026-10-11)
 
 - Run: [Managed Staging Restore Evidence #6](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126392496)
 - Commit: `43384efb3e414be000820bd59fda80dbca12d471`

@@ -1,16 +1,14 @@
 # Narrativ Forge — Phase Execution & Evidence Plan
 
-This is the implementation queue for work that can be completed without production credentials. A phase is not marked VERIFIED until its required evidence exists.
-
 ## Latest main snapshot — 2026-10-11 UTC
 
-- Source-code baseline reviewed for this reconciliation: e672bf0c5f75441e0bd9556db6811320a33a7a5e. The documentation updates in this sequence do not change application code; check the latest Actions run for the current documentation commit.
-- Fresh CI [#38073711960](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711960), Security [#38073711964](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711964), CodeQL [#38073711959](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711959), and Repository Gate [#38073711954](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711954) passed on the earlier documentation checkpoint bbbf9d7bfd54517c011cdbcba20f987dcbdd8e75; the run SHA matched that checkpoint.
-- The code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e separately passed CI [#38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [#38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [#38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [#38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355).
-- Latest scheduled Kaggle dispatcher run [#38104412274](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38104412274) was skipped; it is not worker execution evidence. The dispatcher is intentionally opt-in and only useful when a due job exists.
-- PRs #49–#53 added safeguards for Whisper quota reservation, Redis dispatch-lock ownership, SQL rollback before local Whisper fallback, opt-in Kaggle dispatch, and concurrent subscription bootstrap. PRs #54–#56 reconciled documentation; all four standard checks passed on the resulting main code baseline.
-- These checks establish repository CI/security status only. They do not prove persistent worker service, real-media processing, authenticated Whisper inference, production storage/restore, OAuth/Drive, SMTP, Stripe, Sentry, full browser E2E, performance, accessibility, legal acceptance, or penetration testing.
-- Release status remains **PENDING — NOT PRODUCTION READY**. No quota-consuming inference, paid worker/resource provisioning, production-data mutation, or destructive live drill without explicit owner approval.
+- Current `main` SHA: `43384efb3e414be000820bd59fda80dbca12d471`.
+- Exact-SHA checks passed: [CI #38125615765](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38125615765), [Security #38125615856](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38125615856), [CodeQL #38125615814](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38125615814), and [Repository Gate #38125615875](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38125615875). The CI run reports frontend, backend, backend integration, and E2E successful; Security reports dependency audit, container scan, and SAST successful; CodeQL reports JavaScript/TypeScript and Python analyses successful.
+- [Managed Staging Restore Evidence #38126392496](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126392496) passed. Scope is limited to a minimal PostgreSQL restore smoke fixture in `Narrativ-Forge-1`; full application schema and production recovery remain unverified.
+- [Kaggle Ephemeral Worker Dispatcher #38126973473](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126973473) was skipped and must not be treated as worker execution evidence.
+- No open PRs were returned by the current repository query.
+- Tenant isolation, migration, queue/retry/DLQ, worker, storage lifecycle, and restore-safety regression tests are present in the repository. Broader production authorization and live external-provider evidence remain open.
+- Release remains **PENDING — NOT PRODUCTION READY**. Do not provision billable resources, consume inference quota, mutate production data, or run destructive live drills without explicit owner approval.
 
 ## Execution priority
 

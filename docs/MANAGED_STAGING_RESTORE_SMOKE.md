@@ -20,6 +20,13 @@ Open Actions → Managed Staging Restore Evidence → Run workflow. Set `confirm
 
 The evidence manifest marks `managed_destination_restore_smoke_verified` true only after success. It always leaves `application_schema_verified` and `production_verified` false. A successful smoke run is not proof of production recovery.
 
+## Latest successful run
+
+- Run: [Managed Staging Restore Evidence #6](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126392496)
+- Commit: `43384efb3e414be000820bd59fda80dbca12d471`
+- Result: `success`; artifact: [managed-staging-restore-evidence](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126392496/artifacts/11697297551).
+- Interpretation: **CI VERIFIED — smoke test PASS only**. The manifest intentionally records `application_schema_verified: false` and `production_verified: false`. Do not use this run as evidence of full application schema migration, production backup completeness, or disaster-recovery readiness.
+
 ## Free-plan constraint
 
 Supabase rejected creating another project because the organization reached its two-active-project Free-plan limit. No existing project was deleted or paused.

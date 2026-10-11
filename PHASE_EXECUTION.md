@@ -2,18 +2,17 @@
 
 ## Latest main snapshot — 2026-10-11 UTC
 
-- Current implementation SHA verified: `e0ce675ea27f3b6d5aa4bb53e8a2bf5bb6698775`.
+- Current main SHA: `e96f26ef3b2f132d46bc95e87b28909de654a3f4`.
 - Exact-SHA main checks passed:
-  - [CI #38129952180](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952180) — frontend, backend, backend integration, E2E passed.
-  - [Security #38129952150](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952150) — dependency audit, SAST, container scan passed.
-  - [CodeQL #38129952265](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952265) — JavaScript/TypeScript and Python passed.
-  - [Repository Gate #38129952183](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952183) passed.
-- [Real Worker Evidence #38129952195](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195) passed on the same SHA; [artifact](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195/artifacts/11698084515). The run verifies an ephemeral PostgreSQL 16 + Redis 7 worker environment, migrations, worker storage permissions, retry/DLQ/tenant integration, and generated synthetic-media processing through processed-video, transcript, and subtitle output. It does **not** verify a persistent production worker or live external provider behavior.
-- [Application Schema Restore Evidence #38131544255](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38131544255) passed on PR code: all migrations through `0018_tenant_backfill_guard`, 41 application tables, schema objects, and a synthetic sentinel were verified after restoring into a fresh ephemeral PostgreSQL 17 database. [Evidence artifact](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38131544255/artifacts/11699351405). This is CI-only evidence; `production_verified=false`.
-- [Managed Staging Restore Evidence #38126392496](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126392496) passed only the minimal managed PostgreSQL restore fixture. Full application schema restore against the managed destination and production recovery remain unverified.
-- [Kaggle Ephemeral Worker Dispatcher #38126973473](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126973473) was skipped; no worker execution should be inferred from it.
-- Tenant isolation, migration, queue/retry/DLQ, worker, storage lifecycle, and restore-safety regression tests are present and pass in CI. Live external-provider and production acceptance remain open.
-- Release remains **PENDING — NOT PRODUCTION READY**. Do not provision billable resources, consume inference quota, mutate production data, or run destructive live drills without explicit owner approval.
+  - [CI #38132450388](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450388) — frontend, backend, backend integration, E2E.
+  - [Security #38132450426](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450426) — dependency audit, SAST, container scan.
+  - [CodeQL #38132450454](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450454) — JavaScript/TypeScript and Python.
+  - [Repository Gate #38132450374](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450374).
+- [Application Schema Restore Evidence #38132450389](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450389) passed on this exact main SHA. All migrations were applied to ephemeral PostgreSQL 17; backup/restore into a fresh database, schema metadata comparison, migration head, and synthetic sentinel verification passed. [Artifact](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450389/artifacts/11700015654). This remains ephemeral CI evidence, not managed/production recovery evidence.
+- [Real Worker Evidence #38129952195](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195) passed on `e0ce675ea27f3b6d5aa4bb53e8a2bf5bb6698775`, the preceding code-bearing commit; intervening PRs #61–#63 changed documentation/workflow configuration only. [Artifact](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195/artifacts/11698084515). It verifies an ephemeral worker and synthetic-media path, not a persistent production worker or live provider behavior.
+- [Managed Staging Restore Evidence #38126392496](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126392496) passed only the minimal managed destination fixture smoke; full managed application-schema restore and post-restore app tests remain open.
+- [Kaggle Ephemeral Worker Dispatcher #38126973473](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126973473) was skipped; no execution should be inferred.
+- Release status remains **PENDING — NOT PRODUCTION READY**. Do not provision billable resources, consume inference quota, mutate production data, or run destructive live drills without explicit owner approval.
 
 ## Execution priority
 

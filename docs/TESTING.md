@@ -93,6 +93,10 @@ Use one representative Burmese audio/video asset that is safe to process.
 
 Use representative API and media-job volumes. Record p50/p95 latency, worker processing time, CPU, memory, queue depth and failure rate. The 15–30 minute MVP processing target is a product target, not evidence until measured.
 
+## Application-schema restore evidence
+
+The `application-schema-restore-evidence.yml` workflow applies the full Alembic migration chain to ephemeral PostgreSQL, backs up the migrated schema, restores into a fresh ephemeral database, compares schema metadata and migration head, and verifies synthetic sentinel data. A successful run is **ephemeral CI evidence only**; it does not verify the managed destination or production recovery. Keep `production_verified=false` until a separately approved managed recovery drill and post-restore application tests pass.
+
 ## Automated real-worker evidence gate
 
 The repository now contains an automated worker evidence path:

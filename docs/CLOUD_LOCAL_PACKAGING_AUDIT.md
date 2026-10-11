@@ -1,7 +1,8 @@
 # Narrativ Forge — Cloud / Local / Packaging Architecture Audit
 
-> Audit checkpoint: 2026-10-09  
-> Repository head audited: `55d99dac9ab668a7f27bd944e6cfe3bacfcd5edd`  
+> Audit checkpoint refreshed: 2026-10-11 UTC  
+> Source-code baseline: `f054db675d68e4018a2a63ab0e4a8cd29197a948`  
+> Scope: review existing CI/evidence workflows and current multi-tenant/session implementation; this is not production acceptance.  
 > Purpose: define the safest path to make the repository reproducibly build, verify, package, and run both in ephemeral cloud CI and locally without removing existing features.
 
 ## 1. Executive finding
@@ -75,41 +76,34 @@ The repository is therefore already suited to adding **credentialed verification
 
 ## 3. Important gaps discovered during audit
 
-### A. Production auth / tenant model needs hardening before live E2E
+### A. Production auth / tenant model — implementation improved; live acceptance still open
 
-The current authentication session carries a user-global role, while `get_current_membership()` selects the user's first organization membership.
+Current code now supports signed v2 sessions bound to an explicit `organization_id`, resolves the effective role from that organization's membership, and provides a workspace-switch endpoint that issues a new workspace-bound session. Tenant-owned series/episode and child-resource queries have explicit organization scoping, and existing tests cover membership-bound session roles plus cross-tenant resource access.
 
-The E2E test proves isolation for two separate users, but it does not prove a user who belongs to multiple organizations cannot retain or escalate the wrong organization context.
+The new regression test `test_multi_membership_session_scopes_resources_and_role_to_selected_workspace` exercises a single user with owner membership in one workspace and viewer membership in another, checks that resource listing/reads follow the active workspace, and checks that the viewer role cannot mutate resources. This test was added on source commit `8a83f3e5fdb07ab8fd687b8621707ab8af55f670` and its signed-cookie setup was corrected in `f054db675d68e4018a2a63ab0e4a8cd29197a948`; the current run must pass before this regression is considered verified.
 
-This must be addressed before calling multi-tenant production auth VERIFIED.
+Still required before multi-tenant auth can be marked production VERIFIED:
 
-Required code work:
+1. Confirm the new regression and the full CI suite pass on the latest SHA.
+2. Review all tenant-owned routes and background-job ownership checks, not only HTTP resource routes.
+3. Run credentialed staging E2E against the actual deployed auth/session configuration.
+4. Keep single-user local mode separate; it must not weaken cloud multi-tenant authorization.
 
-1. Make organization/tenant context explicit in authenticated requests.
-2. Resolve role from the selected organization membership, not only `users.role`.
-3. Ensure every tenant-owned resource query is scoped through the authenticated organization.
-4. Add multi-membership E2E coverage.
-5. Keep single-user local mode as a separate local-runtime convenience; it must not silently weaken cloud multi-tenant verification.
+### B. Backup/restore — disposable PostgreSQL CI drill exists; managed-provider proof remains open
 
-### B. Backup/restore exists, but verification orchestration is missing
+`scripts/backup_db.py` and `scripts/restore_db.py` support SQLite and PostgreSQL. `.github/workflows/backup-restore-evidence.yml` now provides a reproducible disposable PostgreSQL source → backup → fresh restore target → schema/data/Alembic integrity check, and uploads a machine-readable evidence manifest. It is deliberately scoped to ephemeral GitHub Actions PostgreSQL and sets `production_verified: false`.
 
-`scripts/backup_db.py` and `scripts/restore_db.py` already exist for SQLite and PostgreSQL.
+Still required:
 
-Missing:
+- run/inspect this workflow on the latest code and confirm the artifact is complete;
+- test managed-provider backup/restore on an explicitly approved staging/disposable database;
+- document RPO/RTO and owner approval for any destructive destination operation.
 
-- reproducible CI backup/restore drill;
-- fresh PostgreSQL restore target;
-- schema/data integrity assertions after restore;
-- artifact/evidence recording;
-- optional provider-specific managed backup/restore drill.
+### C. Windows portable package evidence exists; full desktop installer/runtime remains incomplete
 
-This is a good candidate for immediate code-only CI work.
+`.github/workflows/windows-portable-package.yml` builds a portable API/UI ZIP on a Windows runner, installs from that exact ZIP, checks API/UI endpoints, tests restart/data persistence, cleans up processes, and uploads evidence. The manifest explicitly says the bundle is not a full installer and does not include the worker, FFmpeg, or Whisper. `.github/workflows/windows-local-runtime-evidence.yml` separately verifies the local API + SQLite runtime. These are useful foundations, not a shippable desktop app.
 
-### C. Desktop/package runtime does not exist yet
-
-There is no Electron/Tauri/package/installer layer in the current repository.
-
-Recommended implementation:
+Recommended next implementation:
 
 - Windows-first desktop shell.
 - Reuse the existing Next.js UI.
@@ -124,9 +118,9 @@ A Tauri-style shell with sidecar processes is preferable for footprint, but the 
 
 ### D. Cloud verification should be credentialed and ephemeral
 
-Current CI mostly uses local services. That is good for deterministic tests but cannot prove provider behavior.
+Deterministic CI covers local PostgreSQL/Redis, worker/media smoke, backup/restore, local API + SQLite, and Windows portable API/UI packaging. These are valuable reproducible checks but do not prove live provider behavior.
 
-Add separate, explicitly invoked credentialed workflows:
+Existing opt-in/provider workflows include Cloudflare Whisper preflight/deployment/live-evidence scaffolding, backup/restore evidence, and Kaggle worker dispatch. Confirm each workflow's trigger conditions and latest run before treating it as evidence. Remaining credentialed provider acceptance should be separate and explicitly invoked:
 
 - production/staging auth + tenant E2E;
 - real storage lifecycle;
@@ -191,22 +185,20 @@ Still required:
 16. external penetration test
 17. provider limits/terms/commercial-use review
 
-Code-only implementation through Phase 84 remains complete. These release gates are evidence gates, not automatically satisfied by the architecture work.
+Phase 13–84 roadmap coverage remains tracked, but individual features and production acceptance must not be inferred complete from phase numbering or CI green status. These release gates are evidence gates, not automatically satisfied by architecture work.
 
 ## 6. Implementation order
 
 ### First
-- tenant-context/auth hardening;
-- backup/restore CI drill;
-- reusable verification harness;
-- credentialed workflow scaffolding;
-- packaging/runtime configuration abstraction.
+- pass the new real-session multi-membership regression and full CI on the latest SHA;
+- review all tenant-owned HTTP routes and worker task ownership checks;
+- run and inspect the existing backup/restore evidence workflow;
+- reconcile all roadmap/status docs with exact-SHA workflow evidence.
 
 ### Second
-- Windows package build;
-- install-and-run smoke test;
-- local worker/media E2E;
-- package artifact upload.
+- close credential-free cloud gaps and verify the real worker evidence run;
+- finish Windows portable package/local-runtime acceptance, clearly distinguishing a portable API/UI bundle from a full desktop installer;
+- add the local worker/media processing runtime only after cloud-side checks are stable.
 
 ### Third
 - credentialed provider E2E;

@@ -38,7 +38,7 @@ jobs:
       - name: Checkout exact triggering revision
         uses: actions/checkout@v4
         with:
-          ref: \${{ github.sha }}
+          ref: ${{ github.sha }}
 
       - uses: actions/setup-python@v5
         with:
@@ -51,21 +51,21 @@ jobs:
 
       - name: Run one selected provider smoke request
         env:
-          PROVIDER_ID: \${{ inputs.provider }}
-          CONFIRM_FREE_TIER: \${{ inputs.confirm_free_tier }}
-          GROQ_API_KEY: \${{ inputs.provider == 'groq' && secrets.GROQ_API_KEY || '' }}
-          GROQ_FREE_TIER_ENABLED: \${{ inputs.provider == 'groq' && inputs.confirm_free_tier }}
-          CLOUDFLARE_ACCOUNT_ID: \${{ inputs.provider == 'cloudflare-workers-ai' && secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
-          CLOUDFLARE_API_TOKEN: \${{ inputs.provider == 'cloudflare-workers-ai' && secrets.CLOUDFLARE_API_TOKEN || '' }}
-          CLOUDFLARE_AI_FREE_TIER_ENABLED: \${{ inputs.provider == 'cloudflare-workers-ai' && inputs.confirm_free_tier }}
-          GEMINI_API_KEY: \${{ inputs.provider == 'gemini' && secrets.GEMINI_API_KEY || '' }}
-          GEMINI_FREE_TIER_ENABLED: \${{ inputs.provider == 'gemini' && inputs.confirm_free_tier }}
-          MISTRAL_API_KEY: \${{ inputs.provider == 'mistral' && secrets.MISTRAL_API_KEY || '' }}
-          MISTRAL_FREE_TIER_ENABLED: \${{ inputs.provider == 'mistral' && inputs.confirm_free_tier }}
-          COHERE_API_KEY: \${{ inputs.provider == 'cohere' && secrets.COHERE_API_KEY || '' }}
-          COHERE_FREE_TIER_ENABLED: \${{ inputs.provider == 'cohere' && inputs.confirm_free_tier }}
-          NVIDIA_API_KEY: \${{ inputs.provider == 'nvidia' && secrets.NVIDIA_API_KEY || '' }}
-          NVIDIA_FREE_TIER_ENABLED: \${{ inputs.provider == 'nvidia' && inputs.confirm_free_tier }}
+          PROVIDER_ID: ${{ inputs.provider }}
+          CONFIRM_FREE_TIER: ${{ inputs.confirm_free_tier }}
+          GROQ_API_KEY: ${{ inputs.provider == 'groq' && secrets.GROQ_API_KEY || '' }}
+          GROQ_FREE_TIER_ENABLED: ${{ inputs.provider == 'groq' && inputs.confirm_free_tier }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ inputs.provider == 'cloudflare-workers-ai' && secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
+          CLOUDFLARE_API_TOKEN: ${{ inputs.provider == 'cloudflare-workers-ai' && secrets.CLOUDFLARE_API_TOKEN || '' }}
+          CLOUDFLARE_AI_FREE_TIER_ENABLED: ${{ inputs.provider == 'cloudflare-workers-ai' && inputs.confirm_free_tier }}
+          GEMINI_API_KEY: ${{ inputs.provider == 'gemini' && secrets.GEMINI_API_KEY || '' }}
+          GEMINI_FREE_TIER_ENABLED: ${{ inputs.provider == 'gemini' && inputs.confirm_free_tier }}
+          MISTRAL_API_KEY: ${{ inputs.provider == 'mistral' && secrets.MISTRAL_API_KEY || '' }}
+          MISTRAL_FREE_TIER_ENABLED: ${{ inputs.provider == 'mistral' && inputs.confirm_free_tier }}
+          COHERE_API_KEY: ${{ inputs.provider == 'cohere' && secrets.COHERE_API_KEY || '' }}
+          COHERE_FREE_TIER_ENABLED: ${{ inputs.provider == 'cohere' && inputs.confirm_free_tier }}
+          NVIDIA_API_KEY: ${{ inputs.provider == 'nvidia' && secrets.NVIDIA_API_KEY || '' }}
+          NVIDIA_FREE_TIER_ENABLED: ${{ inputs.provider == 'nvidia' && inputs.confirm_free_tier }}
         run: |
           python scripts/free_provider_smoke.py \
             --provider "$PROVIDER_ID" \

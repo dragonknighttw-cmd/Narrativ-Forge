@@ -2,14 +2,23 @@
 
 This is the implementation queue for work that can be completed without production credentials. A phase is not marked VERIFIED until its required evidence exists.
 
-## Latest main snapshot — 2026-10-10 UTC
+## Latest main snapshot — 2026-10-11 UTC
 
-- Current main SHA: `b75d074ab01b8f9e2ef4058dda03934eb91b3d8a` (PR #38 merge; PR #36 stale-worker recovery and PR #38 retry-exhaustion/DLQ idempotency coverage are included).
-- PR #31 merged tenant-isolation negative cases for direct child-resource IDs. PR #32 merged storage lifecycle threshold/deletion-safety boundary tests (`a3ee23467ea2111e18b35523e698464d12c47024`). PR #33 merged a regression test proving asset metadata and audit history are preserved when storage-provider purge fails (`72154ae184f2316ee2c283be3184566edb91fe37`). PR #36 added stale real-processing job recovery tests; PR #38 added retry-exhaustion, failed-job/DLQ persistence, audit-event, and no-duplicate terminal-record coverage.
-- PR-head checks for PR #32 and PR #33 passed, including backend, backend integration, E2E, CodeQL, Repository Gate, real-worker CI evidence, security scans, and local/Windows runtime/package smoke checks where present.
-- Fresh checks on main merge SHA `b75d074ab01b8f9e2ef4058dda03934eb91b3d8a` passed: CI, Security, CodeQL, Repository Gate, Local Runtime Evidence, Real Worker Evidence, Windows Local Runtime Evidence, and Windows Portable Package Evidence.
-- These changes improve automated regression coverage only. They do not establish live external-storage lifecycle/restore acceptance, a persistent production worker, authenticated real-audio Whisper inference, or full production end-to-end acceptance.
-- Release status remains **PENDING — NOT PRODUCTION READY**. Do not run quota-consuming inference or provision billable worker capacity without explicit owner approval.
+- Current main documentation checkpoint: bbbf9d7bfd54517c011cdbcba20f987dcbdd8e75 (documentation-only follow-up to code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e).
+- Fresh CI [#38073711960](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711960), Security [#38073711964](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711964), CodeQL [#38073711959](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711959), and Repository Gate [#38073711954](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711954) passed on the exact current documentation SHA.
+- The code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e separately passed CI [#38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [#38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [#38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [#38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355).
+- Latest scheduled Kaggle dispatcher run [#38104412274](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38104412274) was skipped; it is not worker execution evidence. The dispatcher is intentionally opt-in and only useful when a due job exists.
+- PRs #49–#53 added safeguards for Whisper quota reservation, Redis dispatch-lock ownership, SQL rollback before local Whisper fallback, opt-in Kaggle dispatch, and concurrent subscription bootstrap. PRs #54–#56 reconciled documentation; all four standard checks passed on the resulting main code baseline.
+- These checks establish repository CI/security status only. They do not prove persistent worker service, real-media processing, authenticated Whisper inference, production storage/restore, OAuth/Drive, SMTP, Stripe, Sentry, full browser E2E, performance, accessibility, legal acceptance, or penetration testing.
+- Release status remains **PENDING — NOT PRODUCTION READY**. No quota-consuming inference, paid worker/resource provisioning, production-data mutation, or destructive live drill without explicit owner approval.
+
+## Execution priority
+
+1. Continue only code-side gaps that can be closed safely without production credentials or billable resources.
+2. Refresh exact-SHA evidence after each merge and keep docs synchronized.
+3. Complete non-inference/provider reachability checks before any authenticated provider request.
+4. Ask the owner only for specific credential, cost, sample-media, or acceptance decisions that block the next step.
+5. Keep Windows/local runtime work for the planned final stage, after cloud-side verification work is exhausted.
 
 ## Active parallel tracks
 

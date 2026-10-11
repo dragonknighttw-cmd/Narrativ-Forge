@@ -2,15 +2,17 @@
 
 ## Current repository checkpoint — 2026-10-11 UTC
 
-- Current default-branch commit at this checkpoint: `e672bf0c5f75441e0bd9556db6811320a33a7a5e`.
-- Fresh post-merge CI [38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355) all passed on this exact SHA.
-- Cloudflare Whisper Preflight [38071946053](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38071946053) passed on parent SHA `1b6baad0df7f8b0ad5080381143288de62ba16a7` without audio or inference; do not treat it as a fresh preflight for `e672bf0`.
-- Historical snapshots below are retained as history, not current-state claims. The current evidence does not prove authenticated provider inference, persistent worker availability, production storage lifecycle/restore, or external integration acceptance.
-- Release remains **PENDING — NOT PRODUCTION READY**. Keep live Whisper inference, provider-quota consumption, paid worker capacity, production data changes, and other billable/destructive operations behind explicit approval.
+- Current main documentation checkpoint: bbbf9d7bfd54517c011cdbcba20f987dcbdd8e75 (documentation-only follow-up to code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e).
+- Fresh CI [#38073711960](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711960), Security [#38073711964](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711964), CodeQL [#38073711959](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711959), and Repository Gate [#38073711954](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711954) passed on the exact current documentation SHA.
+- The code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e separately passed CI [#38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [#38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [#38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [#38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355).
+- Latest scheduled Kaggle dispatcher run [#38104412274](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38104412274) was skipped; it is not worker execution evidence. The dispatcher is intentionally opt-in and only useful when a due job exists.
+- PRs #49–#53 added safeguards for Whisper quota reservation, Redis dispatch-lock ownership, SQL rollback before local Whisper fallback, opt-in Kaggle dispatch, and concurrent subscription bootstrap. PRs #54–#56 reconciled documentation; all four standard checks passed on the resulting main code baseline.
+- These checks establish repository CI/security status only. They do not prove persistent worker service, real-media processing, authenticated Whisper inference, production storage/restore, OAuth/Drive, SMTP, Stripe, Sentry, full browser E2E, performance, accessibility, legal acceptance, or penetration testing.
+- Release status remains **PENDING — NOT PRODUCTION READY**. No quota-consuming inference, paid worker/resource provisioning, production-data mutation, or destructive live drill without explicit owner approval.
 
-> Companion checklist to `ROADMAP.md`; `ROADMAP.md` remains the sole master execution roadmap.
-> Last reconciled: 2026-10-11 (UTC; refreshed after PR #56 and fresh main checks)
-> Rule: never mark an item VERIFIED without evidence tied to the exact commit, environment, and run.
+> Companion checklist to ROADMAP.md; ROADMAP.md remains the sole master execution roadmap.  
+> Last reconciled: 2026-10-11 UTC, current main SHA bbbf9d7bfd54517c011cdbcba20f987dcbdd8e75.  
+> Rule: never mark an item VERIFIED without evidence tied to the exact commit, environment, and run.  
 > Current release status: **PENDING — NOT PRODUCTION READY**.
 
 ## Historical pre-PR #42/#43 evidence snapshot — 2026-10-09 UTC

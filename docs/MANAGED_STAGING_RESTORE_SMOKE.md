@@ -11,9 +11,8 @@ It does not use the primary `Narrativ-Forge` database as a source or target. It 
 In repository Settings → Environments → `managed-staging-restore`, configure:
 
 - Secret: `STAGING_RESTORE_DATABASE_URL` — PostgreSQL connection URL for `Narrativ-Forge-1`; keep the value private.
-- Variable: `STAGING_RESTORE_HOST` — exactly `db.oeqyheycywqkgeeqmpxa.supabase.co`.
 
-The workflow rejects a URL whose hostname differs from the approved destination host. Before restore, it refuses unexpected public base tables; the only tables permitted for a repeat smoke run are `alembic_version` and `organizations`.
+The workflow checks the URL hostname directly against the approved destination host (`db.oeqyheycywqkgeeqmpxa.supabase.co`), so no separate host variable is required. It rejects a URL whose hostname differs from that approved host. Before restore, it refuses unexpected public base tables; the only tables permitted for a repeat smoke run are `alembic_version` and `organizations`.
 
 ## Run and evidence
 

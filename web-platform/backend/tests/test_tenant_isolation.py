@@ -336,8 +336,13 @@ def test_multi_membership_session_scopes_resources_and_role_to_selected_workspac
         viewer_series_id = series_viewer.id
         owner_series_id = series_owner.id
 
+    def override_test_db():
+        with TestingSession() as session_db:
+            yield session_db
+
     client = create_test_client(app)
     original_overrides = dict(app.dependency_overrides)
+    app.dependency_overrides[get_db] = override_test_db
     try:
         # Start in the owner workspace. The same user must not see the viewer
         # workspace's resources until explicitly switching the signed session.

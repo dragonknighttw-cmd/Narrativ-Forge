@@ -36,6 +36,7 @@ def main() -> int:
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
     output = Path(args.output)
+    started = None
     result = {
         "provider": args.provider,
         "model": None,
@@ -89,8 +90,8 @@ def main() -> int:
         if not result["success"]:
             result["error_code"] = "empty_normalized_content_plan"
     except Exception as exc:
-        if result["request_sent"] and result["latency_ms"] is None:
-            result["latency_ms"] = None
+        if started is not None:
+            result["latency_ms"] = round((time.monotonic() - started) * 1000)
         response = getattr(exc, "response", None)
         status = getattr(response, "status_code", None)
         if isinstance(status, int):

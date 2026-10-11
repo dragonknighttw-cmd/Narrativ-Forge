@@ -78,3 +78,12 @@ A live authenticated audio → VTT → Subtitle Studio test is required before G
 The content-plan adapter now routes only through an explicit allowlist of vetted chat-capable free OpenRouter IDs from the owner’s list or the exact free-only router ID openrouter/free. Arbitrary IDs ending in :free are rejected. The production route intentionally ignores Groq/OpenAI credentials. If OpenRouter is not configured, the deterministic Mock adapter is used; it must not silently fall back to a paid provider.
 
 Use chat-capable free text models for script generation. Do not use embedding, reranking, content-safety, audio-generation, or decision-only endpoints as chat models; they require different APIs or return non-prose outputs. The owner-maintained model inventory and privacy cautions are in [OPENROUTER_FREE_MODEL_AUDIT.md](OPENROUTER_FREE_MODEL_AUDIT.md). Free endpoints may log prompts/outputs under their respective provider terms, so exclude confidential data.
+
+
+## Provider acceptance and free-model evidence
+
+The owner-run [AI Provider Status Report](master_result%20all) records a dated live API smoke test. Treat it as historical endpoint evidence only: it does not prove that each provider is wired into the application route, that the current model ID still exists, or that Burmese content quality, persistence, and production reliability are accepted.
+
+The canonical integration/security decisions and remaining work are tracked in [AI Provider Acceptance Matrix](AI_PROVIDER_ACCEPTANCE_MATRIX.md). The application content-plan route is intentionally limited to an exact allowlist of free OpenRouter chat models. It rejects the dynamic openrouter/free router and models flagged for unsuitable prompt privacy/retention risk; this keeps model selection reproducible and avoids silently routing unpublished scripts to a provider whose data terms have not been accepted.
+
+A manually dispatched [OpenRouter free-model evidence workflow](../.github/workflows/openrouter-free-model-evidence.yml) sends one synthetic test request to one selected allowlisted model. It is opt-in, consumes one free-tier request, never logs response text or credentials, and is not run automatically by CI. Only run it after configuring OPENROUTER_API_KEY in GitHub Actions secrets. Current limits are dynamic; the official [OpenRouter pricing page](https://openrouter.ai/pricing/) currently lists 50 requests/day for the free tier, but account eligibility and endpoint availability can differ.

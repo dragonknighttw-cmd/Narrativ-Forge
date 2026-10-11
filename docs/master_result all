@@ -1,5 +1,7 @@
 # AI Provider Status Report
 
+> **Evidence limitation (2026-10-11):** This is a historical owner-run live API smoke report, not production certification. A successful HTTP 200 for one prompt proves only that a specific endpoint responded at that time; it does not prove repository integration, persistent availability, Burmese quality, RAG correctness, or publishing E2E. The “Production AI capability ready” wording below is superseded by this warning and the [AI Provider Acceptance Matrix](AI_PROVIDER_ACCEPTANCE_MATRIX.md). Recheck dynamic model IDs, account quotas, and terms before use. Do not commit or paste API keys. The report says keys were tested in chat: rotate any credential that may have been exposed.
+
 **Date:** 2026-10-11
 **Method:** Live API calls (Python + requests)
 **Total:** 11 providers | **Working:** 8 ✅ | **Partial:** 1 ⚠️ | **Failed:** 2 ❌
@@ -8,8 +10,8 @@
 
 ## TL;DR
 
-Production AI capability **ready** — provider ၈ ခု live-tested။
-Primary chain: **Groq → Cloudflare → Cohere → Gemini**။
+Live API smoke results exist for 8 providers, but production AI capability is **not certified**.
+Historical proposed chain: **Groq → Cloudflare → Cohere → Gemini**. This chain is not the current backend content-plan implementation; see the acceptance matrix.
 HuggingFace Inference ပိတ် (Oct 8) — Hub/Spaces/Datasets ပဲ သုံး။
 Cerebras/Canva မရ — billing/invalid။
 **Blocker:** RAG dimension (Voyage 512 ≠ DB 768) + Publishing E2E။
@@ -91,7 +93,7 @@ Cerebras/Canva မရ — billing/invalid။
 | nvidia/nemotron-3.5-lightning:free | 200 ✅ | "OK" |
 | inclusionai/ling-3.1-flash | 429 ⚠️ | — |
 
-**Free models:** 19 | **Limit:** 50 req/day
+**Free models:** 19 were reported in this run | **Limit:** account/model dependent; OpenRouter currently lists 50 requests/day for its free tier (verify current account limits).
 
 ### ✅ NVIDIA NIM
 | Model | Status | Reply |
@@ -206,7 +208,7 @@ Keys tested in chat — **rotate လုပ်ရမယ်**:
 | ⚠️ RAG dimension | **Blocker** (Voyage 512 ≠ DB 768) |
 | ⚠️ Publishing E2E | **Blocker** (မစမ်းရသေး) |
 
-**Release certification:** `PENDING` — RAG + Publishing E2E ပြီးမှ close
+**Release certification:** `PENDING — NOT PRODUCTION READY` — RAG dimensions/ingest E2E, actual app/provider integration, and Publishing E2E must pass before close.
 
 ---
 
@@ -227,3 +229,12 @@ Keys tested in chat — **rotate လုပ်ရမယ်**:
 2. Ollama install — local chat backup
 3. HF Spaces deploy — Myanmar chatbot demo
 4. Myanmar dataset — search & download
+
+
+## Current repository integration cross-check (2026-10-11)
+
+- Backend route: web-platform/backend/app/services/ai_adapter.py. When OPENROUTER_API_KEY is present, content planning uses only the explicit free OpenRouter model allowlist. Without the key, the route uses the deterministic mock adapter.
+- The Groq → Cloudflare → Cohere → Gemini chain above is a proposed architecture from the live test notes, not an implemented provider chain for the backend content-plan route.
+- The current route excludes the dynamic openrouter/free router and poolside/laguna-s-2.1:free until reproducibility/privacy acceptance is explicit. A model listed as free is not automatically suitable for unpublished content.
+- Current integration-level unit coverage lives in web-platform/backend/tests/test_ai_adapter.py; manual live evidence is available through .github/workflows/openrouter-free-model-evidence.yml and requires a GitHub Actions secret. No live request is triggered by standard CI.
+- The Voyage result in this report is for voyage-3-lite at 512 dimensions. Current RAG/database schema compatibility must be verified end-to-end; changing model IDs alone will not migrate existing vectors or fix dimension mismatches.

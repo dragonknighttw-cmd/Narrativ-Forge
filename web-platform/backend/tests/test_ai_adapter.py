@@ -87,12 +87,11 @@ def test_openrouter_configuration_filters_nonfree_models(monkeypatch):
     monkeypatch.setattr(
         ai_adapter.settings,
         "openrouter_models",
-        "cohere/north-mini-code:free,openai/gpt-4o,openrouter/free",
+        "cohere/north-mini-code:free,openai/gpt-4o,openrouter/free,poolside/laguna-s-2.1:free",
     )
     providers = _configured_chat_providers()
     assert [provider.model for provider in providers] == [
         "cohere/north-mini-code:free",
-        "openrouter/free",
     ]
     assert all(provider.name.startswith("openrouter-") for provider in providers)
 
@@ -187,3 +186,35 @@ def test_openrouter_free_only_policy_blocks_unsafe_base_url_before_network(monke
     with pytest.raises(ValueError, match="requires HTTPS"):
         OpenAICompatibleAdapter(provider).create_content_plan(idea="test")
     assert called is False
+
+
+def test_openrouter_free_router_and_privacy_risky_model_are_not_configured(monkeypatch):
+    from app.services import ai_adapter
+
+    monkeypatch.setattr(ai_adapter.settings, "openrouter_api_key", "test-key")
+    monkeypatch.setattr(ai_adapter.settings, "openrouter_base_url", "https://openrouter.ai/api/v1")
+    monkeypatch.setattr(ai_adapter.settings, "openrouter_models", "openrouter/free,poolside/laguna-s-2.1:free,cohere/north-mini-code:free")
+    assert [p.model for p in _configured_chat_providers()] == ["cohere/north-mini-code:free"]
+
+
+def test_router_falls_back_when_first_model_returns_invalid_output(monkeypatch):
+    calls = []
+
+    class FakeAdapter:
+        def __init__(self, provider):
+            self.provider = provider
+
+        def create_content_plan(self, **kwargs):
+            calls.append(self.provider.name)
+            if self.provider.name == "openrouter-1":
+                raise ValueError("AI provider returned an empty script")
+            return ContentPlan("hook", "valid script", [])
+
+    monkeypatch.setattr("app.services.ai_adapter.OpenAICompatibleAdapter", FakeAdapter)
+    providers = [
+        ChatProvider("openrouter-1", "key", "https://example.test/v1", "first:free", 1),
+        ChatProvider("openrouter-2", "key", "https://example.test/v1", "second:free", 2),
+    ]
+    plan = RoutedAIAdapter(providers).create_content_plan(idea="synthetic test")
+    assert plan.script == "valid script"
+    assert calls == ["openrouter-1", "openrouter-2"]

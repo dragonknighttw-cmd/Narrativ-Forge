@@ -87,7 +87,6 @@ FREE_OPENROUTER_CHAT_MODELS = frozenset({
     "apodex/apodex-1.1-mini:free",
     "liquid/lfm-2.5-2.6b:free",
     "nvidia/nemotron-3.5-lightning:free",
-    "poolside/laguna-s-2.1:free",
     "cohere/north-mini-code:free",
     "nvidia/nemotron-3-ultra-550b-a55b:free",
     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
@@ -101,7 +100,7 @@ FREE_OPENROUTER_CHAT_MODELS = frozenset({
 def _is_free_openrouter_model(model: str) -> bool:
     """Fail closed to vetted chat-capable IDs from the owner's list."""
     normalized = model.strip()
-    return normalized == "openrouter/free" or normalized in FREE_OPENROUTER_CHAT_MODELS
+    return normalized in FREE_OPENROUTER_CHAT_MODELS
 
 
 def _is_safe_openrouter_base_url(base_url: str) -> bool:
@@ -186,6 +185,9 @@ class RoutedAIAdapter:
                         return False
                 except (TypeError, ValueError):
                     pass
+            # Invalid/empty model output is a model-level failure; try the next vetted free model.
+            if isinstance(exc, ValueError):
+                return True
             return is_retryable_provider_error(exc)
 
         try:

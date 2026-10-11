@@ -44,7 +44,7 @@ Current code-level guard and tests: web-platform/backend/app/services/ai_adapter
 
 ## Manual live verification
 
-Use the [OpenRouter free-model evidence workflow](../.github/workflows/openrouter-free-model-evidence.yml) only when intentionally spending one free-tier request. It requires OPENROUTER_API_KEY in GitHub Actions secrets, runs one synthetic request to one allowlisted model, and emits an artifact with model ID, HTTP/result status, latency and JSON-schema outcome only. Standard CI does not call live providers.
+Use the [OpenRouter free-model evidence workflow](../.github/workflows/openrouter-free-model-evidence.yml) only when intentionally spending one free-tier request. It requires OPENROUTER_API_KEY in GitHub Actions secrets, runs one synthetic request to one allowlisted model, and emits redacted metadata: model ID, HTTP/result status, latency, JSON validation, finish reason, response character count, token usage when supplied, structured provider error identifiers, and Retry-After seconds. It never stores prompt/response text, raw provider error messages, or the API key. HTTP 429 is not retried automatically. Standard CI does not call live providers.
 
 The OpenRouter free plan currently advertises 50 requests/day, but limits and available model endpoints can change by account and model. Sources: [Free models collection](https://openrouter.ai/collections/free-models), [Pricing and limits](https://openrouter.ai/pricing/), [API request format](https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request), and [provider data practices](https://openrouter.ai/docs/guides/privacy/provider-logging).
 

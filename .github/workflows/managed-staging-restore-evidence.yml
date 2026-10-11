@@ -1,0 +1,150 @@
+name: Managed Staging Restore Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_restore:
+        description: "Type YES only after verifying the destination is a disposable staging database"
+        required: true
+        type: choice
+        options:
+          - NO
+          - YES
+
+permissions:
+  contents: read
+
+# Configure this GitHub Environment with required reviewers before adding secrets.
+# Do not point the destination secret at production or at the source database.
+jobs:
+  managed-staging-restore:
+    if: ${{ inputs.confirm_restore == 'YES' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: managed-staging-restore
+    steps:
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PostgreSQL client and migration dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          python -m pip install "SQLAlchemy>=2.0,<3" "psycopg2-binary>=2.9,<3" "pydantic-settings>=2.6,<3" "cryptography>=50,<51" "alembic>=1.16,<2"
+
+      - name: Validate managed staging endpoints without printing credentials
+        env:
+          SOURCE_URL: ${{ secrets.STAGING_SOURCE_DATABASE_URL }}
+          RESTORE_URL: ${{ secrets.STAGING_RESTORE_DATABASE_URL }}
+        run: |
+          python - <<'PY'
+          import os
+          from urllib.parse import urlparse
+
+          def parsed(name):
+              value = os.environ.get(name, "")
+              if not value:
+                  raise SystemExit(f"Required GitHub Environment secret is missing: {name.replace('_URL', '_DATABASE_URL')}")
+              url = urlparse(value)
+              if url.scheme not in {"postgres", "postgresql"} or not url.hostname or not url.path.strip("/"):
+                  raise SystemExit(f"{name} must be a PostgreSQL connection URL")
+              return url
+
+          source = parsed("SOURCE_URL")
+          target = parsed("RESTORE_URL")
+          if (source.hostname, source.path) == (target.hostname, target.path):
+              raise SystemExit("Refusing restore: source and destination resolve to the same host/database")
+          if source.hostname == target.hostname:
+              raise SystemExit("Refusing restore: source and destination must be separate managed database hosts/projects")
+          print("Managed PostgreSQL source and separate restore target validated; URLs withheld.")
+          PY
+
+      - name: Create managed staging backup
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_SOURCE_DATABASE_URL }}
+          BACKUP_DIR: ${{ runner.temp }}/managed-staging-backup
+        run: |
+          mkdir -p "$BACKUP_DIR"
+          BACKUP_FILE="$(python scripts/backup_db.py)"
+          test -s "$BACKUP_FILE"
+          echo "BACKUP_FILE=$BACKUP_FILE" >> "$GITHUB_ENV"
+          pg_restore --list "$BACKUP_FILE" > "$RUNNER_TEMP/managed-backup-contents.txt"
+          test -s "$RUNNER_TEMP/managed-backup-contents.txt"
+          echo "Managed staging backup created and archive listing is readable."
+
+      - name: Restore into the separate disposable managed staging database
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_RESTORE_DATABASE_URL }}
+          ALLOW_DESTRUCTIVE_POSTGRES_RESTORE: "1"
+        run: python scripts/restore_db.py "$BACKUP_FILE"
+
+      - name: Verify restored schema and migration state
+        env:
+          SOURCE_URL: ${{ secrets.STAGING_SOURCE_DATABASE_URL }}
+          RESTORE_URL: ${{ secrets.STAGING_RESTORE_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          source_head="$(psql "$SOURCE_URL" -v ON_ERROR_STOP=1 -Atc 'SELECT version_num FROM alembic_version ORDER BY version_num LIMIT 1')"
+          restore_head="$(psql "$RESTORE_URL" -v ON_ERROR_STOP=1 -Atc 'SELECT version_num FROM alembic_version ORDER BY version_num LIMIT 1')"
+          test -n "$source_head"
+          test "$source_head" = "$restore_head"
+          target_tables="$(psql "$RESTORE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"
+          test "$target_tables" -gt 0
+          organization_table="$(psql "$RESTORE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='organizations'")"
+          test "$organization_table" = "1"
+          printf 'Restore verification passed. Alembic head matched; public base tables: %s.\n' "$target_tables"
+
+      - name: Write managed restore evidence manifest
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          GIT_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          manifest = {
+              "gate": "managed-staging-restore",
+              "status": os.environ["JOB_STATUS"],
+              "commit_sha": os.environ["GIT_SHA"],
+              "workflow_run_id": os.environ["RUN_ID"],
+              "workflow_run_attempt": os.environ["RUN_ATTEMPT"],
+              "trigger": os.environ["EVENT_NAME"],
+              "environment": "managed-provider-staging",
+              "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+              "checks": [
+                  "source-and-destination-are-separate-database-hosts",
+                  "managed-source-custom-format-backup",
+                  "backup-archive-readable",
+                  "restore-to-separate-disposable-managed-database",
+                  "source-and-restored-alembic-head-match",
+                  "restored-public-schema-present",
+              ],
+              "managed_provider_verified": os.environ["JOB_STATUS"] == "success",
+              "production_verified": False,
+          }
+          path = Path(os.environ["RUNNER_TEMP"]) / "managed-staging-restore-manifest.json"
+          path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          print(f"Wrote evidence manifest: {path}")
+          PY
+
+      - name: Upload managed restore evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: managed-staging-restore-evidence
+          path: |
+            ${{ runner.temp }}/managed-backup-contents.txt
+            ${{ runner.temp }}/managed-staging-restore-manifest.json
+          if-no-files-found: ignore

@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from app.main import app
 from app.db import get_db
-from app.models import Asset, Episode, Organization, OrganizationMembership, ProcessingJob, Scene, Script, Series, Subtitle, User
+from app.models import Asset, AuditEvent, Episode, Organization, OrganizationMembership, ProcessingJob, Scene, Script, Series, Subtitle, User
 from app.services.passwords import hash_password
 from app.api.dependencies import get_current_membership, get_current_user
 from client_utils import create_test_client
@@ -387,6 +387,74 @@ def test_multi_membership_session_scopes_resources_and_role_to_selected_workspac
         assert [item["id"] for item in client.get("/api/v1/series").json()] == [viewer_series_id]
         denied = client.patch(f"/api/v1/series/{viewer_series_id}", json={"title": "must not change"})
         assert denied.status_code == 403
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(original_overrides)
+        client.close()
+
+@pytest.mark.integration
+@pytest.mark.security
+def test_audit_events_follow_the_selected_workspace_for_multi_membership_owner():
+    """Audit history must use the active session workspace, not the oldest membership."""
+    from app.api.dependencies import issue_session
+    from app.core.config import settings
+
+    suffix = uuid4().hex
+    with TestingSession() as db:
+        org_first = Organization(name="Audit first workspace", slug=f"audit-first-{suffix}", plan="trial")
+        org_selected = Organization(name="Audit selected workspace", slug=f"audit-selected-{suffix}", plan="trial")
+        db.add_all([org_first, org_selected])
+        db.flush()
+        user = User(
+            email=f"audit-workspace-{suffix}@narrativ.local",
+            role="owner",
+            password_hash=hash_password("audit-workspace-password-123456"),
+            is_active=True,
+        )
+        db.add(user)
+        db.flush()
+        # Insert the first membership earlier so a regression to "oldest membership"
+        # would select the wrong organization.
+        db.add(OrganizationMembership(organization_id=org_first.id, user_id=user.id, role="owner"))
+        db.flush()
+        db.add(OrganizationMembership(organization_id=org_selected.id, user_id=user.id, role="owner"))
+        db.add_all([
+            AuditEvent(
+                organization_id=org_first.id,
+                actor_email=user.email,
+                action="first_workspace.event",
+                resource_type="test",
+                resource_id=str(uuid4()),
+                metadata_json="{}",
+            ),
+            AuditEvent(
+                organization_id=org_selected.id,
+                actor_email=user.email,
+                action="selected_workspace.event",
+                resource_type="test",
+                resource_id=str(uuid4()),
+                metadata_json="{}",
+            ),
+        ])
+        db.commit()
+        email = user.email
+        selected_org_id = org_selected.id
+
+    def override_test_db():
+        with TestingSession() as session_db:
+            yield session_db
+
+    client = create_test_client(app)
+    original_overrides = dict(app.dependency_overrides)
+    app.dependency_overrides[get_db] = override_test_db
+    try:
+        token = issue_session(email, "owner", selected_org_id)
+        client.headers["Authorization"] = f"Bearer {token}"
+        client.cookies.set(settings.session_cookie_name, token)
+        response = client.get("/api/v1/audit")
+        assert response.status_code == 200, response.text
+        actions = [event["action"] for event in response.json()]
+        assert actions == ["selected_workspace.event"]
     finally:
         app.dependency_overrides.clear()
         app.dependency_overrides.update(original_overrides)

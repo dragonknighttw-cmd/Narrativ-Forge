@@ -100,7 +100,7 @@ def run(model: str, api_key: str) -> dict:
             {"role": "user", "content": 'Create a tiny Burmese test plan for the fictional idea "blue paper boat". Return JSON with hook, script, and one scene object.'},
         ],
         "temperature": 0,
-        "max_tokens": 700,
+        "max_tokens": 1400,
     }
     request = urllib.request.Request(
         "https://openrouter.ai/api/v1/chat/completions",

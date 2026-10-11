@@ -35,6 +35,8 @@ def _patch_urlopen(monkeypatch, response=None, error=None):
     def fake_urlopen(request, timeout):
         assert request.full_url == "https://openrouter.ai/api/v1/chat/completions"
         assert timeout == 45
+        body = json.loads(request.data.decode("utf-8"))
+        assert body["max_tokens"] == 1400
         assert request.get_header("Authorization") == "Bearer unit-test-secret"
         if error:
             raise error

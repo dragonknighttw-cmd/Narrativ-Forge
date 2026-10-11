@@ -218,3 +218,91 @@ def test_router_falls_back_when_first_model_returns_invalid_output(monkeypatch):
     plan = RoutedAIAdapter(providers).create_content_plan(idea="synthetic test")
     assert plan.script == "valid script"
     assert calls == ["openrouter-1", "openrouter-2"]
+
+
+def test_free_tier_provider_requires_key_and_explicit_enable_flag(monkeypatch):
+    from app.services import ai_adapter
+
+    monkeypatch.setattr(ai_adapter.settings, "openrouter_api_key", "")
+    monkeypatch.setattr(ai_adapter.settings, "groq_api_key", "groq-test-key")
+    monkeypatch.setattr(ai_adapter.settings, "groq_free_tier_enabled", False)
+    monkeypatch.setattr(ai_adapter.settings, "gemini_api_key", "gemini-test-key")
+    monkeypatch.setattr(ai_adapter.settings, "gemini_free_tier_enabled", True)
+    monkeypatch.setattr(ai_adapter.settings, "mistral_api_key", "")
+    monkeypatch.setattr(ai_adapter.settings, "mistral_free_tier_enabled", True)
+
+    providers = ai_adapter._configured_chat_providers()
+    assert [provider.name for provider in providers] == ["gemini"]
+
+
+def test_provider_chain_skips_remaining_openrouter_models_on_429(monkeypatch):
+    calls = []
+
+    class ProviderError(RuntimeError):
+        status_code = 429
+
+    class FakeAdapter:
+        def __init__(self, provider):
+            self.provider = provider
+
+        def create_content_plan(self, **kwargs):
+            calls.append(self.provider.name)
+            if self.provider.name == "openrouter-1":
+                raise ProviderError("rate limited")
+            if self.provider.name == "openrouter-2":
+                raise AssertionError("remaining models on a quota-exhausted key should be skipped")
+            return ContentPlan("hook", "groq result", [])
+
+    monkeypatch.setattr("app.services.ai_adapter.OpenAICompatibleAdapter", FakeAdapter)
+    providers = [
+        ChatProvider("openrouter-1", "key", "https://openrouter.ai/api/v1", "first:free", 1),
+        ChatProvider("openrouter-2", "key", "https://openrouter.ai/api/v1", "second:free", 2),
+        ChatProvider("groq", "groq-key", "https://api.groq.com/openai/v1", "model", 3),
+    ]
+    result = RoutedAIAdapter(providers).create_content_plan(idea="test")
+    assert result.script == "groq result"
+    assert calls == ["openrouter-1", "groq"]
+
+
+def test_provider_chain_skips_invalid_openrouter_key_and_uses_groq(monkeypatch):
+    calls = []
+
+    class ProviderError(RuntimeError):
+        status_code = 401
+
+    class FakeAdapter:
+        def __init__(self, provider):
+            self.provider = provider
+
+        def create_content_plan(self, **kwargs):
+            calls.append(self.provider.name)
+            if self.provider.name.startswith("openrouter-"):
+                raise ProviderError("unauthorized")
+            return ContentPlan("hook", "fallback provider result", [])
+
+    monkeypatch.setattr("app.services.ai_adapter.OpenAICompatibleAdapter", FakeAdapter)
+    providers = [
+        ChatProvider("openrouter-1", "bad-key", "https://openrouter.ai/api/v1", "first:free", 1),
+        ChatProvider("openrouter-2", "bad-key", "https://openrouter.ai/api/v1", "second:free", 2),
+        ChatProvider("groq", "valid-key", "https://api.groq.com/openai/v1", "model", 3),
+    ]
+    result = RoutedAIAdapter(providers).create_content_plan(idea="test")
+    assert result.script == "fallback provider result"
+    assert calls == ["openrouter-1", "groq"]
+
+
+def test_known_provider_rejects_noncanonical_endpoint_before_network(monkeypatch):
+    from app.services.ai_adapter import OpenAICompatibleAdapter
+
+    called = False
+
+    def fake_post(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("must not send credentials to an untrusted host")
+
+    monkeypatch.setattr("app.services.ai_adapter.httpx.post", fake_post)
+    provider = ChatProvider("groq", "secret", "https://example.test/openai/v1", "model", 1)
+    with pytest.raises(ValueError, match="canonical HTTPS"):
+        OpenAICompatibleAdapter(provider).create_content_plan(idea="test")
+    assert called is False

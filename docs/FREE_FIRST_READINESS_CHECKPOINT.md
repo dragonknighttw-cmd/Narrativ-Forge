@@ -1,19 +1,19 @@
 # Free-first production-readiness checkpoint
 
 **Checkpoint date:** 2026-10-11 UTC  
-**Main SHA at this checkpoint:** e672bf0c5f75441e0bd9556db6811320a33a7a5e  
+**Main SHA at this checkpoint:** bbbf9d7bfd54517c011cdbcba20f987dcbdd8e75
 **Release status:** PENDING — NOT PRODUCTION READY  
 **Policy:** Do not run Cloudflare Whisper live inference, consume provider quota, or provision potentially billable resources without explicit owner approval.
 
 ## Latest implementation checkpoint
 
-- PR #49 merged: reserves Whisper audio usage before remote inference so ambiguous provider outcomes are accounted for.
-- PR #50 merged: Redis dispatch locks are released only by the matching dispatch token.
-- PR #51 merged: roll back the SQLAlchemy transaction before entering local Whisper fallback.
-- PR #52 merged: Kaggle scheduled launches require repository Actions variable ENABLE_KAGGLE_DISPATCH=true; manual dispatch requires explicit confirm_kaggle_dispatch=true.
-- PR #53 merged: concurrent requests that bootstrap a missing billing subscription recover from the uniqueness race without hiding unrelated integrity failures.
-- PR #52 and #53 PR-head checks passed. PR #53's real-worker synthetic-media smoke passed and the worker/containers were stopped; this is ephemeral CI evidence, not a persistent production worker.
-- Main SHA `e672bf0c5f75441e0bd9556db6811320a33a7a5e` has fresh successful post-merge CI, Security, CodeQL, and Repository Gate evidence. Cloudflare Whisper Preflight passed on its parent SHA `1b6baad0df7f8b0ad5080381143288de62ba16a7`, reaching the deployed Worker handler and receiving the expected JSON method guard (HTTP 405) without audio or Workers AI inference. This is handler reachability evidence only, not authenticated inference or production readiness.
+- Current main documentation checkpoint: bbbf9d7bfd54517c011cdbcba20f987dcbdd8e75 (documentation-only follow-up to code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e).
+- Fresh CI [#38073711960](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711960), Security [#38073711964](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711964), CodeQL [#38073711959](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711959), and Repository Gate [#38073711954](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711954) passed on the exact current documentation SHA.
+- The code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e separately passed CI [#38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [#38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [#38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [#38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355).
+- Latest scheduled Kaggle dispatcher run [#38104412274](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38104412274) was skipped; it is not worker execution evidence. The dispatcher is intentionally opt-in and only useful when a due job exists.
+- PRs #49–#53 added safeguards for Whisper quota reservation, Redis dispatch-lock ownership, SQL rollback before local Whisper fallback, opt-in Kaggle dispatch, and concurrent subscription bootstrap. PRs #54–#56 reconciled documentation; all four standard checks passed on the resulting main code baseline.
+- These checks establish repository CI/security status only. They do not prove persistent worker service, real-media processing, authenticated Whisper inference, production storage/restore, OAuth/Drive, SMTP, Stripe, Sentry, full browser E2E, performance, accessibility, legal acceptance, or penetration testing.
+- Release status remains **PENDING — NOT PRODUCTION READY**. No quota-consuming inference, paid worker/resource provisioning, production-data mutation, or destructive live drill without explicit owner approval.
 
 ## Historical workflow evidence
 

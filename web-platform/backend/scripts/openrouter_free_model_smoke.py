@@ -151,7 +151,10 @@ def run(model: str, api_key: str) -> dict:
                 extract_json(content)
                 result["validation"] = "content_plan_json_valid"
                 result["success"] = True
-            except (ValueError, json.JSONDecodeError) as exc:
+            except json.JSONDecodeError:
+                result["validation"] = "content_plan_json_invalid"
+                result["error_code"] = "invalid_api_json"
+            except ValueError as exc:
                 result["validation"] = "content_plan_json_invalid"
                 result["error_code"] = str(exc)[:80]
     except urllib.error.HTTPError as exc:

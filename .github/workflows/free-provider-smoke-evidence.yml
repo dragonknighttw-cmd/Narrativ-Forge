@@ -54,6 +54,7 @@ jobs:
           PROVIDER_ID: ${{ inputs.provider }}
           CONFIRM_FREE_TIER: ${{ inputs.confirm_free_tier }}
           GROQ_API_KEY: ${{ inputs.provider == 'groq' && secrets.GROQ_API_KEY || '' }}
+          GROQ_MODEL: openai/gpt-oss-120b
           GROQ_FREE_TIER_ENABLED: ${{ inputs.provider == 'groq' && inputs.confirm_free_tier }}
           CLOUDFLARE_ACCOUNT_ID: ${{ inputs.provider == 'cloudflare-workers-ai' && secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
           CLOUDFLARE_API_TOKEN: ${{ inputs.provider == 'cloudflare-workers-ai' && secrets.CLOUDFLARE_API_TOKEN || '' }}

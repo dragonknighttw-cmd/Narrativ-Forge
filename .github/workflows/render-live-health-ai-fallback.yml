@@ -117,7 +117,7 @@ jobs:
                   failed = True
 
           results["overall_passed"] = not failed
-          output.write_text(json.dumps(results, indent=2) + "\\n", encoding="utf-8")
+          output.write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
           print(json.dumps(results, indent=2))
           if failed:
               raise SystemExit("Render live health/readiness verification failed; inspect the uploaded evidence.")

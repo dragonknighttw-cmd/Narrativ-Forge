@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import httpx
 
 from ..core.config import settings
-from .provider_fallback import is_retryable_provider_error, run_with_fallback
+from .provider_fallback import is_retryable_provider_error
 from .provider_registry import ProviderRegistry, ProviderSpec
 
 logger = logging.getLogger(__name__)
@@ -118,6 +118,49 @@ def _is_safe_openrouter_base_url(base_url: str) -> bool:
     )
 
 
+def _provider_family(name: str) -> str:
+    if name.startswith("openrouter-"):
+        return "openrouter"
+    return name.split("-", 1)[0].lower()
+
+
+def _is_safe_compatible_base_url(provider_name: str, base_url: str) -> bool:
+    """Never send a provider key to a non-canonical HTTPS endpoint."""
+    family = _provider_family(provider_name)
+    expected = {
+        "groq": ("api.groq.com", "/openai/v1"),
+        "gemini": ("generativelanguage.googleapis.com", "/v1beta/openai"),
+        "mistral": ("api.mistral.ai", "/v1"),
+        "cohere": ("api.cohere.com", "/compatibility/v1"),
+        "nvidia": ("integrate.api.nvidia.com", "/v1"),
+    }
+    if family == "openrouter":
+        return _is_safe_openrouter_base_url(base_url)
+    if family not in expected:
+        return True
+    parsed = urlparse(base_url.strip())
+    host, path = expected[family]
+    return (
+        parsed.scheme == "https"
+        and parsed.hostname == host
+        and parsed.port in (None, 443)
+        and parsed.path.rstrip("/") == path
+        and not parsed.username
+        and not parsed.password
+        and not parsed.query
+        and not parsed.fragment
+    )
+
+
+def _http_status(exc: BaseException) -> int | None:
+    response = getattr(exc, "response", None)
+    raw = getattr(exc, "status_code", None) or getattr(exc, "status", None) or getattr(response, "status_code", None)
+    try:
+        return int(raw) if raw is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
 class OpenAICompatibleAdapter:
     """Adapter for OpenAI-compatible chat-completions APIs.
 
@@ -133,6 +176,8 @@ class OpenAICompatibleAdapter:
                 raise ValueError("OpenRouter free-only policy blocked a non-free model")
             if not _is_safe_openrouter_base_url(self.provider.base_url):
                 raise ValueError("OpenRouter free-only policy requires HTTPS https://openrouter.ai/api/v1")
+        elif not _is_safe_compatible_base_url(self.provider.name, self.provider.base_url):
+            raise ValueError("Provider endpoint is not the canonical HTTPS API host")
         prompt = ("Create a Burmese short-form video content plan. Return ONLY valid JSON with keys "
                   "hook, script, scenes. scenes must contain scene_number, purpose, description, dialogue, "
                   "duration_seconds. Target about 180 seconds. Idea: " + idea.strip() +
@@ -165,64 +210,105 @@ class RoutedAIAdapter:
         registry = ProviderRegistry()
         for provider in self.providers:
             adapter = OpenAICompatibleAdapter(provider)
-            registry.register(ProviderSpec(name=provider.name, capability="script", operation=adapter.create_content_plan, priority=provider.priority))
-        operations = [(spec.name, lambda spec=spec: spec.operation(idea=idea, category=category)) for spec in registry.candidates("script")]
-        if not operations:
+            registry.register(ProviderSpec(
+                name=provider.name,
+                capability="script",
+                operation=adapter.create_content_plan,
+                priority=provider.priority,
+            ))
+        candidates = registry.candidates("script")
+        if not candidates:
             return self.fallback.create_content_plan(idea=idea, category=category)
-        def should_try_next_free_model(exc: BaseException) -> bool:
-            # Model retirement / unsupported-model responses should not stop the free-only chain.
-            response = getattr(exc, "response", None)
-            status = (
-                getattr(exc, "status_code", None)
-                or getattr(exc, "status", None)
-                or getattr(response, "status_code", None)
-            )
-            if status is not None:
-                try:
-                    if int(status) in {400, 404, 408, 409, 422, 425, 429, 500, 502, 503, 504}:
-                        return True
-                    if int(status) in {401, 403}:
-                        return False
-                except (TypeError, ValueError):
-                    pass
-            # Invalid/empty model output is a model-level failure; try the next vetted free model.
-            if isinstance(exc, ValueError):
-                return True
-            return is_retryable_provider_error(exc)
 
-        try:
-            value, provider, attempts = run_with_fallback(
-                operations, should_fallback=should_try_next_free_model
-            )
-            logger.info("AI content plan generated", extra={"provider": provider, "attempts": [a.provider for a in attempts]})
-            return value
-        except Exception:
-            logger.exception("Configured AI providers failed; using deterministic fallback")
-            return self.fallback.create_content_plan(idea=idea, category=category)
+        attempts: list[str] = []
+        index = 0
+        while index < len(candidates):
+            spec = candidates[index]
+            try:
+                value = spec.operation(idea=idea, category=category)
+                attempts.append(spec.name + ":ok")
+                logger.info("AI content plan generated", extra={"provider": spec.name, "attempts": attempts})
+                return value
+            except Exception as exc:
+                status = _http_status(exc)
+                attempts.append(f"{spec.name}:failed:{status or type(exc).__name__}")
+                family = _provider_family(spec.name)
+
+                # Authentication failures and 429s usually apply to the whole key/account.
+                # Skip other models on that provider before trying the next provider.
+                if status in {401, 403, 429}:
+                    logger.warning(
+                        "AI provider family unavailable; moving to next provider",
+                        extra={"provider_family": family, "http_status": status},
+                    )
+                    index += 1
+                    while index < len(candidates) and _provider_family(candidates[index].name) == family:
+                        index += 1
+                    continue
+
+                retryable_statuses = {400, 404, 408, 409, 422, 425, 500, 502, 503, 504}
+                if isinstance(exc, ValueError) or status in retryable_statuses or is_retryable_provider_error(exc):
+                    logger.warning(
+                        "AI model attempt failed; trying next configured candidate",
+                        extra={"provider": spec.name, "http_status": status, "error_type": type(exc).__name__},
+                    )
+                    index += 1
+                    continue
+
+                logger.error(
+                    "AI provider failed with a non-retryable error",
+                    extra={"provider": spec.name, "error_type": type(exc).__name__},
+                )
+                break
+
+        logger.error("All configured AI providers failed; using deterministic fallback", extra={"attempts": attempts})
+        return self.fallback.create_content_plan(idea=idea, category=category)
 
 
 def _configured_chat_providers() -> list[ChatProvider]:
-    """Configure only explicitly free OpenRouter chat models.
-
-    Groq/OpenAI credentials may remain configured for other experiments, but are
-    intentionally never used by this production content-generation route.
-    """
-    if not settings.openrouter_api_key:
-        return []
-
+    """Build a free-first chain, opting in to non-OpenRouter account tiers explicitly."""
     providers: list[ChatProvider] = []
-    models = [item.strip() for item in settings.openrouter_models.split(",") if item.strip()]
-    for index, model in enumerate(models):
-        if not _is_free_openrouter_model(model):
-            logger.error("Skipping non-free OpenRouter model due to free-only policy", extra={"model": model})
+    priority = 1
+
+    if settings.openrouter_api_key:
+        models = [item.strip() for item in settings.openrouter_models.split(",") if item.strip()]
+        for model in models:
+            if not _is_free_openrouter_model(model):
+                logger.warning(
+                    "Skipping non-allowlisted OpenRouter model due to free-only policy",
+                    extra={"model": model},
+                )
+                continue
+            providers.append(ChatProvider(
+                name=f"openrouter-{priority}",
+                api_key=settings.openrouter_api_key,
+                base_url=settings.openrouter_base_url,
+                model=model,
+                priority=priority,
+            ))
+            priority += 1
+
+    # These APIs can have account-specific trial/free quotas. Do not call them just
+    # because a key exists: the owner must explicitly confirm the intended free tier.
+    configured = [
+        ("groq", settings.groq_api_key, settings.groq_base_url, settings.groq_model, settings.groq_free_tier_enabled),
+        ("gemini", settings.gemini_api_key, settings.gemini_base_url, settings.gemini_model, settings.gemini_free_tier_enabled),
+        ("mistral", settings.mistral_api_key, settings.mistral_base_url, settings.mistral_model, settings.mistral_free_tier_enabled),
+        ("cohere", settings.cohere_api_key, settings.cohere_base_url, settings.cohere_model, settings.cohere_free_tier_enabled),
+        ("nvidia", settings.nvidia_api_key, settings.nvidia_base_url, settings.nvidia_model, settings.nvidia_free_tier_enabled),
+    ]
+    for name, api_key, base_url, model, free_tier_enabled in configured:
+        if not api_key or not free_tier_enabled:
             continue
         providers.append(ChatProvider(
-            name=f"openrouter-{index + 1}",
-            api_key=settings.openrouter_api_key,
-            base_url=settings.openrouter_base_url,
+            name=name,
+            api_key=api_key,
+            base_url=base_url,
             model=model,
-            priority=index + 1,
+            priority=priority,
         ))
+        priority += 1
+
     return providers
 
 

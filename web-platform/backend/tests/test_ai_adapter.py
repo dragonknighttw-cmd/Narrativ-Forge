@@ -326,7 +326,7 @@ def test_cloudflare_workers_ai_adapter_parses_native_response(monkeypatch):
     def fake_post(url, **kwargs):
         assert url == "https://api.cloudflare.com/client/v4/accounts/" + "a" * 32 + "/ai/run/@cf/meta/llama-3.1-8b-instruct"
         assert kwargs["headers"]["Authorization"] == "Bearer cloudflare-test-token"
-        assert kwargs["json"]["messages"][1]["content"].endswith("\\nCategory: general")
+        assert kwargs["json"]["messages"][1]["content"].endswith("\nCategory: general")
         return FakeResponse()
 
     monkeypatch.setattr("app.services.ai_adapter.httpx.post", fake_post)

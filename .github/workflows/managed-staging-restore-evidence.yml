@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: managed-staging-restore
+  cancel-in-progress: false
+
 # Configure this GitHub Environment with required reviewers before adding secrets.
 # Do not point the destination secret at production or at the source database.
 jobs:
@@ -42,6 +46,8 @@ jobs:
         env:
           SOURCE_URL: ${{ secrets.STAGING_SOURCE_DATABASE_URL }}
           RESTORE_URL: ${{ secrets.STAGING_RESTORE_DATABASE_URL }}
+          EXPECTED_SOURCE_HOST: ${{ vars.STAGING_SOURCE_HOST }}
+          EXPECTED_RESTORE_HOST: ${{ vars.STAGING_RESTORE_HOST }}
         run: |
           python - <<'PY'
           import os
@@ -50,7 +56,7 @@ jobs:
           def parsed(name):
               value = os.environ.get(name, "")
               if not value:
-                  raise SystemExit(f"Required GitHub Environment secret is missing: {name.replace('_URL', '_DATABASE_URL')}")
+                  raise SystemExit(f"Required GitHub Environment secret is missing for {name}")
               url = urlparse(value)
               if url.scheme not in {"postgres", "postgresql"} or not url.hostname or not url.path.strip("/"):
                   raise SystemExit(f"{name} must be a PostgreSQL connection URL")
@@ -58,11 +64,17 @@ jobs:
 
           source = parsed("SOURCE_URL")
           target = parsed("RESTORE_URL")
+          expected_source = os.environ.get("EXPECTED_SOURCE_HOST", "").strip().lower()
+          expected_target = os.environ.get("EXPECTED_RESTORE_HOST", "").strip().lower()
+          if not expected_source or not expected_target:
+              raise SystemExit("Set Environment variables STAGING_SOURCE_HOST and STAGING_RESTORE_HOST to the exact database hostnames")
+          if source.hostname.lower() != expected_source or target.hostname.lower() != expected_target:
+              raise SystemExit("Refusing restore: connection host does not match the explicitly approved staging host variable")
           if (source.hostname, source.path) == (target.hostname, target.path):
               raise SystemExit("Refusing restore: source and destination resolve to the same host/database")
-          if source.hostname == target.hostname:
+          if source.hostname.lower() == target.hostname.lower():
               raise SystemExit("Refusing restore: source and destination must be separate managed database hosts/projects")
-          print("Managed PostgreSQL source and separate restore target validated; URLs withheld.")
+          print("Managed PostgreSQL endpoints match the approved host variables and are separate; URLs withheld.")
           PY
 
       - name: Create managed staging backup

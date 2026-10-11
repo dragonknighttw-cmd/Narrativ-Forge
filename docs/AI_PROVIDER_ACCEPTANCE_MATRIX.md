@@ -52,7 +52,7 @@ The OpenRouter free plan currently advertises 50 requests/day, but limits and av
 
 ### Current blockers
 
-- [ ] Run one-model live smoke for each intended active OpenRouter free model, deliberately, with quota awareness.
+- [ ] Run one-model live smoke for each intended active OpenRouter free model, deliberately, with quota awareness. The latest Gemma 4 31B attempt returned HTTP 429; no candidate has passed this new content-plan JSON validation yet.
 - [ ] Verify current OpenRouter model IDs/availability; retire or replace unavailable entries only after a new smoke test.
 - [ ] Fix RAG vector dimension mismatch and run persisted ingest → retrieval E2E.
 - [ ] Run Publishing E2E after provider output is persisted and human approval/permissions are checked.

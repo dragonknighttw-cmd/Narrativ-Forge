@@ -144,6 +144,7 @@ jobs:
           python - <<'PY'
           import json
           import os
+          import re
           from pathlib import Path
           from sqlalchemy import create_engine, inspect, text
 
@@ -173,10 +174,14 @@ jobs:
                       "checks": sorted(
                           (
                               c.get("name"),
-                              (c.get("sqltext") or "")
-                                  .replace("::character varying::text", "")
-                                  .replace("::character varying", "")
-                                  .replace("]::text[]", "]"),
+                              re.sub(
+                                  r"\\s+",
+                                  " ",
+                                  (c.get("sqltext") or "")
+                                      .replace("::character varying::text", "")
+                                      .replace("::character varying", "")
+                                      .replace("]::text[]", "]"),
+                              ).strip(),
                           )
                           for c in inspector.get_check_constraints(table, schema="public")
                       ),

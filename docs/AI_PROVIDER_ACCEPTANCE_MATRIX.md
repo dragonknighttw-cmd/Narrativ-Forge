@@ -79,3 +79,10 @@ The OpenRouter free plan currently advertises 50 requests/day, but limits and av
 - Phase 68 — SLO/error-budget operations: production latency/error/availability targets after real telemetry exists.
 
 Do not mark these future phases verified merely because a design or unit test exists. Each gate needs commit-linked evidence and, where applicable, live/manual acceptance.
+## Additional free-tier provider smoke workflow
+
+Use [Free-tier Provider Smoke Evidence](../.github/workflows/free-provider-smoke-evidence.yml) to test one selected non-OpenRouter provider at a time: Groq, Cloudflare Workers AI, Gemini, Mistral, Cohere, or NVIDIA. It requires the corresponding secret(s) in GitHub Actions, and the operator must explicitly check `confirm_free_tier`. Only the selected provider's secret(s) are passed into the request step. The workflow sends one synthetic prompt, performs no retries, does not log the generated text or raw provider error, and uploads redacted metadata for 30 days. It is manual-only; regular CI never contacts live providers.
+
+Before dispatching, verify that the exact account, key, model and endpoint are eligible for a free tier and that billing cannot be triggered. The confirmation checkbox is an operator acknowledgement, not an automated guarantee that a provider will not charge. If any provider's free status is uncertain, leave it disabled and do not dispatch it. Add secrets only in GitHub repository Settings → Secrets and variables → Actions; never put key values in chat, workflow files, commits, logs or artifacts. Cloudflare Workers AI requires `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`; these are separate from the Whisper Worker shared secret.
+
+This workflow is a provider connectivity/output smoke test, not production acceptance. The returned model ID, availability, quota and terms must still be reviewed before enabling a provider in production.

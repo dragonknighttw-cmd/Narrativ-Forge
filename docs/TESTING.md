@@ -2,7 +2,7 @@
 
 > Owner: Engineering/QA  
 > Update when: test suites, release gates, or evidence requirements change  
-> Last Updated: 2026-10-08  
+> Last Updated: 2026-10-11  
 > Do NOT put here: unsupported live claims
 
 ## Test layers

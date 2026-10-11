@@ -2,25 +2,24 @@
 
 ## Current checkpoint — 2026-10-11 UTC
 
-- Main SHA at this checkpoint: `e672bf0c5f75441e0bd9556db6811320a33a7a5e`.
-- Merged implementation fixes: PR #49 Whisper quota reservation; PR #50 Redis dispatch-lock ownership; PR #51 database rollback before local Whisper fallback; PR #52 explicit opt-in for scheduled/manual Kaggle dispatch; PR #53 concurrent billing-subscription bootstrap race handling. PR #54, #55, and #56 reconciled readiness documentation.
-- Fresh post-merge CI [38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355) all passed on this exact SHA. Cloudflare Whisper Preflight [38071946053](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38071946053) passed on parent SHA `1b6baad0df7f8b0ad5080381143288de62ba16a7` only.
-- Preflight confirmed the deployed Worker handler is reachable and returned its expected JSON method guard (HTTP 405). It sent no audio and did not invoke Workers AI; authenticated transcription is still unverified.
-- Cloudflare API read-only checks confirmed the Worker script and expected binding names exist. Secret values were not read and cross-platform secret-value equality remains unverified.
-- PR #56 is merged. Fresh checks on its merge commit `e672bf0c5f75441e0bd9556db6811320a33a7a5e` passed; this documentation refresh is now being prepared, so the branch state may change again.
-- Release status remains **PENDING — NOT PRODUCTION READY**. CI/preflight evidence is not live-provider or full production acceptance.
-- Safety policy: do not run Cloudflare Whisper live inference, consume provider quota, change production data, or provision potentially billable resources without explicit owner approval.
+- Current main documentation checkpoint: bbbf9d7bfd54517c011cdbcba20f987dcbdd8e75 (documentation-only follow-up to code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e).
+- Fresh CI [#38073711960](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711960), Security [#38073711964](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711964), CodeQL [#38073711959](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711959), and Repository Gate [#38073711954](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073711954) passed on the exact current documentation SHA.
+- The code baseline e672bf0c5f75441e0bd9556db6811320a33a7a5e separately passed CI [#38073136376](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136376), Security [#38073136366](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136366), CodeQL [#38073136341](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136341), and Repository Gate [#38073136355](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38073136355).
+- Latest scheduled Kaggle dispatcher run [#38104412274](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38104412274) was skipped; it is not worker execution evidence. The dispatcher is intentionally opt-in and only useful when a due job exists.
+- PRs #49–#53 added safeguards for Whisper quota reservation, Redis dispatch-lock ownership, SQL rollback before local Whisper fallback, opt-in Kaggle dispatch, and concurrent subscription bootstrap. PRs #54–#56 reconciled documentation; all four standard checks passed on the resulting main code baseline.
+- These checks establish repository CI/security status only. They do not prove persistent worker service, real-media processing, authenticated Whisper inference, production storage/restore, OAuth/Drive, SMTP, Stripe, Sentry, full browser E2E, performance, accessibility, legal acceptance, or penetration testing.
+- Release status remains **PENDING — NOT PRODUCTION READY**. No quota-consuming inference, paid worker/resource provisioning, production-data mutation, or destructive live drill without explicit owner approval.
 
 ### Remaining owner / external acceptance gates
 
-1. **Cloudflare Whisper:** the latest non-inference preflight reached the Worker handler, so the previous edge-level 403 is not reproduced by that probe. Authenticated inference and matching secret values are still unverified. Only run the live inference workflow after explicit approval.
-2. **Worker runtime:** production still has no verified persistent background worker. Keep the free-first local/ephemeral options; any paid always-on worker requires explicit approval. Kaggle scheduled dispatch is now opt-in via repository Actions variable ENABLE_KAGGLE_DISPATCH=true; manual dispatch requires confirm_kaggle_dispatch=true.
-3. **Storage/restore:** complete a target-provider lifecycle and isolated restore drill; CI PostgreSQL/SQLite evidence is not proof of a managed production restore.
-4. **External integrations:** verify Google OAuth/Drive export, SMTP delivery, Stripe webhook/subscription acceptance, and Sentry alert delivery in their intended environments.
-5. **Release quality:** complete role/membership/tenant acceptance, accessibility, representative load/performance testing, legal review, independent penetration testing, rollback checks, and fresh main checks.
-6. **Owner configuration:** verify the protected GitHub/Render/Cloudflare secret names and values match where required, without printing or sharing secret values.
+- [ ] **Worker strategy:** keep free-first mode; explicitly decide later whether to accept paid persistent worker costs. Until then, production async media processing remains blocked/deferred.
+- [ ] **Cloudflare Whisper:** run the GET-only preflight on the latest code baseline if needed, then only run authenticated real-audio inference after explicit quota/cost approval. Never send secret values in chat.
+- [ ] **Provider credentials:** configure provider secrets only in the appropriate GitHub/hosting secret stores when a specific live gate is ready (storage, Google OAuth/Drive, SMTP, Stripe test mode, Sentry, Cloudflare).
+- [ ] **Real-media acceptance:** provide representative Burmese audio/video samples and manually review transcription, subtitle timing, rendering, and final output.
+- [ ] **Production data operations:** provide a safe staging/disposable database path and approval before restore, migration, deletion, or other potentially destructive tests.
+- [ ] **Human/external sign-off:** accessibility/WCAG, privacy/legal/provider terms/commercial rights, and independent penetration test.
+- [ ] **OpenCode:** locally sign in to OpenRouter using your own API key, run the configured free-model smoke test, and avoid confidential content on providers whose retention/training terms are unsuitable.
 
----
 ## Historical post-PR #43 checkpoint — 2026-10-10 UTC
 
 - Current main commit after PR #43 merge: `5da1625c031ec235e636b8875be5bee9d368f7b2`.

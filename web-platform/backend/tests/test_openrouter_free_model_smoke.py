@@ -126,3 +126,51 @@ def test_retry_after_date_is_parsed_and_capped():
     assert smoke._retry_after_seconds("120") == 120
     assert smoke._retry_after_seconds("not a date") is None
     assert smoke._retry_after_seconds("999999") == 86400
+
+
+
+@pytest.mark.unit
+def test_smoke_records_auth_failure_without_leaking_provider_message(monkeypatch):
+    headers = Message()
+    body = json.dumps(
+        {"error": {"code": "invalid_api_key", "type": "authentication_error", "message": "do-not-log-this"}}
+    ).encode()
+    error = urllib.error.HTTPError(
+        "https://openrouter.ai/api/v1/chat/completions",
+        401,
+        "Unauthorized",
+        headers,
+        io.BytesIO(body),
+    )
+    calls = []
+    def fake_urlopen(request, timeout):
+        calls.append(1)
+        raise error
+    monkeypatch.setattr(smoke.urllib.request, "urlopen", fake_urlopen)
+
+    result = smoke.run(MODEL, "unit-test-secret")
+    assert result["http_status"] == 401
+    assert result["success"] is False
+    assert result["error_code"] == "http_401"
+    assert result["provider_error_code"] == "invalid_api_key"
+    assert len(calls) == 1
+    serialized = json.dumps(result)
+    assert "do-not-log-this" not in serialized
+    assert "unit-test-secret" not in serialized
+
+
+@pytest.mark.unit
+def test_extract_json_accepts_fenced_object_but_still_validates_required_fields():
+    parsed = smoke.extract_json('\\x60\\x60\\x60json\\n{"hook":"h","script":"s","scenes":[{}]}\\n\\x60\\x60\\x60')
+    assert parsed["hook"] == "h"
+    with pytest.raises(ValueError, match="missing_script"):
+        smoke.extract_json('{"hook":"h","scenes":[{}]}')
+
+
+@pytest.mark.unit
+def test_success_http_status_with_non_object_payload_is_not_success(monkeypatch):
+    _patch_urlopen(monkeypatch, response=FakeResponse(["not", "an", "object"]))
+    result = smoke.run(MODEL, "unit-test-secret")
+    assert result["http_status"] == 200
+    assert result["success"] is False
+    assert result["error_code"] == "api_payload_not_object"

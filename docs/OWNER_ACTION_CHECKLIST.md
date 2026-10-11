@@ -165,7 +165,7 @@ If you want to stay free-only, do not create the Render worker yet. Use the exis
 4. The content-plan route now tries OpenRouter first, then only providers that have both a key and an explicit `*_FREE_TIER_ENABLED=true` opt-in. Add runtime secrets for providers you intend to use; set each opt-in flag only after confirming the account/model has an acceptable free/trial quota and will not incur unwanted charges. OpenAI remains unused by this chain.
 5. Keep `GROQ_FREE_TIER_ENABLED=false` until you confirm Groq account limits; then set it to true in the backend runtime environment to allow Groq after OpenRouter. Apply the same process to `GEMINI_FREE_TIER_ENABLED`, `MISTRAL_FREE_TIER_ENABLED`, `COHERE_FREE_TIER_ENABLED`, and `NVIDIA_FREE_TIER_ENABLED` only if desired.
 6. After deployment, verify a controlled content-plan request and check safe provider/status metadata. Never log API key values or prompts. If providers are exhausted/unavailable, the route returns deterministic Mock content; it must not switch to a paid OpenAI model.
-7. Cloudflare Whisper and Voyage embeddings are separate capabilities and are not chat fallbacks. Do not count their keys as connected to content generation.
+7. Cloudflare chat requires `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_AI_FREE_TIER_ENABLED=true` after confirming quota. These are separate from `CLOUDFLARE_WHISPER_SHARED_SECRET`, which authenticates the Whisper Worker. Voyage remains an embedding-only capability, not a chat fallback.
 
 Do not mark the key verified until a real authenticated request succeeds. A configured environment variable is not proof that the key is valid or that production is using it.
 

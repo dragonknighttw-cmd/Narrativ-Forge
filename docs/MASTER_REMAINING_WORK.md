@@ -2,12 +2,19 @@
 
 ## Current repository checkpoint — 2026-10-11 UTC
 
-- Audit starting point: main `9b65b851b2151437354269730a586a82883142a4` (documentation-only PR #64). Exact-SHA [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132909154), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132909039), [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132909157), and [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132909119) all passed.
-- Application-code evidence baseline: `e0ce675ea27f3b6d5aa4bb53e8a2bf5bb6698775`; its [Real Worker Evidence](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195) passed with ephemeral services and synthetic media. It is not live production-worker evidence.
-- Full ephemeral application-schema restore evidence passed on `e96f26ef3b2f132d46bc95e87b28909de654a3f4` in [run #38132450389](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450389). Managed staging remains fixture-only; full application-schema restore and post-restore application checks are still pending.
-- No open pull requests were present at audit time. Per repository instructions, requested implementation work is now performed directly on `main`, without feature branches/PRs unless the owner explicitly asks.
-- A frontend FFmpeg/WASM retry defect was found and fixed in the same direct-main reconciliation: initialization failures no longer poison all later retries for the current page.
-- Green standard CI does not prove persistent production worker availability, live provider processing, managed full-schema recovery, OAuth/Drive, SMTP, Stripe, Sentry, performance/load, accessibility, legal/security acceptance, or penetration testing.
+- The direct-main implementation commit `df22942f3482690eae79859670581908df26b360` fixes the FFmpeg/WASM loader retry defect: failed initialization clears the rejected cached promise so a later attempt can retry.
+- Fresh exact-SHA checks passed on that implementation commit:
+  - [CI #38134796964](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38134796964) — frontend typecheck/build, backend unit/security tests, PostgreSQL/Redis integration, and browser E2E passed.
+  - [Security #38134796869](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38134796869) — dependency audit, SAST, and container scan passed.
+  - [CodeQL #38134796898](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38134796898) — Python and JavaScript/TypeScript analysis passed.
+  - [Repository Gate #38134796867](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38134796867) passed.
+  - [Local Runtime Evidence #38134796862](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38134796862) passed.
+  - [Windows Portable Package Evidence #38134796875](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38134796875) passed, including packaged ZIP install/restart, data persistence, and cleanup smoke.
+
+- Real Worker Evidence passed on application-code baseline `e0ce675ea27f3b6d5aa4bb53e8a2bf5bb6698775` ([run #38129952195](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195)); it uses ephemeral services and synthetic media, not a persistent production worker.
+- Full application-schema backup/restore passed only in ephemeral CI on `e96f26ef3b2f132d46bc95e87b28909de654a3f4` ([run #38132450389](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450389)). Managed staging remains fixture-only; full application-schema restore and post-restore application checks are still pending.
+- The implementation was committed directly to `main`; no feature branch or PR was created for this request.
+- Standard CI passing does not prove persistent production worker availability, live provider processing, managed full-schema recovery, OAuth/Drive, SMTP, Stripe, Sentry, performance/load, accessibility, legal/security acceptance, or penetration testing.
 - Release status remains **PENDING — NOT PRODUCTION READY**. Do not run quota-consuming inference, provision paid worker resources, mutate production data, or run destructive live recovery without explicit owner approval.
 
 > Companion checklist to ROADMAP.md; ROADMAP.md remains the sole master execution roadmap.  

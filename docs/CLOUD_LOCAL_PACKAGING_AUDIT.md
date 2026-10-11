@@ -3,7 +3,7 @@
 > Audit checkpoint refreshed: 2026-10-11 UTC  
 > Application-code evidence baseline: `e0ce675ea27f3b6d5aa4bb53e8a2bf5bb6698775`  
 > Later schema-restore workflow baseline: `e96f26ef3b2f132d46bc95e87b28909de654a3f4`  
-> Audit starting main tip: `9b65b851b2151437354269730a586a82883142a4` (documentation-only; CI/Security/CodeQL/Repository Gate all passed on that SHA).  
+> Verified direct-main implementation baseline: `df22942f3482690eae79859670581908df26b360`; CI, Security, CodeQL, Repository Gate, Local Runtime Evidence, and Windows Portable Package Evidence all passed on this SHA.  
 > Scope: review existing CI/evidence workflows and current multi-tenant/session implementation; this is not production acceptance.  
 > Purpose: define the safest path to make the repository reproducibly build, verify, package, and run both in ephemeral cloud CI and locally without removing existing features.
 

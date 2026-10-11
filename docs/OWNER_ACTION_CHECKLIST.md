@@ -2,10 +2,17 @@
 
 ## Current checkpoint — 2026-10-11 UTC
 
-- Audit starting point: main `9b65b851b2151437354269730a586a82883142a4` (documentation-only commit). Exact-SHA [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132909154), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132909039), [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132909157), and [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132909119) all passed.
-- Application-code worker evidence passed on `e0ce675ea27f3b6d5aa4bb53e8a2bf5bb6698775` ([run #38129952195](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195)); it uses ephemeral services and synthetic media, not a persistent production worker or live provider.
-- Full application-schema backup/restore passed only in ephemeral CI on `e96f26ef3b2f132d46bc95e87b28909de654a3f4` ([run #38132450389](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450389)). Managed staging is still fixture-only.
-- A frontend FFmpeg/WASM retry defect was identified and fixed in this direct-main reconciliation; CI for the new commit must pass before treating the fix as verified.
+- The direct-main implementation commit `df22942f3482690eae79859670581908df26b360` fixes the FFmpeg/WASM loader retry defect: failed initialization clears the rejected cached promise so a later attempt can retry.
+- Fresh exact-SHA checks passed on that implementation commit:
+  - [CI #38134796964](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38134796964) — frontend typecheck/build, backend unit/security tests, PostgreSQL/Redis integration, and browser E2E passed.
+  - [Security #38134796869](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38134796869) — dependency audit, SAST, and container scan passed.
+  - [CodeQL #38134796898](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38134796898) — Python and JavaScript/TypeScript analysis passed.
+  - [Repository Gate #38134796867](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38134796867) passed.
+  - [Local Runtime Evidence #38134796862](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38134796862) passed.
+  - [Windows Portable Package Evidence #38134796875](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38134796875) passed, including packaged ZIP install/restart, data persistence, and cleanup smoke.
+
+- Real Worker Evidence passed on `e0ce675ea27f3b6d5aa4bb53e8a2bf5bb6698775` ([run #38129952195](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195)); this is ephemeral synthetic-media evidence, not a persistent production worker or live provider.
+- Full application-schema restore passed in ephemeral CI on `e96f26ef3b2f132d46bc95e87b28909de654a3f4` ([run #38132450389](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450389)); managed staging is still fixture-only.
 - Release status remains **PENDING — NOT PRODUCTION READY**. No paid worker/resource provisioning, quota-consuming inference, production-data mutation, or destructive live recovery is authorized without explicit owner approval.
 
 ### Remaining owner / external acceptance gates

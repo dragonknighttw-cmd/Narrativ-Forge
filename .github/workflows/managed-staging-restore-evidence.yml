@@ -56,7 +56,6 @@ jobs:
       - name: Validate the approved managed restore destination
         env:
           RESTORE_URL: ${{ secrets.STAGING_RESTORE_DATABASE_URL }}
-          EXPECTED_RESTORE_HOST: ${{ vars.STAGING_RESTORE_HOST }}
         run: |
           python - <<'PY'
           import os
@@ -68,11 +67,8 @@ jobs:
           url = urlparse(value)
           if url.scheme not in {"postgres", "postgresql"} or not url.hostname or not url.path.strip("/"):
               raise SystemExit("STAGING_RESTORE_DATABASE_URL must be a PostgreSQL connection URL")
-          expected = os.environ.get("EXPECTED_RESTORE_HOST", "").strip().lower()
           approved_host = "db.oeqyheycywqkgeeqmpxa.supabase.co"
-          if not expected or expected != approved_host:
-              raise SystemExit("STAGING_RESTORE_HOST must exactly match the approved Narrativ-Forge-1 database host")
-          if url.hostname.lower() != expected:
+          if url.hostname.lower() != approved_host:
               raise SystemExit("Refusing restore: connection host does not match the approved Narrativ-Forge-1 host")
           if url.hostname.lower() in {"localhost", "127.0.0.1", "postgres"}:
               raise SystemExit("Refusing restore: destination must be the approved managed database")

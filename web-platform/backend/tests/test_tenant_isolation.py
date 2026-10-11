@@ -306,6 +306,7 @@ def test_second_tenant_cannot_access_episode_children_or_processing_jobs():
 def test_multi_membership_session_scopes_resources_and_role_to_selected_workspace():
     """A real signed session must scope both resource access and role to its active workspace."""
     from app.api.dependencies import issue_session
+    from app.core.config import settings
 
     suffix = uuid4().hex
     with TestingSession() as db:
@@ -342,7 +343,10 @@ def test_multi_membership_session_scopes_resources_and_role_to_selected_workspac
         # workspace's resources until explicitly switching the signed session.
         owner_session = issue_session(user_email, "owner", owner_org_id)
         client.headers["Authorization"] = f"Bearer {owner_session}"
-        assert client.get("/api/v1/auth/me").json()["organization_id"] == owner_org_id
+        client.cookies.set(settings.session_cookie_name, owner_session)
+        me = client.get("/api/v1/auth/me")
+        assert me.status_code == 200, me.text
+        assert me.json()["organization_id"] == owner_org_id
         assert client.get(f"/api/v1/series/{owner_series_id}").status_code == 200
         assert client.get(f"/api/v1/series/{viewer_series_id}").status_code == 404
         assert [item["id"] for item in client.get("/api/v1/series").json()] == [owner_series_id]

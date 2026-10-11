@@ -73,11 +73,15 @@ Fallback policy:
 A live authenticated audio → VTT → Subtitle Studio test is required before Gate 4 can become VERIFIED.
 
 
-## Free-only OpenRouter content planning
+## Free-first multi-provider content planning
 
-The content-plan adapter now routes only through an explicit allowlist of vetted chat-capable free OpenRouter IDs from the owner’s list or the exact free-only router ID openrouter/free. Arbitrary IDs ending in :free are rejected. The production route intentionally ignores Groq/OpenAI credentials. If OpenRouter is not configured, the deterministic Mock adapter is used; it must not silently fall back to a paid provider.
+The content-plan route tries exact-allowlisted OpenRouter free chat models first. If OpenRouter returns HTTP 401/403/429, it skips the remaining models sharing that key and moves to the next configured provider. Model-specific failures, transient errors, and invalid/empty JSON can advance to another candidate. If all providers fail, deterministic Mock content is returned; that is a safe fallback, not proof of live AI success.
 
-Use chat-capable free text models for script generation. Do not use embedding, reranking, content-safety, audio-generation, or decision-only endpoints as chat models; they require different APIs or return non-prose outputs. The owner-maintained model inventory and privacy cautions are in [OPENROUTER_FREE_MODEL_AUDIT.md](OPENROUTER_FREE_MODEL_AUDIT.md). Free endpoints may log prompts/outputs under their respective provider terms, so exclude confidential data.
+The supported chat chain is OpenRouter → Groq → Cloudflare Workers AI → Gemini → Mistral → Cohere → NVIDIA, but non-OpenRouter providers are skipped unless their API key and matching `*_FREE_TIER_ENABLED=true` opt-in are both configured. The flags default to false because account-specific quotas and billing behavior vary. A key or a free-tier flag does not guarantee that all future calls are free; confirm dashboard limits and model terms before enabling each provider. OpenAI credentials are intentionally not used by this route.
+
+Cloudflare Workers AI chat requires a separate Cloudflare Account ID and Workers AI API token. It must not reuse `CLOUDFLARE_WHISPER_SHARED_SECRET`, which only authenticates the separate Whisper Worker. Voyage is an embedding provider, not a chat fallback. Provider keys are sent only to canonical HTTPS API hosts; model IDs and API responses are validated, and logs avoid keys/prompts/generated text.
+
+Use chat-capable text models for script generation. Do not use embedding, reranking, content-safety, audio-generation, or decision-only endpoints as chat models. Free/trial providers may log prompts/outputs under their own terms, so do not send confidential data until retention and training policies are accepted. See [OPENROUTER_FREE_MODEL_AUDIT.md](OPENROUTER_FREE_MODEL_AUDIT.md).
 
 
 ## Provider acceptance and free-model evidence

@@ -2,25 +2,18 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from ...db import get_db
-from ...models import AuditEvent, OrganizationMembership
-from ..dependencies import get_current_user, require_roles
+from ...models import AuditEvent
+from ..dependencies import get_current_membership, require_roles
 
 router = APIRouter(prefix="/audit", tags=["audit"])
-
-def _membership(user, db):
-    return db.query(OrganizationMembership).filter(
-        OrganizationMembership.user_id == user["id"]
-    ).order_by(OrganizationMembership.created_at).first()
 
 @router.get("")
 def list_audit_events(
     limit: int = Query(default=50, ge=1, le=100),
     user=Depends(require_roles("owner")),
+    membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
-    membership = _membership(user, db)
-    if not membership:
-        return []
     events = db.query(AuditEvent).filter(
         AuditEvent.organization_id == membership.organization_id
     ).order_by(AuditEvent.created_at.desc()).limit(limit).all()

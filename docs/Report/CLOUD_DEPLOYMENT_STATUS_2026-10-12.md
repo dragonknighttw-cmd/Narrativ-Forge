@@ -29,6 +29,12 @@ At this checkpoint, `docs/Report/` contains these two reports:
 
 This file is being added as the cloud deployment status report. No Windows/local work was performed as part of this update.
 
+### Netlify frontend and access policy
+
+- **PASS — deploy object state:** current published deploy `6ac4f8aba9c7aa00082031dc` is `ready`, but its source commit is `777fba6ca92ce59e53e741b976bc9ea9692b45c1` (2026-10-06), behind current main SHA `95aa9163cc40383a8c44c3a5f445e4de899116e4`.
+- **PASS — SSO policy observed:** project access requires team SSO for all projects. No access-policy change was made.
+- **OWNER ACTION REQUIRED:** decide whether to schedule a one-time frontend redeploy. Since the user has been minimizing build usage, do not trigger it automatically; preserve SSO and stop automatic builds again if that is the chosen operating procedure.
+
 ## Not verified / blocked
 
 | Gate | Status | Why |
@@ -38,7 +44,7 @@ This file is being added as the cloud deployment status report. No Windows/local
 | Persistent media worker | BLOCKED | Render has an API web service; no continuously running background worker is confirmed |
 | Live retry / DLQ / failover drill | NOT RUN | Requires the intended live worker/queue environment |
 | Managed production backup/restore | NOT VERIFIED | Ephemeral CI restore evidence is not a production recovery drill |
-| Netlify frontend freshness | NOT RECHECKED | Earlier audit reported a ready but older deploy; current state not revalidated in this run |
+| Netlify frontend freshness | STALE DEPLOY VERIFIED | Current published deploy is ready but still points to old commit `777fba6ca92ce59e53e741b976bc9ea9692b45c1` from 2026-10-06, not current main SHA |
 | Production integrations and acceptance | PENDING | OAuth/Drive, SMTP, Stripe, Sentry, storage lifecycle, load/performance, accessibility, legal/privacy, and external security review remain open |
 
 ## Safe next actions

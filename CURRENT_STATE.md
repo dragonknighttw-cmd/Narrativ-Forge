@@ -459,3 +459,24 @@ This section supersedes earlier historical statements about pending CI runs or t
 - Hardened the manual Worker deploy workflow with a GET-only post-deploy smoke check. It still requires explicit owner confirmation that Render's API secret is already synchronized.
 - Updated `docs/OWNER_ACTION_CHECKLIST.md`, `docs/DEPLOYMENT.md`, and `docs/TROUBLESHOOTING.md` with the latest evidence and ordered recovery path.
 - **Still blocked:** public Worker handler preflight has not yet passed. Do not run authenticated inference until preflight passes and the owner explicitly approves possible Workers AI quota use. Production readiness remains NOT VERIFIED.
+
+
+## Latest security hardening checkpoint — 2026-10-12 UTC
+
+Current application-code checkpoint: `b374df9e1e455e35eaa9847d78fb7c9af70f2393` — “Harden outbound webhook destination validation”.
+
+Verified on this exact commit:
+- [CI #38201576482](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576482) — passed.
+- [Security #38201576514](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576514) — passed.
+- [CodeQL #38201576494](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576494) — passed.
+- [Repository Gate #38201576503](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576503) — passed.
+- [Real Worker Evidence #38201576538](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576538) — passed; this remains ephemeral CI worker evidence, not continuous production operation.
+- [Windows Portable Package Evidence #38201576528](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576528) — passed.
+- [Windows Local Runtime Evidence #38201576459](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576459) and [Local Runtime Evidence #38201576477](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576477) — passed.
+
+Changes included on this checkpoint and its direct parent:
+- Cloudflare Whisper inference failures now return a generic error instead of exposing provider exception text; Worker contract tests cover diagnostic redaction and invalid-token rejection before inference.
+- Outbound webhook destination validation rejects malformed ports, embedded URL credentials, DNS failures/empty results, and any resolved non-global address; regression coverage includes loopback and mixed public/private DNS answers.
+- **Scope limit:** destination validation resolves and checks addresses before the HTTP client makes its request; it is not IP pinning and should not be described as complete DNS-rebinding prevention.
+
+Release status remains **PENDING — NOT PRODUCTION READY**. Passing CI does not establish real Burmese speech quality, continuous worker availability, managed production restore, or external-provider acceptance. Keep production provider flags disabled and remain free-first unless the owner explicitly approves changes.

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import shutil
+from contextlib import closing
 import sqlite3
 import subprocess
 import sys
@@ -22,7 +23,9 @@ def restore_sqlite(source: Path, destination: Path) -> None:
     tmp = destination.with_suffix(destination.suffix + ".restore")
     try:
         shutil.copy2(source, tmp)
-        with sqlite3.connect(tmp) as check:
+        # sqlite3.Connection's context manager commits/rolls back but does not close
+        # the handle. Windows refuses tmp.replace(destination) while that handle is open.
+        with closing(sqlite3.connect(tmp)) as check:
             result = check.execute("PRAGMA integrity_check").fetchone()
         if result != ("ok",):
             detail = result[0] if result else "no result"

@@ -332,3 +332,14 @@ Before Manual Mode can be called production-ready, collect:
 - OpenCode audit: JSON syntax is valid; the four configured OpenRouter model IDs were present in the public catalogue and reported zero prompt/completion prices and tool support at the time checked. No model inference was attempted. Model catalogue presence is not live quota/quality/session acceptance; retain local OpenCode smoke as pending.
 - **Still not production verified:** persistent production worker, actual Burmese speech/transcription and subtitle acceptance, managed-provider backup/restore, authenticated external provider flows, OAuth/Drive, SMTP, Stripe, Sentry, live DB migration head, performance/load, accessibility, legal/privacy/commercial-use review, and independent penetration testing. No paid resources, production-data changes, destructive recovery, or quota-consuming inference were performed.
 
+
+
+## 2026-10-12 cloud-only continuation — exact-SHA checks and safety hardening
+
+- Latest main SHA: `07fd3ac3bb39ee5d4b41b4bd90960e169ffd6202`.
+- Release maturity gate now rejects incomplete release artifact references (version, migration plan, environment manifest, rollback plan, evidence ledger, and acceptance checklist).
+- AI adapter URL validation now fails closed for unknown provider families; regression tests verify an unknown provider is rejected before HTTP dispatch.
+- Focused tests: 38 passed. Backend unit/security selection: 297 passed, 3 skipped. `git diff --check` passed before commits.
+- Fresh exact-SHA workflows all passed: [CI #38220724248](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724248), [Security #38220724268](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724268), [CodeQL #38220724133](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724133), [Repository Gate #38220724300](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724300), [Real Worker Evidence #38220724354](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724354), [Windows Local Runtime Evidence #38220724290](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724290), and [Windows Portable Package Evidence #38220724344](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724344).
+- Scope boundary: successful CI and ephemeral worker tests are not production acceptance. Still pending are continuous worker provisioning, real Burmese speech review, authenticated live-provider/fallback tests, storage lifecycle, managed backup/restore, OAuth/Drive, SMTP, Stripe, Sentry, live migration-head verification, load/performance, accessibility, legal/commercial-use review, and independent security sign-off.
+- No billable resources, production-data mutations, destructive recovery, or quota-consuming inference were performed. Release remains **PENDING — NOT PRODUCTION READY**.

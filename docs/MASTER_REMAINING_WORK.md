@@ -304,3 +304,11 @@ Before Manual Mode can be called production-ready, collect:
 7. Identify owner/external blockers only when code-side work and safe automation are exhausted.
 8. Perform final release audit; production remains blocked until all applicable gates have fresh evidence and approvals.
 9. **Only after cloud-side work is exhausted and verified, begin Windows Local setup.**
+
+## 2026-10-12 Burmese media sample — latest intake
+
+- A 58.7-second MP4 sample was technically preflighted in an isolated analysis runtime; the source media was not committed to Git.
+- FFprobe/FFmpeg inspection and 16 kHz mono PCM conversion passed. The sample is portrait H.264 576 × 1024 at 30 fps with AAC-LC 44.1 kHz stereo; no embedded subtitle stream was detected. A roughly 2.815-second terminal silent interval was detected; audio peak is approximately 0.0 dBFS and requires listening review for distortion.
+- Report: [BURMESE_SAMPLE_PREFLIGHT_2026-10-12.md](Report/BURMESE_SAMPLE_PREFLIGHT_2026-10-12.md). Acceptance criteria: [BURMESE_MEDIA_ACCEPTANCE.md](BURMESE_MEDIA_ACCEPTANCE.md).
+- Remaining owner-local acceptance steps: run the existing local Windows Whisper/worker path, capture job and artifact evidence, manually review Burmese transcript (no reference transcript was supplied, so no word-error rate), inspect Unicode/NFC and subtitle timing, play the output, and verify the original is unchanged.
+- No cloud inference, paid resources, production-data mutations, or destructive recovery were used. Do not mark Burmese speech acceptance or production readiness VERIFIED until those gates have evidence.

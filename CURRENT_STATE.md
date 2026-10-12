@@ -480,3 +480,11 @@ Changes included on this checkpoint and its direct parent:
 - **Scope limit:** destination validation resolves and checks addresses before the HTTP client makes its request; it is not IP pinning and should not be described as complete DNS-rebinding prevention.
 
 Release status remains **PENDING — NOT PRODUCTION READY**. Passing CI does not establish real Burmese speech quality, continuous worker availability, managed production restore, or external-provider acceptance. Keep production provider flags disabled and remain free-first unless the owner explicitly approves changes.
+
+## 2026-10-12 Burmese media sample preflight
+
+- A 58.7-second chat-uploaded MP4 was inspected without adding the media to Git. FFprobe/FFmpeg read the H.264 portrait video and AAC audio; conversion to 16 kHz mono PCM succeeded.
+- Technical findings: 576 × 1024 at 30 fps; AAC-LC 44.1 kHz stereo; no embedded subtitle stream detected; approximately 2.815 seconds of terminal silence detected at a -45 dB threshold; mean audio level -17.3 dBFS and peak approximately 0.0 dBFS. Review the end silence and listen for audible clipping/distortion.
+- Evidence: [Burmese sample technical preflight report](docs/Report/BURMESE_SAMPLE_PREFLIGHT_2026-10-12.md) and [acceptance checklist](docs/BURMESE_MEDIA_ACCEPTANCE.md).
+- **Still pending:** Burmese speech-to-text output and human review, because the current analysis runtime has no speech-recognition package/model available; reference transcript/word-error rate; subtitle timing and Unicode review; processing through the actual local worker; artifact persistence/retrieval; rendered-output playback; original-file preservation.
+- No authenticated cloud inference, paid resource provisioning, production-data mutation, or destructive recovery was performed. Release status remains **PENDING — NOT PRODUCTION READY**.

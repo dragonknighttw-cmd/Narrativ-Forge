@@ -18,8 +18,8 @@
 
 - **PASS — deployment state:** Render service `Narrativ-Forge` is not suspended and its latest deployment `dep-db69upmk1f9s73f3ve0g` is live on `95aa9163cc40383a8c44c3a5f445e4de899116e4`.
 - **PASS — startup log evidence:** the latest deploy logs show application startup complete, Uvicorn listening on port 10000, and `GET /` returning HTTP 200.
-- **Configuration observed:** Render plan `free`, one instance, and auto-deploy on commits to `main` is enabled.
-- **NOT RECHECKED after this deployment:** fresh `/api/v1/health` and `/api/v1/ready` HTTP probes. Earlier repository evidence records HTTP 200 and database/Redis readiness, but that historical evidence should not be represented as a fresh post-deploy probe.
+- **Configuration rechecked after owner change:** Render plan `free`, one instance; `autoDeploy=no` / trigger `off`. Render event history records `auto_deploy_disabled` at `2026-10-12T15:30:53Z`. The latest live deployment remains on main SHA `95aa9163cc40383a8c44c3a5f445e4de899116e4`. No new deploy was triggered.
+- **NOT VERIFIED:** fresh GET-only probes to `/api/v1/health` and `/api/v1/ready`. Attempts from the available web/probe environment could not access the URLs, and Render request-log query returned no entries; endpoint status remains unknown. Startup logs showing `GET /` HTTP 200 do not establish health/readiness.
 
 ## Report directory audit
 
@@ -49,10 +49,10 @@ This file is being added as the cloud deployment status report. No Windows/local
 
 ## Safe next actions
 
-1. Perform a fresh, non-billable GET-only probe of Render `/api/v1/health` and `/api/v1/ready` from a trusted runner if one is available; record status codes and redacted readiness fields only.
+1. Run GET-only probes for Render `/api/v1/health` and `/api/v1/ready` from a trusted runner that can resolve the service hostname; record status codes and redacted readiness fields only. This environment could not verify either endpoint.
 2. Keep the current Cloudflare deployment in place; do not run authenticated inference until the owner explicitly approves possible quota use and confirms the protected shared-secret setup.
 3. Decide separately whether a persistent media worker is worth the paid capacity. Do not create or scale paid resources without explicit approval.
-4. Keep documentation changes on a branch and review via PR. Render auto-deploys commits to `main`, so a direct documentation commit can trigger a build.
+4. Keep documentation changes on a branch and review via PR. Render auto-deploy is now disabled, so commits to `main` should not trigger automatic Render deployments; use Manual Deploy only when intentionally releasing.
 
 ## Cost, privacy, and release boundary
 

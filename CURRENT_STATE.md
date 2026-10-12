@@ -41,6 +41,22 @@ The documentation-only follow-up commit `1f00697f16a2fcde1cccb83e41750de6a2d092b
 
 Release status remains **PENDING — NOT PRODUCTION READY** until remaining real-media/provider, continuous worker, managed storage/restore, OAuth/Drive, SMTP, Stripe, Sentry, performance, accessibility, legal/compliance, and external security acceptance gates are addressed.
 
+## Cloud-only continuation — 2026-10-12 (exact SHA `b1b2aa07c6608001bf78f97e45c0a10e07fbc7a9`)
+
+- Corrected the webhook retry regression test so Celery eager mode recursively executes the autoretry wrapper; the prior run exposed a test-harness assertion issue, and the corrected test passed locally.
+- Fresh checks on this exact SHA passed:
+  - [CI #38211962880](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38211962880) — frontend typecheck/build, backend unit/security, PostgreSQL/Redis integration, and browser E2E.
+  - [Security #38211962917](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38211962917).
+  - [CodeQL #38211963015](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38211963015).
+  - [Repository Gate #38211962839](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38211962839).
+  - [Real Worker Evidence #38211962855](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38211962855) — ephemeral PostgreSQL 16/Redis 7, worker image, migrations, retry/DLQ/tenant integration, and synthetic-media worker smoke.
+  - [Local Runtime Evidence #38211962889](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38211962889).
+  - [Windows Local Runtime Evidence #38211962908](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38211962908).
+  - [Windows Portable Package Evidence #38211962847](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38211962847).
+- Additional isolated checks: SQLite Alembic upgrade/current reached `0018_tenant_backfill_guard`; backend unit/security selection passed (290 passed, 3 skipped, 83 deselected); frontend `npm ci`, `npm run typecheck`, and `npm run build` passed; Cloudflare Whisper Worker contract tests passed 2/2.
+- OpenCode configuration audit: `opencode.json` parses as valid JSON; all four configured OpenRouter model IDs appeared in the public model catalogue at audit time, reported zero prompt/completion prices, and advertised tool support. This is catalogue metadata only: no inference was sent and it does not prove current quota, response quality, or a successful local OpenCode session.
+- **Release remains PENDING — NOT PRODUCTION READY.** Synthetic worker smoke is not real Burmese speech acceptance or persistent production-worker proof. Managed database recovery, live provider integrations, user-media acceptance, legal/accessibility/security sign-off, and owner-gated actions remain open.
+
 ## Historical pre-PR #42/#43 main snapshot — 2026-10-10 UTC
 
 - Current main SHA: `b75d074ab01b8f9e2ef4058dda03934eb91b3d8a` (PR #38 merge; PR #36 stale-worker recovery and PR #38 retry-exhaustion/DLQ idempotency coverage are included).

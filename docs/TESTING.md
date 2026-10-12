@@ -14,9 +14,10 @@
 5. Browser E2E with Playwright.
 6. Cross-tenant E2E.
 7. Representative real-media worker E2E.
-8. Load/performance benchmark.
-9. Security/dependency/container scanning.
-10. Accessibility automated + manual review.
+8. Burmese media acceptance with an owner-approved speech sample and human transcript/subtitle review; follow [BURMESE_MEDIA_ACCEPTANCE.md](BURMESE_MEDIA_ACCEPTANCE.md).
+9. Load/performance benchmark.
+10. Security/dependency/container scanning.
+11. Accessibility automated + manual review.
 
 ## Required release evidence
 

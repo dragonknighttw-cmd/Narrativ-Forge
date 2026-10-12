@@ -288,21 +288,29 @@ def _send_email(to_email: str, subject: str, body: str) -> None:
 
 
 def _validate_webhook_destination(url: str) -> None:
-    parsed = urlparse(url)
+    try:
+        parsed = urlparse(url)
+        port = parsed.port
+    except ValueError as exc:
+        raise ValueError("Webhook URL has an invalid port") from exc
     if parsed.scheme != "https" or not parsed.hostname:
         raise ValueError("Webhook URL must use HTTPS")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("Webhook URL must not contain embedded credentials")
     host = parsed.hostname.strip().lower().rstrip(".")
     try:
         literal = ipaddress.ip_address(host)
         addresses = [literal]
     except ValueError:
         try:
-            infos = socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+            infos = socket.getaddrinfo(host, port or 443, type=socket.SOCK_STREAM)
         except socket.gaierror as exc:
             raise ValueError("Webhook host could not be resolved") from exc
         addresses = {ipaddress.ip_address(info[4][0]) for info in infos}
+    if not addresses:
+        raise ValueError("Webhook host did not resolve to a public address")
     for address in addresses:
-        if address.is_private or address.is_loopback or address.is_link_local or address.is_multicast or address.is_unspecified or address.is_reserved:
+        if not address.is_global:
             raise ValueError("Webhook URL resolves to a non-public address")
 
 

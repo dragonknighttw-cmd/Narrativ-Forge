@@ -1046,3 +1046,39 @@ def test_dispatch_lock_release_requires_matching_owner_token(monkeypatch):
 
     tasks_module._release_dispatch_lock("job-token-test", token)
     assert key not in store
+
+def test_webhook_destination_requires_https_and_rejects_embedded_credentials(monkeypatch):
+    monkeypatch.setattr(
+        tasks_module.socket,
+        "getaddrinfo",
+        lambda host, port, type: [(None, None, None, None, ("8.8.8.8", port))],
+    )
+
+    tasks_module._validate_webhook_destination("https://hooks.example.test/events")
+
+    with pytest.raises(ValueError, match="HTTPS"):
+        tasks_module._validate_webhook_destination("http://hooks.example.test/events")
+    with pytest.raises(ValueError, match="embedded credentials"):
+        tasks_module._validate_webhook_destination("https://user:password@hooks.example.test/events")
+
+
+def test_webhook_destination_rejects_non_global_and_mixed_dns_results(monkeypatch):
+    monkeypatch.setattr(
+        tasks_module.socket,
+        "getaddrinfo",
+        lambda host, port, type: [(None, None, None, None, ("127.0.0.1", port))],
+    )
+    with pytest.raises(ValueError, match="non-public"):
+        tasks_module._validate_webhook_destination("https://hooks.example.test/events")
+
+    monkeypatch.setattr(
+        tasks_module.socket,
+        "getaddrinfo",
+        lambda host, port, type: [
+            (None, None, None, None, ("8.8.8.8", port)),
+            (None, None, None, None, ("10.0.0.1", port)),
+        ],
+    )
+    with pytest.raises(ValueError, match="non-public"):
+        tasks_module._validate_webhook_destination("https://mixed.example.test/events")
+

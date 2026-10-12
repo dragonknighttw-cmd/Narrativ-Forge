@@ -44,6 +44,36 @@ function corsHeaders(origin: string, allowedOrigin: string): HeadersInit {
     "Vary": "Origin",
   };
 }
+
+const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
+
+async function readBodyWithinLimit(request: Request, maxBytes: number): Promise<Uint8Array | null> {
+  if (!request.body) return new Uint8Array();
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        try { await reader.cancel(); } catch {}
+        return null;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
+}
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get("Origin") ?? "";
@@ -65,9 +95,13 @@ export default {
     const contentType = request.headers.get("Content-Type") ?? "audio/wav";
     if (contentType !== "audio/wav") return Response.json({ error: "WAV audio is required" }, { status: 415, headers });
 
-    const body = await request.arrayBuffer();
+    const contentLength = Number(request.headers.get("Content-Length"));
+    if (Number.isFinite(contentLength) && contentLength > MAX_AUDIO_BYTES) {
+      return Response.json({ error: "Audio payload exceeds 50 MB" }, { status: 413, headers });
+    }
+    const body = await readBodyWithinLimit(request, MAX_AUDIO_BYTES);
+    if (body === null) return Response.json({ error: "Audio payload exceeds 50 MB" }, { status: 413, headers });
     if (body.byteLength === 0) return Response.json({ error: "Empty audio payload" }, { status: 400, headers });
-    if (body.byteLength > 50 * 1024 * 1024) return Response.json({ error: "Audio payload exceeds 50 MB" }, { status: 413, headers });
 
     const maxAudioSeconds = Math.max(1, Number(claims.max_audio_seconds ?? 0));
     const maxExpectedBytes = 44 + (maxAudioSeconds * 32000) + 4096;
@@ -76,7 +110,7 @@ export default {
     }
 
     try {
-      const result = await env.AI.run("@cf/openai/whisper", { audio: [...new Uint8Array(body)] });
+      const result = await env.AI.run("@cf/openai/whisper", { audio: [...body] });
       return Response.json({
         provider: "cloudflare_workers_ai",
         model: "@cf/openai/whisper",

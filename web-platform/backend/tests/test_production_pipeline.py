@@ -5,6 +5,7 @@ from app.services.production_pipeline import (
     ABOutcome,
     TrendSignal,
     build_cross_platform_export_plan,
+    build_seo_metadata,
     build_series_trailer_plan,
     build_translation_request,
     rank_ab_outcomes,
@@ -56,3 +57,15 @@ def test_translation_request_is_burmese_first_and_preserves_lines():
     assert request.source_language == "my"
     assert request.target_language == "en"
     assert validate_translation_result(request, "Hello\nHow are you?") == "Hello\nHow are you?"
+
+
+
+def test_seo_metadata_preserves_burmese_hashtags_and_sanitizes_symbols():
+    metadata = build_seo_metadata(
+        "  မြန်မာ Video  ",
+        "  မြန်မာနည်းပညာအကြောင်း  ",
+        keywords=["#မြန်မာ နည်းပညာ!", "OpenAI!"],
+    )
+    assert metadata["title"] == "မြန်မာ Video"
+    assert metadata["description"] == "မြန်မာနည်းပညာအကြောင်း"
+    assert metadata["hashtags"] == ("#မြန်မာနည်းပညာ", "#OpenAI")

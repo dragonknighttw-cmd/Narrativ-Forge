@@ -504,3 +504,19 @@ Release status remains **PENDING — NOT PRODUCTION READY**. Passing CI does not
 - Evidence: [Burmese sample technical preflight report](docs/Report/BURMESE_SAMPLE_PREFLIGHT_2026-10-12.md) and [acceptance checklist](docs/BURMESE_MEDIA_ACCEPTANCE.md).
 - **Still pending:** Burmese speech-to-text output and human review, because the current analysis runtime has no speech-recognition package/model available; reference transcript/word-error rate; subtitle timing and Unicode review; processing through the actual local worker; artifact persistence/retrieval; rendered-output playback; original-file preservation.
 - No authenticated cloud inference, paid resource provisioning, production-data mutation, or destructive recovery was performed. Release status remains **PENDING — NOT PRODUCTION READY**.
+
+## Cloud-only continuation — exact SHA `07fd3ac3bb39ee5d4b41b4bd90960e169ffd6202` (2026-10-12 UTC)
+
+- Hardened release maturity: release launch eligibility now requires all release artifact references (version, migration plan, environment manifest, rollback plan, evidence ledger, and acceptance checklist) rather than accepting an incomplete release package.
+- Hardened AI adapter endpoint validation: unknown provider families now fail closed instead of allowing arbitrary compatible-base URLs. Added regression coverage for rejecting unknown providers before any HTTP request.
+- Focused local regression tests passed: 38 passed. Backend unit/security selection passed: 297 passed, 3 skipped. `git diff --check` passed before the GitHub commits.
+- All fresh exact-SHA GitHub Actions checks passed on `07fd3ac3bb39ee5d4b41b4bd90960e169ffd6202`:
+  - [CI #38220724248](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724248) — backend unit/security, PostgreSQL/Redis integration, frontend typecheck/build, browser E2E, and Cloudflare Whisper Worker contract tests.
+  - [Security #38220724268](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724268) — dependency audit, SAST, and container scan.
+  - [CodeQL #38220724133](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724133) — JavaScript/TypeScript and Python analysis.
+  - [Repository Gate #38220724300](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724300).
+  - [Real Worker Evidence #38220724354](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724354) — ephemeral worker integration with synthetic media.
+  - [Windows Local Runtime Evidence #38220724290](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724290).
+  - [Windows Portable Package Evidence #38220724344](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38220724344).
+- These checks are automated/ephemeral evidence only. They do not prove persistent production worker capacity, authenticated Burmese real-audio inference, production provider configuration, managed production restore, or owner/legal/security acceptance.
+- Release status remains **PENDING — NOT PRODUCTION READY**. No paid resources were provisioned, no production data was changed, and no quota-consuming inference was run.

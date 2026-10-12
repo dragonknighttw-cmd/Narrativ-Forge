@@ -1,7 +1,9 @@
 # Burmese Media Acceptance Checklist
 
-Status: **PENDING — owner-approved speech sample required.**
+Status: **PENDING — sample received; technical preflight passed; speech and pipeline acceptance still required.**
 Scope: human-reviewed Burmese transcription, subtitle timing, rendering, and output acceptance. This checklist does not claim a live provider or production worker is verified.
+
+Latest sample intake: a 58.7-second MP4 was supplied in chat. Container/stream inspection and conversion to 16 kHz mono PCM succeeded; a roughly 2.8-second silent tail was detected and the audio peak is near 0 dBFS, so listen for possible distortion. The sample itself is not committed to Git. See [technical preflight report](Report/BURMESE_SAMPLE_PREFLIGHT_2026-10-12.md). Burmese recognition, human transcript review, subtitle timing, worker persistence, and output playback remain pending.
 
 ## 1. What the owner needs to provide
 

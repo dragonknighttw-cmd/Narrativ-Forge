@@ -85,8 +85,10 @@ export default {
         word_count: result.word_count ?? 0,
         vtt: result.vtt ?? "",
       }, { headers });
-    } catch (error) {
-      return Response.json({ error: "Whisper inference failed", detail: error instanceof Error ? error.message : "Unknown inference error" }, { status: 502, headers });
+    } catch {
+      // Do not expose upstream/provider diagnostics to the caller.
+      console.error("Whisper inference failed");
+      return Response.json({ error: "Whisper inference failed" }, { status: 502, headers });
     }
   },
 };

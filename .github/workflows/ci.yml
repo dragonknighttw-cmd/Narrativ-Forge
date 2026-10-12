@@ -15,6 +15,23 @@ permissions:
   contents: read
 
 jobs:
+  cloudflare-whisper-worker:
+    name: Cloudflare Whisper Worker contract tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-platform/cloudflare/whisper-worker
+    steps:
+      - name: Checkout exact triggering SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test Worker authentication and safe error responses
+        run: node --experimental-strip-types --test test/worker.test.mjs
+
   backend:
     runs-on: ubuntu-latest
     defaults:

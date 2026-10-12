@@ -138,7 +138,9 @@ def _is_safe_compatible_base_url(provider_name: str, base_url: str) -> bool:
     if family == "openrouter":
         return _is_safe_openrouter_base_url(base_url)
     if family not in expected:
-        return True
+        # Unknown adapter names must fail closed to avoid sending credentials
+        # to an endpoint that has not been explicitly approved.
+        return False
     parsed = urlparse(base_url.strip())
     host, path = expected[family]
     return (

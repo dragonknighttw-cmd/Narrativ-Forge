@@ -105,7 +105,7 @@ test("oversized declared audio is rejected before the request body is read", asy
         controller.enqueue(new Uint8Array(44));
         controller.close();
       },
-    }),
+    }, { highWaterMark: 0 }),
     duplex: "half",
   });
 

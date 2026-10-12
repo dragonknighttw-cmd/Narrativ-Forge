@@ -4,7 +4,10 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.api.routes.phase4 import ensure_membership
+from fastapi import HTTPException
+
+import app.api.routes.phase4 as phase4_routes
+from app.api.routes.phase4 import ensure_membership, create_notification, NotificationCreate
 from app.models import BillingSubscription, OrganizationMembership
 
 
@@ -66,3 +69,39 @@ def test_existing_membership_does_not_hide_unrelated_integrity_error():
 
     db.rollback.assert_called_once()
     db.refresh.assert_not_called()
+
+
+
+def test_create_notification_reports_broker_publication_failure(monkeypatch):
+    membership = SimpleNamespace(organization_id="org-1")
+    event_holder = {}
+
+    class FakeDB:
+        def add(self, event):
+            event_holder["event"] = event
+
+        def commit(self):
+            pass
+
+        def refresh(self, event):
+            pass
+
+    class BrokenCelery:
+        def send_task(self, *_args, **_kwargs):
+            raise RuntimeError("private broker connection details")
+
+    monkeypatch.setattr(phase4_routes, "get_celery", lambda: BrokenCelery())
+
+    with pytest.raises(HTTPException) as raised:
+        create_notification(
+            NotificationCreate(event_type="asset.created", payload={"id": "asset-1"}),
+            membership=membership,
+            db=FakeDB(),
+        )
+
+    assert raised.value.status_code == 503
+    assert raised.value.detail == "Notification was saved but could not be queued"
+    event = event_holder["event"]
+    assert event.status == "failed"
+    assert event.last_error == "Notification could not be queued"
+    assert "private broker connection details" not in event.last_error

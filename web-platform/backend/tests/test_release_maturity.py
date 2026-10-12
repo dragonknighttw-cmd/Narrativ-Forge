@@ -92,3 +92,34 @@ def test_launch_requires_matching_evidence_commit():
         verified_at=datetime.now(timezone.utc),
     )
     assert not launch_allowed([mismatched], candidate)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "field",
+    [
+        "version",
+        "migration_plan_ref",
+        "environment_manifest_ref",
+        "rollback_ref",
+        "evidence_ledger_ref",
+        "acceptance_checklist_ref",
+    ],
+)
+def test_launch_rejects_frozen_candidate_missing_required_release_reference(field):
+    from dataclasses import replace
+
+    now = datetime.now(timezone.utc)
+    entry = EvidenceLedgerEntry("ci", VERIFIED, "d" * 40, "run-1", "artifact-1", "owner", now)
+    candidate = ReleaseCandidate(
+        version="1.2.3",
+        commit_sha="d" * 40,
+        migration_plan_ref="migration-plan",
+        environment_manifest_ref="environment-manifest",
+        rollback_ref="rollback-plan",
+        evidence_ledger_ref="evidence-ledger",
+        acceptance_checklist_ref="acceptance-checklist",
+        frozen_at=now,
+    )
+    incomplete = replace(candidate, **{field: "   "})
+    assert not launch_allowed([entry], incomplete)

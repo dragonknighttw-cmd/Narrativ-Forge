@@ -141,7 +141,17 @@ def launch_allowed(
 ) -> bool:
     if candidate is None or not candidate.frozen:
         return False
-    if not candidate.evidence_ledger_ref.strip():
+    # A frozen timestamp alone is not a release freeze. Require every linked
+    # release artifact so an incomplete candidate cannot pass the launch gate.
+    required_refs = (
+        candidate.version,
+        candidate.migration_plan_ref,
+        candidate.environment_manifest_ref,
+        candidate.rollback_ref,
+        candidate.evidence_ledger_ref,
+        candidate.acceptance_checklist_ref,
+    )
+    if any(not value.strip() for value in required_refs):
         return False
     if not re.fullmatch(r"[0-9a-fA-F]{40}", candidate.commit_sha):
         return False

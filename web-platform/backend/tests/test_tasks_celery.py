@@ -1086,7 +1086,8 @@ def test_webhook_destination_rejects_non_global_and_mixed_dns_results(monkeypatc
 
 def test_notification_retries_when_any_subscribed_webhook_fails(testing_db, monkeypatch):
     celery = make_test_celery()
-    task = tasks_module.register_tasks(celery)
+    tasks_module.register_tasks(celery)
+    task = celery.tasks["narrativ.deliver_notification"]
     Session = testing_db
     db = Session()
     organization = Organization(

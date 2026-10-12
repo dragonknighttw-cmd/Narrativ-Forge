@@ -51,13 +51,13 @@ def test_openai_compatible_adapter_normalizes_json(monkeypatch):
             return {"choices": [{"message": {"content": '{"hook":"Hook","script":"Script","scenes":[{"scene_number":1,"purpose":"hook","description":"D","dialogue":"D","duration_seconds":5}]}'}}]}
 
     def fake_post(url, **kwargs):
-        assert url == "https://example.test/v1/chat/completions"
+        assert url == "https://api.groq.com/openai/v1/chat/completions"
         assert kwargs["json"]["model"] == "model"
         assert "response_format" not in kwargs["json"]
         return FakeResponse()
 
     monkeypatch.setattr("app.services.ai_adapter.httpx.post", fake_post)
-    provider = ChatProvider("test", "key", "https://example.test/v1", "model", 1)
+    provider = ChatProvider("groq", "key", "https://api.groq.com/openai/v1", "model", 1)
     plan = OpenAICompatibleAdapter(provider).create_content_plan(idea="test")
     assert plan.hook == "Hook"
     assert plan.script == "Script"
@@ -378,3 +378,21 @@ def test_cloudflare_workers_ai_provider_is_opt_in_and_ordered_after_groq(monkeyp
 
     providers = ai_adapter._configured_chat_providers()
     assert [provider.name for provider in providers] == ["groq", "cloudflare-ai", "gemini"]
+
+
+@pytest.mark.unit
+def test_unknown_provider_name_fails_closed_before_sending_credentials(monkeypatch):
+    from app.services.ai_adapter import OpenAICompatibleAdapter
+
+    called = False
+
+    def fake_post(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("unknown provider must not receive credentials")
+
+    monkeypatch.setattr("app.services.ai_adapter.httpx.post", fake_post)
+    provider = ChatProvider("custom-provider", "test-key", "https://example.test/v1", "model", 1)
+    with pytest.raises(ValueError, match="canonical HTTPS"):
+        OpenAICompatibleAdapter(provider).create_content_plan(idea="test")
+    assert called is False

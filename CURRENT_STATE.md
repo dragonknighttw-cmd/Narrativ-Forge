@@ -23,6 +23,24 @@
 > Owner: Project maintainers  
 > Status rule: implementation, CI, ephemeral worker evidence, authenticated provider behavior, and production acceptance are separate levels.
 
+## Current evidence update — 2026-10-12 UTC
+
+Latest documentation/evidence commits:
+- `1f00697f16a2fcde1cccb83e41750de6a2d092be` records the Groq smoke result and Windows restore fix in `docs/LOCAL_RUNTIME_FOLLOW_UP.md`.
+- `9479e7a6bd056002b6ec9a937c2a1b8fe49656df` updates that follow-up with the final worker/gate results and corrects the earlier stale Windows restore-failure status.
+
+Verified on restore-fix commit `644f4346f59d03b7185531e8621b26a989e502fb`:
+- [Windows Local Runtime Evidence #38199416863](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199416863) passed, including the dedicated SQLite restore regression on Windows Server 2025.
+- [Windows Portable Package Evidence #38199416864](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199416864) passed.
+- [CI #38199416954](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199416954), [Security #38199417025](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199417025), [CodeQL #38199416987](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199416987), [Repository Gate #38199417001](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199417001), [Backup Restore Evidence #38199417034](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199417034), and [Real Worker Evidence #38199416934](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199416934) passed.
+- [Groq free-tier provider smoke #38198919646](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38198919646) passed one synthetic request (HTTP 2xx). It is provider connectivity evidence only, not Burmese transcription-quality or production-provider acceptance.
+
+The documentation-only follow-up commit `1f00697f16a2fcde1cccb83e41750de6a2d092be` also passed [CI #38199602836](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199602836), [Repository Gate #38199602788](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199602788), [CodeQL #38199602760](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199602760), and [Security #38199602710](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199602710).
+
+**Important scope limits:** ephemeral worker evidence is not a continuously running production worker. Synthetic fixtures are not real Burmese speech. Production Render provider flags remain disabled. The restore regression is now verified by the dedicated Windows test; this does not mean managed production disaster recovery has been proven.
+
+Release status remains **PENDING — NOT PRODUCTION READY** until remaining real-media/provider, continuous worker, managed storage/restore, OAuth/Drive, SMTP, Stripe, Sentry, performance, accessibility, legal/compliance, and external security acceptance gates are addressed.
+
 ## Historical pre-PR #42/#43 main snapshot — 2026-10-10 UTC
 
 - Current main SHA: `b75d074ab01b8f9e2ef4058dda03934eb91b3d8a` (PR #38 merge; PR #36 stale-worker recovery and PR #38 retry-exhaustion/DLQ idempotency coverage are included).

@@ -61,3 +61,23 @@ Narrativ Forge uses Unicode Burmese only. Use standard Unicode text and NFC norm
 ## Release status
 
 **PENDING — NOT PRODUCTION READY.** Local synthetic worker evidence is useful progress, but it is not a substitute for the remaining live-provider, real-media, package, operational, security, and acceptance gates.
+
+
+## Security hardening follow-up — 2026-10-12
+
+Latest application-code checkpoint: [`b374df9e1e455e35eaa9847d78fb7c9af70f2393`](https://github.com/dragonknighttw-cmd/Narrativ-Forge/commit/b374df9e1e455e35eaa9847d78fb7c9af70f2393).
+
+- [CI #38201576482](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576482), [Security #38201576514](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576514), [CodeQL #38201576494](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576494), and [Repository Gate #38201576503](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576503) passed on that exact SHA.
+- [Real Worker Evidence #38201576538](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576538), [Windows Portable Package Evidence #38201576528](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576528), [Windows Local Runtime Evidence #38201576459](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576459), and [Local Runtime Evidence #38201576477](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38201576477) also passed.
+- Whisper Worker inference errors are now generic to clients; contract tests verify provider diagnostics are not exposed and invalid processing tokens are rejected before inference.
+- Webhook destination validation now rejects malformed ports, URL-embedded credentials, DNS resolution errors or empty answers, and non-global addresses among resolved results. This reduces exposure to unsafe destinations but is not full DNS-rebinding protection because the HTTP connection is not pinned to the validated IP.
+- These are source/CI checks only. They do not verify real Burmese audio quality, continuous production worker uptime, or managed production disaster recovery.
+
+## Remaining acceptance gates — unchanged
+
+- Human review of an owner-approved real Burmese speech sample.
+- Continuous worker monitoring/recovery and managed storage/database restore drill.
+- OAuth/Drive, SMTP, Stripe, Sentry, load/performance, accessibility, legal/privacy and external security acceptance.
+- Production provider flags remain disabled unless the owner explicitly approves a change.
+
+**Release status: PENDING — NOT PRODUCTION READY.**

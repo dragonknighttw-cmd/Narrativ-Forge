@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 from uuid import uuid4
 
 from app.db import Base
-from app.models import AuditEvent, Episode, FailedJob, Organization, ProcessingJob, Series
+from app.models import AuditEvent, Episode, FailedJob, NotificationEvent, Organization, ProcessingJob, Series, WebhookEndpoint
 import app.db as app_db
 
 from app.api.routes.jobs import retry_job
@@ -1082,3 +1082,75 @@ def test_webhook_destination_rejects_non_global_and_mixed_dns_results(monkeypatc
     with pytest.raises(ValueError, match="non-public"):
         tasks_module._validate_webhook_destination("https://mixed.example.test/events")
 
+
+
+def test_notification_retries_when_any_subscribed_webhook_fails(testing_db, monkeypatch):
+    celery = make_test_celery()
+    task = tasks_module.register_tasks(celery)
+    Session = testing_db
+    db = Session()
+    organization = Organization(
+        name="Webhook retry workspace",
+        slug=f"webhook-retry-{uuid4().hex}",
+        plan="trial",
+    )
+    db.add(organization)
+    db.commit()
+    event = NotificationEvent(
+        organization_id=organization.id,
+        event_type="asset.created",
+        payload_json='{"id":"asset-test"}',
+        status="queued",
+    )
+    db.add(event)
+    db.flush()
+    event_id = event.id
+    db.add_all([
+        WebhookEndpoint(
+            organization_id=organization.id,
+            url="https://success.example/webhook",
+            secret_hash="11" * 32,
+            events_json='["asset.created"]',
+            is_active=True,
+        ),
+        WebhookEndpoint(
+            organization_id=organization.id,
+            url="https://failure.example/webhook",
+            secret_hash="22" * 32,
+            events_json='["asset.created"]',
+            is_active=True,
+        ),
+    ])
+    db.commit()
+    db.close()
+
+    calls = []
+
+    class Response:
+        def __init__(self, should_fail):
+            self.should_fail = should_fail
+
+        def raise_for_status(self):
+            if self.should_fail:
+                raise RuntimeError("receiver unavailable")
+
+    def fake_post(url, **kwargs):
+        calls.append((url, kwargs))
+        return Response("failure.example" in url)
+
+    monkeypatch.setattr(tasks_module, "_validate_webhook_destination", lambda _url: None)
+    monkeypatch.setattr("httpx.post", fake_post)
+
+    with pytest.raises(Exception, match="receiver unavailable"):
+        task.run(event_id)
+
+    verify = Session()
+    persisted = verify.get(NotificationEvent, event_id)
+    assert persisted.status == "failed"
+    assert persisted.delivered_at is None
+    assert persisted.attempts == 1
+    assert "receiver unavailable" in persisted.last_error
+    assert len(calls) == 2
+    # The successful endpoint receives the same event ID used for retry deduplication.
+    assert all(call[1]["headers"]["X-Narrativ-Delivery"] == event_id for call in calls)
+    verify.close()

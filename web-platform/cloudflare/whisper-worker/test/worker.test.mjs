@@ -79,3 +79,79 @@ test("invalid processing tokens are rejected before inference", async () => {
   assert.equal(response.status, 401);
   assert.equal(inferenceCalled, false);
 });
+
+  
+test("oversized declared audio is rejected before the request body is read", async () => {
+  let bodyRead = false;
+  let inferenceCalled = false;
+  const token = await signedToken({
+    sub: "test-user",
+    episode_id: "episode-test",
+    exp: Math.floor(Date.now() / 1000) + 60,
+    max_audio_seconds: 1,
+  });
+  const request = new Request("https://worker.test/", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "audio/wav",
+      "Content-Length": String(50 * 1024 * 1024 + 1),
+      "X-Narrativ-Episode": "episode-test",
+      Origin: "https://harmonious-nasturtium-53a1d6.netlify.app",
+    },
+    body: new ReadableStream({
+      pull(controller) {
+        bodyRead = true;
+        controller.enqueue(new Uint8Array(44));
+        controller.close();
+      },
+    }),
+    duplex: "half",
+  });
+
+  const response = await worker.fetch(request, env(async () => {
+    inferenceCalled = true;
+    return { text: "unexpected" };
+  }));
+
+  assert.equal(response.status, 413);
+  assert.deepEqual(await response.json(), { error: "Audio payload exceeds 50 MB" });
+  assert.equal(bodyRead, false);
+  assert.equal(inferenceCalled, false);
+});
+
+test("chunked audio exceeding the byte cap is rejected before inference", async () => {
+  let inferenceCalled = false;
+  const token = await signedToken({
+    sub: "test-user",
+    episode_id: "episode-test",
+    exp: Math.floor(Date.now() / 1000) + 60,
+    max_audio_seconds: 2000,
+  });
+  const request = new Request("https://worker.test/", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "audio/wav",
+      "X-Narrativ-Episode": "episode-test",
+      Origin: "https://harmonious-nasturtium-53a1d6.netlify.app",
+    },
+    body: new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array(50 * 1024 * 1024));
+        controller.enqueue(new Uint8Array(1));
+        controller.close();
+      },
+    }),
+    duplex: "half",
+  });
+
+  const response = await worker.fetch(request, env(async () => {
+    inferenceCalled = true;
+    return { text: "unexpected" };
+  }));
+
+  assert.equal(response.status, 413);
+  assert.deepEqual(await response.json(), { error: "Audio payload exceeds 50 MB" });
+  assert.equal(inferenceCalled, false);
+});

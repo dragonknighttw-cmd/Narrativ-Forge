@@ -10,8 +10,8 @@
 - **PASS:** Netlify production deploy object is `ready`, and team SSO is required for all projects.
 - **WARNING:** Netlify's published deploy still points to older commit `777fba6ca92ce59e53e741b976bc9ea9692b45c1` (2026-10-06), not the current main SHA. No deploy was triggered to conserve build usage.
 - **PASS at previously tested PR head:** [PR #72](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/72) is open and ready for review (not merged). CI, Security, CodeQL and Repository Gate passed on the prior head `54cb58e1a357e5cae3156d1ca1e2b7cf82661d42`: [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38265774446), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38265774379), [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38265774352), [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38265774779). New workflow runs were triggered by this report refresh and are pending at the latest check.
-- **WARNING:** Render auto-deploy on `main` is enabled. Event history shows several successful builds/deploys triggered by commits within minutes on 2026-10-12; this may consume build quota. Auto-deploy has not been changed because disabling it would alter release behavior.
-- **NOT VERIFIED:** Fresh direct HTTP probes for `/api/v1/health` and `/api/v1/ready`; the probe environment could not resolve the service hostname. Render logs confirm `GET /` returned 200, but this does not prove health/readiness endpoints.
+- **PASS:** Render auto-deploy is now disabled (`autoDeploy=no`, trigger `off`); Render event history records `auto_deploy_disabled` at `2026-10-12T15:30:53Z`. The existing live deployment remains in place; future code changes require an intentional Manual Deploy.
+- **NOT VERIFIED:** Fresh GET-only probes for `/api/v1/health` and `/api/v1/ready` could not be completed from the available environment; the URLs were inaccessible and the Render request-log query returned no entries. `GET /` HTTP 200 does not prove these endpoints.
 - **NOT RUN:** Authenticated real-audio transcription, Burmese quality acceptance, and new Windows local tests.
 
 ## Main blockers
@@ -22,7 +22,7 @@ No paid resources were created, no AI inference was run, no secret values were p
 
 ## Next decisions
 1. Review [PR #72](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/72) after the latest checks complete.
-2. Decide whether to disable Render auto-deploy to avoid builds on every `main` commit; this changes deployment operations and has not been done.
+2. Keep Render auto-deploy disabled to avoid automatic builds on `main`; use Manual Deploy only when intentionally releasing.
 3. Decide whether a one-time Netlify frontend redeploy is worth the build usage; preserve SSO and the build-quota preference.
 4. Explicitly approve or decline quota-consuming authenticated Whisper inference.
 5. Explicitly approve or decline paid persistent worker capacity. None has been created.

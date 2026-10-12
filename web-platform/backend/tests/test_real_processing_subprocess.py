@@ -51,6 +51,19 @@ def test_run_captures_successful_process_output():
     assert result.returncode == 0
 
 
+def test_run_decodes_unicode_output_and_escapes_invalid_utf8():
+    code = (
+        "import sys; "
+        "sys.stdout.buffer.write('မြန်မာ'.encode('utf-8') + b'\\x81'); "
+        "sys.stderr.buffer.write('စာ'.encode('utf-8'))"
+    )
+
+    result = real_processing._run([sys.executable, "-c", code], timeout=5)
+
+    assert result.stdout == "မြန်မာ\\x81"
+    assert result.stderr == "စာ"
+
+
 def test_run_preserves_nonzero_exit_and_captured_output():
     with pytest.raises(subprocess.CalledProcessError) as raised:
         real_processing._run(
@@ -90,14 +103,14 @@ def test_timeout_terminates_child_tree_and_reaps_parent(monkeypatch, tmp_path):
     with pytest.raises(subprocess.TimeoutExpired) as raised:
         real_processing._run(
             [sys.executable, "-c", parent_code, str(child_pid_file), child_code],
-            timeout=0.2,
+            timeout=2,
         )
     elapsed = time.monotonic() - started
 
     assert child_pid_file.exists()
     child_pid = int(child_pid_file.read_text(encoding="utf-8"))
     assert raised.value.output.strip() == "started"
-    assert elapsed >= 0.2
+    assert elapsed >= 2
     assert processes[0].poll() is not None
     _wait_until_dead(child_pid)
 

@@ -123,6 +123,8 @@ def _run(command: list[str], *, timeout: int) -> subprocess.CompletedProcess[str
         "stdout": subprocess.PIPE,
         "stderr": subprocess.PIPE,
         "text": True,
+        "encoding": "utf-8",
+        "errors": "backslashreplace",
     }
     if os.name == "posix":
         process_options["preexec_fn"] = os.setsid
@@ -299,7 +301,6 @@ def _transcribe_cloudflare(source: Path, transcript_dir: Path, episode: Episode,
     if not isinstance(payload, dict) or "text" not in payload:
         raise ValueError("Cloudflare Whisper returned an invalid response")
     payload["source"] = "cloudflare_whisper"
-    payload["language"] = "my"
     payload.setdefault("audio_seconds", duration_seconds)
     payload.setdefault("jti", jti)
 
@@ -331,7 +332,7 @@ def _transcribe_with_fallback(source: Path, transcript_dir: Path, episode: Episo
     try:
         _run(
             [
-                settings.whisper_command, str(source), "--language", "my", "--task", "transcribe",
+                settings.whisper_command, str(source), "--task", "transcribe",
                 "--output_format", "json", "--output_dir", str(transcript_dir), "--model", settings.whisper_model,
             ],
             timeout=settings.processing_timeout_seconds,
@@ -406,7 +407,6 @@ def run_real_job(job_id: str, db: Session, *, already_claimed: bool = False) -> 
 
             transcript = json.loads(whisper_json.read_text(encoding="utf-8"))
             transcript.setdefault("source", "whisper")
-            transcript["language"] = transcript.get("language", "my")
             transcript_path = work_dir / f"{uuid4().hex}_transcript.json"
             transcript_path.write_text(json.dumps(transcript, ensure_ascii=False, indent=2), encoding="utf-8")
 

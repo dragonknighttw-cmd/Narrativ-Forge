@@ -18,18 +18,23 @@ def test_whisper_falls_back_to_local_cli(monkeypatch, tmp_path):
     monkeypatch.setattr(real_processing.settings, "cloudflare_whisper_worker_url", "https://whisper.example.test")
     fallback_events = []
     monkeypatch.setattr(real_processing, "_transcribe_cloudflare", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("remote unavailable")))
+    commands = []
 
     def fake_run(command, *, timeout):
+        commands.append(command)
         fallback_events.append("local")
         output = transcript_dir / f"{source.stem}.json"
-        output.write_text(json.dumps({"text": "fallback"}), encoding="utf-8")
+        output.write_text(json.dumps({"text": "fallback", "language": "zh"}), encoding="utf-8")
         return None
 
     monkeypatch.setattr(real_processing, "_run", fake_run)
     db = SimpleNamespace(rollback=lambda: fallback_events.append("rollback"))
     result = real_processing._transcribe_with_fallback(source, transcript_dir, episode, db)
     assert result.is_file()
-    assert json.loads(result.read_text(encoding="utf-8"))["text"] == "fallback"
+    payload = json.loads(result.read_text(encoding="utf-8"))
+    assert payload["text"] == "fallback"
+    assert payload["language"] == "zh"
+    assert "--language" not in commands[0]
     assert fallback_events == ["rollback", "local"]
 
 
@@ -103,6 +108,7 @@ def test_cloudflare_whisper_uses_signed_bearer_wav_contract(monkeypatch, tmp_pat
     payload = json.loads(result.read_text(encoding="utf-8"))
     assert payload["source"] == "cloudflare_whisper"
     assert payload["text"] == "မင်္ဂလာပါ"
+    assert "language" not in payload
     request = next(item for item in calls if item[0] == "https://whisper.example.test")
     lock_index = next(index for index, item in enumerate(calls) if item[0] == "db_lock")
     reservation_index = next(

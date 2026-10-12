@@ -99,7 +99,7 @@ Read in this order:
 5. `TOOL.md` — engineering/documentation workflow.
 6. `SECURITY.md` — security policy.
 7. `docs/OPENCODE_FREE_MODELS.md` — OpenCode + OpenRouter free coding model setup and privacy notes.
-8. `docs/LOCAL_RUNTIME_FOLLOW_UP.md` — latest Windows local-runtime evidence, known deferred failure, Unicode-only policy, and next free-first Groq smoke gate.
+8. `docs/LOCAL_RUNTIME_FOLLOW_UP.md` — Windows local-runtime and SQLite restore evidence, Groq synthetic smoke evidence, Unicode-only policy, and remaining free-first acceptance gates.
 9. `docs/*` — domain references.
 
 Canonical domain documents:

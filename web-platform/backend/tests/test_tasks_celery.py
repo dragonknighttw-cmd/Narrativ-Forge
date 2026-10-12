@@ -1142,16 +1142,19 @@ def test_notification_retries_when_any_subscribed_webhook_fails(testing_db, monk
     monkeypatch.setattr(tasks_module, "_validate_webhook_destination", lambda _url: None)
     monkeypatch.setattr("httpx.post", fake_post)
 
+    # Use Celery's eager apply path rather than calling .run() directly: this
+    # exercises the autoretry wrapper and proves retries are actually attempted.
     with pytest.raises(Exception, match="receiver unavailable"):
-        task.run(event_id)
+        task.apply(args=(event_id,))
 
     verify = Session()
     persisted = verify.get(NotificationEvent, event_id)
     assert persisted.status == "failed"
     assert persisted.delivered_at is None
-    assert persisted.attempts == 1
+    assert persisted.attempts == 6  # initial attempt plus max_retries=5
     assert "receiver unavailable" in persisted.last_error
-    assert len(calls) == 2
-    # The successful endpoint receives the same event ID used for retry deduplication.
+    assert len(calls) == 12  # both eligible endpoints are visited on every attempt
+    # The stable delivery ID lets each receiver deduplicate retries safely.
     assert all(call[1]["headers"]["X-Narrativ-Delivery"] == event_id for call in calls)
+    assert task.max_retries == 5
     verify.close()

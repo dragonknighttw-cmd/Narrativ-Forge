@@ -544,3 +544,6 @@ This section supersedes the older statement above that the request-size hardenin
 - The combined-status connector returned no status objects for this SHA, so this note does not claim fresh green CI checks for `95aa9163`; use the linked workflow run for Worker deployment evidence and the individual Actions runs for other gates.
 - **Still blocked:** continuous media-worker capacity, authenticated real-audio/Burmese transcription acceptance, production provider/fallback behavior, managed production backup/restore, external integration acceptance, performance/accessibility/legal/security sign-off. No paid resource was created and no quota-consuming inference was run.
 - **Release remains PENDING — NOT PRODUCTION READY.**
+
+
+- **Netlify rechecked after this note was drafted:** the currently published production deploy is `6ac4f8aba9c7aa00082031dc`, state `ready`, but it still points to old main commit `777fba6ca92ce59e53e741b976bc9ea9692b45c1` from 2026-10-06, not current main SHA `95aa9163cc40383a8c44c3a5f445e4de899116e4`. Netlify project access currently requires team SSO for all projects. Neither deploy nor access settings were changed. See [published deploy](https://app.netlify.com/projects/harmonious-nasturtium-53a1d6) and [source commit](https://github.com/dragonknighttw-cmd/Narrativ-Forge/commit/777fba6ca92ce59e53e741b976bc9ea9692b45c1).

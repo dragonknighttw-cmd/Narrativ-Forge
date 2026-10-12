@@ -347,12 +347,14 @@ def register_tasks(celery_app):
                 WebhookEndpoint.is_active.is_(True),
             ).all()
             payload = event.payload_json.encode()
-            delivered = False
+            eligible_endpoints = 0
+            failed_deliveries = 0
             last_error = None
             for endpoint in endpoints:
                 events = json.loads(endpoint.events_json or "[]")
                 if events and event.event_type not in events:
                     continue
+                eligible_endpoints += 1
                 secret = (Fernet(settings.oauth_encryption_key.encode()).decrypt(endpoint.secret_encrypted.encode()) if endpoint.secret_encrypted and settings.oauth_encryption_key else bytes.fromhex(endpoint.secret_hash))
                 signature = hmac.new(secret, payload, hashlib.sha256).hexdigest()
                 try:
@@ -364,21 +366,27 @@ def register_tasks(celery_app):
                             "Content-Type": "application/json",
                             "X-Narrativ-Event": event.event_type,
                             "X-Narrativ-Signature": "sha256=" + signature,
+                            # Stable across retries so receivers can deduplicate deliveries.
                             "X-Narrativ-Delivery": event.id,
                         },
                         timeout=10.0,
                     )
                     response.raise_for_status()
-                    delivered = True
                 except Exception as exc:
+                    failed_deliveries += 1
                     last_error = str(exc)[:4000]
             event.attempts = self.request.retries + 1
             event.last_error = last_error
-            event.status = "delivered" if delivered else "failed"
-            if delivered:
+            event.status = "delivered" if eligible_endpoints > 0 and failed_deliveries == 0 else "failed"
+            if event.status == "delivered":
                 event.delivered_at = _now()
+            else:
+                event.delivered_at = None
             db.commit()
-            if not delivered and endpoints:
+            # Do not mark the organization-wide event delivered when even one
+            # subscribed endpoint failed. Celery retries the event; successful
+            # receivers should use the stable X-Narrativ-Delivery ID to dedupe.
+            if failed_deliveries:
                 raise RuntimeError(last_error or "Webhook delivery failed")
             return notification_id
         finally:

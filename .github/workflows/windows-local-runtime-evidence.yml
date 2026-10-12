@@ -104,6 +104,11 @@ jobs:
           if ((Get-Content -Raw $marker) -ne "local-storage-write-ok") { throw "Storage write/read failed" }
           python -c "from sqlalchemy import create_engine, text; import os; e=create_engine(os.environ['DATABASE_URL']); c=e.connect(); c.execute(text('SELECT 1')); c.close(); e.dispose(); print('SQLite connection: PASS')"
 
+      - name: Verify SQLite restore closes file handles on Windows
+        run: |
+          python -m pip install pytest
+          python -m pytest tests/test_root_restore_db.py -q
+
       - name: Write verification manifest
         if: always()
         env:

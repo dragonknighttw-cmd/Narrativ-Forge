@@ -2,7 +2,7 @@
 
 > Owner: Engineering/QA  
 > Update when: test suites, release gates, or evidence requirements change  
-> Last Updated: 2026-10-11  
+> Last Updated: 2026-10-12  
 > Do NOT put here: unsupported live claims
 
 ## Test layers
@@ -14,7 +14,7 @@
 5. Browser E2E with Playwright.
 6. Cross-tenant E2E.
 7. Representative real-media worker E2E.
-8. Burmese media acceptance with an owner-approved speech sample and human transcript/subtitle review; follow [BURMESE_MEDIA_ACCEPTANCE.md](BURMESE_MEDIA_ACCEPTANCE.md).
+8. Burmese media acceptance with an owner-approved speech sample and human transcript/subtitle review; follow [BURMESE_MEDIA_ACCEPTANCE.md](BURMESE_MEDIA_ACCEPTANCE.md). The latest sample's technical preflight is recorded in [BURMESE_SAMPLE_PREFLIGHT_2026-10-12.md](Report/BURMESE_SAMPLE_PREFLIGHT_2026-10-12.md); this is not speech-quality acceptance.
 9. Load/performance benchmark.
 10. Security/dependency/container scanning.
 11. Accessibility automated + manual review.

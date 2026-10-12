@@ -52,7 +52,8 @@ def build_seo_metadata(title: str, topic: str, keywords: list[str] | None = None
         value = " ".join(str(value).split()).strip().lstrip("#")
         if value and value not in terms:
             terms.append(value[:80])
-    hashtags = tuple(f"#{re.sub(r'[^0-9A-Za-z\u1000-\u109F]+', '', value)}" for value in terms[:8])
+    # Keep the regex outside an f-string expression for Python 3.11 compatibility.
+    hashtags = tuple("#" + re.sub(r"[^0-9A-Za-zက-႟]+", "", value) for value in terms[:8])
     hashtags = tuple(tag for tag in hashtags if tag != "#")
     return {
         "title": clean_title,

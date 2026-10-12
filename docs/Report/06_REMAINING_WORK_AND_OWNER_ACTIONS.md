@@ -4,20 +4,22 @@
 
 ## Safe work already completed
 - Worker deploy verified successful; deployed version and binding presence confirmed using metadata only.
-- Render latest deployment confirmed live and startup logs show HTTP 200 for `GET /`.
+- Render latest deployment confirmed live and startup logs show `GET /` HTTP 200.
+- Render event history shows several successful main-branch builds/deploys within minutes on 2026-10-12. Auto-deploy remains enabled; no setting changed because disabling it changes release behavior.
 - Netlify current deploy and SSO policy rechecked.
-- Report pack prepared on a documentation branch; PR checks passed at the previously observed PR head. Recheck checks after the final documentation commits.
+- Report pack is on [PR #72](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/72), now open and ready for review (not merged). Latest observed head `54cb58e1a357e5cae3156d1ca1e2b7cf82661d42` passed [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38265774446), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38265774379), [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38265774352) and [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38265774779).
 
 ## Ordered remaining work
 
 ### P0 — Decide release and spend boundaries
-- [ ] Review [draft PR #72](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/72); do not merge until current checks and Render build implications are understood.
+- [ ] Review PR #72; do not merge until Render build implications are understood.
+- [ ] Decide whether to disable Render auto-deploy on `main`. Several commits triggered builds in a short period; disabling auto-deploy would reduce automatic builds but require intentional/manual release deployment. No setting changed.
 - [ ] Decide whether one-time Netlify redeploy is approved. Current published deploy is stale; no deploy was triggered to conserve build usage.
 - [ ] Explicitly approve or decline any quota-consuming authenticated Whisper inference.
 - [ ] Explicitly approve or decline paid persistent worker capacity. None has been created.
 
 ### P1 — Safe runtime verification
-- [ ] Capture fresh GET-only HTTP status and redacted response for Render `/api/v1/health` and `/api/v1/ready`; do not treat historical checks as current.
+- [ ] Capture fresh GET-only HTTP status and redacted response for Render `/api/v1/health` and `/api/v1/ready`; direct probe attempt from this environment failed at DNS resolution, so endpoint status remains unknown.
 - [ ] Confirm worker architecture and queue ownership; API service metadata alone does not establish a continuous media worker.
 - [ ] Verify auth, rate limits, CORS/origin policy and cross-tenant isolation without disclosing credentials.
 - [ ] Confirm database migration head and managed backup/restore procedures.

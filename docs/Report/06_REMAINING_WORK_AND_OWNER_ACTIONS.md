@@ -5,7 +5,7 @@
 ## Safe work already completed
 - Worker deploy verified successful; deployed version and binding presence confirmed using metadata only.
 - Render latest deployment confirmed live and startup logs show `GET /` HTTP 200.
-- Render event history shows several successful main-branch builds/deploys within minutes on 2026-10-12. Auto-deploy remains enabled; no setting changed because disabling it changes release behavior.
+- Render auto-deploy was disabled by the owner. Read-only service metadata confirms `autoDeploy=no` / trigger `off`, and event history records `auto_deploy_disabled` at `2026-10-12T15:30:53Z`. Existing live deployment was not changed.
 - Netlify current deploy and SSO policy rechecked.
 - Report pack is on [PR #72](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/72), open and ready for review (not merged). CI, Security, CodeQL and Repository Gate passed on prior head `54cb58e1a357e5cae3156d1ca1e2b7cf82661d42`; new runs triggered by report refresh commits are pending. Check [PR #72](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/72) for the current results.
 
@@ -13,13 +13,13 @@
 
 ### P0 — Decide release and spend boundaries
 - [ ] Review PR #72 after latest checks complete; do not merge until Render build implications are understood.
-- [ ] Decide whether to disable Render auto-deploy on `main`. Several commits triggered builds in a short period; disabling auto-deploy would reduce automatic builds but require intentional/manual release deployment. No setting changed.
+- [x] Disable Render auto-deploy on `main` to reduce automatic builds. Confirmed via service metadata and `auto_deploy_disabled` event. Future releases require intentional Manual Deploy.
 - [ ] Decide whether one-time Netlify redeploy is approved. Current published deploy is stale; no deploy was triggered to conserve build usage.
 - [ ] Explicitly approve or decline any quota-consuming authenticated Whisper inference.
 - [ ] Explicitly approve or decline paid persistent worker capacity. None has been created.
 
 ### P1 — Safe runtime verification
-- [ ] Capture fresh GET-only HTTP status and redacted response for Render `/api/v1/health` and `/api/v1/ready`; direct probe attempt from this environment failed at DNS resolution, so endpoint status remains unknown.
+- [ ] Capture fresh GET-only HTTP status and redacted response for Render `/api/v1/health` and `/api/v1/ready`; available probe/web access could not reach the URLs, and Render request logs returned no entries. Endpoint status remains unknown.
 - [ ] Confirm worker architecture and queue ownership; API service metadata alone does not establish a continuous media worker.
 - [ ] Verify auth, rate limits, CORS/origin policy and cross-tenant isolation without disclosing credentials.
 - [ ] Confirm database migration head and managed backup/restore procedures.

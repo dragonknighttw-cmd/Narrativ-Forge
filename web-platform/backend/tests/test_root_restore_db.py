@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -21,12 +22,14 @@ def test_sqlite_restore_replaces_target_only_after_integrity_check(tmp_path: Pat
     source = tmp_path / "backup.sqlite"
     target = tmp_path / "target.sqlite"
 
-    with sqlite3.connect(source) as db:
+    with closing(sqlite3.connect(source)) as db:
         db.execute("CREATE TABLE evidence (value TEXT NOT NULL)")
         db.execute("INSERT INTO evidence(value) VALUES ('from-backup')")
-    with sqlite3.connect(target) as db:
+        db.commit()
+    with closing(sqlite3.connect(target)) as db:
         db.execute("CREATE TABLE evidence (value TEXT NOT NULL)")
         db.execute("INSERT INTO evidence(value) VALUES ('old-target')")
+        db.commit()
 
     restore_db.restore_sqlite(source, target)
 
@@ -56,6 +59,9 @@ def test_sqlite_restore_does_not_replace_target_when_integrity_check_fails(
 
         def fetchone(self):
             return ("database disk image is malformed",)
+
+        def close(self):
+            return None
 
     monkeypatch.setattr(restore_db, "sqlite3", SimpleNamespace(connect=lambda _path: FailedIntegrityCheck()))
 

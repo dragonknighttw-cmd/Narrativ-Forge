@@ -455,8 +455,17 @@ def create_notification(payload: NotificationCreate, membership=Depends(current_
     db.refresh(event)
     try:
         get_celery().send_task("narrativ.deliver_notification", args=[event.id])
-    except Exception:
-        pass
+    except Exception as exc:
+        # Do not report a queued event when the broker rejected publication.
+        # Keep the persisted event visible for diagnosis without exposing broker
+        # details in the API response.
+        event.status = "failed"
+        event.last_error = "Notification could not be queued"
+        db.commit()
+        raise HTTPException(
+            status_code=503,
+            detail="Notification was saved but could not be queued",
+        ) from exc
     return {"id": event.id, "status": event.status}
 
 @router.get("/notifications")

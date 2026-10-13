@@ -7,6 +7,7 @@ import signal
 import subprocess
 import tempfile
 import requests
+import re
 import time
 import base64
 import hashlib
@@ -352,6 +353,18 @@ def _transcribe_with_fallback(source: Path, transcript_dir: Path, episode: Episo
         whisper_json = candidates[0]
     return whisper_json
 
+MYANMAR_SCRIPT_RE = re.compile(r"[\\u1000-\\u109F]")
+
+
+def _transcript_contains_myanmar_script(transcript: dict) -> bool:
+    """Return whether Whisper emitted any Myanmar-script characters in its transcript."""
+    parts = [str(transcript.get("text") or "")]
+    segments = transcript.get("segments") or []
+    if isinstance(segments, list):
+        parts.extend(str(segment.get("text") or "") for segment in segments if isinstance(segment, dict))
+    return bool(MYANMAR_SCRIPT_RE.search(" ".join(parts)))
+
+
 def run_real_job(job_id: str, db: Session, *, already_claimed: bool = False) -> ProcessingJob:
     job = db.get(ProcessingJob, job_id)
     if not job:
@@ -407,6 +420,13 @@ def run_real_job(job_id: str, db: Session, *, already_claimed: bool = False) -> 
 
             transcript = json.loads(whisper_json.read_text(encoding="utf-8"))
             transcript.setdefault("source", "whisper")
+            if not _transcript_contains_myanmar_script(transcript):
+                return _fail(
+                    job,
+                    "ASR_LANGUAGE_MISMATCH",
+                    "Speech recognition returned no Myanmar-script text; verify the source language and Whisper language detection before retrying.",
+                    db,
+                )
             transcript_path = work_dir / f"{uuid4().hex}_transcript.json"
             transcript_path.write_text(json.dumps(transcript, ensure_ascii=False, indent=2), encoding="utf-8")
 

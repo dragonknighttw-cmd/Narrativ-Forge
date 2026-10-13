@@ -1,6 +1,19 @@
 # Narrativ Forge — Current State
 
-## Latest post-merge checkpoint — 2026-10-13 UTC
+## Latest application-code checkpoint — 2026-10-14 UTC (SHA `67deb66`)
+
+- Direct-main implementation commits `6a6f54e` and `67deb66` complete the Phase 1 & Phase 2 Core Platform features:
+  - 8 canonical hook families with authentic Burmese templates (`hook_engineering.py`).
+  - 5-episode batch generator with narrative arc progression and DB persistence (`batch_generator.py`).
+  - Script Studio AI Assistant & Scene Breakdown Auto-Pacing (`script/page.tsx`, `scenes/page.tsx`).
+  - Thumbnail candidate workflow: 10 candidates generated -> top 5 shortlisted by CTR -> 1 human approved (`thumbnail_candidate.py`, `review/page.tsx`).
+  - Subtitle Studio micro-nudge (`±0.1s`, `±0.5s`), split/merge/add/delete cue, and `Ctrl+S` hotkey (`subtitle/page.tsx`).
+  - Burmese typography stack (`Padauk`, `Pyidaungsu`, `line-height: 1.75`), and 390–430px mobile drawer (`app-shell.tsx`).
+  - Voyage AI 512-dim RAG vector schema guard & semantic search endpoint (`rag_embeddings.py`, `search.py`).
+- All 12 focused backend unit tests and frontend TypeScript typecheck (`tsc --noEmit`) pass cleanly.
+- Release status remains **PENDING — NOT PRODUCTION READY**. Live cloud AI quota consumption and paid Celery background workers are explicitly postponed to the Final Pre-Production Gate per owner direction.
+
+## Previous post-merge checkpoint — 2026-10-13 UTC
 
 - PR #73 (Burmese ASR script guard) merged as `c04a17d76f7f2ee42a8ad9a0fff620c9af75b869`; PR #72 (cloud status/report refresh) merged as `dfff46a5335833723e403b70fa54ff8ba8cc0100`.
 - Application-code checkpoint after both merges: `dfff46a5335833723e403b70fa54ff8ba8cc0100`. The documentation reconciliation preceding this update was `49dcacb25d88a5f4b78a6aa287245fc0c53978ed`; this change is documentation-only.

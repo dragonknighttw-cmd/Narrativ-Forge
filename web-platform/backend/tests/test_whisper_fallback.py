@@ -211,5 +211,7 @@ def test_transcript_script_guard_accepts_myanmar_script_in_segments():
 
 
 @pytest.mark.unit
-def test_transcript_script_guard_rejects_empty_transcript():
+def test_empty_transcript_is_not_misclassified_as_language_mismatch():
+    # Synthetic silence/tone media legitimately produces no transcript text.
+    assert not real_processing._transcript_contains_text({})
     assert not real_processing._transcript_contains_myanmar_script({})

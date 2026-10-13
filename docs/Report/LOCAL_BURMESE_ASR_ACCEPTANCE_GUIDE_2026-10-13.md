@@ -19,7 +19,7 @@
 7. The Myanmar Unicode check is only a script-presence guard. A few Myanmar characters do not prove that a transcript is correct Burmese.
 8. If the exact main commit, test command, or provider configuration cannot be verified, stop and document the blocker rather than guessing.
 
-## 1. Confirm repository and exact PR head
+## 1. Confirm repository and exact main commit
 
 Run in **PowerShell** from the repository root:
 
@@ -290,7 +290,7 @@ Create/update `docs/Report/ASR_BURMESE_LOCAL_ACCEPTANCE_RESULTS_YYYY-MM-DD.md` u
 - Root cause established or still unknown:
 - Evidence paths:
 - Follow-up code changes proposed (if any):
-- Explicit approval still needed for merge/deployment:
+- Explicit approval still needed for remote inference/deployment:
 ```
 
 Store raw JSON and logs in a local ignored/temp artifact directory. Commit only the sanitized report and appropriate non-sensitive test evidence. Never commit source media, secrets, raw personal audio, or tokens.
@@ -302,10 +302,6 @@ Store raw JSON and logs in a local ignored/temp artifact directory. Commit only 
 Copy and paste this prompt when local execution is available:
 
 > Read and follow `docs/Report/LOCAL_BURMESE_ASR_ACCEPTANCE_GUIDE_2026-10-13.md` from top to bottom. Treat it as the required procedure, not optional suggestions. First verify the current `main` branch and exact main SHA. Do not discard local changes. Run the focused Whisper tests and backend unit/security tests; then compare local Whisper auto-detection and forced Burmese on the exact same reference audio and same model, preserving separate raw JSON outputs. Verify local-only routing before any application-path run. Complete the script-guard, empty-transcript, source-integrity, transcript retrieval, subtitle-timing, and playback checks that are possible. Do not call Cloudflare inference, consume quota, change production configuration, deploy, merge any PR, or edit test expectations just to get a pass. Do not translate or rewrite model output. If a step cannot run, mark it BLOCKED with the exact command/error and continue only where safe. Write sanitized results to `docs/Report/ASR_BURMESE_LOCAL_ACCEPTANCE_RESULTS_YYYY-MM-DD.md`, summarize PASS/FAIL/BLOCKED evidence, and stop for maintainer review before proposing or applying further code changes. Do not claim success without logs or artifacts supporting it.
-
-
-
-
 
 ## Post-merge note — 2026-10-13
 

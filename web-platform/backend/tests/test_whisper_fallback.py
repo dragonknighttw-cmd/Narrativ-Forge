@@ -192,3 +192,24 @@ def test_cloudflare_whisper_skips_remote_when_daily_quota_threshold_reached(monk
     assert any(item[0] == "lock" for item in db_calls)
     assert not any(item[0] == "add" for item in db_calls)
     assert not any(item[0] == "commit" for item in db_calls)
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_rejects_chinese_only_output():
+    assert not real_processing._transcript_contains_myanmar_script({
+        "text": "这是关于 ChatGPT 模型的讨论",
+        "segments": [{"text": "人工智能模型"}],
+    })
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_accepts_myanmar_script_in_segments():
+    assert real_processing._transcript_contains_myanmar_script({
+        "text": "ChatGPT model",
+        "segments": [{"text": "မြန်မာလို ဆွေးနွေးထားပါတယ်"}],
+    })
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_rejects_empty_transcript():
+    assert not real_processing._transcript_contains_myanmar_script({})

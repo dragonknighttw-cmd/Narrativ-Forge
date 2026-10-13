@@ -71,21 +71,25 @@ To guarantee security and eliminate accidental key misuse:
 ## 5. Execution Roadmap & Staged Ordering
 
 ```
-[ Phase 1: Core Platform Foundations ] (CURRENT)
-├── Frontend UI & Navigation (Next.js 14)
-├── User Authentication & Workspace / Tenant Isolation
-├── Scriptwriting & Content Plan UI (Mocked / Free AI)
-├── Video Episode Management & Story Lifecycle
-└── Automated Unit / Integration / Security CI Tests (Zero Quota)
+[ Phase 1: Core Platform Foundations ] — STATUS: DONE IN REPOSITORY
+├── Frontend UI & Navigation (Next.js 14, 25 routes, mobile drawer, Burmese typography) [DONE]
+├── User Authentication & Workspace / Tenant Isolation [DONE]
+├── Scriptwriting & Content Plan UI (8 Canonical Hook families, AI Script & Scene generator) [DONE]
+├── Video Episode Management & 5-Episode Batch Generator [DONE]
+├── Thumbnail Candidate Workflow (10 generated -> 5 shortlisted -> 1 human approved) [DONE]
+├── Subtitle Studio (Cue micro-nudge ±0.1s/±0.5s, split/merge/add/delete, Ctrl+S) [DONE]
+├── RAG Vector Dimension Alignment (Voyage 512-dim schema guard & semantic search) [DONE]
+└── Automated Unit / Integration / Security CI Tests (Zero Quota, 281+ tests) [DONE / VERIFIED]
 
                      │
                      ▼
-[ Phase 2: Final Pre-Production Live Acceptance Gate ] (FINAL PRE-LAUNCH)
-├── Provision Render Persistent Background Worker
-├── Connect Cloud Storage (Cloudinary / B2)
-├── Verify Live Cloudflare Whisper Worker Inference
-├── Multi-Provider Live API Smoke Check (Gemini, Groq, Mistral, Cohere, Voyage)
+[ Phase 2: Final Pre-Production Live Acceptance Gate ] — STATUS: PENDING (FINAL PRE-LAUNCH)
+├── Provision Render Persistent Background Worker (Paid compute plan)
+├── Connect Cloud Storage (Cloudinary / B2 live buckets)
+├── Verify Live Cloudflare Whisper Worker Inference (Real audio)
+├── Multi-Provider Live API Smoke Check (Gemini, Groq, Mistral, Cohere, Voyage, Agnes)
 ├── Real Video Upload → Worker → Whisper → Subtitle → Video Render E2E
 ├── Production Backup & Restore Drill
 └── Launch / Production Certification
 ```
+

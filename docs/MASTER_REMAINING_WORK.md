@@ -3,12 +3,13 @@
 ## Strategic Realignment — 2026-10-13 UTC
 - **Live Media Processing & Live Cloud API Inference Postponed to Final Pre-Production Gate:** Per owner direction, real-media video uploading, Celery worker capacity provisioning, Cloudflare Whisper live inference, and live API quota consumption (Gemini, Groq, Mistral, Cohere, Voyage, Agnes) are explicitly scheduled for the **Final Pre-Production Acceptance Gate**.
 - **Current Active Development Focus:** UI, auth/workspaces, script/story management, database schema, and deterministic mocked tests. This prevents premature quota expenditure and decouples frontend/backend feature delivery from live media worker costs.
-- **Phase 2 Core Platform Capabilities Implemented (2026-10-13):**
+- **Phase 1 & Phase 2 Core Platform Capabilities Implemented (2026-10-13):**
   1. *AI Prompt Engineering & 5-Episode Batch Generator:* 8 canonical hook families (`question`, `shock`, `mystery`, `warning`, `personal_story`, `contrarian`, `cliffhanger`, `number`), authentic Burmese prompt templates, and backend/frontend 5-episode mini-series batch generator (`/auto/batch-generate`).
-  2. *Thumbnail Candidate Workflow:* 10 candidate thumbnails generated -> top 5 shortlisted by CTR score -> 1 human approved via Review Center, saving metadata and creating/approving the thumbnail asset.
-  3. *Subtitle Studio UI Enhancements:* Cue timestamp nudge controls (`±0.1s`, `±0.5s`), split cue, merge cue, add cue after, delete cue, and keyboard shortcut navigation (`Ctrl+S`).
-  4. *UI/UX Polish & Burmese Typography:* Integrated `Padauk` and `Pyidaungsu` Burmese font stack fallbacks, `line-height: 1.75` for diacritic clearance, and responsive 390–430px mobile navigation drawer.
-  5. *RAG Vector Dimension Alignment:* Voyage AI `voyage-3-lite` 512-dimension vector schema, validation guard against dimension mismatch, cosine similarity, and semantic retrieval endpoint.
+  2. *Script Studio & Scene Breakdown AI Assistant:* Integrated canonical hook selector, auto-plan generator (`POST /auto/episodes/{id}/plan`), and automatic scene breakdown from script directly into the Script Studio and Scene Breakdown UI.
+  3. *Thumbnail Candidate Workflow:* 10 candidate thumbnails generated -> top 5 shortlisted by CTR score -> 1 human approved via Review Center, saving metadata and creating/approving the thumbnail asset.
+  4. *Subtitle Studio UI Enhancements:* Cue timestamp nudge controls (`±0.1s`, `±0.5s`), split cue, merge cue, add cue after, delete cue, and keyboard shortcut navigation (`Ctrl+S`).
+  5. *UI/UX Polish & Burmese Typography:* Integrated `Padauk` and `Pyidaungsu` Burmese font stack fallbacks, `line-height: 1.75` for diacritic clearance, and responsive 390–430px mobile navigation drawer.
+  6. *RAG Vector Dimension Alignment:* Voyage AI `voyage-3-lite` 512-dimension vector schema, validation guard against dimension mismatch, cosine similarity, and semantic retrieval endpoint.
 
 
 ## Fresh checkpoint — 2026-10-13 UTC (main `e21f98d29cf1ece43bc6a4550a02eb676f196d3a`)

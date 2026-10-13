@@ -158,6 +158,13 @@ export const api = {
     episodes?: Array<{ id: string; public_id: string; episode_number: number; title: string; status: string; current_step: string }>;
     message: string;
   }>("/auto/batch-generate", { method: "POST", body: JSON.stringify(data) }),
+  autoPlanEpisode: (episodeId: string, data: { idea: string; category?: string }) => request<{
+    episode_id: string;
+    script: { id: string; version: number; status: string; content: string };
+    scenes: Array<{ id: string; scene_number: number; purpose: string; description: string; dialogue: string; duration_seconds: number }>;
+    next_step: string;
+    requires_human_review: boolean;
+  }>(`/auto/episodes/${episodeId}/plan`, { method: "POST", body: JSON.stringify(data) }),
   uploadAsset: async (episodeId: string, file: File, assetType: string, sceneId?: string) => {
     if (file.size <= 0) throw new Error("Choose a non-empty file to upload");
     const resumeKey = `nf-upload:${episodeId}:${assetType}:${sceneId ?? ""}:${file.name}:${file.size}:${file.lastModified}`;

@@ -7,6 +7,13 @@ import { ErrorState } from "../../../../components/domain-forms";
 import { api, Episode, Subtitle, SubtitleCue } from "../../../../lib/api";
 import { transcribeVideoWithCloudflare } from "../../../../lib/cloud-whisper";
 
+const STYLE_PRESETS = [
+  { id: "yellow_bold", name: "Yellow Punch", color: "#facc15", textShadow: "2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000", bg: "transparent" },
+  { id: "clean_white", name: "Clean White", color: "#ffffff", textShadow: "0 2px 4px rgba(0,0,0,0.8)", bg: "transparent" },
+  { id: "neon_cyan", name: "Neon Cyan", color: "#38bdf8", textShadow: "0 0 8px rgba(56,189,248,0.8), 2px 2px 0px #000", bg: "transparent" },
+  { id: "black_pill", name: "Classic Box", color: "#ffffff", textShadow: "none", bg: "rgba(0,0,0,0.75)" },
+];
+
 export default function SubtitleStudioPage({ params }: { params: { id: string } }) {
   const episodeId = params.id;
   const [episode, setEpisode] = useState<Episode | null>(null);
@@ -17,6 +24,11 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
   const [cloudFile, setCloudFile] = useState<File | null>(null);
   const [cloudProgress, setCloudProgress] = useState("");
   const [cloudUsage, setCloudUsage] = useState<{ audio_minutes: number; estimated_neurons: number; usage_ratio: number; warning: boolean; fallback_required: boolean } | null>(null);
+
+  // Subtitle Styling & Player Sync State
+  const [selectedStyle, setSelectedStyle] = useState("yellow_bold");
+  const [previewCueIndex, setPreviewCueIndex] = useState(0);
+  const [fontSize, setFontSize] = useState(20);
 
   async function load() {
     try {
@@ -214,6 +226,116 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
           </div>
         </section>
         {errors.length > 0 && <section className="card"><div className="eyebrow">TIMING WARNINGS / QUALITY GATE</div><div className="list">{errors.map((item: Subtitle["validation_errors"][number], i: number) => <div className="list-card" key={i}><strong>{item.code}</strong><span className="muted">Cue {item.cue ?? "—"} · {item.message}</span></div>)}</div></section>}
+
+        {/* 9:16 Video Player Sync & Subtitle Styling Preview */}
+        <section className="card">
+          <div className="eyebrow">9:16 LIVE SUBTITLE & VIDEO PLAYER PREVIEW</div>
+          <h2>Interactive Styling & Audio Ducking Preview</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem", marginTop: "1rem" }}>
+            {/* 9:16 Mobile Canvas Simulation */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{
+                width: "240px",
+                height: "426px",
+                borderRadius: "16px",
+                border: "3px solid #334155",
+                background: "linear-gradient(180deg, #090d16 0%, #1e1b4b 100%)",
+                position: "relative",
+                overflow: "hidden",
+                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                padding: "16px",
+              }}>
+                {/* Simulated Status */}
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>
+                  <span>● LIVE</span>
+                  <span>9:16 PORTRAIT</span>
+                </div>
+
+                {/* Subtitle Cue Overlay */}
+                <div style={{
+                  textAlign: "center",
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  background: STYLE_PRESETS.find(s => s.id === selectedStyle)?.bg,
+                  marginBottom: "40px",
+                }}>
+                  <p className="burmese-text" style={{
+                    color: STYLE_PRESETS.find(s => s.id === selectedStyle)?.color,
+                    textShadow: STYLE_PRESETS.find(s => s.id === selectedStyle)?.textShadow,
+                    fontSize: `${fontSize}px`,
+                    fontWeight: 700,
+                    margin: 0,
+                    lineHeight: 1.6,
+                  }}>
+                    {subtitle.cues[previewCueIndex]?.text || "မြန်မာစာတန်းထိုး နမူနာ ကြည့်ရှုရန်"}
+                  </p>
+                </div>
+
+                {/* Audio Ducking Indicator */}
+                <div style={{ background: "rgba(0,0,0,0.6)", borderRadius: "6px", padding: "4px 8px", fontSize: "10px", color: "#10b981", display: "flex", justifyContent: "space-between" }}>
+                  <span>🔊 Speech active</span>
+                  <span>BGM ducked (-12dB)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Styling Controls */}
+            <div className="stack-form">
+              <div>
+                <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.875rem", fontWeight: 600 }}>Visual Style Preset</label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.5rem" }}>
+                  {STYLE_PRESETS.map(presetItem => (
+                    <button
+                      type="button"
+                      key={presetItem.id}
+                      onClick={() => setSelectedStyle(presetItem.id)}
+                      className={selectedStyle === presetItem.id ? "primary" : "text-button"}
+                      style={{ padding: "0.5rem", fontSize: "0.85rem", textAlign: "center" }}
+                    >
+                      {presetItem.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.875rem", fontWeight: 600 }}>Font Size ({fontSize}px)</label>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  {[18, 22, 26].map(size => (
+                    <button
+                      type="button"
+                      key={size}
+                      onClick={() => setFontSize(size)}
+                      className={fontSize === size ? "primary" : "text-button"}
+                      style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
+                    >
+                      {size === 18 ? "Small" : size === 22 ? "Medium" : "Large"} ({size}px)
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.875rem", fontWeight: 600 }}>Preview Cue (Jump to text)</label>
+                <select
+                  value={previewCueIndex}
+                  onChange={e => setPreviewCueIndex(Number(e.target.value))}
+                  style={{ width: "100%", padding: "0.5rem", borderRadius: "6px", border: "1px solid #334155", background: "#0f172a", color: "#f8fafc" }}
+                >
+                  {subtitle.cues.map((c, idx) => (
+                    <option key={idx} value={idx}>
+                      #{idx + 1} ({c.start}s - {c.end}s): {c.text.slice(0, 30) || "Empty"}...
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="card">
           <div className="eyebrow">CUES ({subtitle.cues.length})</div>
           <div className="subtitle-cues" style={{ display: "grid", gap: "16px", marginTop: "12px" }}>

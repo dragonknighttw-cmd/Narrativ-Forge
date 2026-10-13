@@ -3,7 +3,7 @@
 **Date:** 2026-10-13  
 **Branch:** `fix/burmese-asr-script-guard`  
 **Pull request:** [#73](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/73)  
-**Latest verified PR head:** `5323c19ded5f7049babb205e292e90ac6a59bfd5`
+**Latest code/CI-verified head before this documentation-only refresh:** `5323c19ded5f7049babb205e292e90ac6a59bfd5`
 
 ## Completed without local execution
 

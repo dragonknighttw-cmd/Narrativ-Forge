@@ -3,7 +3,7 @@
 **Date:** 2026-10-13  
 **Branch:** `fix/burmese-asr-script-guard`  
 **Pull request:** [#73](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/73)  
-**Latest verified code head before this documentation refresh:** `4c8e7835f2f17a270ebb1ebbc07368a0ce9dc284`
+**Latest verified PR head:** `5323c19ded5f7049babb205e292e90ac6a59bfd5`
 
 ## Completed without local execution
 
@@ -12,6 +12,7 @@
 - Added unit tests for Chinese-only output, Myanmar text in segments, and empty transcript payloads.
 - The first version of the guard incorrectly rejected the generated tone/silence media used by Real Worker Evidence because Whisper returned an empty transcript. Updated the guard to reject only **non-empty** output without Myanmar-script characters, while allowing empty output for silence/tone fixtures.
 - Verified the exact code head `4c8e7835f2f17a270ebb1ebbc07368a0ce9dc284`: GitHub Actions runs for CI, Repository Gate, Real Worker Evidence, Local Runtime Evidence, Windows Local Runtime Evidence, CodeQL, Security, and Windows Portable Package Evidence all completed successfully. The Real Worker Evidence `real-worker-e2e` job and its real-media smoke step passed.
+- After adding the acceptance guide, rechecked the exact PR head `5323c19ded5f7049babb205e292e90ac6a59bfd5`: all eight workflows (CI, Repository Gate, Real Worker Evidence, Local Runtime Evidence, Windows Local Runtime Evidence, Windows Portable Package Evidence, CodeQL, Security) completed successfully. This is CI/fixture evidence, not validation of real Burmese speech accuracy.
 
 ## Important limitations
 
@@ -23,10 +24,9 @@
 
 ## Work still pending
 
-1. After this documentation-only commit, confirm GitHub Actions completes successfully on the new PR head too.
-2. When local execution is available, run the backend test suite and the focused Whisper tests.
-3. Test the same Burmese audio with auto-detection and forced Burmese language; compare model outputs and saved language metadata.
-4. Confirm transcript retrieval, subtitle timing, output playback, and unchanged source media.
-5. Reassess whether a stronger language/quality gate is appropriate after observing real samples. Do not add a heuristic that silently rewrites ASR output.
-6. Obtain explicit approval before any quota-consuming remote inference or production deployment.
-7. Keep PR #73 in draft and do not merge until real Burmese-audio acceptance checks are complete.
+1. When local execution is available, run the backend test suite and the focused Whisper tests.
+2. Test the same Burmese audio with auto-detection and forced Burmese language; compare model outputs and saved language metadata.
+3. Confirm transcript retrieval, subtitle timing, output playback, and unchanged source media.
+4. Reassess whether a stronger language/quality gate is appropriate after observing real samples. Do not add a heuristic that silently rewrites ASR output.
+5. Obtain explicit approval before any quota-consuming remote inference or production deployment.
+6. Keep PR #73 in draft and do not merge until real Burmese-audio acceptance checks are complete.

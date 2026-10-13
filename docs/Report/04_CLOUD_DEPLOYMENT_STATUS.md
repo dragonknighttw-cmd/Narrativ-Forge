@@ -1,11 +1,17 @@
 # Cloud Deployment Status
 
-**Generated:** 2026-10-12  
-**Inspected repository checkpoint:** `main`, HEAD `95aa9163cc40383a8c44c3a5f445e4de899116e4`
+**Generated:** 2026-10-13  
+**Application-code checkpoint:** `main`, `dfff46a5335833723e403b70fa54ff8ba8cc0100` (PRs #72 and #73 merged)
 
-## Verification boundary
+## Fresh post-merge verification
 
-No cloud settings were changed in this task. The GitHub CLI was available but unauthenticated (`gh run list` requested `gh auth login`), so workflow status was not freshly queried. Entries below are historical evidence documented in repository files and retain their tested SHAs.
+- GitHub Actions CI, Security, CodeQL and Repository Gate passed on the exact application-code checkpoint above. Later documentation-only updates are separate commits and must have their own latest workflow results checked before declaring the latest docs commit green.
+- Isolated Linux regression tests at that exact SHA: focused Whisper/subprocess tests **17 passed**; backend unit/security selection **303 passed, 3 skipped, 84 deselected**; Cloudflare Whisper Worker contract tests **5 passed**.
+- Render read-only metadata confirms service `Narrativ-Forge` is on the free plan, `autoDeploy=no` / trigger `off`, and not suspended. The latest live deploy record remains commit `95aa9163cc40383a8c44c3a5f445e4de899116e4`; no deploy was triggered.
+- GET-only attempts to read `/api/v1/health` and `/api/v1/ready` were inaccessible through the available web probe. Render request-log queries for those paths and for all request logs on 2026-10-13 returned no entries. These results do **not** prove the endpoints are down or healthy; current endpoint status remains unknown.
+- No Cloudflare inference, quota-consuming request, production deployment, paid worker provisioning, or production-data mutation was performed.
+
+Historical evidence below remains tied to the exact SHAs and dates recorded.
 
 ## Documented workflow results
 

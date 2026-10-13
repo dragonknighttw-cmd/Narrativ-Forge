@@ -1,5 +1,13 @@
 # Narrativ Forge — Owner Action Checklist
 
+## Post-merge owner checkpoint — 2026-10-13 UTC
+
+- PR #72 and PR #73 are merged. Application-code checkpoint: `dfff46a5335833723e403b70fa54ff8ba8cc0100`; CI, Security, CodeQL and Repository Gate passed on that exact SHA.
+- Isolated Linux regression tests at that SHA: focused Whisper/subprocess **17 passed**; backend unit/security **303 passed, 3 skipped, 84 deselected**; Worker contract **5 passed**. This is not real Burmese-audio acceptance.
+- Render auto-deploy remains disabled; current live deploy is still on `95aa9163cc40383a8c44c3a5f445e4de899116e4`. No deployment, remote inference, paid worker provisioning, or production-data operation was performed.
+- Owner/external gates remain: real Burmese audio and reference transcript; subtitle timing/playback/source integrity review; approval before any quota-consuming inference, Render/Netlify deployment, or paid persistent worker; staging-safe recovery validation; OAuth/Drive, SMTP, Stripe, Sentry; accessibility/performance; privacy/legal and independent penetration review.
+- Overall release status remains **PENDING — NOT PRODUCTION READY**.
+
 ## Current checkpoint — 2026-10-11 UTC
 
 - The direct-main implementation commit `df22942f3482690eae79859670581908df26b360` fixes the FFmpeg/WASM loader retry defect: failed initialization clears the rejected cached promise so a later attempt can retry.

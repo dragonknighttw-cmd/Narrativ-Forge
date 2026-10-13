@@ -1,5 +1,13 @@
 # Narrativ Forge — Current State
 
+## Latest post-merge checkpoint — 2026-10-13 UTC
+
+- PR #73 (Burmese ASR script guard) merged as `c04a17d76f7f2ee42a8ad9a0fff620c9af75b869`; PR #72 (cloud status/report refresh) merged as `dfff46a5335833723e403b70fa54ff8ba8cc0100`.
+- Application-code checkpoint after both merges: `dfff46a5335833723e403b70fa54ff8ba8cc0100`. The documentation reconciliation preceding this update was `49dcacb25d88a5f4b78a6aa287245fc0c53978ed`; this change is documentation-only.
+- CI, Security, CodeQL and Repository Gate passed on the application-code checkpoint. An isolated Linux workspace at that exact SHA also passed focused Whisper/subprocess tests (17), backend unit/security selection (303 passed, 3 skipped, 84 deselected), and Worker contract tests (5).
+- Render service metadata still shows the free plan with auto-deploy disabled; latest live deploy remains on `95aa9163cc40383a8c44c3a5f445e4de899116e4`. No deployment or Cloudflare inference was run. Read-only health URL access was unavailable and Render request logs had no entries for the checked date, so current endpoint health remains unknown.
+- Release remains **PENDING — NOT PRODUCTION READY**. Real Burmese-audio comparison, human transcript review, subtitle playback/timing and source-media integrity are still unverified; do not infer them from CI or the Myanmar-script guard.
+
 ## Current checkpoint — 2026-10-11 UTC
 
 - The direct-main implementation commit `df22942f3482690eae79859670581908df26b360` fixes the FFmpeg/WASM loader retry defect: failed initialization clears the rejected cached promise so a later attempt can retry.

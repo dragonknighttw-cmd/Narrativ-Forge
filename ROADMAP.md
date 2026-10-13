@@ -1,5 +1,12 @@
 # Narrativ Forge — Roadmap
 
+## Post-merge execution checkpoint — 2026-10-13 UTC
+
+- PRs #72 and #73 are merged. The application-code checkpoint is `dfff46a5335833723e403b70fa54ff8ba8cc0100`; four standard workflows (CI, Security, CodeQL, Repository Gate) passed on that SHA.
+- Isolated regression results on the same SHA: focused Whisper/subprocess 17 passed; backend unit/security 303 passed, 3 skipped, 84 deselected; Worker contract 5 passed. These do not establish real Burmese speech accuracy or Windows-user-machine acceptance.
+- Render auto-deploy remains disabled and the latest live Render deployment is still `95aa9163cc40383a8c44c3a5f445e4de899116e4`. No deploy, quota-consuming inference, paid worker provisioning, or production-data mutation was performed.
+- Highest-priority unresolved gates: (1) local real Burmese audio auto-detect vs forced-language comparison plus human review, subtitle playback and source integrity; (2) current Render health/readiness verification (tool access/logs did not establish current status); (3) explicit owner decisions for Netlify redeploy and any quota-consuming Whisper inference or paid persistent worker; (4) managed recovery, OAuth/Drive, SMTP, Stripe, Sentry, accessibility/performance, legal and independent security acceptance. Release remains **PENDING — NOT PRODUCTION READY**.
+
 ## Current repository checkpoint — 2026-10-11 UTC
 
 - Source-code baseline reviewed for this reconciliation: e672bf0c5f75441e0bd9556db6811320a33a7a5e. The documentation updates in this sequence do not change application code; check the latest Actions run for the current documentation commit.

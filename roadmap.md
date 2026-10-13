@@ -1,16 +1,5 @@
 # Narrativ Forge — Roadmap
 
-## Latest application-code checkpoint — 2026-10-14 UTC (SHA `67deb66`)
-
-- Direct-main implementation commits `6a6f54e` and `67deb66` complete Phase 1 & Phase 2 Core Platform features:
-  - 8 canonical hook families with Burmese templates, 5-episode batch generator with DB persistence.
-  - Script Studio AI Assistant & Scene Breakdown Auto-Pacing (target 180s pacing indicator).
-  - Thumbnail candidate workflow (10 candidates -> 5 shortlisted -> 1 human approved).
-  - Subtitle Studio micro-nudge (±0.1s/±0.5s), cue operations, and Ctrl+S hotkey.
-  - Burmese typography stack (Padauk, Pyidaungsu, 1.75 line-height) and mobile drawer.
-  - Voyage AI 512-dim RAG vector schema guard & semantic search endpoint.
-- Live cloud API quota consumption and paid background workers are explicitly deferred to the Final Pre-Production Gate.
-
 ## Post-merge execution checkpoint — 2026-10-13 UTC
 
 - PRs #72 and #73 are merged. The application-code checkpoint is `dfff46a5335833723e403b70fa54ff8ba8cc0100`; four standard workflows (CI, Security, CodeQL, Repository Gate) passed on that SHA.

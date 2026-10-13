@@ -355,13 +355,26 @@ def _transcribe_with_fallback(source: Path, transcript_dir: Path, episode: Episo
 
 
 
-def _transcript_contains_myanmar_script(transcript: dict) -> bool:
-    """Return whether Whisper emitted any Myanmar-script characters in its transcript."""
+def _transcript_text_parts(transcript: dict) -> list[str]:
+    """Return transcript text and segment text without assuming a language."""
     parts = [str(transcript.get("text") or "")]
     segments = transcript.get("segments") or []
     if isinstance(segments, list):
         parts.extend(str(segment.get("text") or "") for segment in segments if isinstance(segment, dict))
-    return any(0x1000 <= ord(character) <= 0x109F for character in " ".join(parts))
+    return parts
+
+
+def _transcript_contains_text(transcript: dict) -> bool:
+    """Return whether ASR emitted any non-whitespace text."""
+    return any(part.strip() for part in _transcript_text_parts(transcript))
+
+
+def _transcript_contains_myanmar_script(transcript: dict) -> bool:
+    """Return whether Whisper emitted any Myanmar-script characters in its transcript."""
+    return any(
+        0x1000 <= ord(character) <= 0x109F
+        for character in " ".join(_transcript_text_parts(transcript))
+    )
 
 
 def run_real_job(job_id: str, db: Session, *, already_claimed: bool = False) -> ProcessingJob:
@@ -419,7 +432,10 @@ def run_real_job(job_id: str, db: Session, *, already_claimed: bool = False) -> 
 
             transcript = json.loads(whisper_json.read_text(encoding="utf-8"))
             transcript.setdefault("source", "whisper")
-            if not _transcript_contains_myanmar_script(transcript):
+            # Silent/tone fixtures may legitimately produce an empty transcript.
+            # Reject non-empty output in another script without failing the media
+            # pipeline solely because the audio contains no recognizable speech.
+            if _transcript_contains_text(transcript) and not _transcript_contains_myanmar_script(transcript):
                 return _fail(
                     job,
                     "ASR_LANGUAGE_MISMATCH",

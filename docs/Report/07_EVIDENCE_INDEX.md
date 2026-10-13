@@ -1,39 +1,30 @@
 # Evidence Index
+**Date:** 2026-10-12 UTC  
+**Checkpoint:** main `95aa9163cc40383a8c44c3a5f445e4de899116e4`  
+**Release:** PENDING — NOT PRODUCTION READY
 
-**Generated:** 2026-10-12  
-**Inspected repository checkpoint:** `main`, HEAD `95aa9163cc40383a8c44c3a5f445e4de899116e4`  
-**Evidence handling:** Raw media, transcript text, database files, and unrestricted local logs are not included here.
+## Primary links
+- [Cloudflare Whisper Worker deployment run #38260359375](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38260359375) — successful deployment workflow and no-inference handler smoke.
+- [Current draft documentation PR #72](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/72) — report pack and state update.
+- [Render service dashboard](https://dashboard.render.com/web/srv-davrqtu7bikc73f7isbg) — service/deploy metadata.
+- [Netlify project dashboard](https://app.netlify.com/projects/harmonious-nasturtium-53a1d6) — current published deploy and access policy.
+- [Stale Netlify source commit](https://github.com/dragonknighttw-cmd/Narrativ-Forge/commit/777fba6ca92ce59e53e741b976bc9ea9692b45c1) — current published frontend source.
+- [Main checkpoint commit](https://github.com/dragonknighttw-cmd/Narrativ-Forge/commit/95aa9163cc40383a8c44c3a5f445e4de899116e4).
 
-## Repository evidence
+## Existing repository reports
+- `BURMESE_SAMPLE_PREFLIGHT_2026-10-12.md` — technical sample preflight; does not certify transcription quality.
+- `LOCAL_WINDOWS_UNICODE_RUNTIME_REPORT.md` — historical local synthetic-runtime report; no new local testing was performed in this cloud-only continuation.
+- `CLOUD_DEPLOYMENT_STATUS_2026-10-12.md` — current cloud deployment, Netlify freshness, SSO, and blockers.
 
-| Evidence | Location / reference | Scope |
-|---|---|---|
-| Current code/worktree state | HEAD `95aa9163cc40383a8c44c3a5f445e4de899116e4`; dirty worktree | This report package and local test changes have not been committed. |
-| Windows runtime history | [Windows runtime report](LOCAL_WINDOWS_UNICODE_RUNTIME_REPORT.md) | Historical local synthetic worker, dependencies, artifacts, and subprocess fix. Exact worker source SHA was not recorded. Local absolute paths were sanitized. |
-| Burmese sample findings | [Sample preflight report](BURMESE_SAMPLE_PREFLIGHT_2026-10-12.md) | Technical media facts, local worker outcome, and failed `tiny` transcript script check. Media/transcript content excluded. |
-| Higher-capacity Whisper attempt | [Test results](01_TEST_RESULTS.md) | Official `large-v3-turbo` model passed SHA-256 verification; local CPU inference completed, detected Chinese, and produced no Myanmar-script characters. Candidate text is excluded. |
-| Acceptance status | [Burmese media checklist](../BURMESE_MEDIA_ACCEPTANCE.md) | Speech-quality review remains pending. |
-| Security controls | [`SECURITY.md`](../../SECURITY.md) | Repository security policy and outstanding release gates. |
-| Release gates and cloud records | [`CURRENT_STATE.md`](../../CURRENT_STATE.md), [`MASTER_REMAINING_WORK.md`](../MASTER_REMAINING_WORK.md), [`DEPLOYMENT.md`](../DEPLOYMENT.md) | Historical documented status; not freshly queried during this task. |
-| Windows diagnostic script | `Check-NarrativForge-Local.ps1` in the external handoff folder | Read-only inventory script; not part of repository. Owner-local absolute path omitted. |
+## PR checks at previously observed PR head
+These checks passed for SHA `7e0bf2a33c168fc6e2c6104ac7b957878d8e4c34`; new commits to this PR trigger checks that must be re-checked:
+- [CI #38261893038](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38261893038)
+- [Security #38261893058](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38261893058)
+- [CodeQL #38261893022](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38261893022)
+- [Repository Gate #38261893052](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38261893052)
 
-## Local test evidence
-
-- Final full focused subprocess file: base HEAD above plus final dirty worktree; `6 passed, 2 skipped in 4.41s`.
-- Earlier full-file runs exposed a process-tree test race at 0.2 seconds; the isolated test passed and the test-only startup window was increased to 2 seconds before the final passing run.
-- The CLI test output was obtained directly from pytest. No raw logs were copied to this folder.
-- The exact SHA for the earlier canonical Windows worker sample run is unavailable in the source record; see the limitation in the Windows runtime report.
-- GitHub CLI could not authenticate, so current run metadata could not be retrieved. Historical workflow URLs and exact SHAs are in [test results](01_TEST_RESULTS.md) and [cloud status](04_CLOUD_DEPLOYMENT_STATUS.md).
-
-## Historical workflow links
-
-See [01_TEST_RESULTS.md](01_TEST_RESULTS.md) for exact-SHA workflow results and [04_CLOUD_DEPLOYMENT_STATUS.md](04_CLOUD_DEPLOYMENT_STATUS.md) for dated Render, Netlify, and Cloudflare observations. Workflow passes are not production acceptance.
-
-## Missing or inaccessible evidence
-
-- Fresh workflow status for local HEAD `95aa9163cc40383a8c44c3a5f445e4de899116e4`.
-- Exact source commit used by the historical local worker run.
-- Usable Burmese Whisper candidate and Burmese-speaker/reference review; `small` auto-detect output had no Myanmar-script characters.
-- Burmese-speaker/reference review and confirmation of the sample's spoken language.
-- Fresh current cloud settings and health checks.
-- Managed production backup/restore and persistent worker evidence.
+## Evidence limitations
+- No fresh post-deploy `/api/v1/health` or `/api/v1/ready` HTTP probe was captured.
+- No authenticated real-audio or Burmese transcription test was run.
+- No paid resource creation, production restore drill, SSO change, or local machine test occurred.
+- Secrets and environment values are intentionally excluded.

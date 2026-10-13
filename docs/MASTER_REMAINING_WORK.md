@@ -1,5 +1,14 @@
 # Narrativ Forge — Detailed Remaining Work Checklist
 
+## Fresh checkpoint — 2026-10-13 UTC (main `e21f98d29cf1ece43bc6a4550a02eb676f196d3a`)
+
+- Documentation checkpoint PR [#74](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/74) merged. The four standard workflows passed on this exact main SHA: [CI #38421618942](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38421618942), [Security #38421618948](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38421618948), [CodeQL #38421618945](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38421618945), and [Repository Gate #38421618916](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38421618916).
+- Render frontend `https://narrativ-forge-frontend.onrender.com` and backend `https://narrativ-forge.onrender.com` passed read-only reachability checks: frontend page/assets HTTP 200; backend `/api/v1/health` and `/api/v1/ready` HTTP 200; CORS preflight for the Render frontend and existing Netlify origin passed, including auth/upload/episode route preflight checks. Page-route HTTP 200 is only a smoke check, not proof of authenticated interactive E2E.
+- Current deployed application-code SHA remains `3b1b3766f2fb132bf4d80203e7174562f2879d9a`; Render auto-deploy is disabled. The docs-only merge did not redeploy application services. Do not claim the new main documentation SHA is deployed.
+- No quota-consuming inference, paid worker provisioning, production-data mutation, or destructive restore was performed.
+- Standard workflows and HTTP smoke checks do not prove real Burmese transcription quality, human-reviewed subtitle timing/playback, persistent worker availability, managed full-schema restore, OAuth/Drive, SMTP, Stripe, Sentry delivery, load/performance, accessibility, legal/commercial approval, or independent penetration testing.
+- Release status remains **PENDING — NOT PRODUCTION READY**. Keep owner/external gates open until evidence is attached to the exact application SHA and target environment.
+
 ## Current repository checkpoint — 2026-10-11 UTC
 
 - The direct-main implementation commit `df22942f3482690eae79859670581908df26b360` fixes the FFmpeg/WASM loader retry defect: failed initialization clears the rejected cached promise so a later attempt can retry.

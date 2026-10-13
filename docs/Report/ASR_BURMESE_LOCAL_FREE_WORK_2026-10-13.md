@@ -9,7 +9,8 @@
 - Reviewed the production processing path in `web-platform/backend/app/services/real_processing.py`.
 - Added a defensive check before transcript assets are persisted. If neither the transcript's main text nor its segments contain any Myanmar-script characters, processing now fails with `ASR_LANGUAGE_MISMATCH` rather than treating likely Chinese/other-script output as a Burmese transcript.
 - Added unit tests for Chinese-only output, Myanmar text in segments, and empty transcript payloads.
-- Opened draft PR #73. CI workflows have started but were queued at the time of this note.
+- Opened draft PR #73. Follow-up CI review found the standard checks passed, but the Real Worker Evidence smoke failed because its generated tone/silence media yielded an empty transcript and the first version of the guard treated that as a language mismatch.
+- Updated the guard so non-empty transcript output without Myanmar-script characters is rejected, while empty/silent-media transcripts are not mislabeled as a language mismatch. Updated the regression test to cover that distinction.
 
 ## Important limitations
 
@@ -21,7 +22,7 @@
 
 ## Work still pending
 
-1. Review the CI results for the exact latest PR head and fix any failures.
+1. Recheck CI on the latest PR head after the silent-media guard adjustment; the previous Real Worker Evidence run failed before this adjustment.
 2. When local execution is available, run the backend test suite and the focused Whisper tests.
 3. Test the same Burmese audio with auto-detection and forced Burmese language; compare model outputs and saved language metadata.
 4. Confirm transcript retrieval, subtitle timing, output playback, and unchanged source media.

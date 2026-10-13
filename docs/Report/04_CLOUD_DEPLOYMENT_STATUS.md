@@ -30,6 +30,8 @@ These are source-document-recorded results for that SHA, not a fresh check of th
 
 ## Provider and deployment observations
 
+- **Netlify read-only recheck (2026-10-13):** published deploy `6ac4f8aba9c7aa00082031dc` is `ready`, created 2026-10-06, and still points to commit `777fba6ca92ce59e53e741b976bc9ea9692b45c1` on `main`. SSO team login remains required for all projects. No Netlify deploy was triggered.
+
 The dated repository evidence records:
 
 - Render `/api/v1/health` and `/api/v1/ready` returned HTTP 200, with database and Redis ready, during a prior non-billable check. No endpoint was probed in this task.

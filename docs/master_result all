@@ -98,3 +98,78 @@ To guarantee security and eliminate accidental key misuse:
 └── Launch / Production Certification
 ```
 
+---
+
+## 6. Cloud-Side Agent Runbook & Execution Guide (Pre-Production Gate)
+
+When a cloud-side AI agent or engineer receives the instruction to execute the **Final Pre-Production Gate**, follow these 5 exact steps in sequential order:
+
+### Step 1: Secret Environment Variables Setup
+Ensure all 9 provider secrets are configured in the target environment (Render Dashboard, Cloudflare Worker Secrets, or GitHub Actions Secrets). **Never paste or commit real secret values in code or git.**
+
+```bash
+# 1. Google Gemini (Burmese Content & Multimodal Review)
+GEMINI_API_KEY=<secret>
+GEMINI_FREE_TIER_ENABLED=true
+
+# 2. OpenRouter (Free-tier multi-model chat allowlist)
+OPENROUTER_API_KEY=<secret>
+
+# 3. Hugging Face (Model Hub & Burmese NLP Tokenizers)
+HUGGINGFACE_API_KEY=<secret>
+
+# 4. Mistral (Scene schema & structured JSON extraction)
+MISTRAL_API_KEY=<secret>
+MISTRAL_FREE_TIER_ENABLED=true
+
+# 5. Cohere (Semantic ranking & secondary chat fallback)
+COHERE_API_KEY=<secret>
+COHERE_FREE_TIER_ENABLED=true
+
+# 6. Groq (High-speed chat & backup fast Whisper STT)
+GROQ_API_KEY=<secret>
+GROQ_FREE_TIER_ENABLED=true
+
+# 7. Voyage AI (512-dim RAG vector embeddings)
+VOYAGE_API_KEY=<secret>
+
+# 8. Cloudflare Workers AI (Whisper GPU ASR & Edge chat)
+CLOUDFLARE_WHISPER_WORKER_URL=https://narrativ-forge-whisper.narrativ-forge.workers.dev
+CLOUDFLARE_WHISPER_SHARED_SECRET=<secret>
+CLOUDFLARE_ACCOUNT_ID=<secret>
+CLOUDFLARE_API_TOKEN=<secret>
+
+# 9. Agnes AI (Burmese voiceover audio budget tracker)
+AGNES_DAILY_SECONDS_BUDGET=600
+```
+
+### Step 2: Provision Render Persistent Background Worker
+- **Current State:** Web service runs on Render Free Tier with auto-deploy disabled.
+- **Action Required:** Provision a billable Background Worker instance using `render.worker.yaml`.
+- **Worker Command:** `celery -A app.workers.celery_app worker -l info -c 2`
+- **Dependencies:** Render Key Value (Redis) and Render PostgreSQL.
+
+### Step 3: Multi-Provider Live Connectivity Smoke Check
+Execute exactly **1 non-polling synthetic test request** per provider to confirm HTTP 2xx response:
+- `OpenRouter`: Run `.github/workflows/openrouter-free-model-evidence.yml` (opt-in 1-request smoke).
+- `Groq`: Confirm HTTP 200 via `test_groq_smoke`.
+- `Cloudflare Whisper`: Run GET preflight to verify method guard HTTP 405 (JSON reached without billable AI cost).
+- `Gemini`, `Mistral`, `Cohere`: Send 1 synthetic Burmese prompt test.
+
+### Step 4: Real Burmese Video End-to-End Media Pipeline Verification
+1. Upload a portrait 9:16 sample Burmese video through the web platform (`/episodes/[id]/assets`).
+2. Trigger the background processing job through Celery (`/processing`).
+3. Celery worker invokes FFmpeg 16kHz mono audio extraction.
+4. Audio is sent to Cloudflare Whisper GPU ASR (`_transcribe_cloudflare`).
+5. Burmese Unicode Script Guard verifies transcript contains valid Myanmar script range (`\u1000-\u109F`). Non-Burmese hallucinations (Chinese/Khmer) are defensively rejected.
+6. Subtitle record and cue timestamps are persisted in PostgreSQL.
+7. Human reviewer inspects transcript in Subtitle Studio (`/episodes/[id]/subtitle`) and verifies playback.
+
+### Step 5: Database Schema & Production Launch Certification
+1. Run Alembic migration check: verify live database is at current head (`alembic current`).
+2. Execute non-destructive backup and restore drill into isolated staging target.
+3. Verify tenant isolation negative checks: cross-tenant read/write must return HTTP 404/403.
+4. Record commit SHA, test run links, and provider acceptance status in `CURRENT_STATE.md` and `ROADMAP.md`.
+5. Proceed to Production Launch certification.
+
+

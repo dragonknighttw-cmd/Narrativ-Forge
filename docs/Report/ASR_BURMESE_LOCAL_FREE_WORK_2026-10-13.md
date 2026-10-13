@@ -14,6 +14,14 @@
 - Verified the exact code head `4c8e7835f2f17a270ebb1ebbc07368a0ce9dc284`: GitHub Actions runs for CI, Repository Gate, Real Worker Evidence, Local Runtime Evidence, Windows Local Runtime Evidence, CodeQL, Security, and Windows Portable Package Evidence all completed successfully. The Real Worker Evidence `real-worker-e2e` job and its real-media smoke step passed.
 - After adding the acceptance guide, rechecked the exact PR head `5323c19ded5f7049babb205e292e90ac6a59bfd5`: all eight workflows (CI, Repository Gate, Real Worker Evidence, Local Runtime Evidence, Windows Local Runtime Evidence, Windows Portable Package Evidence, CodeQL, Security) completed successfully. This is CI/fixture evidence, not validation of real Burmese speech accuracy.
 
+
+## Additional non-local review
+
+- Added regression tests for Myanmar script in the main transcript text, whitespace-only transcript payloads, and the rule that a `language: "my"` metadata label alone must not count as recognized Myanmar text.
+- Static review found that the primary remote-first Cloudflare Worker calls `@cf/openai/whisper` with only the audio payload; it does not pass a language hint or return language-detection metadata to the backend. This is a plausible investigation lead, not proof of root cause.
+- Added this finding and official Cloudflare model-contract links to the acceptance guide. The `whisper-large-v3-turbo` model documents a `language` input, but switching model or changing remote inference behavior can affect cost and output contract. No model switch, live inference, quota use, or deployment was performed.
+- The latest code/test commit is `4e571b03e2ded816d2326cb12c8ba154970c07a3`; documentation updates followed. Workflow results for the newest PR head still need confirmation.
+
 ## Important limitations
 
 - The script check is a guardrail, not a speech-recognition fix. It does not validate the accuracy or meaning of Burmese text.

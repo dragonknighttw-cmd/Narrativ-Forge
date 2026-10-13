@@ -39,3 +39,11 @@
 4. Reassess whether a stronger language/quality gate is appropriate after observing real samples. Do not add a heuristic that silently rewrites ASR output.
 5. Obtain explicit approval before any quota-consuming remote inference or production deployment.
 6. Keep PR #73 in draft and do not merge until real Burmese-audio acceptance checks are complete.
+
+## Independent isolated-box regression verification — 2026-10-13
+
+- Checked out exact PR #73 head `8dbfe74473fa6e3b3555a1d752dae424ef9787bf` in an isolated repository workspace. No user Windows machine, original media, secrets, provider credentials, or cloud inference were accessed.
+- Backend focused tests: `cd web-platform/backend && PYTHONPATH=. pytest -q tests/test_whisper_fallback.py` — **9 passed**.
+- Backend unit/security selection: `cd web-platform/backend && PYTHONPATH=. pytest -m 'unit or security' -q` — **303 passed, 3 skipped, 84 deselected**; three existing deprecation warnings were emitted.
+- Cloudflare Whisper Worker contract tests: `cd web-platform/cloudflare/whisper-worker && node --experimental-strip-types --test test/worker.test.mjs` — **5 passed** (Node 25.9.0 in the isolated box; repository CI pins Node 22).
+- `git status` was clean before recording these results. These results establish regression behavior for the exact checked-out source only; they do **not** establish Burmese speech accuracy, Windows user-machine acceptance, live provider behavior, or production readiness.

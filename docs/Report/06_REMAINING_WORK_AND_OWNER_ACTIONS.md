@@ -1,5 +1,5 @@
 # Remaining Work and Owner Actions
-**Date:** 2026-10-12 UTC  
+**Date:** 2026-10-13 UTC  
 **Release status:** PENDING — NOT PRODUCTION READY
 
 ## Safe work already completed
@@ -7,12 +7,17 @@
 - Render latest deployment confirmed live and startup logs show `GET /` HTTP 200.
 - Render auto-deploy was disabled by the owner. Read-only service metadata confirms `autoDeploy=no` / trigger `off`, and event history records `auto_deploy_disabled` at `2026-10-12T15:30:53Z`. Existing live deployment was not changed.
 - Netlify current deploy and SSO policy rechecked.
-- Report pack is on [PR #72](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/72), open and ready for review (not merged). CI, Security, CodeQL and Repository Gate passed on prior head `54cb58e1a357e5cae3156d1ca1e2b7cf82661d42`; new runs triggered by report refresh commits are pending. Check [PR #72](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/72) for the current results.
+- PR #72 (cloud deployment status/report pack) and PR #73 (Burmese ASR script guard) were merged on 2026-10-13. Current post-merge main checkpoint at reconciliation: `dfff46a5335833723e403b70fa54ff8ba8cc0100`. CI, Security, CodeQL and Repository Gate all passed on that exact main SHA.
+
+## Current exact-main regression verification — 2026-10-13
+- Isolated workspace at `dfff46a5335833723e403b70fa54ff8ba8cc0100`: focused Whisper/subprocess tests **17 passed**; backend unit/security selection **303 passed, 3 skipped, 84 deselected**; Worker contract tests **5 passed**.
+- The tests above are Linux isolated-workspace results, not Windows-user-machine acceptance and not real Burmese-audio quality evidence.
+- No Cloudflare inference, quota-consuming request, production deployment, paid worker provisioning, or production-data mutation was performed.
 
 ## Ordered remaining work
 
 ### P0 — Decide release and spend boundaries
-- [ ] Review PR #72 after latest checks complete; do not merge until Render build implications are understood.
+- [x] Merge PR #72 after resolving report conflicts; Render auto-deploy remains disabled, and no deployment was triggered.
 - [x] Disable Render auto-deploy on `main` to reduce automatic builds. Confirmed via service metadata and `auto_deploy_disabled` event. Future releases require intentional Manual Deploy.
 - [ ] Decide whether one-time Netlify redeploy is approved. Current published deploy is stale; no deploy was triggered to conserve build usage.
 - [ ] Explicitly approve or decline any quota-consuming authenticated Whisper inference.

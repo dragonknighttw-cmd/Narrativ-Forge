@@ -101,3 +101,47 @@ def global_search(
         "total": total,
         "results": page,
     }
+
+
+@router.get("/rag-config")
+def get_rag_config():
+    from ...services.rag_embeddings import get_rag_vector_schema
+    return get_rag_vector_schema()
+
+
+@router.get("/semantic")
+def semantic_search(
+    q: str = Query(min_length=1, max_length=200),
+    membership=Depends(get_current_membership),
+    db: Session = Depends(get_db),
+):
+    from ...services.rag_embeddings import (
+        generate_mock_embedding,
+        cosine_similarity,
+        VOYAGE_VECTOR_DIMENSION,
+    )
+
+    query_vec = generate_mock_embedding(q)
+    assert len(query_vec) == VOYAGE_VECTOR_DIMENSION
+
+    # Score ideas semantically
+    ideas = db.query(Idea).filter(Idea.organization_id == membership.organization_id).limit(20).all()
+    scored = []
+    for idea in ideas:
+        text = f"{idea.title} {idea.concept or ''} {idea.hook or ''}"
+        idea_vec = generate_mock_embedding(text)
+        sim = cosine_similarity(query_vec, idea_vec)
+        scored.append({
+            "type": "idea",
+            "id": idea.id,
+            "title": idea.title,
+            "similarity": round(sim, 4),
+        })
+
+    scored.sort(key=lambda x: x["similarity"], reverse=True)
+    return {
+        "query": q,
+        "vector_dimension": VOYAGE_VECTOR_DIMENSION,
+        "results": scored[:10],
+    }
+

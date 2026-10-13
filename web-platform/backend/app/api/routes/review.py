@@ -137,7 +137,71 @@ def approve_review(episode_id: str, payload: ReviewUpdate, user=Depends(require_
     if final_asset:
         final_asset.is_final = True
         final_asset.status = "final"
-    approved_at = datetime.now(timezone.utc)
     record_event(db, actor_email=user["email"], action="episode.approved", resource_type="episode", resource_id=episode.id, metadata={"review_id": record.id, "final_asset_id": final_asset.id if final_asset else None})
     db.commit()
     return {"approved": True, "episode_id": episode.id, "status": episode.status, "approved_at": approved_at.isoformat()}
+
+
+class ThumbnailApprovePayload(BaseModel):
+    candidate_id: str = Field(min_length=1, max_length=50)
+    visual_prompt: str = Field(min_length=1, max_length=1000)
+    overlay_text: str = Field(min_length=1, max_length=200)
+    notes: str = ""
+
+
+@router.get("/{episode_id}/review/thumbnails")
+def get_thumbnail_candidates(
+    episode_id: str,
+    membership=Depends(get_current_membership),
+    db: Session = Depends(get_db),
+):
+    from ...services.thumbnail_candidate import (
+        generate_thumbnail_candidates,
+        shortlist_thumbnail_candidates,
+    )
+
+    episode = _episode(db, episode_id, organization_id=membership.organization_id)
+    candidates = generate_thumbnail_candidates(
+        title=episode.title,
+        hook=episode.synopsis,
+        category=episode.category,
+    )
+    shortlisted = shortlist_thumbnail_candidates(candidates, count=5)
+
+    record = db.query(ReviewRecord).filter(ReviewRecord.episode_id == episode_id).first()
+    approved = None
+    if record and record.notes and "[Thumbnail Approved:" in record.notes:
+        approved = {
+            "status": "approved",
+            "present": True,
+        }
+
+    return {
+        "episode_id": episode_id,
+        "total_generated": len(candidates),
+        "candidates": [c.__dict__ for c in candidates],
+        "shortlisted": [s.__dict__ for s in shortlisted],
+        "approved": approved,
+    }
+
+
+@router.post("/{episode_id}/review/thumbnails/approve")
+def approve_thumbnail(
+    episode_id: str,
+    payload: ThumbnailApprovePayload,
+    membership=Depends(get_current_membership),
+    _: dict = Depends(require_roles("owner", "editor")),
+    db: Session = Depends(get_db),
+):
+    from ...services.thumbnail_candidate import approve_thumbnail_candidate
+
+    _episode(db, episode_id, organization_id=membership.organization_id)
+    return approve_thumbnail_candidate(
+        db=db,
+        episode_id=episode_id,
+        candidate_id=payload.candidate_id,
+        visual_prompt=payload.visual_prompt,
+        overlay_text=payload.overlay_text,
+        notes=payload.notes,
+    )
+

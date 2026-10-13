@@ -131,3 +131,61 @@ def regenerate_episode_scene(
         ],
         "requires_human_review": True,
     }
+
+
+class BatchGeneratePayload(BaseModel):
+    theme: str = Field(min_length=1, max_length=500)
+    category: str | None = Field(default="general", max_length=100)
+    series_id: str | None = None
+    target_duration_seconds: int = Field(default=180, ge=60, le=300)
+    commit: bool = False
+
+
+@router.post("/batch-generate")
+def batch_generate_episodes(
+    payload: BatchGeneratePayload,
+    membership=Depends(get_current_membership),
+    _: dict = Depends(require_roles("owner", "editor")),
+    db: Session = Depends(get_db),
+):
+    from ...services.batch_generator import generate_5_episode_batch, commit_batch_episodes
+
+    plan = generate_5_episode_batch(
+        theme=payload.theme,
+        category=payload.category or "general",
+        target_duration_seconds=payload.target_duration_seconds,
+    )
+
+    if not payload.commit:
+        return {
+            "committed": False,
+            "plan": plan.to_dict(),
+            "message": "Preview of 5-episode batch plan generated successfully.",
+        }
+
+    series, episodes = commit_batch_episodes(
+        db=db,
+        organization_id=membership.organization_id,
+        plan=plan,
+        series_id=payload.series_id,
+    )
+    return {
+        "committed": True,
+        "series": {
+            "id": series.id,
+            "title": series.title,
+        },
+        "episodes": [
+            {
+                "id": ep.id,
+                "public_id": ep.public_id,
+                "episode_number": ep.episode_number,
+                "title": ep.title,
+                "status": ep.status,
+                "current_step": ep.current_step,
+            }
+            for ep in episodes
+        ],
+        "message": f"Successfully created 5 episodes under series '{series.title}'.",
+    }
+

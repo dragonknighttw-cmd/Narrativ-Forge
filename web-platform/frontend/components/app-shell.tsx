@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { AuthGuard } from "./auth-guard";
 
 const sections = [
@@ -10,6 +12,8 @@ const sections = [
 ] as const;
 
 export function AppShell({ title, children }: { title: string; children: ReactNode }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return <AuthGuard>
     <div className="shell">
       <aside className="sidebar">
@@ -20,7 +24,44 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
         </div>)}
       </aside>
       <main className="main">
-        <header className="topbar"><div><div className="eyebrow">PRIVATE WORKSPACE</div><h1>{title}</h1></div><Link className="avatar" href="/settings">NF</Link></header>
+        <header className="topbar">
+          <div className="ds-row">
+            <button
+              className="mobile-nav-toggle"
+              type="button"
+              aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? "✕" : "☰"}
+            </button>
+            <div>
+              <div className="eyebrow">PRIVATE WORKSPACE</div>
+              <h1>{title}</h1>
+            </div>
+          </div>
+          <Link className="avatar" href="/settings">NF</Link>
+        </header>
+        {mobileMenuOpen && (
+          <nav className="mobile-drawer" aria-label="Mobile navigation">
+            <div className="ds-stack">
+              {sections.map(([section, items]) => (
+                <div className="nav-group" key={section}>
+                  <div className="nav-label">{section}</div>
+                  {items.map(([label, href]) => (
+                    <Link
+                      className="nav-link"
+                      href={href}
+                      key={href}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </nav>
+        )}
         <div className="content">{children}</div>
       </main>
     </div>

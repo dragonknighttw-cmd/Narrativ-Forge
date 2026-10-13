@@ -125,6 +125,39 @@ export const api = {
   validateSubtitle: (episodeId: string) => request<{ valid: boolean; errors: Subtitle["validation_errors"]; subtitle_id: string }>(`/episodes/${episodeId}/subtitles/validate`, { method: "POST" }),
   approveSubtitle: (episodeId: string) => request<Subtitle>(`/episodes/${episodeId}/subtitles/approve`, { method: "POST" }),
   exportSubtitle: (subtitleId: string, format: "srt" | "vtt") => `${base}/subtitles/${subtitleId}/export?format=${format}`,
+  getThumbnailCandidates: (episodeId: string) => request<{
+    episode_id: string;
+    total_generated: number;
+    candidates: Array<{ id: string; visual_prompt: string; overlay_text: string; composition_style: string; color_mood: string; score: number; reason: string }>;
+    shortlisted: Array<{ id: string; visual_prompt: string; overlay_text: string; composition_style: string; color_mood: string; score: number; reason: string }>;
+    approved?: { status: string; present: boolean } | null;
+  }>(`/episodes/${episodeId}/review/thumbnails`),
+  approveThumbnail: (episodeId: string, data: { candidate_id: string; visual_prompt: string; overlay_text: string; notes?: string }) => request<{
+    episode_id: string;
+    approved_thumbnail: Record<string, unknown>;
+    thumbnail_present: boolean;
+    message: string;
+  }>(`/episodes/${episodeId}/review/thumbnails/approve`, { method: "POST", body: JSON.stringify(data) }),
+  batchGenerateEpisodes: (data: { theme: string; category?: string; series_id?: string; target_duration_seconds?: number; commit?: boolean }) => request<{
+    committed: boolean;
+    plan?: {
+      theme: string;
+      category: string;
+      episodes: Array<{
+        episode_number: number;
+        title: string;
+        hook: string;
+        hook_family: string;
+        synopsis: string;
+        target_duration_seconds: number;
+        cliffhanger: string;
+        scenes: Array<Record<string, unknown>>;
+      }>;
+    };
+    series?: { id: string; title: string };
+    episodes?: Array<{ id: string; public_id: string; episode_number: number; title: string; status: string; current_step: string }>;
+    message: string;
+  }>("/auto/batch-generate", { method: "POST", body: JSON.stringify(data) }),
   uploadAsset: async (episodeId: string, file: File, assetType: string, sceneId?: string) => {
     if (file.size <= 0) throw new Error("Choose a non-empty file to upload");
     const resumeKey = `nf-upload:${episodeId}:${assetType}:${sceneId ?? ""}:${file.name}:${file.size}:${file.lastModified}`;

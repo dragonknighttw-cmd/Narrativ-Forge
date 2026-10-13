@@ -45,6 +45,74 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
     setSubtitle({ ...subtitle, cues: subtitle.cues.map((cue: SubtitleCue, i: number) => i === index ? { ...cue, ...patch } : cue) });
   }
 
+  function nudgeTime(index: number, field: "start" | "end", delta: number) {
+    if (!subtitle) return;
+    const current = subtitle.cues[index][field];
+    const updated = Math.max(0, Math.round((current + delta) * 10) / 10);
+    updateCue(index, { [field]: updated });
+  }
+
+  function splitCue(index: number) {
+    if (!subtitle) return;
+    const cue = subtitle.cues[index];
+    const mid = Math.round(((cue.start + cue.end) / 2) * 10) / 10;
+    const words = cue.text.trim().split(/\s+/);
+    const midWord = Math.ceil(words.length / 2);
+    const text1 = words.slice(0, midWord).join(" ");
+    const text2 = words.slice(midWord).join(" ");
+
+    const cue1: SubtitleCue = { start: cue.start, end: mid, text: text1 || cue.text };
+    const cue2: SubtitleCue = { start: mid, end: cue.end, text: text2 || "" };
+
+    const newCues = [...subtitle.cues];
+    newCues.splice(index, 1, cue1, cue2);
+    setSubtitle({ ...subtitle, cues: newCues });
+  }
+
+  function mergeCue(index: number) {
+    if (!subtitle || index >= subtitle.cues.length - 1) return;
+    const cue1 = subtitle.cues[index];
+    const cue2 = subtitle.cues[index + 1];
+    const merged: SubtitleCue = {
+      start: cue1.start,
+      end: cue2.end,
+      text: `${cue1.text} ${cue2.text}`.trim(),
+    };
+    const newCues = [...subtitle.cues];
+    newCues.splice(index, 2, merged);
+    setSubtitle({ ...subtitle, cues: newCues });
+  }
+
+  function addCueAfter(index: number) {
+    if (!subtitle) return;
+    const current = subtitle.cues[index];
+    const newCue: SubtitleCue = {
+      start: current ? Math.round((current.end + 0.1) * 10) / 10 : 0,
+      end: current ? Math.round((current.end + 2.5) * 10) / 10 : 2.5,
+      text: "",
+    };
+    const newCues = [...subtitle.cues];
+    newCues.splice(index + 1, 0, newCue);
+    setSubtitle({ ...subtitle, cues: newCues });
+  }
+
+  function deleteCue(index: number) {
+    if (!subtitle) return;
+    const newCues = subtitle.cues.filter((_, i) => i !== index);
+    setSubtitle({ ...subtitle, cues: newCues });
+  }
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        save();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [subtitle, preset]);
+
   async function save() {
     if (!subtitle) return;
     setBusy(true); setError("");
@@ -78,7 +146,7 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
     <section className="card">
       <div className="eyebrow">BURMESE SUBTITLE QUALITY CONTROL</div>
       <h2>{episode?.public_id ?? "Episode"} · {episode?.title ?? "Loading..."}</h2>
-      <p className="muted">Whisper transcript ကို editable cues အဖြစ်ပြောင်းပြီး timing/text quality gate ကို ဒီနေရာမှာ စစ်ပါ။</p>
+      <p className="muted">Whisper transcript ကို editable cues အဖြစ်ပြောင်းပြီး timing/text quality gate ကို ဒီနေရာမှာ စစ်ပါ။ (Ctrl+S ဖြင့် သိမ်းဆည်းနိုင်ပါသည်)</p>
       {error && <ErrorState message={error} retry={load} />}
       <div className="inline-form">
         <select value={preset} onChange={e => setPreset(e.target.value)} aria-label="Subtitle preset">
@@ -147,19 +215,71 @@ export default function SubtitleStudioPage({ params }: { params: { id: string } 
         </section>
         {errors.length > 0 && <section className="card"><div className="eyebrow">TIMING WARNINGS / QUALITY GATE</div><div className="list">{errors.map((item: Subtitle["validation_errors"][number], i: number) => <div className="list-card" key={i}><strong>{item.code}</strong><span className="muted">Cue {item.cue ?? "—"} · {item.message}</span></div>)}</div></section>}
         <section className="card">
-          <div className="eyebrow">CUES</div>
-          <div className="subtitle-cues">{subtitle.cues.map((cue: SubtitleCue, index: number) =>
-            <article className="subtitle-cue" key={cue.id ?? index}>
-              <div className="cue-number">{index + 1}</div>
-              <div className="cue-fields">
-                <div className="cue-timing">
-                  <label>Start<input type="number" min="0" step="0.1" value={cue.start} onChange={e => updateCue(index, { start: Number(e.target.value) })} /></label>
-                  <label>End<input type="number" min="0" step="0.1" value={cue.end} onChange={e => updateCue(index, { end: Number(e.target.value) })} /></label>
+          <div className="eyebrow">CUES ({subtitle.cues.length})</div>
+          <div className="subtitle-cues" style={{ display: "grid", gap: "16px", marginTop: "12px" }}>
+            {subtitle.cues.map((cue: SubtitleCue, index: number) =>
+              <article className="card" key={cue.id ?? index} style={{ border: "1px solid var(--border)", padding: "14px", background: "var(--surface2)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <div className="eyebrow" style={{ padding: 0 }}>CUE #{index + 1}</div>
+                  <div className="inline-actions" style={{ gap: "6px" }}>
+                    <button type="button" className="text-button" onClick={() => splitCue(index)} title="Split cue into two parts">Split</button>
+                    {index < subtitle.cues.length - 1 && (
+                      <button type="button" className="text-button" onClick={() => mergeCue(index)} title="Merge with next cue">Merge Next</button>
+                    )}
+                    <button type="button" className="text-button" onClick={() => addCueAfter(index)} title="Insert new cue after this">+ Add</button>
+                    <button type="button" className="text-button" style={{ color: "var(--danger)" }} onClick={() => deleteCue(index)} title="Delete this cue">Delete</button>
+                  </div>
                 </div>
-                <label>မြန်မာစာ<textarea value={cue.text} onChange={e => updateCue(index, { text: e.target.value })} rows={2} /></label>
-              </div>
-            </article>
-          )}</div>
+
+                <div className="cue-fields ds-stack" style={{ gap: "10px" }}>
+                  <div className="ds-row" style={{ gap: "14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                      <label style={{ fontSize: "12px", color: "var(--muted)" }}>Start (s):</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        style={{ width: "80px" }}
+                        value={cue.start}
+                        onChange={e => updateCue(index, { start: Number(e.target.value) })}
+                      />
+                      <button type="button" className="text-button" style={{ padding: "2px 6px" }} onClick={() => nudgeTime(index, "start", -0.5)}>-0.5s</button>
+                      <button type="button" className="text-button" style={{ padding: "2px 6px" }} onClick={() => nudgeTime(index, "start", -0.1)}>-0.1s</button>
+                      <button type="button" className="text-button" style={{ padding: "2px 6px" }} onClick={() => nudgeTime(index, "start", 0.1)}>+0.1s</button>
+                      <button type="button" className="text-button" style={{ padding: "2px 6px" }} onClick={() => nudgeTime(index, "start", 0.5)}>+0.5s</button>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                      <label style={{ fontSize: "12px", color: "var(--muted)" }}>End (s):</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        style={{ width: "80px" }}
+                        value={cue.end}
+                        onChange={e => updateCue(index, { end: Number(e.target.value) })}
+                      />
+                      <button type="button" className="text-button" style={{ padding: "2px 6px" }} onClick={() => nudgeTime(index, "end", -0.5)}>-0.5s</button>
+                      <button type="button" className="text-button" style={{ padding: "2px 6px" }} onClick={() => nudgeTime(index, "end", -0.1)}>-0.1s</button>
+                      <button type="button" className="text-button" style={{ padding: "2px 6px" }} onClick={() => nudgeTime(index, "end", 0.1)}>+0.1s</button>
+                      <button type="button" className="text-button" style={{ padding: "2px 6px" }} onClick={() => nudgeTime(index, "end", 0.5)}>+0.5s</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: "12px", color: "var(--muted)", display: "block", marginBottom: "4px" }}>မြန်မာစာ စာတန်းထိုး (Burmese text)</label>
+                    <textarea
+                      className="burmese-text"
+                      value={cue.text}
+                      onChange={e => updateCue(index, { text: e.target.value })}
+                      rows={2}
+                      style={{ width: "100%", fontSize: "15px" }}
+                    />
+                  </div>
+                </div>
+              </article>
+            )}
+          </div>
         </section>
         <section className="card">
           <div className="eyebrow">EXPORT</div>

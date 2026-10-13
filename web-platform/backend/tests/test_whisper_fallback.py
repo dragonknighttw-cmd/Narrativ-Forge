@@ -192,3 +192,53 @@ def test_cloudflare_whisper_skips_remote_when_daily_quota_threshold_reached(monk
     assert any(item[0] == "lock" for item in db_calls)
     assert not any(item[0] == "add" for item in db_calls)
     assert not any(item[0] == "commit" for item in db_calls)
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_rejects_chinese_only_output():
+    assert not real_processing._transcript_contains_myanmar_script({
+        "text": "这是关于 ChatGPT 模型的讨论",
+        "segments": [{"text": "人工智能模型"}],
+    })
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_accepts_myanmar_script_in_segments():
+    assert real_processing._transcript_contains_myanmar_script({
+        "text": "ChatGPT model",
+        "segments": [{"text": "မြန်မာလို ဆွေးနွေးထားပါတယ်"}],
+    })
+
+
+@pytest.mark.unit
+def test_empty_transcript_is_not_misclassified_as_language_mismatch():
+    # Synthetic silence/tone media legitimately produces no transcript text.
+    assert not real_processing._transcript_contains_text({})
+    assert not real_processing._transcript_contains_myanmar_script({})
+
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_accepts_myanmar_in_main_text():
+    assert real_processing._transcript_contains_myanmar_script({
+        "text": "ChatGPT မော်ဒယ်များအကြောင်း",
+        "segments": [],
+    })
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_does_not_treat_language_metadata_as_transcript():
+    # Language labels and metadata are not recognized speech content.
+    assert not real_processing._transcript_contains_myanmar_script({
+        "text": "这是关于 ChatGPT 模型的讨论",
+        "language": "my",
+        "segments": [],
+    })
+
+
+@pytest.mark.unit
+def test_transcript_text_detection_ignores_whitespace_only_payloads():
+    assert not real_processing._transcript_contains_text({
+        "text": "  \n\t ",
+        "segments": [{"text": "  "}],
+    })

@@ -111,6 +111,15 @@ export default {
 
     try {
       const result = await env.AI.run("@cf/openai/whisper", { audio: [...body] });
+      // Preserve provider language metadata when available; older Whisper
+      // responses may omit it. This is diagnostic only and does not alter inference.
+      const metadata = result as {
+        language?: unknown;
+        language_probability?: unknown;
+        transcription_info?: { language?: unknown; language_probability?: unknown };
+      };
+      const language = metadata.language ?? metadata.transcription_info?.language;
+      const languageProbability = metadata.language_probability ?? metadata.transcription_info?.language_probability;
       return Response.json({
         provider: "cloudflare_workers_ai",
         model: "@cf/openai/whisper",
@@ -118,6 +127,8 @@ export default {
         text: result.text ?? "",
         word_count: result.word_count ?? 0,
         vtt: result.vtt ?? "",
+        ...(typeof language === "string" ? { language } : {}),
+        ...(typeof languageProbability === "number" ? { language_probability: languageProbability } : {}),
       }, { headers });
     } catch {
       // Do not expose upstream/provider diagnostics to the caller.

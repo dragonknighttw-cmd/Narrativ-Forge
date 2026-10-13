@@ -155,3 +155,41 @@ test("chunked audio exceeding the byte cap is rejected before inference", async 
   assert.deepEqual(await response.json(), { error: "Audio payload exceeds 50 MB" });
   assert.equal(inferenceCalled, false);
 });
+
+
+test("provider language metadata is preserved when available", async () => {
+  const token = await signedToken({
+    sub: "test-user",
+    episode_id: "episode-language",
+    exp: Math.floor(Date.now() / 1000) + 60,
+    max_audio_seconds: 1,
+  });
+  const request = new Request("https://worker.test/", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "audio/wav",
+      "X-Narrativ-Episode": "episode-language",
+      Origin: "https://harmonious-nasturtium-53a1d6.netlify.app",
+    },
+    body: new Uint8Array(44),
+  });
+  const response = await worker.fetch(request, env(async () => ({
+    text: "မင်္ဂလာပါ",
+    word_count: 1,
+    vtt: "WEBVTT",
+    transcription_info: { language: "my", language_probability: 0.98 },
+  })));
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    provider: "cloudflare_workers_ai",
+    model: "@cf/openai/whisper",
+    episode_id: "episode-language",
+    text: "မင်္ဂလာပါ",
+    word_count: 1,
+    vtt: "WEBVTT",
+    language: "my",
+    language_probability: 0.98,
+  });
+});

@@ -18,18 +18,23 @@ def test_whisper_falls_back_to_local_cli(monkeypatch, tmp_path):
     monkeypatch.setattr(real_processing.settings, "cloudflare_whisper_worker_url", "https://whisper.example.test")
     fallback_events = []
     monkeypatch.setattr(real_processing, "_transcribe_cloudflare", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("remote unavailable")))
+    commands = []
 
     def fake_run(command, *, timeout):
+        commands.append(command)
         fallback_events.append("local")
         output = transcript_dir / f"{source.stem}.json"
-        output.write_text(json.dumps({"text": "fallback"}), encoding="utf-8")
+        output.write_text(json.dumps({"text": "fallback", "language": "zh"}), encoding="utf-8")
         return None
 
     monkeypatch.setattr(real_processing, "_run", fake_run)
     db = SimpleNamespace(rollback=lambda: fallback_events.append("rollback"))
     result = real_processing._transcribe_with_fallback(source, transcript_dir, episode, db)
     assert result.is_file()
-    assert json.loads(result.read_text(encoding="utf-8"))["text"] == "fallback"
+    payload = json.loads(result.read_text(encoding="utf-8"))
+    assert payload["text"] == "fallback"
+    assert payload["language"] == "zh"
+    assert "--language" not in commands[0]
     assert fallback_events == ["rollback", "local"]
 
 
@@ -103,6 +108,7 @@ def test_cloudflare_whisper_uses_signed_bearer_wav_contract(monkeypatch, tmp_pat
     payload = json.loads(result.read_text(encoding="utf-8"))
     assert payload["source"] == "cloudflare_whisper"
     assert payload["text"] == "မင်္ဂလာပါ"
+    assert "language" not in payload
     request = next(item for item in calls if item[0] == "https://whisper.example.test")
     lock_index = next(index for index, item in enumerate(calls) if item[0] == "db_lock")
     reservation_index = next(
@@ -186,3 +192,53 @@ def test_cloudflare_whisper_skips_remote_when_daily_quota_threshold_reached(monk
     assert any(item[0] == "lock" for item in db_calls)
     assert not any(item[0] == "add" for item in db_calls)
     assert not any(item[0] == "commit" for item in db_calls)
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_rejects_chinese_only_output():
+    assert not real_processing._transcript_contains_myanmar_script({
+        "text": "这是关于 ChatGPT 模型的讨论",
+        "segments": [{"text": "人工智能模型"}],
+    })
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_accepts_myanmar_script_in_segments():
+    assert real_processing._transcript_contains_myanmar_script({
+        "text": "ChatGPT model",
+        "segments": [{"text": "မြန်မာလို ဆွေးနွေးထားပါတယ်"}],
+    })
+
+
+@pytest.mark.unit
+def test_empty_transcript_is_not_misclassified_as_language_mismatch():
+    # Synthetic silence/tone media legitimately produces no transcript text.
+    assert not real_processing._transcript_contains_text({})
+    assert not real_processing._transcript_contains_myanmar_script({})
+
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_accepts_myanmar_in_main_text():
+    assert real_processing._transcript_contains_myanmar_script({
+        "text": "ChatGPT မော်ဒယ်များအကြောင်း",
+        "segments": [],
+    })
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_does_not_treat_language_metadata_as_transcript():
+    # Language labels and metadata are not recognized speech content.
+    assert not real_processing._transcript_contains_myanmar_script({
+        "text": "这是关于 ChatGPT 模型的讨论",
+        "language": "my",
+        "segments": [],
+    })
+
+
+@pytest.mark.unit
+def test_transcript_text_detection_ignores_whitespace_only_payloads():
+    assert not real_processing._transcript_contains_text({
+        "text": "  \n\t ",
+        "segments": [{"text": "  "}],
+    })

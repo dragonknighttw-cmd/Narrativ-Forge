@@ -72,6 +72,10 @@ Fallback policy:
 
 A live authenticated audio → VTT → Subtitle Studio test is required before Gate 4 can become VERIFIED.
 
+## Language detection and transcript quality
+
+The media worker must not assert Burmese (`my`) as a detected language when the provider has not supplied that metadata. Local Whisper fallback runs automatic language detection and retains the language returned by Whisper; the Cloudflare adapter preserves a provider-supplied language and does not invent one when absent. Detection metadata is not a quality score: before accepting Burmese subtitles, confirm the transcript contains reviewed Burmese content and compare it with audio/reference text. The 2026-10-12 supplied sample produced unusable local `tiny` and `small` candidates; see [the sample report](Report/BURMESE_SAMPLE_PREFLIGHT_2026-10-12.md). Burmese speech-quality acceptance remains pending.
+
 
 ## Free-first multi-provider content planning
 

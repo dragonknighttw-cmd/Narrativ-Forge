@@ -210,6 +210,17 @@ Check all of the following:
 
 Do not fake a successful end-to-end run by editing database rows or manually changing job status. If the app requires external credentials/services that are unavailable in local test mode, mark that check **BLOCKED** and record the missing dependency without invoking production services.
 
+## 8.1. Static review of the primary Cloudflare path (no inference run)
+
+The repository's primary provider path is remote-first when `whisper_remote_enabled` and `cloudflare_whisper_worker_url` are configured. The current Worker calls `env.AI.run("@cf/openai/whisper", { audio: [...body] })`; it does not pass a language hint, and the Worker response currently does not preserve language-detection metadata. The local CLI comparison alone therefore does not establish how the primary remote provider behaved.
+
+Before changing this path, review the model contract and cost impact:
+- [Cloudflare `@cf/openai/whisper` model documentation](https://developers.cloudflare.com/ai/models/%40cf/openai/whisper/)
+- [Cloudflare `@cf/openai/whisper-large-v3-turbo` parameters](https://developers.cloudflare.com/ai/models/%40cf/openai/whisper-large-v3-turbo/), which document a `language` input parameter.
+- The current and alternative model IDs are not interchangeable by assumption. A model switch or language-hint change needs contract tests and owner review; it may change accuracy, latency, response shape, and inference cost.
+
+Do **not** send a live request to Cloudflare during this investigation. Do not switch the production Worker model, change its language behavior, or deploy it as part of this local acceptance procedure. A follow-up code change can add explicit language configuration only after the maintainer confirms the intended source-language policy and reviews the model's supported input schema and quota/cost impact. Where supported, preserve language metadata from the provider so the investigation can distinguish detection from transcription quality.
+
 ## 9. Evaluate whether the guard is sufficient
 
 The current check asks only whether at least one character falls in U+1000–U+109F. This is intentionally weak. It can reject legitimate non-Burmese-language content and can accept incorrect text containing one Myanmar character.

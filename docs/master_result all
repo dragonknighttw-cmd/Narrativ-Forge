@@ -71,13 +71,18 @@ To guarantee security and eliminate accidental key misuse:
 ## 5. Execution Roadmap & Staged Ordering
 
 ```
-[ Phase 1: Core Platform Foundations ] — STATUS: DONE IN REPOSITORY
+[ Phase 1: Core Platform Foundations ] — STATUS: 100% DONE IN REPOSITORY
 ├── Frontend UI & Navigation (Next.js 14, 25 routes, mobile drawer, Burmese typography) [DONE]
 ├── User Authentication & Workspace / Tenant Isolation [DONE]
 ├── Scriptwriting & Content Plan UI (8 Canonical Hook families, AI Script & Scene generator) [DONE]
 ├── Video Episode Management & 5-Episode Batch Generator [DONE]
 ├── Thumbnail Candidate Workflow (10 generated -> 5 shortlisted -> 1 human approved) [DONE]
-├── Subtitle Studio (Cue micro-nudge ±0.1s/±0.5s, split/merge/add/delete, Ctrl+S) [DONE]
+├── Subtitle Studio (Micro-nudge ±0.1s/±0.5s, cue ops, Ctrl+S) [DONE]
+├── 9:16 Live Video Player Sync & Subtitle Styling Presets (with Audio Ducking) [DONE]
+├── 9:16 Cross-Platform Safe-Zone Simulator (TikTok, Shorts, Reels) [DONE]
+├── Media Asset Library UI (9:16 Portrait check, category filters & metadata) [DONE]
+├── Processing Pipeline State Machine Stepper (5-stage lifecycle) [DONE]
+├── Series Bible & Character Continuity Manager (Voice, Tone & Archetypes) [DONE]
 ├── RAG Vector Dimension Alignment (Voyage 512-dim schema guard & semantic search) [DONE]
 └── Automated Unit / Integration / Security CI Tests (Zero Quota, 281+ tests) [DONE / VERIFIED]
 

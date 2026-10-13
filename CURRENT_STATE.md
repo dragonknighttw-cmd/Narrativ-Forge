@@ -1,13 +1,18 @@
 # Narrativ Forge — Current State
 
-## Latest application-code checkpoint — 2026-10-14 UTC (SHA `67deb66`)
+## Latest application-code checkpoint — 2026-10-14 UTC (SHA `f2f45cf`)
 
-- Direct-main implementation commits `6a6f54e` and `67deb66` complete the Phase 1 & Phase 2 Core Platform features:
+- Direct-main implementation commits `6a6f54e`, `67deb66`, and `f2f45cf` complete the full suite of Core Platform features:
   - 8 canonical hook families with authentic Burmese templates (`hook_engineering.py`).
   - 5-episode batch generator with narrative arc progression and DB persistence (`batch_generator.py`).
   - Script Studio AI Assistant & Scene Breakdown Auto-Pacing (`script/page.tsx`, `scenes/page.tsx`).
   - Thumbnail candidate workflow: 10 candidates generated -> top 5 shortlisted by CTR -> 1 human approved (`thumbnail_candidate.py`, `review/page.tsx`).
   - Subtitle Studio micro-nudge (`±0.1s`, `±0.5s`), split/merge/add/delete cue, and `Ctrl+S` hotkey (`subtitle/page.tsx`).
+  - 9:16 Live Video Player Sync Canvas & Subtitle Styling Presets (`subtitle/page.tsx`).
+  - 9:16 Cross-Platform Safe-Zone Visual Overlay Simulator for TikTok, Shorts, and Reels (`publishing-prep/page.tsx`).
+  - Media Asset Library UI with 9:16 portrait validation guidance, category filters, and metadata inspector (`assets/page.tsx`).
+  - Processing Pipeline State Machine Stepper with 5-stage lifecycle and progress bar (`processing/page.tsx`).
+  - Series Bible & Character Voice / Tone Continuity Manager (`series/[id]/page.tsx`).
   - Burmese typography stack (`Padauk`, `Pyidaungsu`, `line-height: 1.75`), and 390–430px mobile drawer (`app-shell.tsx`).
   - Voyage AI 512-dim RAG vector schema guard & semantic search endpoint (`rag_embeddings.py`, `search.py`).
 - All 12 focused backend unit tests and frontend TypeScript typecheck (`tsc --noEmit`) pass cleanly.

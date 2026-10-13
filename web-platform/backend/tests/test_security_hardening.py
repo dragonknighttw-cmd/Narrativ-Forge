@@ -31,6 +31,7 @@ def test_login_rate_limit_counts_failed_attempts_only(monkeypatch):
         def query(self, *_args):
             return FakeQuery()
 
+    original_db_override = app.dependency_overrides.get(get_db)
     app.dependency_overrides[get_db] = lambda: FakeDB()
     monkeypatch.setattr(settings, "single_user_mode", False)
     try:
@@ -43,7 +44,10 @@ def test_login_rate_limit_counts_failed_attempts_only(monkeypatch):
         ]
         assert responses[-1].status_code == 429
     finally:
-        app.dependency_overrides.pop(get_db, None)
+        if original_db_override is not None:
+            app.dependency_overrides[get_db] = original_db_override
+        else:
+            app.dependency_overrides.pop(get_db, None)
 
 
 def test_user_listing_is_scoped_to_current_organization(db_session):

@@ -1,5 +1,9 @@
 # Narrativ Forge — Detailed Remaining Work Checklist
 
+## Strategic Realignment — 2026-10-13 UTC
+- **Live Media Processing & Live Cloud API Inference Postponed to Final Pre-Production Gate:** Per owner direction, real-media video uploading, Celery worker capacity provisioning, Cloudflare Whisper live inference, and live API quota consumption (Gemini, Groq, Mistral, Cohere, Voyage, Agnes) are explicitly scheduled for the **Final Pre-Production Acceptance Gate**.
+- **Current Active Development Focus:** UI, auth/workspaces, script/story management, database schema, and deterministic mocked tests. This prevents premature quota expenditure and decouples frontend/backend feature delivery from live media worker costs.
+
 ## Fresh checkpoint — 2026-10-13 UTC (main `e21f98d29cf1ece43bc6a4550a02eb676f196d3a`)
 
 - Documentation checkpoint PR [#74](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/74) merged. The four standard workflows passed on this exact main SHA: [CI #38421618942](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38421618942), [Security #38421618948](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38421618948), [CodeQL #38421618945](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38421618945), and [Repository Gate #38421618916](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38421618916).

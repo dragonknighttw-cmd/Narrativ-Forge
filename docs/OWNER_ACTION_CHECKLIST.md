@@ -1,5 +1,9 @@
 # Narrativ Forge — Owner Action Checklist
 
+## Strategic Realignment — 2026-10-13 UTC
+- **Postponed to Final Pre-Production Gate:** Per owner direction, live video processing, background media worker hosting, Cloudflare Whisper live inference, and live cloud API quota consumption (Gemini, Groq, Mistral, Cohere, Voyage, Agnes) are explicitly scheduled for the **Final Pre-Production Acceptance Gate**.
+- **Active Focus:** UI/UX, authentication, workspaces/tenant isolation, scriptwriting workflows, and mocked deterministic test suites.
+
 ## Post-merge owner checkpoint — 2026-10-13 UTC
 
 - PR #72 and PR #73 are merged. Application-code checkpoint: `dfff46a5335833723e403b70fa54ff8ba8cc0100`; CI, Security, CodeQL and Repository Gate passed on that exact SHA.

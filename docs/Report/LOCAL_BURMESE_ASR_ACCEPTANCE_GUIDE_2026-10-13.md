@@ -4,20 +4,20 @@
 **Related PR:** [#73 — fix: reject ASR transcripts without Myanmar script](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/73)  
 **Code under test:** `web-platform/backend/app/services/real_processing.py`  
 **Focused tests:** `web-platform/backend/tests/test_whisper_fallback.py`  
-**Status:** Prepared for local execution. This guide has not itself been executed on the user's machine.
+**Status:** PR #73 is merged. This guide remains prepared for local execution and has not itself been executed on the user's machine. The Myanmar-script guard is not Burmese speech-quality acceptance.
 
 ---
 
 ## 0. Non-negotiable rules
 
 1. Follow this guide in order. Record commands, versions, outputs, and failures; do not silently skip a step.
-2. Do **not** merge PR #73, merge PR #72, deploy to production, change production settings, or trigger any production processing job as part of this investigation.
+2. PRs #72 and #73 are already merged. Do **not** deploy to production, change production settings, or trigger any production processing job as part of this investigation.
 3. Do **not** call the Cloudflare Whisper Worker for these tests. This plan is local-only and must not consume Cloudflare inference quota. If a test unexpectedly selects the remote provider, stop and investigate the configuration before proceeding.
 4. Never paste secrets, access tokens, signed URLs, full `.env` files, customer data, or private audio into logs, issues, or the report. Do not print secret environment values to diagnose settings.
 5. Preserve the original audio/video. Use a copy of the source media and separate output directories for each test run.
 6. Do not automatically translate, rewrite, or “correct” Whisper output to make it look Burmese. Save the raw JSON from both runs and compare it.
 7. The Myanmar Unicode check is only a script-presence guard. A few Myanmar characters do not prove that a transcript is correct Burmese.
-8. If the exact PR head, the test command, or the provider configuration cannot be verified, stop and document the blocker rather than guessing.
+8. If the exact main commit, test command, or provider configuration cannot be verified, stop and document the blocker rather than guessing.
 
 ## 1. Confirm repository and exact PR head
 
@@ -26,14 +26,14 @@ Run in **PowerShell** from the repository root:
 ```powershell
 git status --short
 git fetch origin
-git switch fix/burmese-asr-script-guard
-git pull --ff-only origin fix/burmese-asr-script-guard
+git switch main
+git pull --ff-only origin main
 git rev-parse HEAD
 git log -1 --oneline
 ```
 
-- Confirm the branch is `fix/burmese-asr-script-guard`.
-- Open [PR #73](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/73) and compare the local `git rev-parse HEAD` with the current PR head SHA shown by GitHub. They must match before testing.
+- Test the merged code from `main`; PRs #72 and #73 are already merged.
+- Confirm the local `git rev-parse HEAD` equals the latest `origin/main` SHA before testing. At the time this guide was refreshed, the post-merge checkpoint was `dfff46a5335833723e403b70fa54ff8ba8cc0100`; a newer main commit is acceptable only when fetched and recorded.
 - If the working tree has changes, **do not discard them**. Save/commit/stash them according to the repository owner's normal process before switching branches.
 - If the branch is missing, fetch it explicitly; do not create a replacement branch from an unknown commit.
 - Record the SHA, OS version, Python version, and Git version in the test report.
@@ -242,7 +242,7 @@ Mark the investigation **PASS** only when all applicable criteria are evidenced:
 - [ ] Transcript retrieval, subtitle timing, playback, and source integrity checks pass, or any unavailable end-to-end checks are clearly marked BLOCKED.
 - [ ] Results are written to the report template below and reviewed.
 
-If any required test fails, the result is **FAIL**, not PASS. If required local tools/media/credentials are unavailable, the result is **BLOCKED**. Do not merge PR #73 or deploy until the maintainer explicitly reviews the evidence and authorizes the next step.
+If any required test fails, the result is **FAIL**, not PASS. If required local tools/media/credentials are unavailable, the result is **BLOCKED**. Do not deploy or run remote inference until the maintainer explicitly reviews the evidence and authorizes the next step.
 
 ## 11. Required result report
 
@@ -301,7 +301,12 @@ Store raw JSON and logs in a local ignored/temp artifact directory. Commit only 
 
 Copy and paste this prompt when local execution is available:
 
-> Read and follow `docs/Report/LOCAL_BURMESE_ASR_ACCEPTANCE_GUIDE_2026-10-13.md` from top to bottom. Treat it as the required procedure, not optional suggestions. First verify the current branch and exact PR #73 head SHA. Do not discard local changes. Run the focused Whisper tests and backend unit/security tests; then compare local Whisper auto-detection and forced Burmese on the exact same reference audio and same model, preserving separate raw JSON outputs. Verify local-only routing before any application-path run. Complete the script-guard, empty-transcript, source-integrity, transcript retrieval, subtitle-timing, and playback checks that are possible. Do not call Cloudflare inference, consume quota, change production configuration, deploy, merge any PR, or edit test expectations just to get a pass. Do not translate or rewrite model output. If a step cannot run, mark it BLOCKED with the exact command/error and continue only where safe. Write sanitized results to `docs/Report/ASR_BURMESE_LOCAL_ACCEPTANCE_RESULTS_YYYY-MM-DD.md`, summarize PASS/FAIL/BLOCKED evidence, and stop for maintainer review before proposing or applying further code changes. Do not claim success without logs or artifacts supporting it.
+> Read and follow `docs/Report/LOCAL_BURMESE_ASR_ACCEPTANCE_GUIDE_2026-10-13.md` from top to bottom. Treat it as the required procedure, not optional suggestions. First verify the current `main` branch and exact main SHA. Do not discard local changes. Run the focused Whisper tests and backend unit/security tests; then compare local Whisper auto-detection and forced Burmese on the exact same reference audio and same model, preserving separate raw JSON outputs. Verify local-only routing before any application-path run. Complete the script-guard, empty-transcript, source-integrity, transcript retrieval, subtitle-timing, and playback checks that are possible. Do not call Cloudflare inference, consume quota, change production configuration, deploy, merge any PR, or edit test expectations just to get a pass. Do not translate or rewrite model output. If a step cannot run, mark it BLOCKED with the exact command/error and continue only where safe. Write sanitized results to `docs/Report/ASR_BURMESE_LOCAL_ACCEPTANCE_RESULTS_YYYY-MM-DD.md`, summarize PASS/FAIL/BLOCKED evidence, and stop for maintainer review before proposing or applying further code changes. Do not claim success without logs or artifacts supporting it.
 
 
 
+
+
+## Post-merge note — 2026-10-13
+
+PRs #72 and #73 have been merged. For local acceptance, start from current `main`, record the exact SHA, and do not try to switch to the former feature branch unless it is deliberately needed for historical comparison. Cloud/CI evidence and the Myanmar-script guard do not establish real Burmese transcription accuracy.

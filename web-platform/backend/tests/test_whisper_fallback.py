@@ -215,3 +215,30 @@ def test_empty_transcript_is_not_misclassified_as_language_mismatch():
     # Synthetic silence/tone media legitimately produces no transcript text.
     assert not real_processing._transcript_contains_text({})
     assert not real_processing._transcript_contains_myanmar_script({})
+
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_accepts_myanmar_in_main_text():
+    assert real_processing._transcript_contains_myanmar_script({
+        "text": "ChatGPT မော်ဒယ်များအကြောင်း",
+        "segments": [],
+    })
+
+
+@pytest.mark.unit
+def test_transcript_script_guard_does_not_treat_language_metadata_as_transcript():
+    # Language labels and metadata are not recognized speech content.
+    assert not real_processing._transcript_contains_myanmar_script({
+        "text": "这是关于 ChatGPT 模型的讨论",
+        "language": "my",
+        "segments": [],
+    })
+
+
+@pytest.mark.unit
+def test_transcript_text_detection_ignores_whitespace_only_payloads():
+    assert not real_processing._transcript_contains_text({
+        "text": "  \n\t ",
+        "segments": [{"text": "  "}],
+    })

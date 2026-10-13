@@ -18,6 +18,7 @@
 ## Additional non-local review
 
 - Added regression tests for Myanmar script in the main transcript text, whitespace-only transcript payloads, and the rule that a `language: "my"` metadata label alone must not count as recognized Myanmar text.
+- Added a Worker response pass-through for provider `language` and `language_probability` metadata when present at the top level or under `transcription_info`, with a mocked contract test. The backend persists the response JSON already, so these fields can reach the transcript artifact when the provider supplies them. This does not force Burmese or change the model/inference cost.
 - Static review found that the primary remote-first Cloudflare Worker calls `@cf/openai/whisper` with only the audio payload; it does not pass a language hint or return language-detection metadata to the backend. This is a plausible investigation lead, not proof of root cause.
 - Added this finding and official Cloudflare model-contract links to the acceptance guide. The `whisper-large-v3-turbo` model documents a `language` input, but switching model or changing remote inference behavior can affect cost and output contract. No model switch, live inference, quota use, or deployment was performed.
 - The latest code/test commit is `4e571b03e2ded816d2326cb12c8ba154970c07a3`; documentation updates followed. Workflow results for the newest PR head still need confirmation.

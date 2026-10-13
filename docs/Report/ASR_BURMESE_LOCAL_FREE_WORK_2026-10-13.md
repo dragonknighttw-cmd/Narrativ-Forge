@@ -29,7 +29,7 @@
 - Local tests and real Burmese-audio inference have not been run because local execution is currently unavailable.
 - No Cloudflare inference was run; no quota was consumed by this work.
 - No production deployment was triggered. Render auto-deploy remains disabled.
-- PR #73 remains draft and must not be merged until real Burmese-audio acceptance checks are complete.
+- PR #73 was merged into `main` as `c04a17d76f7f2ee42a8ad9a0fff620c9af75b869` on 2026-10-13. The guardrail is merged, but real Burmese-audio acceptance remains unverified.
 
 ## Work still pending
 
@@ -38,7 +38,7 @@
 3. Confirm transcript retrieval, subtitle timing, output playback, and unchanged source media.
 4. Reassess whether a stronger language/quality gate is appropriate after observing real samples. Do not add a heuristic that silently rewrites ASR output.
 5. Obtain explicit approval before any quota-consuming remote inference or production deployment.
-6. Keep PR #73 in draft and do not merge until real Burmese-audio acceptance checks are complete.
+6. Keep release status **PENDING — NOT PRODUCTION READY** until local Burmese-audio, subtitle/playback, and source-integrity acceptance is recorded.
 
 ## Independent isolated-box regression verification — 2026-10-13
 
@@ -47,3 +47,10 @@
 - Backend unit/security selection: `cd web-platform/backend && PYTHONPATH=. pytest -m 'unit or security' -q` — **303 passed, 3 skipped, 84 deselected**; three existing deprecation warnings were emitted.
 - Cloudflare Whisper Worker contract tests: `cd web-platform/cloudflare/whisper-worker && node --experimental-strip-types --test test/worker.test.mjs` — **5 passed** (Node 25.9.0 in the isolated box; repository CI pins Node 22).
 - `git status` was clean before recording these results. These results establish regression behavior for the exact checked-out source only; they do **not** establish Burmese speech accuracy, Windows user-machine acceptance, live provider behavior, or production readiness.
+
+## Post-merge exact-main verification — 2026-10-13
+
+- PR #73 and PR #72 are merged. Current `main` checkpoint after both merges is `dfff46a5335833723e403b70fa54ff8ba8cc0100`.
+- On an isolated workspace checked out at that exact main SHA: focused Whisper/subprocess tests passed (**17 passed**); backend unit/security selection passed (**303 passed, 3 skipped, 84 deselected**); Whisper Worker contract tests passed (**5 passed**).
+- The four standard main-SHA GitHub workflows (CI, Security, CodeQL, Repository Gate) also passed on `dfff46a5335833723e403b70fa54ff8ba8cc0100`.
+- These checks were executed in an isolated Linux workspace. They do not replace the deferred Windows-user-machine run, real Burmese-audio comparison, human transcript review, subtitle playback, or source-media integrity check. No Cloudflare inference or production deployment was run.

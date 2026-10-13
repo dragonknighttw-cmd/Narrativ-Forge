@@ -7,7 +7,6 @@ import signal
 import subprocess
 import tempfile
 import requests
-import re
 import time
 import base64
 import hashlib
@@ -353,7 +352,7 @@ def _transcribe_with_fallback(source: Path, transcript_dir: Path, episode: Episo
         whisper_json = candidates[0]
     return whisper_json
 
-MYANMAR_SCRIPT_RE = re.compile(r"[\\u1000-\\u109F]")
+
 
 
 def _transcript_contains_myanmar_script(transcript: dict) -> bool:
@@ -362,7 +361,7 @@ def _transcript_contains_myanmar_script(transcript: dict) -> bool:
     segments = transcript.get("segments") or []
     if isinstance(segments, list):
         parts.extend(str(segment.get("text") or "") for segment in segments if isinstance(segment, dict))
-    return bool(MYANMAR_SCRIPT_RE.search(" ".join(parts)))
+    return any(0x1000 <= ord(character) <= 0x109F for character in " ".join(parts))
 
 
 def run_real_job(job_id: str, db: Session, *, already_claimed: bool = False) -> ProcessingJob:

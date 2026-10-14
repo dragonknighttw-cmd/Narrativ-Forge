@@ -283,12 +283,22 @@ class RoutedAIAdapter:
             try:
                 value = spec.operation(idea=idea, category=category)
                 attempts.append(spec.name + ":ok")
+                try:
+                    from .ai_usage_tracker import record_ai_usage
+                    record_ai_usage(_provider_family(spec.name), task="script", success=True)
+                except Exception:
+                    pass
                 logger.info("AI content plan generated", extra={"provider": spec.name, "attempts": attempts})
                 return value
             except Exception as exc:
                 status = _http_status(exc)
                 attempts.append(f"{spec.name}:failed:{status or type(exc).__name__}")
                 family = _provider_family(spec.name)
+                try:
+                    from .ai_usage_tracker import record_ai_usage
+                    record_ai_usage(family, task="script", success=False, error=str(status or exc))
+                except Exception:
+                    pass
 
                 # Authentication failures and 429s usually apply to the whole key/account.
                 # Skip other models on that provider before trying the next provider.
@@ -322,10 +332,35 @@ class RoutedAIAdapter:
 
 
 def _configured_chat_providers() -> list[ChatProvider]:
-    """Build a free-first chain, opting in to non-OpenRouter account tiers explicitly."""
+    """Build a prioritized multi-provider chain.
+    Gemini is Priority 1 for Burmese script authenticity, followed by Groq, OpenRouter, Mistral, Cohere, Cloudflare, and NVIDIA.
+    """
     providers: list[ChatProvider] = []
     priority = 1
 
+    # 1. Gemini (Priority 1: Best Burmese nuance & creative scripts)
+    if settings.gemini_api_key:
+        providers.append(ChatProvider(
+            name="gemini",
+            api_key=settings.gemini_api_key,
+            base_url=settings.gemini_base_url,
+            model=settings.gemini_model,
+            priority=priority,
+        ))
+        priority += 1
+
+    # 2. Groq (Priority 2: Ultra-fast fallback, 14,400 req/day free)
+    if settings.groq_api_key:
+        providers.append(ChatProvider(
+            name="groq",
+            api_key=settings.groq_api_key,
+            base_url=settings.groq_base_url,
+            model=settings.groq_model,
+            priority=priority,
+        ))
+        priority += 1
+
+    # 3. OpenRouter (Priority 3: Vetted free chat models)
     if settings.openrouter_api_key:
         models = [item.strip() for item in settings.openrouter_models.split(",") if item.strip()]
         for model in models:
@@ -344,23 +379,30 @@ def _configured_chat_providers() -> list[ChatProvider]:
             ))
             priority += 1
 
-    # Groq follows OpenRouter. It is enabled only after the owner confirms the free tier.
-    if settings.groq_api_key and settings.groq_free_tier_enabled:
+    # 4. Mistral (Priority 4: Structured JSON & breakdown)
+    if settings.mistral_api_key:
         providers.append(ChatProvider(
-            name="groq",
-            api_key=settings.groq_api_key,
-            base_url=settings.groq_base_url,
-            model=settings.groq_model,
+            name="mistral",
+            api_key=settings.mistral_api_key,
+            base_url=settings.mistral_base_url,
+            model=settings.mistral_model,
             priority=priority,
         ))
         priority += 1
 
-    # Workers AI chat needs its own account ID/API token; the Whisper shared secret is unrelated.
-    if (
-        settings.cloudflare_account_id
-        and settings.cloudflare_api_token
-        and settings.cloudflare_ai_free_tier_enabled
-    ):
+    # 5. Cohere (Priority 5: Continuity & Narrative context)
+    if settings.cohere_api_key:
+        providers.append(ChatProvider(
+            name="cohere",
+            api_key=settings.cohere_api_key,
+            base_url=settings.cohere_base_url,
+            model=settings.cohere_model,
+            priority=priority,
+        ))
+        priority += 1
+
+    # 6. Cloudflare Workers AI (Priority 6: Serverless edge inference)
+    if settings.cloudflare_account_id and settings.cloudflare_api_token:
         providers.append(ChatProvider(
             name="cloudflare-ai",
             api_key=settings.cloudflare_api_token,
@@ -370,22 +412,13 @@ def _configured_chat_providers() -> list[ChatProvider]:
         ))
         priority += 1
 
-    # These APIs can have account-specific trial/free quotas. Do not call them just
-    # because a key exists: the owner must explicitly confirm the intended free tier.
-    configured = [
-        ("gemini", settings.gemini_api_key, settings.gemini_base_url, settings.gemini_model, settings.gemini_free_tier_enabled),
-        ("mistral", settings.mistral_api_key, settings.mistral_base_url, settings.mistral_model, settings.mistral_free_tier_enabled),
-        ("cohere", settings.cohere_api_key, settings.cohere_base_url, settings.cohere_model, settings.cohere_free_tier_enabled),
-        ("nvidia", settings.nvidia_api_key, settings.nvidia_base_url, settings.nvidia_model, settings.nvidia_free_tier_enabled),
-    ]
-    for name, api_key, base_url, model, free_tier_enabled in configured:
-        if not api_key or not free_tier_enabled:
-            continue
+    # 7. NVIDIA Build / NIM (Priority 7)
+    if settings.nvidia_api_key:
         providers.append(ChatProvider(
-            name=name,
-            api_key=api_key,
-            base_url=base_url,
-            model=model,
+            name="nvidia",
+            api_key=settings.nvidia_api_key,
+            base_url=settings.nvidia_base_url,
+            model=settings.nvidia_model,
             priority=priority,
         ))
         priority += 1

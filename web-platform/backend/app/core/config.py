@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     smtp_password: SecretStr = SecretStr("")
     smtp_from_email: str = ""
     smtp_use_tls: bool = True
+    telegram_bot_token: SecretStr = SecretStr("")
+    telegram_chat_id: str = ""
+    telegram_topic_id: int | None = None
+    telegram_enabled: bool = False
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_price_pro: str = ""

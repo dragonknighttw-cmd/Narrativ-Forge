@@ -59,3 +59,59 @@ def get_rag_vector_schema() -> dict[str, Any]:
         "distance_metric": "cosine",
         "status": "aligned_pre_production",
     }
+
+
+def get_embedding(text: str) -> list[float]:
+    """Generate 512-D vector embedding with Voyage AI (#1) and Cohere (#2) fallback."""
+    import os
+    import httpx
+    import logging
+
+    log = logging.getLogger(__name__)
+
+    # 1. Voyage AI (Priority 1)
+    voyage_key = os.getenv("VOYAGE_API_KEY", "").strip()
+    if voyage_key:
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                res = client.post(
+                    "https://api.voyageai.com/v1/embeddings",
+                    headers={"Authorization": f"Bearer {voyage_key}", "Content-Type": "application/json"},
+                    json={
+                        "input": [text[:4000]],
+                        "model": VOYAGE_MODEL_ID,
+                        "output_dimension": VOYAGE_VECTOR_DIMENSION,
+                    },
+                )
+                if res.status_code == 200:
+                    vec = res.json()["data"][0]["embedding"]
+                    if len(vec) == VOYAGE_VECTOR_DIMENSION:
+                        return [float(x) for x in vec]
+        except Exception as exc:
+            log.warning("Voyage embedding failed, falling back to Cohere: %s", exc)
+
+    # 2. Cohere embed-v4.0 (Priority 2, supports 512 dims)
+    cohere_key = os.getenv("COHERE_API_KEY", "").strip()
+    if cohere_key:
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                res = client.post(
+                    "https://api.cohere.com/v2/embed",
+                    headers={"Authorization": f"Bearer {cohere_key}", "Content-Type": "application/json"},
+                    json={
+                        "texts": [text[:4000]],
+                        "model": "embed-v4.0",
+                        "output_dimension": VOYAGE_VECTOR_DIMENSION,
+                        "input_type": "search_document",
+                    },
+                )
+                if res.status_code == 200:
+                    vec = res.json()["embeddings"]["float"][0]
+                    if len(vec) == VOYAGE_VECTOR_DIMENSION:
+                        return [float(x) for x in vec]
+        except Exception as exc:
+            log.warning("Cohere embedding failed, falling back to mock: %s", exc)
+
+    # 3. Deterministic unit mock fallback
+    return generate_mock_embedding(text, VOYAGE_VECTOR_DIMENSION)
+

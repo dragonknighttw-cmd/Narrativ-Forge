@@ -193,3 +193,63 @@ def record_whisper_usage(
     ))
     db.commit()
     return {"recorded": True, "usage": _daily_usage(db, membership.organization_id)}
+
+
+@router.post("/groq-transcribe")
+async def transcribe_with_groq(
+    episode_id: str,
+    membership=Depends(get_current_membership),
+    _: dict = Depends(require_roles("owner", "editor")),
+    db: Session = Depends(get_db),
+):
+    """Fallback STT: Call Groq whisper-large-v3 for ultra-fast, zero-quota-drain transcription."""
+    import os
+    import httpx
+    from ...models import Asset
+
+    _episode_or_404 = None
+    episode = db.query(Episode).filter(
+        Episode.id == episode_id,
+        Episode.organization_id == membership.organization_id,
+    ).first()
+    if not episode:
+        raise HTTPException(status_code=404, detail="Episode not found")
+
+    groq_key = os.getenv("GROQ_API_KEY", "").strip()
+    if not groq_key or groq_key.startswith("your_"):
+        raise HTTPException(status_code=503, detail="Groq API key is not configured for Whisper fallback")
+
+    # Find audio asset for episode
+    audio_asset = db.query(Asset).filter(
+        Asset.episode_id == episode.id,
+        Asset.asset_type.in_(["audio", "audio_wav", "voiceover", "draft_video"]),
+    ).first()
+    if not audio_asset or not audio_asset.storage_path:
+        raise HTTPException(status_code=422, detail="No audio asset available for Groq Whisper transcription")
+
+    audio_path = audio_asset.storage_path
+    if not os.path.exists(audio_path):
+        raise HTTPException(status_code=404, detail="Audio file not found in storage")
+
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            with open(audio_path, "rb") as f:
+                files = {"file": (os.path.basename(audio_path), f, "audio/wav")}
+                data = {
+                    "model": "whisper-large-v3",
+                    "response_format": "vtt",
+                    "temperature": "0.0",
+                }
+                res = await client.post(
+                    "https://api.groq.com/openai/v1/audio/transcriptions",
+                    headers={"Authorization": f"Bearer {groq_key}"},
+                    files=files,
+                    data=data,
+                )
+                if res.status_code != 200:
+                    raise HTTPException(status_code=res.status_code, detail=f"Groq Whisper transcription failed: {res.text[:200]}")
+                vtt_text = res.text
+                return {"provider": "groq_whisper", "model": "whisper-large-v3", "vtt": vtt_text}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Groq Whisper request error: {str(exc)}")
+

@@ -32,6 +32,8 @@ async function idempotentRequest<T>(storageKey: string, path: string, init: Requ
 
 export type Idea = { id: string; title: string; concept?: string | null; category?: string | null; hook?: string | null; content_warning?: string | null; status: string; created_at: string };
 export type Series = { id: string; title: string; description?: string | null; status: string; created_at: string };
+export type SeriesBibleCharacter = { id: string; name: string; role: "protagonist" | "antagonist" | "mentor" | "sidekick"; tone: string; catchphrase: string; traits: string };
+export type SeriesBible = { series_id: string; characters: SeriesBibleCharacter[]; updated_at?: string | null };
 export type Season = { id: string; series_id: string; season_number: number; title?: string | null; created_at: string };
 export type Episode = { id: string; public_id: string; series_id: string; season_id?: string | null; episode_number: number; title: string; category?: string | null; synopsis?: string | null; target_duration_seconds: number; actual_duration_seconds?: number | null; status: string; current_step: string; row_version: number; created_at: string; updated_at: string };
 export type Script = { id: string; episode_id: string; version: number; title?: string | null; content: string; status: string; is_current: boolean; row_version: number; created_at: string; updated_at: string };
@@ -94,6 +96,8 @@ export const api = {
   listSeries: () => request<Series[]>("/series"),
   createSeries: (data: { title: string; description?: string }) => request<Series>("/series", { method: "POST", body: JSON.stringify(data) }),
   getSeries: (id: string) => request<Series>(`/series/${id}`),
+  getSeriesBible: (id: string) => request<SeriesBible>(`/series/${id}/bible`),
+  updateSeriesBible: (id: string, characters: SeriesBibleCharacter[]) => request<SeriesBible>(`/series/${id}/bible`, { method: "PUT", body: JSON.stringify({ characters }) }),
   updateSeries: (id: string, data: Partial<Series>) => request<Series>(`/series/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   listSeasons: (id: string) => request<Season[]>(`/series/${id}/seasons`),
   createSeason: (id: string, data: { season_number: number; title?: string }) => request<Season>(`/series/${id}/seasons`, { method: "POST", body: JSON.stringify(data) }),

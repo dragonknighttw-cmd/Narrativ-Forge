@@ -1,16 +1,25 @@
-# Narrativ Forge — Detailed Remaining Work Checklist
+## Fresh reconciliation — 2026-10-14 UTC (main `fe17d742`)
 
-## Strategic Realignment — 2026-10-13 UTC
-- **Live Media Processing & Live Cloud API Inference Postponed to Final Pre-Production Gate:** Per owner direction, real-media video uploading, Celery worker capacity provisioning, Cloudflare Whisper live inference, and live API quota consumption (Gemini, Groq, Mistral, Cohere, Voyage, Agnes) are explicitly scheduled for the **Final Pre-Production Acceptance Gate**.
-- **Current Active Development Focus:** UI, auth/workspaces, script/story management, database schema, and deterministic mocked tests. This prevents premature quota expenditure and decouples frontend/backend feature delivery from live media worker costs.
-- **Phase 1 & Phase 2 Core Platform Capabilities Implemented (2026-10-13):**
-  1. *AI Prompt Engineering & 5-Episode Batch Generator:* 8 canonical hook families (`question`, `shock`, `mystery`, `warning`, `personal_story`, `contrarian`, `cliffhanger`, `number`), authentic Burmese prompt templates, and backend/frontend 5-episode mini-series batch generator (`/auto/batch-generate`).
-  2. *Script Studio & Scene Breakdown AI Assistant:* Integrated canonical hook selector, auto-plan generator (`POST /auto/episodes/{id}/plan`), and automatic scene breakdown from script directly into the Script Studio and Scene Breakdown UI.
-  3. *Thumbnail Candidate Workflow:* 10 candidate thumbnails generated -> top 5 shortlisted by CTR score -> 1 human approved via Review Center, saving metadata and creating/approving the thumbnail asset.
-  4. *Subtitle Studio UI Enhancements:* Cue timestamp nudge controls (`±0.1s`, `±0.5s`), split cue, merge cue, add cue after, delete cue, and keyboard shortcut navigation (`Ctrl+S`).
-  5. *UI/UX Polish & Burmese Typography:* Integrated `Padauk` and `Pyidaungsu` Burmese font stack fallbacks, `line-height: 1.75` for diacritic clearance, and responsive 390–430px mobile navigation drawer.
-  6. *RAG Vector Dimension Alignment:* Voyage AI `voyage-3-lite` 512-dimension vector schema, validation guard against dimension mismatch, cosine similarity, and semantic retrieval endpoint.
+### What changed overnight and how the plan treats it
 
+- Application-code checkpoint `f2f45cf` adds hook engineering and a 5-episode batch generator; Script Studio/scene auto-planning; thumbnail candidate generation/shortlisting/human approval; subtitle cue editing and styling; 9:16 safe-zone/preview; asset library and processing-stepper UI; Series Bible; Burmese typography/mobile navigation; and a 512-dimension mock RAG/semantic-search foundation.
+- These are **implemented foundations**, not proof of complete end-to-end product acceptance. The next work is exact-SHA CI, focused acceptance, persistence/authorization checks and regression review—not rebuilding the same features.
+- Latest observed main is `fe17d74229cb51ca4eec125b720594fb85ebbbb6`; this last commit tracks `web-platform/frontend/tsconfig.tsbuildinfo`. Verify whether this generated artifact belongs in Git.
+- Exact-SHA CI/Security/CodeQL/Repository Gate status for the latest main was not independently confirmed during this reconciliation. Do not label current head green without matching run evidence.
+- The local ASR report tested older SHA `3b1b3766`; three Whisper configurations emitted 0 Myanmar-script characters and were correctly rejected by the guard. No Cloudflare inference/quota was used. This remains a **quality failure**, and is not superseded by unrelated feature commits.
+- The recent `review.py` diff raises a possible `approved_at` undefined-reference issue; confirm against current file and tests before treating as a confirmed defect.
+- Deployed app baseline remains `3b1b3766`; current main features are not presumed deployed. Release remains **PENDING — NOT PRODUCTION READY**.
+
+## Immediate quota-free queue — reordered 2026-10-14
+
+- [ ] Verify the current review approval route's `approved_at` assignment/return path and focused tests (audit first; no code change in this plan update).
+- [ ] Verify CI, Security, CodeQL and Repository Gate against the latest code-bearing SHA, then record exact-SHA results for the documentation update.
+- [ ] Test new workflows end-to-end in safe local/CI fixtures: batch generation and DB persistence; script-to-scene planning; thumbnail shortlist and human approval; subtitle cue operations/preview; asset validation; processing state; Series Bible; tenant/role guards.
+- [ ] Rerun focused Whisper/subprocess and ASR guard tests on current code. Keep Burmese quality pending until a human confirms dialect/reference transcript and approves a usable result.
+- [ ] Verify frontend typecheck/build and remove/ignore the generated `tsconfig.tsbuildinfo` artifact if policy confirms it should not be tracked.
+- [ ] Keep authenticated browser login/session/upload, subtitle timing/playback, and source-media integrity as local/staging acceptance gates.
+- [ ] Preserve external gates: continuous worker, managed full-schema restore, live provider/storage/OAuth/Drive/SMTP/Stripe/Sentry, performance/load, accessibility, privacy/legal/commercial-use, and independent penetration testing.
+- [ ] Do not provision paid capacity, consume provider inference quota, deploy, mutate production data or run destructive recovery without explicit owner approval.
 
 ## Fresh checkpoint — 2026-10-13 UTC (main `e21f98d29cf1ece43bc6a4550a02eb676f196d3a`)
 

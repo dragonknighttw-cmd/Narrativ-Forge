@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
 test("authenticated production flow reaches approved mock export", async ({ page }) => {
@@ -45,10 +46,12 @@ test("authenticated production flow reaches approved mock export", async ({ page
   });
 
   await page.goto(`/episodes/${episodeId}/assets`);
+  const sourceBytes = Buffer.from("video-fixture");
+  const expectedSourceChecksum = createHash("sha256").update(sourceBytes).digest("hex");
   await page.locator('input[type="file"]').setInputFiles({
     name: "source.mp4",
     mimeType: "video/mp4",
-    buffer: Buffer.from("video-fixture"),
+    buffer: sourceBytes,
   });
   await page.getByRole("button", { name: "Upload" }).click();
   await expect.poll(
@@ -62,14 +65,31 @@ test("authenticated production flow reaches approved mock export", async ({ page
     request => request.method === "POST" && request.path === uploadSessionPath,
   )?.idempotencyKey).toBeTruthy();
   const api = page.request;
+  let sourceAsset: { id: string; checksum_sha256: string; file_size_bytes: number } | undefined;
   await expect.poll(async () => {
     const response = await api.get(`${apiBase}/episodes/${episodeId}/assets`);
     if (!response.ok()) return false;
     const assets = await response.json();
-    return assets.some((asset: { original_filename: string }) => asset.original_filename === "source.mp4");
+    sourceAsset = assets.find((asset: { original_filename: string }) => asset.original_filename === "source.mp4");
+    return Boolean(sourceAsset);
   }).toBeTruthy();
+  expect(sourceAsset!.file_size_bytes).toBe(sourceBytes.length);
+  expect(sourceAsset!.checksum_sha256).toBe(expectedSourceChecksum);
+
   const job = await api.post(apiBase + "/jobs/mock", { data: { episode_id: episodeId } });
   expect(job.ok()).toBeTruthy();
+  const jobJson = await job.json();
+  expect(jobJson.status).toBe("completed");
+  expect(jobJson.output_asset_id).toBeTruthy();
+
+  const assetsAfterProcessing = await api.get(`${apiBase}/episodes/${episodeId}/assets`);
+  expect(assetsAfterProcessing.ok()).toBeTruthy();
+  const processedAsset = (await assetsAfterProcessing.json()).find(
+    (asset: { id: string }) => asset.id === jobJson.output_asset_id,
+  );
+  expect(processedAsset).toBeTruthy();
+  expect(processedAsset.checksum_sha256).toBe(expectedSourceChecksum);
+  expect(processedAsset.file_size_bytes).toBe(sourceBytes.length);
 
   const subtitle = await api.post(apiBase + "/episodes/" + episodeId + "/subtitles/generate", {
     data: { preset: "burmese_default" },
@@ -81,6 +101,11 @@ test("authenticated production flow reaches approved mock export", async ({ page
     data: { cues: [{ start: 0, end: 2, text: "မြန်မာစာ E2E" }] },
   });
   expect(editSubtitle.ok()).toBeTruthy();
+  const subtitleExport = await api.get(
+    apiBase + "/subtitles/" + subtitleJson.id + "/export?format=srt",
+  );
+  expect(subtitleExport.ok()).toBeTruthy();
+  expect(await subtitleExport.text()).toContain("မြန်မာစာ E2E");
 
   expect((await api.post(apiBase + "/episodes/" + episodeId + "/subtitles/approve")).ok()).toBeTruthy();
   const episodeState = await api.get(apiBase + "/episodes/" + episodeId);

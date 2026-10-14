@@ -60,6 +60,17 @@ def test_series_bible_persists_characters_and_enforces_tenant_scope(db_session):
         assert reread.json()["characters"] == [character]
 
         app.dependency_overrides[get_current_user] = lambda: {
+            "id": "viewer-user",
+            "email": "viewer@test.local",
+            "role": "viewer",
+            "organization_id": org_a.id,
+        }
+        assert client.put(
+            f"/api/v1/series/{series.id}/bible",
+            json={"characters": []},
+        ).status_code == 403
+
+        app.dependency_overrides[get_current_user] = lambda: {
             "id": user_b.id,
             "email": user_b.email,
             "role": "owner",

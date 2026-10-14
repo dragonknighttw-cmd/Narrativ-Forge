@@ -1,3 +1,13 @@
+# Current roadmap checkpoint — 2026-10-14 UTC
+
+- **Current main SHA:** `5e3d1b840baefe679e4eeb2b95a727f4e450998e`.
+- **Latest application-code SHA:** `6dbd4fabe715c06b565c6e53cf187b7373bbb9df`; approval response bug fixed and merged in [PR #77](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/77). Exact-SHA CI, Security, CodeQL, Repository Gate, runtime/package evidence and Real Worker Evidence passed on the tested candidate SHA.
+- The overnight platform features are treated as **implemented foundations needing acceptance**, not work to reimplement. Priority is feature persistence/authorization acceptance, Burmese ASR quality review, build artifact hygiene, and external release gates.
+- Burmese ASR is **not accepted**: three local Whisper configurations on the reported older SHA produced no Myanmar-script characters and were rejected by the language guard. Do not spend cloud inference quota without explicit approval.
+- **Release remains PENDING — NOT PRODUCTION READY.** No production deployment or paid worker provisioning is implied by passing CI.
+
+---
+
 ## Latest plan reconciliation — 2026-10-14 UTC
 
 - **Latest main SHA:** `fe17d74229cb51ca4eec125b720594fb85ebbbb6`.

@@ -1,3 +1,22 @@
+# Current verified checkpoint — 2026-10-14 UTC
+
+- **Current main SHA:** `5e3d1b840baefe679e4eeb2b95a727f4e450998e` (this is the documentation reconciliation merge, not an application-code change).
+- **Latest application-code fix:** `6dbd4fabe715c06b565c6e53cf187b7373bbb9df`, merged in [PR #77](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/77). The undefined `approved_at` bug is fixed: one UTC timestamp is assigned and reused for the review record and response. [Issue #76](https://github.com/dragonknighttw-cmd/Narrativ-Forge/issues/76) is closed.
+- **Fix verification on exact candidate SHA** `a05a97752a30889d691c687ea47b519a089e7e6b`: CI passed (backend unit/security **303 passed, 3 skipped**; PostgreSQL/Redis integration **72 passed, 1 skipped**; frontend, E2E and Worker contract tests passed). Security, CodeQL, Repository Gate, Local Runtime Evidence, Windows Local Runtime Evidence, Windows Portable Package Evidence, and Real Worker Evidence all passed. The merged commit contains the same code/test patch.
+- **Documentation plan reconciliation:** [PR #78](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/78) merged as this current main SHA. Historical sections below are checkpoints and may describe earlier SHAs/status; use this top block for current status.
+- **Still blocked:** Burmese real-speech quality acceptance (local report tested older SHA and got 0 Myanmar-script characters from three Whisper configurations), focused acceptance of overnight feature workflows, generated `tsconfig.tsbuildinfo` policy, external provider/backup/restore verification, accessibility/legal/privacy and owner/security sign-off.
+- No production deployment, paid resource provisioning, production-data mutation, or cloud inference was performed as part of these changes. **Release remains PENDING — NOT PRODUCTION READY.**
+
+## Next actions
+
+1. Run/record focused acceptance for batch generation, Script Studio to scene planning, thumbnail approval, subtitle editing/preview, asset validation, processing state, Series Bible, and tenant/role guards.
+2. Keep Burmese ASR unaccepted until a human reviews dialect/reference transcript and a usable transcript passes quality checks; no cloud inference without approval.
+3. Decide whether generated `web-platform/frontend/tsconfig.tsbuildinfo` should remain tracked.
+4. Complete safe local/staging upload/playback/source-integrity E2E and the remaining external release gates: managed restore, provider integrations, performance, accessibility, legal/privacy/commercial use, and independent security review.
+5. Do not deploy production or provision billable capacity without explicit owner approval.
+
+---
+
 ## Latest main + overnight-work reconciliation — 2026-10-14 UTC
 
 - **Default branch snapshot:** `main` at `fe17d74229cb51ca4eec125b720594fb85ebbbb6` (latest observed commit: generated frontend `tsconfig.tsbuildinfo`).

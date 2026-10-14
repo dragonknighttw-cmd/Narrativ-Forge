@@ -1,3 +1,21 @@
+# Current remaining-work priorities — 2026-10-14 UTC
+
+- Current main: `5e3d1b840baefe679e4eeb2b95a727f4e450998e`; latest application-code fix: `6dbd4fabe715c06b565c6e53cf187b7373bbb9df`.
+- The review approval timestamp bug is **resolved** in PR #77; its exact candidate SHA passed CI, Security, CodeQL, Repository Gate, Local/Windows Runtime, Windows Package and Real Worker Evidence. Do not continue to list this as an open code blocker.
+
+## Remaining queue (priority order)
+
+1. **Burmese ASR quality:** human dialect/reference transcript review and a usable transcript acceptance. Existing local results are a quality failure; no cloud inference without approval.
+2. **Feature acceptance:** batch generation persistence; Script Studio/scene planning; thumbnail shortlist and human approval; subtitle cue operations/preview; asset validation; processing states; Series Bible; tenant/role authorization.
+3. **Repository hygiene:** decide whether generated `web-platform/frontend/tsconfig.tsbuildinfo` should be ignored or retained.
+4. **Local/staging E2E:** authenticated session, upload, media processing, subtitle timing/playback, and source-media integrity.
+5. **External release gates:** managed full-schema backup/restore; live provider/storage/OAuth/Drive/SMTP/Stripe/Sentry; performance/load; accessibility; privacy/legal/commercial-use review; independent penetration/security sign-off.
+6. **Owner decisions:** approve any paid persistent worker, live inference/quota use, and production deployment only when those gates are ready.
+
+No production deployment, billable provisioning, production-data mutation, destructive recovery, or cloud inference was performed. **Release remains PENDING — NOT PRODUCTION READY.**
+
+---
+
 ## Fresh reconciliation — 2026-10-14 UTC (main `fe17d742`)
 
 ### What changed overnight and how the plan treats it

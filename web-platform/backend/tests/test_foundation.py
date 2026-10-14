@@ -426,6 +426,9 @@ def test_mock_drive_export_is_idempotent_after_approval(tmp_path):
         "video_watched": True, "audio_checked": True, "subtitle_timing_checked": True, "thumbnail_present": True
     })
     assert approved.status_code == 200
+    assert approved.json()["episode_id"] == episode["id"]
+    assert approved.json()["status"] == "approved"
+    assert approved.json()["approved_at"]
     exported = client.post(f"/api/v1/episodes/{episode['id']}/export/mock-drive")
     assert exported.status_code == 200
     assert exported.json()["status"] == "completed"

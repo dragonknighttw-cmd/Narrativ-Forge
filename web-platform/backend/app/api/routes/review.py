@@ -130,7 +130,8 @@ def approve_review(episode_id: str, payload: ReviewUpdate, user=Depends(require_
     record.critical_issues_json = json.dumps(payload.critical_issues, ensure_ascii=False)
     record.notes = payload.notes
     record.decision = "approved"
-    record.reviewed_at = datetime.now(timezone.utc)
+    approved_at = datetime.now(timezone.utc)
+    record.reviewed_at = approved_at
     episode.status = "approved"
     episode.current_step = "review"
     final_asset = db.query(Asset).filter(Asset.episode_id == episode_id, Asset.asset_type == "processed_video").order_by(Asset.version.desc()).first()

@@ -1,12 +1,13 @@
 # Authoritative phase execution checkpoint — 2026-10-14 UTC
 
-- **Base main SHA for this checkpoint:** `2edb6f58f7a755253e3342e581482458f9297f32`.
-- **Merged acceptance work:** PR #83 Series Bible persistence; PR #84 continuity unit tests; PR #85 subtitle API tenant/role/approved-content protection; PR #86 Script Studio stale-write/historical-version behavior and scene/script scoping tests.
-- **Verified on exact PR heads:** backend unit/security and integration, frontend, E2E, CodeQL, SAST, dependency/container scans, Repository Gate, local runtime, Windows API/SQLite, package smoke, and Real Worker Evidence all passed for PR #86. Backend reported **309 passed, 3 skipped**; integration reported **75 passed, 1 skipped**.
-- **Still open:** Burmese ASR human-quality acceptance; authenticated upload/processing/subtitle playback E2E and source integrity; asset/processing workflow acceptance; managed restore/provider and external legal/privacy/accessibility/security gates.
-- **Release status:** **PENDING — NOT PRODUCTION READY**. No production deployment, paid resource provisioning, production-data changes, or cloud inference/quota use.
+- **Base main SHA for this checkpoint:** `4959810fc1a7449cc714084ca0169557dce02513`.
+- **Merged acceptance work:** PR #83 Series Bible persistence; PR #84 continuity tests; PR #85 subtitle API security/immutability; PR #86 Script Studio/scene API versioning and scope checks; PR #88 Series Bible UI persistence across reload; PR #89 source upload checksum, processed-output integrity, mock job completion, and subtitle SRT export.
+- **Verification:** PRs #85, #86, #88, and #89 passed relevant backend/integration, frontend, E2E, CodeQL, SAST, dependency/container scans, Repository Gate, runtime/package, and Worker Evidence. PR #89 backend **309 passed, 3 skipped**, integration **75 passed, 1 skipped**, E2E **4 passed**.
+- **Still open:** authenticated non-mock media/provider E2E; asset validation/error/retry acceptance; human Burmese ASR quality acceptance against a dialect-specific reference transcript; managed restore/provider and external legal/privacy/accessibility/security gates.
+- **Release status:** **PENDING — NOT PRODUCTION READY**. No production deployment, paid resources, production-data changes, or cloud inference/quota use; human local ASR/media-quality acceptance remains deferred.
 
-Historical checkpoints below are retained for audit; use this section for current status.
+Historical checkpoints below are retained for audit.
+
 
 ---
 

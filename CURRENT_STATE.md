@@ -1,13 +1,15 @@
 # Authoritative checkpoint — 2026-10-14 UTC
 
-- **Base main SHA for this checkpoint:** `2edb6f58f7a755253e3342e581482458f9297f32`.
-- **Application bug fix:** PR #77 fixed the undefined `approved_at` response field. Build-artifact hygiene was completed in PR #80.
-- **Acceptance/security test improvements merged:** PR #83 persists Series Bible characters with tenant-scoped API/database storage; PR #84 adds Series Bible continuity tests; PR #85 covers subtitle API tenant boundaries, viewer write denial, and approved-subtitle immutability; PR #86 covers Script Studio versioning/stale-write protection, scene/script episode scoping, duplicate scene numbers, role checks, and tenant isolation.
-- **Exact-head verification:** PR #85 and #86 checks passed, including backend unit/security, backend integration, frontend, E2E, CodeQL, SAST, dependency audit, container scan, Repository Gate, local runtime, Windows API/SQLite, package smoke, and Real Worker Evidence. PR #86 backend: **309 passed, 3 skipped, 96 deselected**; integration: **75 passed, 1 skipped, 332 deselected**. PR #85 integration: **74 passed, 1 skipped, 332 deselected**.
-- **Burmese ASR is not accepted.** The recorded human-quality gate still needs a dialect/reference transcript review; previous local report found no Myanmar-script output in the tested configurations. Do not treat passing worker/runtime smoke as Burmese transcript-quality acceptance.
-- **Release:** **PENDING — NOT PRODUCTION READY.** No production deployment, paid resource provisioning, production-data mutation, or cloud inference/quota use was performed. Local human ASR/media quality acceptance remains deferred; do not infer approval from CI runtime smoke.
+- **Base main SHA for this checkpoint:** `4959810fc1a7449cc714084ca0169557dce02513`.
+- **Application fix and repository hygiene:** PR #77 fixes the review approval timestamp bug; PR #80 removes the generated TypeScript build cache from version control and ignores `*.tsbuildinfo`.
+- **Merged feature acceptance:** PR #83 persists Series Bible characters with tenant-scoped API/database storage; PR #84 adds continuity tests; PR #85 tests subtitle tenant boundaries, viewer write denial, and approved-content immutability; PR #86 tests Script Studio optimistic locking/history and scene/script scope; PR #88 tests Series Bible UI persistence after reload; PR #89 verifies uploaded source SHA-256/size, processed output integrity, mock processing completion, and subtitle SRT export.
+- **Exact-head checks passed:** PRs #85, #86, #88, and #89 passed their relevant backend, integration, frontend, E2E, CodeQL, SAST, dependency/container scan, Repository Gate, runtime/package, and Worker Evidence checks. PR #89 backend: **309 passed, 3 skipped**; integration: **75 passed, 1 skipped**; E2E: **4 passed**.
+- **Burmese ASR remains unaccepted.** The human-quality gate still needs a dialect-specific reference transcript and human review. Prior local results produced no Myanmar-script output in the tested configurations. Passing mock processing, subtitle export, or CI worker smoke does not establish transcript quality.
+- **Remaining external/workflow gates:** authenticated non-mock media E2E with real source media and provider behavior; asset/processing error/retry acceptance; managed restore and provider integration; accessibility, privacy/legal/commercial-use, and independent security sign-offs.
+- **Release:** **PENDING — NOT PRODUCTION READY.** No production deployment, paid resource provisioning, production-data mutation, or cloud inference/quota use. Human local ASR/media-quality acceptance remains deferred.
 
-The older checkpoint notes below are historical context. This section is the current source of truth for repository state.
+The older checkpoint notes below are historical. Use this section as the current status at the base SHA above.
+
 
 ---
 

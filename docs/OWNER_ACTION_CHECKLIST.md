@@ -6,7 +6,7 @@ The overnight commits expanded application features, but this is a **plan reconc
 - New feature foundations to accept/test: 5-episode batch generator and 8 hook families; Script Studio/scene auto-plan; thumbnail candidate shortlist and human approval; subtitle editing/preview; 9:16 safe-zone; asset library; processing stepper; Series Bible; Burmese typography/mobile drawer; mock RAG vector schema/semantic search.
 - Local Burmese ASR report on older SHA `3b1b3766` failed quality for three Whisper configurations (0 Myanmar-script characters); the guard rejected the invalid outputs. No cloud inference/quota was used. Burmese acceptance remains an owner/human gate.
 - Current exact-SHA CI/Security/CodeQL/Repository Gate results were not independently confirmed here; verify the run SHA before treating current main as green.
-- A possible `review.py` approval timestamp regression needs confirmation from current code/tests. The tracked `tsconfig.tsbuildinfo` artifact also needs a repository-hygiene decision.
+- A confirmed code blocker exists in `review.py`: `approve_review()` returns `approved_at.isoformat()` without defining `approved_at`, potentially raising `NameError` after commit. This is an engineering fix, not an owner decision; it is intentionally not changed in this documentation-only PR. The tracked `tsconfig.tsbuildinfo` artifact also needs a repository-hygiene decision.
 - Current main features are not assumed deployed; release remains **PENDING — NOT PRODUCTION READY**.
 
 ### Owner actions that actually require owner input
@@ -19,7 +19,7 @@ The overnight commits expanded application features, but this is a **plan reconc
 
 ### No owner action needed yet
 
-The repository/CI audit, suspected approval-route review, focused feature tests, ASR guard regression tests, generated build-artifact audit, and documentation/evidence reconciliation can proceed without credentials or paid services.
+The repository/CI audit, approval-route regression fix, focused feature tests, ASR guard regression tests, generated build-artifact audit, and documentation/evidence reconciliation can proceed without credentials or paid services.
 
 ## Post-merge owner checkpoint — 2026-10-13 UTC
 

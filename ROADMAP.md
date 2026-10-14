@@ -4,7 +4,7 @@
 - **Latest application-code SHA:** `f2f45cfca45f6e36408a8674d3d96eaec61c8fd2`; current main is 17 commits ahead of deployed baseline `3b1b3766f2fb132bf4d80203e7174562f2879d9a` (0 behind). Recent feature commits add the Script Studio/scene planning, batch generation, thumbnail/subtitle, 9:16, asset/processing, Series Bible, Burmese typography and mock RAG foundations.
 - **Planning change, not code change:** treat these new features as implemented foundations that now require exact-SHA CI and acceptance verification. Do not reset the roadmap or reimplement them from scratch.
 - **ASR decision:** local test results on SHA `3b1b3766` failed Burmese speech quality across three Whisper configurations; script guard rejection worked. No live Cloudflare inference was used. Burmese quality remains a release blocker until human dialect/reference-transcript review and a successful reviewed output.
-- **Immediate priority:** review suspected `review.py` approval timestamp regression; verify exact-SHA CI/Security/CodeQL/Repository Gate; acceptance-test new feature workflows and tenant/role guards; rerun ASR guard tests; resolve generated `tsconfig.tsbuildinfo` tracking.
+- **Immediate priority:** fix the confirmed `review.py` `approve_review()` undefined `approved_at` defect in a separate code change; verify exact-SHA CI/Security/CodeQL/Repository Gate; acceptance-test new feature workflows and tenant/role guards; rerun ASR guard tests; resolve generated `tsconfig.tsbuildinfo` tracking.
 - **Release status:** **PENDING — NOT PRODUCTION READY**. No deployment, paid worker provisioning, quota-consuming inference, or production-data mutation is authorized by this plan update.
 
 ## Post-merge execution checkpoint — 2026-10-13 UTC

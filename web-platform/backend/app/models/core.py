@@ -75,6 +75,18 @@ class Series(Base):
     episodes: Mapped[list[Episode]] = relationship(back_populates="series")
 
 
+class SeriesBibleRecord(Base):
+    __tablename__ = "series_bibles"
+    __table_args__ = (UniqueConstraint("series_id", name="uq_series_bibles_series_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    series_id: Mapped[str] = mapped_column(ForeignKey("series.id", ondelete="CASCADE"), index=True)
+    characters_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
 class Season(Base):
     __tablename__ = "seasons"
     __table_args__ = (UniqueConstraint("series_id", "season_number", name="uq_season_number_per_series"),)

@@ -8,7 +8,7 @@
 
 ## Updated execution order
 
-1. **Safety/regression audit:** verify whether `review.py` still references an undefined `approved_at`; inspect tests and exact current code before calling it a confirmed defect.
+1. **Confirmed regression to fix in a separate code task:** `approve_review()` returns `approved_at.isoformat()` without assigning `approved_at`. This can raise `NameError` after commit. Add a regression test and fix the route; this documentation-only PR does not modify application code.
 2. **Exact-SHA CI:** confirm CI, Security, CodeQL and Repository Gate for the latest code-bearing head, then refresh checks after this documentation change.
 3. **Feature acceptance:** batch generator persistence; Script Studio → scene planning; thumbnail candidate → human approval; subtitle cue edit/preview; asset checks; processing states; Series Bible; tenant/role authorization.
 4. **ASR:** rerun guard/subprocess tests on current SHA; request human dialect/reference transcript review; keep model-quality gate open until the transcript is reviewed and usable.

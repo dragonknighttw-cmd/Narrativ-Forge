@@ -78,13 +78,24 @@ def test_subtitle_api_enforces_tenant_and_role_boundaries(db_session):
         version=1,
         preset="burmese_default",
         cues_json=json.dumps(
-            [{"start": 0.0, "end": 2.0, "text": "အတည်ပြုပြီး"}],
+            [{"start": 0.0, "end": 2.0, "text": "အခြား tenant"}],
             ensure_ascii=False,
         ),
         status="approved",
         is_current=True,
     )
-    db_session.add_all([draft, approved])
+    approved_a = Subtitle(
+        episode_id=episode_a.id,
+        version=2,
+        preset="burmese_default",
+        cues_json=json.dumps(
+            [{"start": 0.0, "end": 2.0, "text": "အတည်ပြုပြီး"}],
+            ensure_ascii=False,
+        ),
+        status="approved",
+        is_current=False,
+    )
+    db_session.add_all([draft, approved, approved_a])
     db_session.commit()
 
     original_overrides = dict(app.dependency_overrides)
@@ -98,7 +109,7 @@ def test_subtitle_api_enforces_tenant_and_role_boundaries(db_session):
     try:
         listed = client.get(f"/api/v1/episodes/{episode_a.id}/subtitles")
         assert listed.status_code == 200
-        assert [item["id"] for item in listed.json()] == [draft.id]
+        assert {item["id"] for item in listed.json()} == {draft.id, approved_a.id}
 
         # A viewer can read tenant data but must not mutate subtitle content.
         active_user = {
@@ -130,13 +141,7 @@ def test_subtitle_api_enforces_tenant_and_role_boundaries(db_session):
             json={"cues": [{"start": 0, "end": 2, "text": "cross-tenant"}]},
         ).status_code == 404
 
-        # Approved subtitle content is immutable; edits require a new version.
-        approved_update = client.patch(
-            f"/api/v1/subtitles/{approved.id}",
-            json={"cues": [{"start": 0, "end": 2, "text": "မပြောင်းရ"}]},
-        )
-        assert approved_update.status_code == 404
-
+        # Approved subtitle content is immutable even for its own tenant.
         active_user = {
             "id": owner_a.id,
             "email": owner_a.email,
@@ -145,11 +150,10 @@ def test_subtitle_api_enforces_tenant_and_role_boundaries(db_session):
         }
         active_membership = member_owner_a
         approved_update = client.patch(
-            f"/api/v1/subtitles/{draft.id}",
-            json={"status": "approved"},
+            f"/api/v1/subtitles/{approved_a.id}",
+            json={"cues": [{"start": 0, "end": 2, "text": "မပြောင်းရ"}]},
         )
-        assert approved_update.status_code == 200
-        assert approved_update.json()["status"] == "draft"
+        assert approved_update.status_code == 409
     finally:
         client.close()
         app.dependency_overrides.clear()

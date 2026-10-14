@@ -1,6 +1,6 @@
 # Authoritative remaining-work checkpoint — 2026-10-14 UTC
 
-- **Current main SHA:** `2edb6f58f7a755253e3342e581482458f9297f32`.
+- **Base main SHA for this checkpoint:** `2edb6f58f7a755253e3342e581482458f9297f32`.
 - **Completed since the older checkpoint:** PR #83 persisted Series Bible characters with tenant isolation; PR #84 added continuity tests; PR #85 added subtitle API tenant/role and approved-content immutability tests; PR #86 added Script Studio optimistic-locking/history and scene/script scope tests. PRs #85 and #86 passed their exact-head CI, security, runtime/package, E2E, and Real Worker Evidence checks.
 - **Next priorities:**
   1. **Authenticated media workflow E2E:** upload → processing → transcript/subtitle generation → subtitle edit/preview/playback, verify original-media checksum/integrity and error/retry behavior.

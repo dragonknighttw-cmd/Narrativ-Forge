@@ -1,6 +1,6 @@
 # Authoritative owner checklist — 2026-10-14 UTC
 
-- **Current main SHA:** `2edb6f58f7a755253e3342e581482458f9297f32`.
+- **Base main SHA for this checkpoint:** `2edb6f58f7a755253e3342e581482458f9297f32`.
 - **Merged:** PR #83 Series Bible persistence; PR #84 continuity tests; PR #85 subtitle API tenant/role/approved-content checks; PR #86 Script Studio/scene API acceptance checks. Exact-head CI and Real Worker Evidence passed for PRs #85 and #86.
 - **Owner input still required before release:**
   1. **Burmese ASR:** provide/approve a dialect-specific reference transcript for human review. The current ASR quality result is not accepted; do not share private media in public issues.

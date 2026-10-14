@@ -1,8 +1,25 @@
-# Narrativ Forge — Owner Action Checklist
+## Latest owner checkpoint — 2026-10-14 UTC
 
-## Strategic Realignment — 2026-10-13 UTC
-- **Postponed to Final Pre-Production Gate:** Per owner direction, live video processing, background media worker hosting, Cloudflare Whisper live inference, and live cloud API quota consumption (Gemini, Groq, Mistral, Cohere, Voyage, Agnes) are explicitly scheduled for the **Final Pre-Production Acceptance Gate**.
-- **Active Focus:** UI/UX, authentication, workspaces/tenant isolation, scriptwriting workflows, and mocked deterministic test suites.
+The overnight commits expanded application features, but this is a **plan reconciliation only**; no application code or deployment is changed by this update.
+
+- Latest main: `fe17d74229cb51ca4eec125b720594fb85ebbbb6`; latest application-code checkpoint: `f2f45cfca45f6e36408a8674d3d96eaec61c8fd2`.
+- New feature foundations to accept/test: 5-episode batch generator and 8 hook families; Script Studio/scene auto-plan; thumbnail candidate shortlist and human approval; subtitle editing/preview; 9:16 safe-zone; asset library; processing stepper; Series Bible; Burmese typography/mobile drawer; mock RAG vector schema/semantic search.
+- Local Burmese ASR report on older SHA `3b1b3766` failed quality for three Whisper configurations (0 Myanmar-script characters); the guard rejected the invalid outputs. No cloud inference/quota was used. Burmese acceptance remains an owner/human gate.
+- Current exact-SHA CI/Security/CodeQL/Repository Gate results were not independently confirmed here; verify the run SHA before treating current main as green.
+- A possible `review.py` approval timestamp regression needs confirmation from current code/tests. The tracked `tsconfig.tsbuildinfo` artifact also needs a repository-hygiene decision.
+- Current main features are not assumed deployed; release remains **PENDING — NOT PRODUCTION READY**.
+
+### Owner actions that actually require owner input
+
+1. **Burmese ASR acceptance:** listen to the supplied source privately, confirm dialect/language and provide or approve a reference transcript if possible. Do not paste private media/transcript into public issues. This decision is needed before evaluating model alternatives.
+2. **Worker cost decision:** choose whether to remain free-only with production media processing deferred or approve a potentially billable persistent worker. No resource will be created without approval.
+3. **Provider/quota approval:** only when the free/local checks are exhausted, explicitly approve any quota-consuming Cloudflare Whisper inference or paid provider/worker action.
+4. **Production deployment:** approve whether/when to redeploy the current app to the production frontend/backend after acceptance gates; current main is not presumed deployed.
+5. **External sign-off:** provide the relevant credentials through secret managers (never chat), real test sample/acceptance, legal/privacy/commercial-use review, and independent security review when the plan reaches those gates.
+
+### No owner action needed yet
+
+The repository/CI audit, suspected approval-route review, focused feature tests, ASR guard regression tests, generated build-artifact audit, and documentation/evidence reconciliation can proceed without credentials or paid services.
 
 ## Post-merge owner checkpoint — 2026-10-13 UTC
 

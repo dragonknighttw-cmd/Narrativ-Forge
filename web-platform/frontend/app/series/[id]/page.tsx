@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AppShell } from "../../../components/app-shell";
 import { ErrorState } from "../../../components/domain-forms";
-import { api, Season, Series } from "../../../lib/api";
+import { api, Season, Series, SeriesBibleCharacter } from "../../../lib/api";
 
 export default function SeriesDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,44 +32,69 @@ export default function SeriesDetailPage() {
   }
 
   // Series Bible & Character Continuity State
-  interface Character {
-    id: string;
-    name: string;
-    role: "protagonist" | "antagonist" | "mentor" | "sidekick";
-    tone: string;
-    catchphrase: string;
-    traits: string;
-  }
-
-  const [characters, setCharacters] = useState<Character[]>([
-    { id: "char-1", name: "ဇေယျာ (Zeyar)", role: "protagonist", tone: "Curious, fast-paced, enthusiastic", catchphrase: "သင်ရော ဒါကို သတိထားမိဖူးလား?", traits: "Young investigative content creator in Yangon" },
-  ]);
+  const [characters, setCharacters] = useState<SeriesBibleCharacter[]>([]);
+  const [bibleBusy, setBibleBusy] = useState(false);
+  const [bibleLoaded, setBibleLoaded] = useState(false);
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    api.getSeriesBible(id)
+      .then(result => {
+        if (!cancelled) setCharacters(result.characters);
+      })
+      .catch(e => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load Series Bible");
+      })
+      .finally(() => {
+        if (!cancelled) setBibleLoaded(true);
+      });
+    return () => { cancelled = true; };
+  }, [id]);
   const [newCharName, setNewCharName] = useState("");
   const [newCharRole, setNewCharRole] = useState<"protagonist" | "antagonist" | "mentor" | "sidekick">("protagonist");
   const [newCharTone, setNewCharTone] = useState("");
   const [newCharCatchphrase, setNewCharCatchphrase] = useState("");
   const [newCharTraits, setNewCharTraits] = useState("");
 
-  function addCharacter(e: React.FormEvent) {
+  async function addCharacter(e: React.FormEvent) {
     e.preventDefault();
-    if (!newCharName.trim()) return;
-    const item: Character = {
-      id: `char-${Date.now()}`,
+    if (!newCharName.trim() || bibleBusy) return;
+    const item: SeriesBibleCharacter = {
+      id: crypto.randomUUID(),
       name: newCharName.trim(),
       role: newCharRole,
       tone: newCharTone.trim() || "Natural Burmese conversational tone",
       catchphrase: newCharCatchphrase.trim(),
       traits: newCharTraits.trim(),
     };
-    setCharacters(prev => [...prev, item]);
-    setNewCharName("");
-    setNewCharTone("");
-    setNewCharCatchphrase("");
-    setNewCharTraits("");
+    setBibleBusy(true);
+    setError("");
+    try {
+      const saved = await api.updateSeriesBible(id, [...characters, item]);
+      setCharacters(saved.characters);
+      setNewCharName("");
+      setNewCharTone("");
+      setNewCharCatchphrase("");
+      setNewCharTraits("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save Series Bible character");
+    } finally {
+      setBibleBusy(false);
+    }
   }
 
-  function removeCharacter(charId: string) {
-    setCharacters(prev => prev.filter(c => c.id !== charId));
+  async function removeCharacter(charId: string) {
+    if (bibleBusy) return;
+    setBibleBusy(true);
+    setError("");
+    try {
+      const saved = await api.updateSeriesBible(id, characters.filter(c => c.id !== charId));
+      setCharacters(saved.characters);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to remove Series Bible character");
+    } finally {
+      setBibleBusy(false);
+    }
   }
 
   if (error && !series) return <AppShell title="Series"><ErrorState message={error} retry={load} /></AppShell>;
@@ -92,7 +117,7 @@ export default function SeriesDetailPage() {
                 <strong>{char.name}</strong>
                 <span className="pill" style={{ marginLeft: "0.5rem", textTransform: "capitalize", fontSize: "0.75rem" }}>{char.role}</span>
               </div>
-              <button className="text-button" style={{ color: "#ef4444", padding: 0 }} onClick={() => removeCharacter(char.id)}>✕</button>
+              <button className="text-button" style={{ color: "#ef4444", padding: 0 }} disabled={bibleBusy} onClick={() => void removeCharacter(char.id)}>✕</button>
             </div>
             <p className="muted burmese-text" style={{ fontSize: "0.85rem", marginTop: "0.5rem", marginBottom: "0.25rem" }}>
               🎙️ <strong>Tone:</strong> {char.tone}
@@ -114,6 +139,8 @@ export default function SeriesDetailPage() {
       {/* Add Character Form */}
       <form onSubmit={addCharacter} className="stack-form" style={{ marginTop: "1.5rem", padding: "1rem", borderRadius: "8px", background: "rgba(99, 102, 241, 0.05)", border: "1px dashed rgba(99, 102, 241, 0.3)" }}>
         <strong style={{ fontSize: "0.9rem" }}>+ Add Series Character</strong>
+        {!bibleLoaded && <p className="muted">Loading saved Series Bible…</p>}
+        {bibleLoaded && characters.length === 0 && <p className="muted">No saved characters yet. Add one below.</p>}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem" }}>
           <input
             placeholder="Character name (e.g. ဇေယျာ)"
@@ -149,7 +176,7 @@ export default function SeriesDetailPage() {
           onChange={e => setNewCharTraits(e.target.value)}
         />
         <div>
-          <button type="submit" className="primary" disabled={!newCharName.trim()}>Save Character</button>
+          <button type="submit" className="primary" disabled={!newCharName.trim() || bibleBusy || !bibleLoaded}>{bibleBusy ? "Saving…" : "Save Character"}</button>
         </div>
       </form>
     </section>

@@ -35,11 +35,17 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
               {mobileMenuOpen ? "✕" : "☰"}
             </button>
             <div>
-              <div className="eyebrow">PRIVATE WORKSPACE</div>
+              <div className="eyebrow">STUDIO WORKSPACE</div>
               <h1>{title}</h1>
             </div>
           </div>
-          <Link className="avatar" href="/settings">NF</Link>
+          <div className="ds-row">
+            <div className="ds-badge" style={{ backgroundColor: "rgba(16, 185, 129, 0.08)", borderColor: "rgba(16, 185, 129, 0.25)", color: "#10b981", fontSize: "11px", display: "flex", gap: "6px" }}>
+              <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#10b981" }}></span>
+              Telegram Topic #Narrativ-Forge
+            </div>
+            <Link className="avatar" href="/settings">NF</Link>
+          </div>
         </header>
         {mobileMenuOpen && (
           <nav className="mobile-drawer" aria-label="Mobile navigation">

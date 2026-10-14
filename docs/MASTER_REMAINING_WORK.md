@@ -7,12 +7,12 @@
 - Latest observed main is `fe17d74229cb51ca4eec125b720594fb85ebbbb6`; this last commit tracks `web-platform/frontend/tsconfig.tsbuildinfo`. Verify whether this generated artifact belongs in Git.
 - Exact-SHA CI/Security/CodeQL/Repository Gate status for the latest main was not independently confirmed during this reconciliation. Do not label current head green without matching run evidence.
 - The local ASR report tested older SHA `3b1b3766`; three Whisper configurations emitted 0 Myanmar-script characters and were correctly rejected by the guard. No Cloudflare inference/quota was used. This remains a **quality failure**, and is not superseded by unrelated feature commits.
-- The recent `review.py` diff raises a possible `approved_at` undefined-reference issue; confirm against current file and tests before treating as a confirmed defect.
+- **Confirmed blocker:** `web-platform/backend/app/api/routes/review.py::approve_review()` returns `approved_at.isoformat()` but no `approved_at` variable is defined in the current function. This can raise `NameError` after `db.commit()`. Fix and regression-test in a separate application-code change; this plan-only update leaves code untouched.
 - Deployed app baseline remains `3b1b3766`; current main features are not presumed deployed. Release remains **PENDING — NOT PRODUCTION READY**.
 
 ## Immediate quota-free queue — reordered 2026-10-14
 
-- [ ] Verify the current review approval route's `approved_at` assignment/return path and focused tests (audit first; no code change in this plan update).
+- [ ] Fix the confirmed review approval timestamp defect and add a regression test in a separate code change; verify transaction/response behavior.
 - [ ] Verify CI, Security, CodeQL and Repository Gate against the latest code-bearing SHA, then record exact-SHA results for the documentation update.
 - [ ] Test new workflows end-to-end in safe local/CI fixtures: batch generation and DB persistence; script-to-scene planning; thumbnail shortlist and human approval; subtitle cue operations/preview; asset validation; processing state; Series Bible; tenant/role guards.
 - [ ] Rerun focused Whisper/subprocess and ASR guard tests on current code. Keep Burmese quality pending until a human confirms dialect/reference transcript and approves a usable result.

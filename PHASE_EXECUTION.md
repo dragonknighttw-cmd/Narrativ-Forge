@@ -1,3 +1,12 @@
+# Current phase execution checkpoint — 2026-10-14 UTC
+
+- **Current main SHA:** `5e3d1b840baefe679e4eeb2b95a727f4e450998e`; **latest application-code SHA:** `6dbd4fabe715c06b565c6e53cf187b7373bbb9df`.
+- The approval-route timestamp defect is resolved in merged PR #77. On candidate SHA `a05a97752a30889d691c687ea47b519a089e7e6b`, CI passed: backend unit/security **303 passed, 3 skipped**; PostgreSQL/Redis integration **72 passed, 1 skipped**; frontend/E2E/Worker contract passed. Security, CodeQL, Repository Gate, local runtime, Windows runtime/package, and Real Worker Evidence passed.
+- Remaining execution is acceptance and release readiness, not reimplementation: feature workflow acceptance, Burmese ASR human quality gate, generated build artifact decision, staging E2E, managed restore/provider integrations, and external sign-offs.
+- **Release remains PENDING — NOT PRODUCTION READY.** No production deployment or cloud inference was performed.
+
+---
+
 ## Latest main snapshot — 2026-10-14 UTC
 
 - Default branch: `fe17d74229cb51ca4eec125b720594fb85ebbbb6`.

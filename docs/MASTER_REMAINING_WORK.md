@@ -1,15 +1,16 @@
 # Authoritative remaining-work checkpoint — 2026-10-14 UTC
 
-- **Base main SHA for this checkpoint:** `2edb6f58f7a755253e3342e581482458f9297f32`.
-- **Completed since the older checkpoint:** PR #83 persisted Series Bible characters with tenant isolation; PR #84 added continuity tests; PR #85 added subtitle API tenant/role and approved-content immutability tests; PR #86 added Script Studio optimistic-locking/history and scene/script scope tests. PRs #85 and #86 passed their exact-head CI, security, runtime/package, E2E, and Real Worker Evidence checks.
-- **Next priorities:**
-  1. **Authenticated media workflow E2E:** upload → processing → transcript/subtitle generation → subtitle edit/preview/playback, verify original-media checksum/integrity and error/retry behavior.
-  2. **Asset/processing acceptance:** test malformed/oversized upload handling, asset ownership/scope, state transitions, retry/DLQ behavior, and tenant/role boundaries end to end.
-  3. **Burmese ASR quality:** human review against a dialect-specific reference transcript; this remains unaccepted and is not satisfied by CI runtime smoke. Local human media-quality acceptance remains deferred; no cloud inference without explicit approval.
-  4. **External release gates:** managed backup/restore operational evidence, real provider integration and quota policy, accessibility, privacy/legal/commercial-use review, and independent security sign-off.
+- **Base main SHA for this checkpoint:** `4959810fc1a7449cc714084ca0169557dce02513`.
+- **Completed:** PR #83 Series Bible persistence; PR #84 continuity tests; PR #85 subtitle tenant/role/immutability tests; PR #86 Script Studio/scene API versioning and tenant checks; PR #88 Series Bible UI persistence across reload; PR #89 mock upload → processing → checksum-preserving output → subtitle edit/export E2E.
+- **Remaining queue:**
+  1. **Non-mock media/provider E2E:** authenticated upload and real processing, verify source integrity, transcript generation, subtitle timing/playback, provider failure/retry behavior, and end-to-end state transitions in a disposable local/staging environment.
+  2. **Asset/processing edge acceptance:** malformed/oversized uploads, ownership/scope, retry/DLQ recovery, and role/tenant boundaries for edge/error paths. Existing resumable-upload and worker integration suites already cover many lower-level cases.
+  3. **Burmese ASR quality:** human review against a dialect-specific reference transcript. The existing quality result is not accepted; CI smoke and mock transcript output do not satisfy this gate. Human local media-quality acceptance remains deferred; no cloud inference without explicit approval.
+  4. **External release gates:** managed backup/restore operational evidence, live provider integration/quota policy, accessibility, privacy/legal/commercial-use review, and independent security sign-off.
 - **Do not deploy to production or provision paid resources.** Release stays **PENDING — NOT PRODUCTION READY**.
 
-Earlier entries below are historical and should not override this current queue.
+Earlier entries below are historical and should not override this queue.
+
 
 ---
 

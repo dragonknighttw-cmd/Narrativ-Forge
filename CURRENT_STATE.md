@@ -1,22 +1,25 @@
-# Narrativ Forge — Current State
+## Latest main + overnight-work reconciliation — 2026-10-14 UTC
 
-## Latest application-code checkpoint — 2026-10-14 UTC (SHA `f2f45cf`)
+- **Default branch snapshot:** `main` at `fe17d74229cb51ca4eec125b720594fb85ebbbb6` (latest observed commit: generated frontend `tsconfig.tsbuildinfo`).
+- **Latest application-code checkpoint:** `f2f45cfca45f6e36408a8674d3d96eaec61c8fd2`. The three feature commits `6a6f54e`, `67deb66`, and `f2f45cf` added core platform workflows; commits after that code checkpoint are documentation/roadmap reconciliation plus the generated TypeScript build-info file.
+- **Newly recorded implementation scope:** 8 Burmese hook families; 5-episode batch generator; Script Studio assistant and scene auto-planning; thumbnail generation/shortlisting/human approval workflow; subtitle cue editing and keyboard shortcuts; 9:16 subtitle preview/safe-zone simulator; asset library guidance/filtering; processing stepper; Series Bible; Burmese typography/mobile navigation; and a 512-dimension mock RAG/semantic-search foundation.
+- **Evidence boundary:** repository state records 12 focused backend unit tests and frontend `tsc --noEmit` as passing. The latest main SHA's CI, Security, CodeQL and Repository Gate conclusions were not independently available from the status connector during this reconciliation; rerun/check exact-SHA Actions before treating the current head as green.
+- **Local Burmese ASR acceptance (operator report, 2026-10-13):** tested older application SHA `3b1b3766f2fb132bf4d80203e7174562f2879d9a`, not the new feature SHA. On the same source audio, Whisper small auto-detect, small forced Burmese and large-v3-turbo all emitted non-Myanmar scripts/text (0 Myanmar-script characters); all were correctly rejected as `ASR_LANGUAGE_MISMATCH`. Local focused Whisper/subprocess tests: 15 passed, 2 skipped; unit: 281 passed, 5 skipped; unit/security: 301 passed, 5 skipped. No Cloudflare inference/quota was used. This is a **Burmese quality failure**, not a successful ASR acceptance. Re-run relevant regression tests on current code and obtain human dialect/reference-transcript review before choosing a model/parameter change.
+- **Possible code regression to verify before release:** the recent `review.py` diff appeared to remove the `approved_at` assignment while retaining a return reference. This plan update does not change application code; inspect the current route and add/adjust a regression test only in a separately authorized code task.
+- **Build artifact hygiene:** `web-platform/frontend/tsconfig.tsbuildinfo` is tracked by the latest commit. Decide whether it should be ignored/removed as generated output; do not treat it as a feature.
+- **Deployment boundary:** current main is ahead of the deployed application baseline `3b1b3766`; Render auto-deploy is documented as disabled in the latest live checkpoint. Do not infer the new features are deployed. No deploy, paid worker provisioning, quota-consuming inference or production-data mutation was performed.
+- **Release:** **PENDING — NOT PRODUCTION READY**.
 
-- Direct-main implementation commits `6a6f54e`, `67deb66`, and `f2f45cf` complete the full suite of Core Platform features:
-  - 8 canonical hook families with authentic Burmese templates (`hook_engineering.py`).
-  - 5-episode batch generator with narrative arc progression and DB persistence (`batch_generator.py`).
-  - Script Studio AI Assistant & Scene Breakdown Auto-Pacing (`script/page.tsx`, `scenes/page.tsx`).
-  - Thumbnail candidate workflow: 10 candidates generated -> top 5 shortlisted by CTR -> 1 human approved (`thumbnail_candidate.py`, `review/page.tsx`).
-  - Subtitle Studio micro-nudge (`±0.1s`, `±0.5s`), split/merge/add/delete cue, and `Ctrl+S` hotkey (`subtitle/page.tsx`).
-  - 9:16 Live Video Player Sync Canvas & Subtitle Styling Presets (`subtitle/page.tsx`).
-  - 9:16 Cross-Platform Safe-Zone Visual Overlay Simulator for TikTok, Shorts, and Reels (`publishing-prep/page.tsx`).
-  - Media Asset Library UI with 9:16 portrait validation guidance, category filters, and metadata inspector (`assets/page.tsx`).
-  - Processing Pipeline State Machine Stepper with 5-stage lifecycle and progress bar (`processing/page.tsx`).
-  - Series Bible & Character Voice / Tone Continuity Manager (`series/[id]/page.tsx`).
-  - Burmese typography stack (`Padauk`, `Pyidaungsu`, `line-height: 1.75`), and 390–430px mobile drawer (`app-shell.tsx`).
-  - Voyage AI 512-dim RAG vector schema guard & semantic search endpoint (`rag_embeddings.py`, `search.py`).
-- All 12 focused backend unit tests and frontend TypeScript typecheck (`tsc --noEmit`) pass cleanly.
-- Release status remains **PENDING — NOT PRODUCTION READY**. Live cloud AI quota consumption and paid Celery background workers are explicitly postponed to the Final Pre-Production Gate per owner direction.
+### Reconciled next actions (in priority order)
+
+1. Audit the suspected review approval timestamp issue and run focused tests; this is a verification task, not a claim that the bug is confirmed.
+2. Check exact-SHA CI, Security, CodeQL and Repository Gate on the latest feature-bearing main head; refresh the evidence after the documentation-only plan update.
+3. Run focused API/UI acceptance for batch generation, script-to-scene planning, thumbnail approval, subtitle editing/preview, asset validation, and tenant/role authorization. Confirm persistence and human-review gates, not just component presence.
+4. Re-run ASR guard/subprocess regression tests on the current code SHA. Keep real Burmese audio acceptance open until a human confirms dialect/reference transcript and a model produces a reviewed, usable transcript.
+5. Complete browser login/session/upload and real-media subtitle timing/playback/source-integrity checks in a safe local/staging environment.
+6. Keep continuous worker, managed full-schema restore, live provider/storage/OAuth/Drive/SMTP/Stripe/Sentry, performance/load, accessibility, legal/privacy/commercial-use review, and independent penetration testing as explicit external acceptance gates.
+7. Decide whether to ignore the generated `tsconfig.tsbuildinfo`; then update the canonical plan/evidence with the resulting decision.
+8. Only after the above gates and owner decisions, consider deployment/release. Do not spend quota or create billable capacity without explicit approval.
 
 ## Previous post-merge checkpoint — 2026-10-13 UTC
 

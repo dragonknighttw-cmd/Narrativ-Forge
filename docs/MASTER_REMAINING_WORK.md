@@ -383,3 +383,12 @@ Before Manual Mode can be called production-ready, collect:
 - Netlify read-only audit: production deploy state is `ready`, but its published commit is `777fba6ca92ce59e53e741b976bc9ea9692b45c1` from 2026-10-06, behind current main. Team SSO is required for the site. Production redeployment and access-policy changes were not made; owner confirmation is needed before changing them.
 - Exact-SHA checks all passed: [CI #38225593771](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38225593771), [Security #38225593824](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38225593824), [CodeQL #38225593759](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38225593759), [Repository Gate #38225593748](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38225593748).
 - Still blocked: continuous worker capacity (billable), authenticated real-audio/Burmese acceptance, live storage/provider lifecycle, managed backup/restore, OAuth/Drive, SMTP, Stripe, Sentry, load/performance, accessibility, legal/commercial-use review, and external security acceptance. No billable provisioning, production-data mutation, destructive recovery, or quota-consuming inference was performed. Release remains **PENDING — NOT PRODUCTION READY**.
+
+
+## 2026-10-14 exact-SHA verification update — PR #75
+
+- Documentation-only candidate: `97030d17b5f0d2fd8c121a9b5b590dc1d19df70b`.
+- [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38503795475), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38503795675), and [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38503795460) passed. [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38503795609) failed and blocks release acceptance.
+- Backend integration tests: **4 failed, 68 passed, 1 skipped**; all four failures are caused by undefined `approved_at` in the review approval response. Playwright production flow also fails at approval, while foundation login/tenant and cross-tenant isolation E2E tests pass.
+- Tracked fix: [Issue #76](https://github.com/dragonknighttw-cmd/Narrativ-Forge/issues/76). Fix in a separate application-code PR; then rerun the exact-SHA backend integration and E2E suites before revisiting release gates.
+- No application code or production services were changed by this plan update. Release remains **PENDING — NOT PRODUCTION READY**.

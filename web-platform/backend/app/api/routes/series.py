@@ -1,9 +1,12 @@
+import json
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ...db import get_db
-from ...models import Season, Series
+from ...models import Season, Series, SeriesBibleRecord
 from ..dependencies import get_current_membership, get_current_user, require_roles
 
 router = APIRouter(prefix="/series", tags=["series"])
@@ -20,6 +23,18 @@ class SeriesUpdate(BaseModel):
 class SeasonCreate(BaseModel):
     season_number: int = Field(ge=1)
     title: str | None = Field(default=None, max_length=255)
+
+class SeriesBibleCharacter(BaseModel):
+    id: str = Field(min_length=1, max_length=80)
+    name: str = Field(min_length=1, max_length=255)
+    role: Literal["protagonist", "antagonist", "mentor", "sidekick"]
+    tone: str = Field(default="", max_length=1000)
+    catchphrase: str = Field(default="", max_length=1000)
+    traits: str = Field(default="", max_length=2000)
+
+
+class SeriesBibleUpdate(BaseModel):
+    characters: list[SeriesBibleCharacter] = Field(default_factory=list, max_length=100)
 
 @router.get("")
 def list_series(membership=Depends(get_current_membership), db: Session = Depends(get_db)):
@@ -50,6 +65,62 @@ def update_series(series_id: str, payload: SeriesUpdate, membership=Depends(get_
     db.commit()
     db.refresh(item)
     return item
+
+@router.get("/{series_id}/bible")
+def get_series_bible(series_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    series = db.query(Series).filter(
+        Series.id == series_id,
+        Series.organization_id == membership.organization_id,
+    ).first()
+    if not series:
+        raise HTTPException(status_code=404, detail="Series not found")
+    record = db.query(SeriesBibleRecord).filter(
+        SeriesBibleRecord.series_id == series_id,
+        SeriesBibleRecord.organization_id == membership.organization_id,
+    ).first()
+    return {
+        "series_id": series_id,
+        "characters": json.loads(record.characters_json) if record else [],
+    }
+
+
+@router.put("/{series_id}/bible")
+def update_series_bible(
+    series_id: str,
+    payload: SeriesBibleUpdate,
+    membership=Depends(get_current_membership),
+    _: dict = Depends(require_roles("owner", "editor")),
+    db: Session = Depends(get_db),
+):
+    series = db.query(Series).filter(
+        Series.id == series_id,
+        Series.organization_id == membership.organization_id,
+    ).first()
+    if not series:
+        raise HTTPException(status_code=404, detail="Series not found")
+    record = db.query(SeriesBibleRecord).filter(
+        SeriesBibleRecord.series_id == series_id,
+        SeriesBibleRecord.organization_id == membership.organization_id,
+    ).first()
+    if record is None:
+        record = SeriesBibleRecord(
+            organization_id=membership.organization_id,
+            series_id=series_id,
+        )
+        db.add(record)
+    record.characters_json = json.dumps(
+        [character.model_dump() for character in payload.characters],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    db.commit()
+    db.refresh(record)
+    return {
+        "series_id": series_id,
+        "characters": json.loads(record.characters_json),
+        "updated_at": record.updated_at.isoformat() if record.updated_at else None,
+    }
+
 
 @router.get("/{series_id}/seasons")
 def list_seasons(series_id: str, membership=Depends(get_current_membership), db: Session = Depends(get_db)):

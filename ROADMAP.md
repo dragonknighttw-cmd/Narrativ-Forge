@@ -1,20 +1,34 @@
-# Narrativ Forge — Roadmap
+# Authoritative roadmap checkpoint — 2026-10-14 UTC
 
-## Latest application-code checkpoint — 2026-10-14 UTC (SHA `f2f45cf`)
+- **Base main SHA for this checkpoint:** `4959810fc1a7449cc714084ca0169557dce02513`.
+- **Recently completed:** PR #80 build-artifact hygiene; PR #83 Series Bible persistence; PR #84 continuity tests; PR #85 subtitle API tenant/role/immutability tests; PR #86 Script Studio/scene API acceptance; PR #88 Series Bible UI reload persistence; PR #89 upload/source checksum, processed-output integrity, mock processing completion, and subtitle SRT export E2E.
+- **Verified:** PRs #85 and #86 passed exact-head backend/integration, frontend, E2E, CodeQL/security, runtime/package, and Real Worker Evidence. PRs #88 and #89 passed their applicable backend/integration, frontend E2E, CodeQL/security, runtime/package, and repository checks. PR #89 reported backend **309 passed, 3 skipped**, integration **75 passed, 1 skipped**, E2E **4 passed**.
+- **Remaining priorities:** (1) authenticated non-mock media/provider E2E and processing error/retry paths; (2) asset validation and tenant/role acceptance for edge cases; (3) human Burmese ASR quality review against a dialect-specific reference transcript (still unaccepted and explicitly deferred); (4) managed restore/provider integration and external accessibility, privacy/legal/commercial-use, and independent security sign-offs.
+- **Release remains PENDING — NOT PRODUCTION READY.** No production deployment, paid resources, production-data mutation, or cloud inference performed.
 
-- Direct-main implementation commits `6a6f54e`, `67deb66`, and `f2f45cf` complete the full suite of Core Platform features:
-  - 8 canonical hook families with Burmese templates, 5-episode batch generator with DB persistence.
-  - Script Studio AI Assistant & Scene Breakdown Auto-Pacing (target 180s pacing indicator).
-  - Thumbnail candidate workflow (10 candidates -> 5 shortlisted -> 1 human approved).
-  - Subtitle Studio micro-nudge (±0.1s/±0.5s), cue operations, and Ctrl+S hotkey.
-  - 9:16 Live Video Player Sync Canvas & Subtitle Styling Presets.
-  - 9:16 Cross-Platform Safe-Zone Visual Overlay Simulator for TikTok, Shorts, and Reels.
-  - Media Asset Library UI with 9:16 portrait validation guidance and metadata inspector.
-  - Processing Pipeline State Machine Stepper with 5-stage lifecycle.
-  - Series Bible & Character Voice / Tone Continuity Manager.
-  - Burmese typography stack (Padauk, Pyidaungsu, 1.75 line-height) and mobile drawer.
-  - Voyage AI 512-dim RAG vector schema guard & semantic search endpoint.
-- Live cloud API quota consumption and paid background workers are explicitly deferred to the Final Pre-Production Gate.
+The older roadmap checkpoints below are historical.
+
+
+---
+
+# Current roadmap checkpoint — 2026-10-14 UTC
+
+- **Base main SHA for this checkpoint:** `d6709d8b84d66f019015db9d6a9010ce9e923ccb` (PR #81 refreshes status after PRs #79 and #80).
+- **Latest application-code SHA:** `6dbd4fabe715c06b565c6e53cf187b7373bbb9df`; approval response bug fixed and merged in [PR #77](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/77). Exact-SHA CI, Security, CodeQL, Repository Gate, runtime/package evidence and Real Worker Evidence passed on the tested candidate SHA.
+- The overnight platform features are treated as **implemented foundations needing acceptance**, not work to reimplement. Priority is feature persistence/authorization acceptance, Burmese ASR quality review, authenticated local/staging E2E, and external release gates. The generated TypeScript build cache was removed and `*.tsbuildinfo` ignored in merged PR #80.
+- Burmese ASR is **not accepted**: three local Whisper configurations on the reported older SHA produced no Myanmar-script characters and were rejected by the language guard. Do not spend cloud inference quota without explicit approval.
+- **Release remains PENDING — NOT PRODUCTION READY.** No production deployment or paid worker provisioning is implied by passing CI.
+
+---
+
+## Latest plan reconciliation — 2026-10-14 UTC
+
+- **Latest main SHA:** `fe17d74229cb51ca4eec125b720594fb85ebbbb6`.
+- **Latest application-code SHA:** `f2f45cfca45f6e36408a8674d3d96eaec61c8fd2`; current main is 17 commits ahead of deployed baseline `3b1b3766f2fb132bf4d80203e7174562f2879d9a` (0 behind). Recent feature commits add the Script Studio/scene planning, batch generation, thumbnail/subtitle, 9:16, asset/processing, Series Bible, Burmese typography and mock RAG foundations.
+- **Planning change, not code change:** treat these new features as implemented foundations that now require exact-SHA CI and acceptance verification. Do not reset the roadmap or reimplement them from scratch.
+- **ASR decision:** local test results on SHA `3b1b3766` failed Burmese speech quality across three Whisper configurations; script guard rejection worked. No live Cloudflare inference was used. Burmese quality remains a release blocker until human dialect/reference-transcript review and a successful reviewed output.
+- **Immediate priority:** fix the confirmed `review.py` `approve_review()` undefined `approved_at` defect in a separate code change; verify exact-SHA CI/Security/CodeQL/Repository Gate; acceptance-test new feature workflows and tenant/role guards; rerun ASR guard tests; resolve generated `tsconfig.tsbuildinfo` tracking.
+- **Release status:** **PENDING — NOT PRODUCTION READY**. No deployment, paid worker provisioning, quota-consuming inference, or production-data mutation is authorized by this plan update.
 
 ## Post-merge execution checkpoint — 2026-10-13 UTC
 

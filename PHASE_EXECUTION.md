@@ -1,18 +1,43 @@
-# Narrativ Forge — Phase Execution & Evidence Plan
+# Authoritative phase execution checkpoint — 2026-10-14 UTC
 
-## Latest main snapshot — 2026-10-11 UTC
+- **Base main SHA for this checkpoint:** `4959810fc1a7449cc714084ca0169557dce02513`.
+- **Merged acceptance work:** PR #83 Series Bible persistence; PR #84 continuity tests; PR #85 subtitle API security/immutability; PR #86 Script Studio/scene API versioning and scope checks; PR #88 Series Bible UI persistence across reload; PR #89 source upload checksum, processed-output integrity, mock job completion, and subtitle SRT export.
+- **Verification:** PRs #85 and #86 passed backend/integration, frontend, E2E, CodeQL/security, runtime/package, and Real Worker Evidence. PRs #88 and #89 passed their applicable backend/integration, frontend E2E, CodeQL/security, runtime/package, and repository checks. PR #89 backend **309 passed, 3 skipped**, integration **75 passed, 1 skipped**, E2E **4 passed**.
+- **Still open:** authenticated non-mock media/provider E2E; asset validation/error/retry acceptance; human Burmese ASR quality acceptance against a dialect-specific reference transcript; managed restore/provider and external legal/privacy/accessibility/security gates.
+- **Release status:** **PENDING — NOT PRODUCTION READY**. No production deployment, paid resources, production-data changes, or cloud inference/quota use; human local ASR/media-quality acceptance remains deferred.
 
-- Current main SHA: `e96f26ef3b2f132d46bc95e87b28909de654a3f4`.
-- Exact-SHA main checks passed:
-  - [CI #38132450388](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450388) — frontend, backend, backend integration, E2E.
-  - [Security #38132450426](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450426) — dependency audit, SAST, container scan.
-  - [CodeQL #38132450454](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450454) — JavaScript/TypeScript and Python.
-  - [Repository Gate #38132450374](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450374).
-- [Application Schema Restore Evidence #38132450389](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450389) passed on this exact main SHA. All migrations were applied to ephemeral PostgreSQL 17; backup/restore into a fresh database, schema metadata comparison, migration head, and synthetic sentinel verification passed. [Artifact](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38132450389/artifacts/11700015654). This remains ephemeral CI evidence, not managed/production recovery evidence.
-- [Real Worker Evidence #38129952195](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195) passed on `e0ce675ea27f3b6d5aa4bb53e8a2bf5bb6698775`, the preceding code-bearing commit; intervening PRs #61–#63 changed documentation/workflow configuration only. [Artifact](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38129952195/artifacts/11698084515). It verifies an ephemeral worker and synthetic-media path, not a persistent production worker or live provider behavior.
-- [Managed Staging Restore Evidence #38126392496](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126392496) passed only the minimal managed destination fixture smoke; full managed application-schema restore and post-restore app tests remain open.
-- [Kaggle Ephemeral Worker Dispatcher #38126973473](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38126973473) was skipped; no execution should be inferred.
-- Release status remains **PENDING — NOT PRODUCTION READY**. Do not provision billable resources, consume inference quota, mutate production data, or run destructive live drills without explicit owner approval.
+Historical checkpoints below are retained for audit.
+
+
+---
+
+# Current phase execution checkpoint — 2026-10-14 UTC
+
+- **Base main SHA for this checkpoint:** `d6709d8b84d66f019015db9d6a9010ce9e923ccb`; **latest application-code SHA:** `6dbd4fabe715c06b565c6e53cf187b7373bbb9df`.
+- The approval-route timestamp defect is resolved in merged PR #77. On candidate SHA `a05a97752a30889d691c687ea47b519a089e7e6b`, CI passed: backend unit/security **303 passed, 3 skipped**; PostgreSQL/Redis integration **72 passed, 1 skipped**; frontend/E2E/Worker contract passed. Security, CodeQL, Repository Gate, local runtime, Windows runtime/package, and Real Worker Evidence passed.
+- Remaining execution is acceptance and release readiness, not reimplementation: feature workflow persistence/authorization acceptance, Burmese ASR human quality gate, authenticated local/staging E2E, managed restore/provider integrations, and external sign-offs. Generated build-artifact hygiene was completed in PR #80.
+- **Release remains PENDING — NOT PRODUCTION READY.** No production deployment or cloud inference was performed.
+
+---
+
+## Latest main snapshot — 2026-10-14 UTC
+
+- Default branch: `fe17d74229cb51ca4eec125b720594fb85ebbbb6`.
+- Latest application-code checkpoint: `f2f45cfca45f6e36408a8674d3d96eaec61c8fd2`; deployment baseline remains `3b1b3766f2fb132bf4d80203e7174562f2879d9a`. New code foundations are listed in `CURRENT_STATE.md` and `ROADMAP.md`; the plan is to verify/accept them, not rewrite them.
+- The latest main SHA's exact CI/Security/CodeQL/Repository Gate results were not independently confirmed in this reconciliation. Check the workflow runs against the exact SHA before promoting repository status.
+- Local Burmese ASR report tested SHA `3b1b3766` and found zero Myanmar-script characters from Whisper small auto, small forced Burmese, and large-v3-turbo; the guard rejected those outputs. Do not mark Burmese ASR accepted. No cloud inference was used.
+- Release remains **PENDING — NOT PRODUCTION READY**. No app code was changed by this documentation plan update.
+
+## Updated execution order
+
+1. **Confirmed regression to fix in a separate code task:** `approve_review()` returns `approved_at.isoformat()` without assigning `approved_at`. This can raise `NameError` after commit. Add a regression test and fix the route; this documentation-only PR does not modify application code.
+2. **Exact-SHA CI:** confirm CI, Security, CodeQL and Repository Gate for the latest code-bearing head, then refresh checks after this documentation change.
+3. **Feature acceptance:** batch generator persistence; Script Studio → scene planning; thumbnail candidate → human approval; subtitle cue edit/preview; asset checks; processing states; Series Bible; tenant/role authorization.
+4. **ASR:** rerun guard/subprocess tests on current SHA; request human dialect/reference transcript review; keep model-quality gate open until the transcript is reviewed and usable.
+5. **Local/staging E2E:** authenticated login/session, upload, processing, subtitle timing/playback and source-media hash integrity.
+6. **External release gates:** persistent worker decision, managed restore, live provider/storage/OAuth/Drive/SMTP/Stripe/Sentry, performance/load, accessibility, privacy/legal/commercial terms, and independent penetration test.
+7. **Repository hygiene:** decide on tracked generated `tsconfig.tsbuildinfo`.
+8. **Release review:** reconcile evidence ledger and owner decisions; only then consider deployment. Do not consume inference quota or provision paid capacity without explicit approval.
 
 ## Execution priority
 

@@ -1,8 +1,57 @@
-# Narrativ Forge — Owner Action Checklist
+# Authoritative owner checklist — 2026-10-14 UTC
 
-## Strategic Realignment — 2026-10-13 UTC
-- **Postponed to Final Pre-Production Gate:** Per owner direction, live video processing, background media worker hosting, Cloudflare Whisper live inference, and live cloud API quota consumption (Gemini, Groq, Mistral, Cohere, Voyage, Agnes) are explicitly scheduled for the **Final Pre-Production Acceptance Gate**.
-- **Active Focus:** UI/UX, authentication, workspaces/tenant isolation, scriptwriting workflows, and mocked deterministic test suites.
+- **Base main SHA for this checkpoint:** `4959810fc1a7449cc714084ca0169557dce02513`.
+- **Merged and verified:** PR #83 Series Bible persistence; PR #84 continuity tests; PR #85 subtitle API tenant/role/immutability; PR #86 Script Studio/scene versioning and scope; PR #88 Series Bible UI persistence; PR #89 source checksum through mock processing and subtitle export E2E.
+- **Owner input still required before release:**
+  1. **Burmese ASR:** provide/approve a dialect-specific reference transcript for human review. ASR quality remains unaccepted; keep private media out of public issues.
+  2. **Worker cost policy:** decide whether to remain free-only or explicitly approve potentially billable persistent processing capacity.
+  3. **Live providers/quota:** explicitly authorize any quota-consuming inference or paid provider request before it is attempted.
+  4. **Production release:** explicitly approve whether/when to deploy after acceptance and external gates pass.
+  5. **External sign-offs:** accessibility, privacy/legal/commercial-use review, managed restore, and independent security review.
+- **Current release status:** **PENDING — NOT PRODUCTION READY**. No production deployment, paid resource provisioning, production-data mutation, or cloud inference/quota use.
+
+The older checklist below is historical.
+
+
+---
+
+# Current owner checkpoint — 2026-10-14 UTC
+
+- Base main for this checkpoint: `d6709d8b84d66f019015db9d6a9010ce9e923ccb`; latest code fix: `6dbd4fabe715c06b565c6e53cf187b7373bbb9df`.
+- The approval timestamp defect was fixed and merged in PR #77. Candidate CI, Security, CodeQL, Repository Gate, runtime/package evidence and Real Worker Evidence passed. It is no longer an owner action.
+- **Owner inputs still needed when ready:**
+  1. Burmese ASR: confirm dialect and approve/provide a reference transcript for human quality review; keep private media out of public issues.
+  2. Worker cost: decide whether to remain free-only and defer persistent media processing or explicitly approve potentially billable capacity.
+  3. Live provider/quota: explicitly approve quota-consuming inference or paid-provider use before any such request.
+  4. Production deployment: approve whether/when to deploy after feature acceptance and external gates; CI passing alone is not release approval.
+  5. External sign-off: legal/privacy/commercial-use, accessibility, and independent security review; credentials must be supplied through secret managers, never chat.
+- Engineering can continue quota-free feature acceptance, ASR guard regression tests, and local/staging E2E without owner credentials. Generated build-artifact hygiene is complete: PR #80 removed the tracked cache and ignores `*.tsbuildinfo`; frontend and repository CI checks passed on the exact PR head.
+- **Release remains PENDING — NOT PRODUCTION READY.** No production deployment or paid resource provisioning was performed.
+
+---
+
+## Latest owner checkpoint — 2026-10-14 UTC
+
+The overnight commits expanded application features, but this is a **plan reconciliation only**; no application code or deployment is changed by this update.
+
+- Latest main: `fe17d74229cb51ca4eec125b720594fb85ebbbb6`; latest application-code checkpoint: `f2f45cfca45f6e36408a8674d3d96eaec61c8fd2`.
+- New feature foundations to accept/test: 5-episode batch generator and 8 hook families; Script Studio/scene auto-plan; thumbnail candidate shortlist and human approval; subtitle editing/preview; 9:16 safe-zone; asset library; processing stepper; Series Bible; Burmese typography/mobile drawer; mock RAG vector schema/semantic search.
+- Local Burmese ASR report on older SHA `3b1b3766` failed quality for three Whisper configurations (0 Myanmar-script characters); the guard rejected the invalid outputs. No cloud inference/quota was used. Burmese acceptance remains an owner/human gate.
+- Current exact-SHA CI/Security/CodeQL/Repository Gate results were not independently confirmed here; verify the run SHA before treating current main as green.
+- A confirmed code blocker exists in `review.py`: `approve_review()` returns `approved_at.isoformat()` without defining `approved_at`, potentially raising `NameError` after commit. This is an engineering fix, not an owner decision; it is intentionally not changed in this documentation-only PR. The tracked `tsconfig.tsbuildinfo` artifact also needs a repository-hygiene decision.
+- Current main features are not assumed deployed; release remains **PENDING — NOT PRODUCTION READY**.
+
+### Owner actions that actually require owner input
+
+1. **Burmese ASR acceptance:** listen to the supplied source privately, confirm dialect/language and provide or approve a reference transcript if possible. Do not paste private media/transcript into public issues. This decision is needed before evaluating model alternatives.
+2. **Worker cost decision:** choose whether to remain free-only with production media processing deferred or approve a potentially billable persistent worker. No resource will be created without approval.
+3. **Provider/quota approval:** only when the free/local checks are exhausted, explicitly approve any quota-consuming Cloudflare Whisper inference or paid provider/worker action.
+4. **Production deployment:** approve whether/when to redeploy the current app to the production frontend/backend after acceptance gates; current main is not presumed deployed.
+5. **External sign-off:** provide the relevant credentials through secret managers (never chat), real test sample/acceptance, legal/privacy/commercial-use review, and independent security review when the plan reaches those gates.
+
+### No owner action needed yet
+
+The repository/CI audit, approval-route regression fix, focused feature tests, ASR guard regression tests, generated build-artifact audit, and documentation/evidence reconciliation can proceed without credentials or paid services.
 
 ## Post-merge owner checkpoint — 2026-10-13 UTC
 

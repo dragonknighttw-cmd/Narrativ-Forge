@@ -1,16 +1,60 @@
-# Narrativ Forge — Detailed Remaining Work Checklist
+# Authoritative remaining-work checkpoint — 2026-10-14 UTC
 
-## Strategic Realignment — 2026-10-13 UTC
-- **Live Media Processing & Live Cloud API Inference Postponed to Final Pre-Production Gate:** Per owner direction, real-media video uploading, Celery worker capacity provisioning, Cloudflare Whisper live inference, and live API quota consumption (Gemini, Groq, Mistral, Cohere, Voyage, Agnes) are explicitly scheduled for the **Final Pre-Production Acceptance Gate**.
-- **Current Active Development Focus:** UI, auth/workspaces, script/story management, database schema, and deterministic mocked tests. This prevents premature quota expenditure and decouples frontend/backend feature delivery from live media worker costs.
-- **Phase 1 & Phase 2 Core Platform Capabilities Implemented (2026-10-13):**
-  1. *AI Prompt Engineering & 5-Episode Batch Generator:* 8 canonical hook families (`question`, `shock`, `mystery`, `warning`, `personal_story`, `contrarian`, `cliffhanger`, `number`), authentic Burmese prompt templates, and backend/frontend 5-episode mini-series batch generator (`/auto/batch-generate`).
-  2. *Script Studio & Scene Breakdown AI Assistant:* Integrated canonical hook selector, auto-plan generator (`POST /auto/episodes/{id}/plan`), and automatic scene breakdown from script directly into the Script Studio and Scene Breakdown UI.
-  3. *Thumbnail Candidate Workflow:* 10 candidate thumbnails generated -> top 5 shortlisted by CTR score -> 1 human approved via Review Center, saving metadata and creating/approving the thumbnail asset.
-  4. *Subtitle Studio UI Enhancements:* Cue timestamp nudge controls (`±0.1s`, `±0.5s`), split cue, merge cue, add cue after, delete cue, and keyboard shortcut navigation (`Ctrl+S`).
-  5. *UI/UX Polish & Burmese Typography:* Integrated `Padauk` and `Pyidaungsu` Burmese font stack fallbacks, `line-height: 1.75` for diacritic clearance, and responsive 390–430px mobile navigation drawer.
-  6. *RAG Vector Dimension Alignment:* Voyage AI `voyage-3-lite` 512-dimension vector schema, validation guard against dimension mismatch, cosine similarity, and semantic retrieval endpoint.
+- **Base main SHA for this checkpoint:** `4959810fc1a7449cc714084ca0169557dce02513`.
+- **Completed:** PR #83 Series Bible persistence; PR #84 continuity tests; PR #85 subtitle tenant/role/immutability tests; PR #86 Script Studio/scene API versioning and tenant checks; PR #88 Series Bible UI persistence across reload; PR #89 mock upload → processing → checksum-preserving output → subtitle edit/export E2E.
+- **Remaining queue:**
+  1. **Non-mock media/provider E2E:** authenticated upload and real processing, verify source integrity, transcript generation, subtitle timing/playback, provider failure/retry behavior, and end-to-end state transitions in a disposable local/staging environment.
+  2. **Asset/processing edge acceptance:** malformed/oversized uploads, ownership/scope, retry/DLQ recovery, and role/tenant boundaries for edge/error paths. Existing resumable-upload and worker integration suites already cover many lower-level cases.
+  3. **Burmese ASR quality:** human review against a dialect-specific reference transcript. The existing quality result is not accepted; CI smoke and mock transcript output do not satisfy this gate. Human local media-quality acceptance remains deferred; no cloud inference without explicit approval.
+  4. **External release gates:** managed backup/restore operational evidence, live provider integration/quota policy, accessibility, privacy/legal/commercial-use review, and independent security sign-off.
+- **Do not deploy to production or provision paid resources.** Release stays **PENDING — NOT PRODUCTION READY**.
 
+Earlier entries below are historical and should not override this queue.
+
+
+---
+
+# Current remaining-work priorities — 2026-10-14 UTC
+
+- Base main for this checkpoint: `d6709d8b84d66f019015db9d6a9010ce9e923ccb`; latest application-code fix: `6dbd4fabe715c06b565c6e53cf187b7373bbb9df`.
+- The review approval timestamp bug is **resolved** in PR #77; its exact candidate SHA passed CI, Security, CodeQL, Repository Gate, Local/Windows Runtime, Windows Package and Real Worker Evidence. Do not continue to list this as an open code blocker.
+
+## Remaining queue (priority order)
+
+1. **Burmese ASR quality:** human dialect/reference transcript review and a usable transcript acceptance. Existing local results are a quality failure; no cloud inference without approval.
+2. **Feature acceptance:** batch generation persistence; Script Studio/scene planning; thumbnail shortlist and human approval; subtitle cue operations/preview; asset validation; processing states; Series Bible; tenant/role authorization.
+3. **Local/staging E2E:** authenticated session, upload, media processing, subtitle timing/playback, and source-media integrity.
+4. **External release gates:** managed full-schema backup/restore; live provider/storage/OAuth/Drive/SMTP/Stripe/Sentry; performance/load; accessibility; privacy/legal/commercial-use review; independent penetration/security sign-off.
+5. **Owner decisions:** approve any paid persistent worker, live inference/quota use, and production deployment only when those gates are ready.
+
+Repository hygiene is complete: PR #80 removed the tracked `web-platform/frontend/tsconfig.tsbuildinfo` and added `*.tsbuildinfo` to `.gitignore`; frontend build/typecheck and the required CI checks passed on its exact head SHA.
+
+No production deployment, billable provisioning, production-data mutation, destructive recovery, or cloud inference was performed. **Release remains PENDING — NOT PRODUCTION READY.**
+
+---
+
+## Fresh reconciliation — 2026-10-14 UTC (main `fe17d742`)
+
+### What changed overnight and how the plan treats it
+
+- Application-code checkpoint `f2f45cf` adds hook engineering and a 5-episode batch generator; Script Studio/scene auto-planning; thumbnail candidate generation/shortlisting/human approval; subtitle cue editing and styling; 9:16 safe-zone/preview; asset library and processing-stepper UI; Series Bible; Burmese typography/mobile navigation; and a 512-dimension mock RAG/semantic-search foundation.
+- These are **implemented foundations**, not proof of complete end-to-end product acceptance. The next work is exact-SHA CI, focused acceptance, persistence/authorization checks and regression review—not rebuilding the same features.
+- Latest observed main is `fe17d74229cb51ca4eec125b720594fb85ebbbb6`; this last commit tracks `web-platform/frontend/tsconfig.tsbuildinfo`. Verify whether this generated artifact belongs in Git.
+- Exact-SHA CI/Security/CodeQL/Repository Gate status for the latest main was not independently confirmed during this reconciliation. Do not label current head green without matching run evidence.
+- The local ASR report tested older SHA `3b1b3766`; three Whisper configurations emitted 0 Myanmar-script characters and were correctly rejected by the guard. No Cloudflare inference/quota was used. This remains a **quality failure**, and is not superseded by unrelated feature commits.
+- **Confirmed blocker:** `web-platform/backend/app/api/routes/review.py::approve_review()` returns `approved_at.isoformat()` but no `approved_at` variable is defined in the current function. This can raise `NameError` after `db.commit()`. Fix and regression-test in a separate application-code change; this plan-only update leaves code untouched.
+- Deployed app baseline remains `3b1b3766`; current main features are not presumed deployed. Release remains **PENDING — NOT PRODUCTION READY**.
+
+## Immediate quota-free queue — reordered 2026-10-14
+
+- [ ] Fix the confirmed review approval timestamp defect and add a regression test in a separate code change; verify transaction/response behavior.
+- [ ] Verify CI, Security, CodeQL and Repository Gate against the latest code-bearing SHA, then record exact-SHA results for the documentation update.
+- [ ] Test new workflows end-to-end in safe local/CI fixtures: batch generation and DB persistence; script-to-scene planning; thumbnail shortlist and human approval; subtitle cue operations/preview; asset validation; processing state; Series Bible; tenant/role guards.
+- [ ] Rerun focused Whisper/subprocess and ASR guard tests on current code. Keep Burmese quality pending until a human confirms dialect/reference transcript and approves a usable result.
+- [ ] Verify frontend typecheck/build and remove/ignore the generated `tsconfig.tsbuildinfo` artifact if policy confirms it should not be tracked.
+- [ ] Keep authenticated browser login/session/upload, subtitle timing/playback, and source-media integrity as local/staging acceptance gates.
+- [ ] Preserve external gates: continuous worker, managed full-schema restore, live provider/storage/OAuth/Drive/SMTP/Stripe/Sentry, performance/load, accessibility, privacy/legal/commercial-use, and independent penetration testing.
+- [ ] Do not provision paid capacity, consume provider inference quota, deploy, mutate production data or run destructive recovery without explicit owner approval.
 
 ## Fresh checkpoint — 2026-10-13 UTC (main `e21f98d29cf1ece43bc6a4550a02eb676f196d3a`)
 
@@ -374,3 +418,28 @@ Before Manual Mode can be called production-ready, collect:
 - Netlify read-only audit: production deploy state is `ready`, but its published commit is `777fba6ca92ce59e53e741b976bc9ea9692b45c1` from 2026-10-06, behind current main. Team SSO is required for the site. Production redeployment and access-policy changes were not made; owner confirmation is needed before changing them.
 - Exact-SHA checks all passed: [CI #38225593771](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38225593771), [Security #38225593824](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38225593824), [CodeQL #38225593759](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38225593759), [Repository Gate #38225593748](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38225593748).
 - Still blocked: continuous worker capacity (billable), authenticated real-audio/Burmese acceptance, live storage/provider lifecycle, managed backup/restore, OAuth/Drive, SMTP, Stripe, Sentry, load/performance, accessibility, legal/commercial-use review, and external security acceptance. No billable provisioning, production-data mutation, destructive recovery, or quota-consuming inference was performed. Release remains **PENDING — NOT PRODUCTION READY**.
+
+
+## 2026-10-14 exact-SHA verification update — PR #75
+
+- Documentation-only candidate: `97030d17b5f0d2fd8c121a9b5b590dc1d19df70b`.
+- [Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38503795475), [Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38503795675), and [CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38503795460) passed. [CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38503795609) failed and blocks release acceptance.
+- Backend integration tests: **4 failed, 68 passed, 1 skipped**; all four failures are caused by undefined `approved_at` in the review approval response. Playwright production flow also fails at approval, while foundation login/tenant and cross-tenant isolation E2E tests pass.
+- Tracked fix: [Issue #76](https://github.com/dragonknighttw-cmd/Narrativ-Forge/issues/76). Fix in a separate application-code PR; then rerun the exact-SHA backend integration and E2E suites before revisiting release gates.
+- No application code or production services were changed by this plan update. Release remains **PENDING — NOT PRODUCTION READY**.
+
+
+## 2026-10-14 approval blocker remediation status
+
+- [PR #77](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/77) fixes the undefined `approved_at` response variable by assigning a single UTC timestamp and reusing it for the review record and API response. Added integration assertions for the approval response contract.
+- Exact-SHA CI [#38561471370](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471370) passed: **303 passed, 3 skipped** in backend unit/security; **72 passed, 1 skipped** in PostgreSQL/Redis integration; frontend and E2E passed; Worker contract tests passed.
+- Security [#38561471555](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471555), CodeQL [#38561471545](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471545), Repository Gate [#38561471367](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471367), Local Runtime Evidence [#38561471447](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471447), Windows Local Runtime Evidence [#38561471702](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471702), and Windows Portable Package Evidence [#38561471509](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471509) passed. Real Worker Evidence [#38561471401](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471401) is pending.
+- Next: wait for Real Worker Evidence; review PR #77 and merge only when all required checks and repository protections are green. Do not deploy production from this fix. Burmese real-audio acceptance and remaining external release gates remain open.
+- Release status remains **PENDING — NOT PRODUCTION READY**.
+
+
+## 2026-10-14 final status — approval fix merged
+
+- Approval route bug from [Issue #76](https://github.com/dragonknighttw-cmd/Narrativ-Forge/issues/76) was fixed in [PR #77](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/77) and merged as commit [`6dbd4fabe715c06b565c6e53cf187b7373bbb9df`](https://github.com/dragonknighttw-cmd/Narrativ-Forge/commit/6dbd4fabe715c06b565c6e53cf187b7373bbb9df). The issue is closed.
+- All exact-SHA workflows on tested candidate `a05a97752a30889d691c687ea47b519a089e7e6b` passed, including backend unit/security **303 passed, 3 skipped**, PostgreSQL/Redis integration **72 passed, 1 skipped**, frontend, E2E, Security, CodeQL, Repository Gate, local/Windows runtime, Windows package, and Real Worker Evidence.
+- Do not interpret this as full production acceptance: Burmese real-speech acceptance, live external provider flows, managed backup/restore, and legal/accessibility/owner/security sign-off remain outstanding. No production deployment or cloud inference was performed. Release remains **PENDING — NOT PRODUCTION READY**.

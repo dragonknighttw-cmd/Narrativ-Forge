@@ -1,6 +1,6 @@
 # Authoritative checkpoint — 2026-10-14 UTC
 
-- **Current main SHA:** `2edb6f58f7a755253e3342e581482458f9297f32`.
+- **Base main SHA for this checkpoint:** `2edb6f58f7a755253e3342e581482458f9297f32`.
 - **Application bug fix:** PR #77 fixed the undefined `approved_at` response field. Build-artifact hygiene was completed in PR #80.
 - **Acceptance/security test improvements merged:** PR #83 persists Series Bible characters with tenant-scoped API/database storage; PR #84 adds Series Bible continuity tests; PR #85 covers subtitle API tenant boundaries, viewer write denial, and approved-subtitle immutability; PR #86 covers Script Studio versioning/stale-write protection, scene/script episode scoping, duplicate scene numbers, role checks, and tenant isolation.
 - **Exact-head verification:** PR #85 and #86 checks passed, including backend unit/security, backend integration, frontend, E2E, CodeQL, SAST, dependency audit, container scan, Repository Gate, local runtime, Windows API/SQLite, package smoke, and Real Worker Evidence. PR #86 backend: **309 passed, 3 skipped, 96 deselected**; integration: **75 passed, 1 skipped, 332 deselected**. PR #85 integration: **74 passed, 1 skipped, 332 deselected**.
@@ -474,7 +474,7 @@ Next: inspect the local-runtime and backup/restore workflow runs; add determinis
 
 ## 2026-10-09 verified auth, worker, and Windows portable bundle checkpoint
 
-- **Current main SHA:** 5ca18fedae2277f8e3a9137c3fb69f2d467a00d3.
+- **Base main SHA for this checkpoint:** 5ca18fedae2277f8e3a9137c3fb69f2d467a00d3.
 - **CI: VERIFIED for this SHA.** Backend unit/security, PostgreSQL backend integration, frontend typecheck/build, and Playwright E2E all passed: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888111841.
 - **Security: VERIFIED for this SHA.** SAST, dependency audit, and container scan passed: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888111873.
 - **CodeQL: VERIFIED for this SHA.** https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888112026.

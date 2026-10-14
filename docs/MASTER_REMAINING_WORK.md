@@ -392,3 +392,12 @@ Before Manual Mode can be called production-ready, collect:
 - Backend integration tests: **4 failed, 68 passed, 1 skipped**; all four failures are caused by undefined `approved_at` in the review approval response. Playwright production flow also fails at approval, while foundation login/tenant and cross-tenant isolation E2E tests pass.
 - Tracked fix: [Issue #76](https://github.com/dragonknighttw-cmd/Narrativ-Forge/issues/76). Fix in a separate application-code PR; then rerun the exact-SHA backend integration and E2E suites before revisiting release gates.
 - No application code or production services were changed by this plan update. Release remains **PENDING — NOT PRODUCTION READY**.
+
+
+## 2026-10-14 approval blocker remediation status
+
+- [PR #77](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/77) fixes the undefined `approved_at` response variable by assigning a single UTC timestamp and reusing it for the review record and API response. Added integration assertions for the approval response contract.
+- Exact-SHA CI [#38561471370](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471370) passed: **303 passed, 3 skipped** in backend unit/security; **72 passed, 1 skipped** in PostgreSQL/Redis integration; frontend and E2E passed; Worker contract tests passed.
+- Security [#38561471555](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471555), CodeQL [#38561471545](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471545), Repository Gate [#38561471367](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471367), Local Runtime Evidence [#38561471447](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471447), Windows Local Runtime Evidence [#38561471702](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471702), and Windows Portable Package Evidence [#38561471509](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471509) passed. Real Worker Evidence [#38561471401](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38561471401) is pending.
+- Next: wait for Real Worker Evidence; review PR #77 and merge only when all required checks and repository protections are green. Do not deploy production from this fix. Burmese real-audio acceptance and remaining external release gates remain open.
+- Release status remains **PENDING — NOT PRODUCTION READY**.

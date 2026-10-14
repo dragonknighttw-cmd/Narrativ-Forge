@@ -1,12 +1,13 @@
 # Authoritative roadmap checkpoint — 2026-10-14 UTC
 
-- **Base main SHA for this checkpoint:** `2edb6f58f7a755253e3342e581482458f9297f32`.
-- **Recently completed:** PR #80 build-cache hygiene; PR #83 Series Bible persistence and tenant-scoped authorization; PR #84 continuity tests; PR #85 subtitle API security/immutability tests; PR #86 Script Studio optimistic locking and scene/script scoping acceptance tests. Exact-head checks passed for PRs #85 and #86.
-- **Burmese ASR quality remains blocked:** require a human-verified dialect/reference transcript and quality acceptance. Prior local report on an older SHA rejected all tested outputs for lack of Myanmar script. Do not consume cloud inference quota without explicit approval.
-- **Remaining priorities:** (1) authenticated upload → processing → subtitle edit/preview/playback E2E with source integrity; (2) complete asset validation and processing-state acceptance across tenant/role boundaries; (3) human Burmese ASR quality review when the user-provided reference is available; (4) managed restore/provider integration and external accessibility, privacy/legal, commercial-use, and independent security sign-offs.
-- **Release remains PENDING — NOT PRODUCTION READY.** No production deploy, paid resources, production-data mutation, or cloud inference performed.
+- **Base main SHA for this checkpoint:** `4959810fc1a7449cc714084ca0169557dce02513`.
+- **Recently completed:** PR #80 build-artifact hygiene; PR #83 Series Bible persistence; PR #84 continuity tests; PR #85 subtitle API tenant/role/immutability tests; PR #86 Script Studio/scene API acceptance; PR #88 Series Bible UI reload persistence; PR #89 upload/source checksum, processed-output integrity, mock processing completion, and subtitle SRT export E2E.
+- **Verified:** PRs #85 and #86 passed exact-head backend/integration, frontend, E2E, CodeQL/security, runtime/package, and Real Worker Evidence. PRs #88 and #89 passed their applicable backend/integration, frontend E2E, CodeQL/security, runtime/package, and repository checks. PR #89 reported backend **309 passed, 3 skipped**, integration **75 passed, 1 skipped**, E2E **4 passed**.
+- **Remaining priorities:** (1) authenticated non-mock media/provider E2E and processing error/retry paths; (2) asset validation and tenant/role acceptance for edge cases; (3) human Burmese ASR quality review against a dialect-specific reference transcript (still unaccepted and explicitly deferred); (4) managed restore/provider integration and external accessibility, privacy/legal/commercial-use, and independent security sign-offs.
+- **Release remains PENDING — NOT PRODUCTION READY.** No production deployment, paid resources, production-data mutation, or cloud inference performed.
 
-The older roadmap checkpoints below are historical, not the current repository SHA/status.
+The older roadmap checkpoints below are historical.
+
 
 ---
 

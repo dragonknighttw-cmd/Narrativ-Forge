@@ -1,3 +1,19 @@
+# Authoritative owner checklist — 2026-10-14 UTC
+
+- **Base main SHA for this checkpoint:** `2edb6f58f7a755253e3342e581482458f9297f32`.
+- **Merged:** PR #83 Series Bible persistence; PR #84 continuity tests; PR #85 subtitle API tenant/role/approved-content checks; PR #86 Script Studio/scene API acceptance checks. Exact-head CI and Real Worker Evidence passed for PRs #85 and #86.
+- **Owner input still required before release:**
+  1. **Burmese ASR:** provide/approve a dialect-specific reference transcript for human review. The current ASR quality result is not accepted; do not share private media in public issues.
+  2. **Worker cost policy:** confirm free-only operation versus explicitly approving any potentially billable persistent processing capacity.
+  3. **Live providers/quota:** explicitly authorize any quota-consuming inference or paid provider request before it is attempted.
+  4. **Production release:** explicitly approve whether/when to deploy only after acceptance and external gates pass.
+  5. **External sign-offs:** accessibility, privacy/legal/commercial-use review, managed restore, and independent security review.
+- **Current release status:** **PENDING — NOT PRODUCTION READY**. No production deployment, paid resource provisioning, production-data mutation, or cloud inference/quota use.
+
+The older checklist below is historical; this section defines the current owner actions.
+
+---
+
 # Current owner checkpoint — 2026-10-14 UTC
 
 - Base main for this checkpoint: `d6709d8b84d66f019015db9d6a9010ce9e923ccb`; latest code fix: `6dbd4fabe715c06b565c6e53cf187b7373bbb9df`.

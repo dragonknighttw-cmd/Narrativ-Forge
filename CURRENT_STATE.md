@@ -1,3 +1,16 @@
+# Authoritative checkpoint — 2026-10-14 UTC
+
+- **Base main SHA for this checkpoint:** `2edb6f58f7a755253e3342e581482458f9297f32`.
+- **Application bug fix:** PR #77 fixed the undefined `approved_at` response field. Build-artifact hygiene was completed in PR #80.
+- **Acceptance/security test improvements merged:** PR #83 persists Series Bible characters with tenant-scoped API/database storage; PR #84 adds Series Bible continuity tests; PR #85 covers subtitle API tenant boundaries, viewer write denial, and approved-subtitle immutability; PR #86 covers Script Studio versioning/stale-write protection, scene/script episode scoping, duplicate scene numbers, role checks, and tenant isolation.
+- **Exact-head verification:** PR #85 and #86 checks passed, including backend unit/security, backend integration, frontend, E2E, CodeQL, SAST, dependency audit, container scan, Repository Gate, local runtime, Windows API/SQLite, package smoke, and Real Worker Evidence. PR #86 backend: **309 passed, 3 skipped, 96 deselected**; integration: **75 passed, 1 skipped, 332 deselected**. PR #85 integration: **74 passed, 1 skipped, 332 deselected**.
+- **Burmese ASR is not accepted.** The recorded human-quality gate still needs a dialect/reference transcript review; previous local report found no Myanmar-script output in the tested configurations. Do not treat passing worker/runtime smoke as Burmese transcript-quality acceptance.
+- **Release:** **PENDING — NOT PRODUCTION READY.** No production deployment, paid resource provisioning, production-data mutation, or cloud inference/quota use was performed. Local human ASR/media quality acceptance remains deferred; do not infer approval from CI runtime smoke.
+
+The older checkpoint notes below are historical context. This section is the current source of truth for repository state.
+
+---
+
 # Current verified checkpoint — 2026-10-14 UTC
 
 - **Base main SHA for this checkpoint:** `d6709d8b84d66f019015db9d6a9010ce9e923ccb` (after PRs #79 and #80; PR #81 refreshes this documentation).
@@ -461,7 +474,7 @@ Next: inspect the local-runtime and backup/restore workflow runs; add determinis
 
 ## 2026-10-09 verified auth, worker, and Windows portable bundle checkpoint
 
-- **Current main SHA:** 5ca18fedae2277f8e3a9137c3fb69f2d467a00d3.
+- **Base main SHA for this checkpoint:** 5ca18fedae2277f8e3a9137c3fb69f2d467a00d3.
 - **CI: VERIFIED for this SHA.** Backend unit/security, PostgreSQL backend integration, frontend typecheck/build, and Playwright E2E all passed: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888111841.
 - **Security: VERIFIED for this SHA.** SAST, dependency audit, and container scan passed: https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888111873.
 - **CodeQL: VERIFIED for this SHA.** https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37888112026.

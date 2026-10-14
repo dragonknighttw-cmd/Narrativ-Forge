@@ -1,3 +1,15 @@
+# Authoritative roadmap checkpoint — 2026-10-14 UTC
+
+- **Base main SHA for this checkpoint:** `2edb6f58f7a755253e3342e581482458f9297f32`.
+- **Recently completed:** PR #80 build-cache hygiene; PR #83 Series Bible persistence and tenant-scoped authorization; PR #84 continuity tests; PR #85 subtitle API security/immutability tests; PR #86 Script Studio optimistic locking and scene/script scoping acceptance tests. Exact-head checks passed for PRs #85 and #86.
+- **Burmese ASR quality remains blocked:** require a human-verified dialect/reference transcript and quality acceptance. Prior local report on an older SHA rejected all tested outputs for lack of Myanmar script. Do not consume cloud inference quota without explicit approval.
+- **Remaining priorities:** (1) authenticated upload → processing → subtitle edit/preview/playback E2E with source integrity; (2) complete asset validation and processing-state acceptance across tenant/role boundaries; (3) human Burmese ASR quality review when the user-provided reference is available; (4) managed restore/provider integration and external accessibility, privacy/legal, commercial-use, and independent security sign-offs.
+- **Release remains PENDING — NOT PRODUCTION READY.** No production deploy, paid resources, production-data mutation, or cloud inference performed.
+
+The older roadmap checkpoints below are historical, not the current repository SHA/status.
+
+---
+
 # Current roadmap checkpoint — 2026-10-14 UTC
 
 - **Base main SHA for this checkpoint:** `d6709d8b84d66f019015db9d6a9010ce9e923ccb` (PR #81 refreshes status after PRs #79 and #80).

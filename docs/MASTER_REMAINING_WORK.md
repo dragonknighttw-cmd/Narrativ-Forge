@@ -1,3 +1,18 @@
+# Authoritative remaining-work checkpoint — 2026-10-14 UTC
+
+- **Base main SHA for this checkpoint:** `2edb6f58f7a755253e3342e581482458f9297f32`.
+- **Completed since the older checkpoint:** PR #83 persisted Series Bible characters with tenant isolation; PR #84 added continuity tests; PR #85 added subtitle API tenant/role and approved-content immutability tests; PR #86 added Script Studio optimistic-locking/history and scene/script scope tests. PRs #85 and #86 passed their exact-head CI, security, runtime/package, E2E, and Real Worker Evidence checks.
+- **Next priorities:**
+  1. **Authenticated media workflow E2E:** upload → processing → transcript/subtitle generation → subtitle edit/preview/playback, verify original-media checksum/integrity and error/retry behavior.
+  2. **Asset/processing acceptance:** test malformed/oversized upload handling, asset ownership/scope, state transitions, retry/DLQ behavior, and tenant/role boundaries end to end.
+  3. **Burmese ASR quality:** human review against a dialect-specific reference transcript; this remains unaccepted and is not satisfied by CI runtime smoke. Local human media-quality acceptance remains deferred; no cloud inference without explicit approval.
+  4. **External release gates:** managed backup/restore operational evidence, real provider integration and quota policy, accessibility, privacy/legal/commercial-use review, and independent security sign-off.
+- **Do not deploy to production or provision paid resources.** Release stays **PENDING — NOT PRODUCTION READY**.
+
+Earlier entries below are historical and should not override this current queue.
+
+---
+
 # Current remaining-work priorities — 2026-10-14 UTC
 
 - Base main for this checkpoint: `d6709d8b84d66f019015db9d6a9010ce9e923ccb`; latest application-code fix: `6dbd4fabe715c06b565c6e53cf187b7373bbb9df`.

@@ -1,3 +1,18 @@
+# Current owner checkpoint — 2026-10-14 UTC
+
+- Current main: `5e3d1b840baefe679e4eeb2b95a727f4e450998e`; latest code fix: `6dbd4fabe715c06b565c6e53cf187b7373bbb9df`.
+- The approval timestamp defect was fixed and merged in PR #77. Candidate CI, Security, CodeQL, Repository Gate, runtime/package evidence and Real Worker Evidence passed. It is no longer an owner action.
+- **Owner inputs still needed when ready:**
+  1. Burmese ASR: confirm dialect and approve/provide a reference transcript for human quality review; keep private media out of public issues.
+  2. Worker cost: decide whether to remain free-only and defer persistent media processing or explicitly approve potentially billable capacity.
+  3. Live provider/quota: explicitly approve quota-consuming inference or paid-provider use before any such request.
+  4. Production deployment: approve whether/when to deploy after feature acceptance and external gates; CI passing alone is not release approval.
+  5. External sign-off: legal/privacy/commercial-use, accessibility, and independent security review; credentials must be supplied through secret managers, never chat.
+- Engineering can continue quota-free feature acceptance, ASR guard regression tests, generated artifact policy review, and local/staging E2E without owner credentials.
+- **Release remains PENDING — NOT PRODUCTION READY.** No production deployment or paid resource provisioning was performed.
+
+---
+
 ## Latest owner checkpoint — 2026-10-14 UTC
 
 The overnight commits expanded application features, but this is a **plan reconciliation only**; no application code or deployment is changed by this update.

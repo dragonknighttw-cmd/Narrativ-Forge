@@ -47,4 +47,5 @@ def init_db() -> None:
     if settings.app_env.lower() != "development":
         return
     from .models import core  # noqa: F401
+    from .models import brain_soul  # noqa: F401
     Base.metadata.create_all(bind=engine)

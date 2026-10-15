@@ -1,6 +1,6 @@
 # Authoritative roadmap checkpoint — 2026-10-15 UTC
 
-- **Latest repository commit observed:** `d370921054b92bbc89b5cf647680543f714c906d`.
+- **Latest application-code commit observed:** `d370921054b92bbc89b5cf647680543f714c906d`.
 - **Immediate blockers:** hosted Render API/frontend are on older commit `3b1b3766f2fb132bf4d80203e7174562f2879d9a` and auto-deploy is disabled; canonical frontend and database/project mapping need confirmation; Supabase security advisor findings need triage; real worker/media E2E and Burmese ASR human-quality acceptance remain open.
 - **Full prioritized audit checklist:** [INFRASTRUCTURE_AUDIT.md](INFRASTRUCTURE_AUDIT.md).
 - **Release remains PENDING — NOT PRODUCTION READY.** Do not redeploy, change RLS, drop indexes, or provision paid resources without the appropriate evidence and owner approval.

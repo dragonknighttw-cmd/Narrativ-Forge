@@ -149,3 +149,13 @@ Exact environment requirements belong in deployment/development documentation. N
 - NEXT = next execution target.
 
 Never claim provider health from credentials alone. Never claim live integration from unit tests alone.
+
+
+## Current project status and infrastructure audit
+
+- [Current state](CURRENT_STATE.md)
+- [Roadmap and remaining work](ROADMAP.md)
+- [Deployment guide](docs/DEPLOYMENT.md)
+- [Infrastructure and repository audit (2026-10-15)](INFRASTRUCTURE_AUDIT.md)
+
+Release remains pending until the documented security, deployment-drift, real-worker/media, and external acceptance gates pass.

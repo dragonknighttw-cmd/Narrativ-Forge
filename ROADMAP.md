@@ -265,12 +265,12 @@ Code-only foundations exist for phases 52–84 in `phase_52_60.py`, `phase_61_68
 
 ## Phase 61–68 implementation evidence — 2026-10-08
 
-Code-only foundations are now staged in `apps/web-platform/backend/app/services/phase_61_68.py` with unit coverage in `tests/test_phase_61_68.py`: performance/cost budgets, worker autoscaling policy, provenance lineage, enterprise permissions, provider capability discovery, localization quality thresholds, billing metering validation, SLO budgets and incident/rollback policy. Live telemetry, billing, provider, enterprise and post-launch acceptance remain external gates.
+Code-only foundations are now staged in `apps/web-platform/backend/app/services/phase_61_68.py` with unit coverage in `apps/web-platform/backend/tests/test_phase_61_68.py`: performance/cost budgets, worker autoscaling policy, provenance lineage, enterprise permissions, provider capability discovery, localization quality thresholds, billing metering validation, SLO budgets and incident/rollback policy. Live telemetry, billing, provider, enterprise and post-launch acceptance remain external gates.
 
 
 ## Phase 69–76 implementation evidence — 2026-10-08
 
-Code-only foundations are staged in `apps/web-platform/backend/app/services/phase_69_76.py` with unit coverage in `tests/test_phase_69_76.py`: rollout/cohort policy, schema-drift detection, restore verification, privacy-request closure, secret/config readiness, dependency-license allowlisting, chaos-drill acceptance, and deterministic release evidence packs. These contracts do not claim live backup, privacy/legal, secret-manager, license, chaos or release acceptance.
+Code-only foundations are staged in `apps/web-platform/backend/app/services/phase_69_76.py` with unit coverage in `apps/web-platform/backend/tests/test_phase_69_76.py`: rollout/cohort policy, schema-drift detection, restore verification, privacy-request closure, secret/config readiness, dependency-license allowlisting, chaos-drill acceptance, and deterministic release evidence packs. These contracts do not claim live backup, privacy/legal, secret-manager, license, chaos or release acceptance.
 
 ### Phase 69–76 queue
 69 progressive rollout/cohort control; 70 schema/data-quality drift; 71 restore verification; 72 privacy/data-subject operations; 73 secret/config readiness; 74 dependency/license governance; 75 chaos/recovery drills; 76 final release evidence pack.

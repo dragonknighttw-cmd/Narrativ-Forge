@@ -260,7 +260,7 @@ These are **implementation foundations and automated unit evidence**, not live p
 
 ## Phase 52–60 implementation evidence — 2026-10-08
 
-The code-only foundations for the next backlog are now implemented in `apps/web-platform/backend/app/services/phase_52_60.py` with unit coverage in `tests/test_phase_52_60.py`.
+The code-only foundations for the next backlog are now implemented in `apps/web-platform/backend/app/services/phase_52_60.py` with unit coverage in `apps/web-platform/backend/tests/test_phase_52_60.py`.
 
 - **52 Trailer:** beat-sheet, hook, duration and approval contract.
 - **53 Burmese translation:** glossary-aware translation term contract and subtitle-safe normalization.
@@ -313,7 +313,7 @@ These are implementation/test foundations only. Live providers, licensed media, 
 
 ## Phase 61–68 code-only foundations — 2026-10-08
 
-Implemented in `apps/web-platform/backend/app/services/phase_61_68.py` with `tests/test_phase_61_68.py`:
+Implemented in `apps/web-platform/backend/app/services/phase_61_68.py` with `apps/web-platform/backend/tests/test_phase_61_68.py`:
 
 - 61 performance budgets and deterministic cost/performance observations.
 - 62 worker autoscaling policy with bounded min/max workers and queue targets.
@@ -329,12 +329,12 @@ These are code/test foundations only; production telemetry, real provider adapte
 
 ## Phase 61–68 code-foundation progress — 2026-10-08
 
-Code-only foundations are now staged in `apps/web-platform/backend/app/services/phase_61_68.py` with unit coverage in `tests/test_phase_61_68.py`: performance/cost budgets, worker autoscaling policy, provenance lineage, enterprise permissions, provider capability discovery, localization quality thresholds, billing metering validation, SLO budgets and incident/rollback policy. Live telemetry, billing, provider, enterprise and post-launch acceptance remain external gates.
+Code-only foundations are now staged in `apps/web-platform/backend/app/services/phase_61_68.py` with unit coverage in `apps/web-platform/backend/tests/test_phase_61_68.py`: performance/cost budgets, worker autoscaling policy, provenance lineage, enterprise permissions, provider capability discovery, localization quality thresholds, billing metering validation, SLO budgets and incident/rollback policy. Live telemetry, billing, provider, enterprise and post-launch acceptance remain external gates.
 
 
 ## Phase 69–76 code-foundation progress — 2026-10-08
 
-Code-only foundations are staged in `apps/web-platform/backend/app/services/phase_69_76.py` with unit coverage in `tests/test_phase_69_76.py`: rollout/cohort policy, schema-drift detection, restore verification, privacy-request closure, secret/config readiness, dependency-license allowlisting, chaos-drill acceptance, and deterministic release evidence packs. These contracts do not claim live backup, privacy/legal, secret-manager, license, chaos or release acceptance.
+Code-only foundations are staged in `apps/web-platform/backend/app/services/phase_69_76.py` with unit coverage in `apps/web-platform/backend/tests/test_phase_69_76.py`: rollout/cohort policy, schema-drift detection, restore verification, privacy-request closure, secret/config readiness, dependency-license allowlisting, chaos-drill acceptance, and deterministic release evidence packs. These contracts do not claim live backup, privacy/legal, secret-manager, license, chaos or release acceptance.
 
 ### Phase 69–76 queue
 69 progressive rollout/cohort control; 70 schema/data-quality drift; 71 restore verification; 72 privacy/data-subject operations; 73 secret/config readiness; 74 dependency/license governance; 75 chaos/recovery drills; 76 final release evidence pack.

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     session_cookie_secure: bool = False
     session_ttl_seconds: int = 60 * 60 * 8
     cors_origins: str = "http://localhost:3000"
+    cors_extra_origins: str = ""
     trusted_hosts: str = "localhost,127.0.0.1"
     upload_dir: str = "./storage/uploads"
     max_upload_size_bytes: int = 52428800
@@ -128,7 +129,10 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [item.strip() for item in self.cors_origins.split(",") if item.strip()]
+        # Add deployment-specific browser origins without overwriting the existing allowlist.
+        values = [self.cors_origins, self.cors_extra_origins]
+        origins = [item.strip() for value in values for item in value.split(",") if item.strip()]
+        return list(dict.fromkeys(origins))
 
     @property
     def trusted_host_list(self) -> list[str]:

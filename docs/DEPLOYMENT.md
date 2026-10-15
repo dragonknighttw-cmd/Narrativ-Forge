@@ -102,6 +102,8 @@ Configure the API service with these environment variables (values are secrets/c
 
 Configure the frontend build with `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_API_BASE_URL` pointing at the API's `/api/v1` base. The publishable/anon key is public by design; the service-role key must never use a `NEXT_PUBLIC_` prefix.
 
+If the frontend is hosted on a separate origin, add that exact origin through `CORS_EXTRA_ORIGINS` so it is appended to the existing `CORS_ORIGINS` allowlist without replacing existing domains.
+
 The API verifies the access token against Supabase Auth, requires a confirmed email, and auto-provisions the first Owner only when both the server-configured user UUID and email match. All other users must have a workspace membership created by the invitation flow.
 
 ## Environment

@@ -1,3 +1,19 @@
+# Operations — current audit addendum (2026-10-15)
+
+> Provider inventory and remaining operational gates: [Infrastructure Audit](../INFRASTRUCTURE_AUDIT.md). Historical procedures below remain in force unless superseded by newer verified evidence.
+
+## Current operational status
+
+- Render API and frontend services have successful listed deploy events, but are behind repository head and have auto-deploy disabled.
+- No continuous Render background worker was listed. API health does not establish worker health; do not accept real-media processing until heartbeat, broker, real task, output integrity, and persisted job state are verified together.
+- Supabase security findings require triage before release: the primary-looking project reports many RLS-enabled tables without policies; the second reports a SECURITY DEFINER function executable by anon/authenticated roles. Confirm canonical database first; do not blindly add permissive policies or revoke application-required access without tests.
+- Backup/restore, real-media failure/retry/DLQ, provider fallback, Burmese ASR human review, accessibility/privacy/legal review, and independent security sign-off remain release gates.
+- Never print secrets or use production writes as a diagnostic shortcut. Keep provider verification read-only unless an explicitly approved change plan exists.
+
+Last provider inventory: 2026-10-15 UTC.
+
+---
+
 # Operations
 
 > Owner: Operations maintainers  

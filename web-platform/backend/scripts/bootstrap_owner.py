@@ -4,7 +4,7 @@
 Run from web-platform/backend with DATABASE_URL set in your local environment:
     python -m scripts.bootstrap_owner
 Optionally choose an organization:
-    python scripts/bootstrap_owner.py --organization-slug legacy-workspace
+    python -m scripts.bootstrap_owner --organization-slug legacy-workspace
 
 The password is entered with terminal echo disabled and is never printed.
 This script refuses to run if any user already exists.

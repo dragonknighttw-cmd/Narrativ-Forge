@@ -1,3 +1,21 @@
+# Deployment — current audit addendum (2026-10-15)
+
+> The detailed historical notes below remain useful but may describe older deployments. Use [INFRASTRUCTURE_AUDIT.md](../INFRASTRUCTURE_AUDIT.md) for the latest provider inventory and release checklist.
+
+## Current observed provider state
+
+- Render `Narrativ-Forge` API and `narrativ-forge-frontend` services both list successful live deployments, but their latest listed deployment commit is `3b1b3766f2fb132bf4d80203e7174562f2879d9a`, behind repository commit `d370921054b92bbc89b5cf647680543f714c906d` observed on 2026-10-15.
+- Both Render services have auto-deploy disabled. Do not assume new commits are live; exact-head CI and owner-approved deployment are required.
+- Render has no separate continuous background worker listed; real media processing remains blocked until worker evidence is recorded.
+- Two Supabase projects are active. The production target is **not yet confirmed** from safe evidence. Verify which database the deployed API actually uses and compare its live Alembic revision before schema operations.
+- Cloudflare lists `narrativ-forge-edge` and `narrativ-forge-whisper`; deployment IDs/routes and authenticated media contract remain to be verified.
+- A Netlify project exists in the connected account but is not clearly identified as Narrativ Forge. Vercel is not verified as an active target and was previously removed from the intended path. Do not change DNS/provider routing until the canonical frontend is confirmed.
+- Render service allow-lists currently include `0.0.0.0/0`; review intended public exposure and ensure app-level authentication/rate limiting.
+
+Last provider inventory: 2026-10-15 UTC. This is metadata evidence, not a fresh end-to-end production test.
+
+---
+
 # Deployment
 
 > Owner: Platform maintainers  

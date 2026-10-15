@@ -84,7 +84,7 @@ _RATE_LIMITS = {
 @app.middleware("http")
 async def baseline_rate_limit(request: Request, call_next):
     path = request.url.path
-    if path.endswith("/auth/login"):
+    if path.endswith("/auth/login") or path.endswith("/auth/supabase-login"):
         bucket = "login"
     elif "/assets/upload" in path or path.startswith("/api/v1/uploads"):
         bucket = "upload"

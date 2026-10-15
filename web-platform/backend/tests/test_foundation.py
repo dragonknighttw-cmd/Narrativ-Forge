@@ -898,6 +898,10 @@ def test_production_storage_gate_requires_b2_configuration(monkeypatch):
         trusted_hosts="api.example.com",
         oauth_encryption_key=Fernet.generate_key().decode(),
         storage_provider="hybrid",
+        supabase_url="https://project.supabase.co",
+        supabase_anon_key="sb_publishable_test_key",
+        supabase_owner_user_id="000afedc-2811-4a4e-9ea0-7d24218c44f2",
+        supabase_owner_email="dragonknight.tw@gmail.com",
     )
     try:
         settings_obj.validate_runtime()

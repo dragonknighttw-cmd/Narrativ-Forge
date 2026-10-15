@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import secrets
+import requests
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
@@ -225,32 +226,98 @@ def accept_invitation(payload: InviteAccept, response: Response, db: Session = D
     if not invitation:
         raise HTTPException(status_code=400, detail="Invalid or expired invitation")
     from ...models import User
-    user = db.query(User).filter(User.email == invitation.email).first()
-    if not user:
-        try:
-            password_hash = hash_password(payload.password)
-        except ValueError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
-        user = User(email=invitation.email, role=invitation.role, password_hash=password_hash, is_active=True)
-        db.add(user)
-        db.flush()
-    existing_membership = db.query(OrganizationMembership).filter_by(organization_id=invitation.organization_id, user_id=user.id).first()
-    if not existing_membership:
-        db.add(OrganizationMembership(
-            organization_id=invitation.organization_id, user_id=user.id, role=invitation.role
-        ))
+    if not settings.is_production:
+        # Development/test compatibility only. Production credentials are Supabase-managed.
+        user = db.query(User).filter(User.email == invitation.email).first()
+        if not user:
+            try:
+                password_hash = hash_password(payload.password)
+            except ValueError as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
+            user = User(email=invitation.email, role=invitation.role, password_hash=password_hash, is_active=True)
+            db.add(user)
+            db.flush()
+        membership = db.query(OrganizationMembership).filter_by(
+            organization_id=invitation.organization_id, user_id=user.id
+        ).first()
+        if not membership:
+            membership = OrganizationMembership(
+                organization_id=invitation.organization_id, user_id=user.id, role=invitation.role
+            )
+            db.add(membership)
+        invitation.status = "accepted"
+        invitation.accepted_at = _now()
+        db.commit()
+        response.set_cookie(
+            key=settings.session_cookie_name,
+            value=issue_session(user.email, membership.role, membership.organization_id),
+            httponly=True, secure=settings.session_cookie_secure, samesite="strict",
+            max_age=settings.session_ttl_seconds, path="/",
+        )
+        return {"authenticated": True, "user": {"id": user.id, "email": user.email, "role": membership.role}}
+
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        raise HTTPException(status_code=503, detail="Supabase Auth administration is not configured")
+    if db.query(User).filter(User.email == invitation.email).first():
+        raise HTTPException(status_code=409, detail="An account with this email already exists; sign in first")
+
+    # Service-role credentials are server-only. The invitation token proves access to the invited email.
+    try:
+        auth_response = requests.post(
+            settings.supabase_url.rstrip("/") + "/auth/v1/admin/users",
+            headers={
+                "apikey": settings.supabase_service_role_key,
+                "Authorization": "Bearer " + settings.supabase_service_role_key,
+                "Content-Type": "application/json",
+            },
+            json={"email": invitation.email, "password": payload.password, "email_confirm": True},
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=503, detail="Supabase Auth is temporarily unavailable") from exc
+    if auth_response.status_code not in {200, 201}:
+        if auth_response.status_code in {400, 409, 422}:
+            raise HTTPException(status_code=409, detail="Supabase could not create this account; the email may already be registered")
+        raise HTTPException(status_code=502, detail="Supabase could not create the invited account")
+    try:
+        auth_user = auth_response.json()
+        auth_user_id = str(auth_user.get("id") or "")
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail="Invalid response from Supabase Auth") from exc
+    if not auth_user_id:
+        raise HTTPException(status_code=502, detail="Supabase did not return an account ID")
+
+    user = User(
+        id=auth_user_id, email=invitation.email, role=invitation.role,
+        password_hash="supabase-auth-managed", is_active=True,
+    )
+    db.add(user)
+    db.flush()
+    membership = OrganizationMembership(
+        organization_id=invitation.organization_id, user_id=user.id, role=invitation.role
+    )
+    db.add(membership)
     invitation.status = "accepted"
     invitation.accepted_at = _now()
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        # Auth user creation cannot be rolled back by Postgres; avoid exposing the underlying error.
+        raise HTTPException(status_code=409, detail="Account was created but workspace linking failed; contact the workspace owner")
     response.set_cookie(
-        key=settings.session_cookie_name, value=issue_session(user.email, user.role),
-        httponly=True, secure=settings.session_cookie_secure, samesite="strict", max_age=settings.session_ttl_seconds, path="/",
+        key=settings.session_cookie_name,
+        value=issue_session(user.email, membership.role, membership.organization_id),
+        httponly=True, secure=settings.session_cookie_secure, samesite="strict",
+        max_age=settings.session_ttl_seconds, path="/",
     )
-    return {"authenticated": True, "user": {"id": user.id, "email": user.email, "role": user.role}}
+    return {"authenticated": True, "user": {"id": user.id, "email": user.email, "role": membership.role}}
 
 
 @router.post("/magic-link/request")
 def request_magic_link(payload: MagicLinkRequest, db: Session = Depends(get_db)):
+    if settings.is_production:
+        raise HTTPException(status_code=410, detail="Use Supabase Auth for sign-in links")
     email = payload.email.strip().lower()
     if settings.single_user_mode and email != settings.single_user_email.strip().lower():
         return {"requested": True}
@@ -274,6 +341,8 @@ def request_magic_link(payload: MagicLinkRequest, db: Session = Depends(get_db))
 
 @router.post("/magic-link/consume")
 def consume_magic_link(payload: MagicLinkConsume, response: Response, db: Session = Depends(get_db)):
+    if settings.is_production:
+        raise HTTPException(status_code=410, detail="Use Supabase Auth for sign-in links")
     record = db.query(MagicLinkToken).filter(
         MagicLinkToken.token_hash == _token_hash(payload.token),
         MagicLinkToken.consumed_at.is_(None),

@@ -10,34 +10,34 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [magicBusy, setMagicBusy] = useState(false);
-  const [magicMessage, setMagicMessage] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setBusy(true);
     try {
-      await api.login(email.trim(), password);
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "");
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error("Supabase Auth configuration is missing.");
+      }
+      const authResponse = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+        method: "POST",
+        headers: { apikey: supabaseKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      if (!authResponse.ok) throw new Error("Invalid email or password.");
+      const authSession = await authResponse.json() as { access_token?: string };
+      if (!authSession.access_token) throw new Error("Supabase did not return a login session.");
+      await api.loginWithSupabase(authSession.access_token);
       router.replace("/dashboard");
-    } catch {
-      setError("Login မအောင်မြင်ပါ။ Email/password သို့မဟုတ် backend connection ကို စစ်ပါ။");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Login failed.";
+      setError(message === "Supabase Auth configuration is missing."
+        ? "Login configuration is incomplete. Contact the workspace administrator."
+        : "Login မအောင်မြင်ပါ။ Supabase email/password သို့မဟုတ် backend connection ကို စစ်ပါ။");
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function requestMagicLink() {
-    setMagicMessage("");
-    setError("");
-    setMagicBusy(true);
-    try {
-      const result = await api.requestMagicLink(email.trim());
-      setMagicMessage(result.delivery === "queued" ? "Sign-in link sent. Check your email." : "If the account exists, a sign-in link has been requested.");
-    } catch {
-      setError("Magic link could not be requested.");
-    } finally {
-      setMagicBusy(false);
     }
   }
 
@@ -46,13 +46,11 @@ export default function LoginPage() {
       <div className="brand-mark">NF</div>
       <div className="eyebrow">NARRATIV FORGE</div>
       <h1>Production workspace</h1>
-      <p className="muted">Invite-only access. Session credentials are kept in an httpOnly cookie.</p>
-      <label className="field">Email<input required autoComplete="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} /></label>
+      <p className="muted">Invite-only access. Authentication is managed by Supabase; app sessions use an httpOnly cookie.</p>
+      <label className="field">Email<input required type="email" autoComplete="username" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} /></label>
       <label className="field">Password<input required autoComplete="current-password" placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} /></label>
       {error && <div className="error" role="alert">{error}</div>}
       <button className="primary" type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-      <button type="button" disabled={magicBusy || !email.trim()} onClick={requestMagicLink}>{magicBusy ? "Sending…" : "Email me a sign-in link"}</button>
-      {magicMessage && <div className="muted" role="status">{magicMessage}</div>}
     </form>
   </main>;
 }

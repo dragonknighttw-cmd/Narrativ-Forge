@@ -63,7 +63,7 @@ export type ProcessingJob = { id: string; episode_id: string; job_type: string; 
 
 export const api = {
   health: () => request<{ status: string; service: string }>("/health"),
-  login: (email: string, password: string) => request<{ authenticated: boolean; user: { email: string; role: string } }>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  loginWithSupabase: (access_token: string) => request<{ authenticated: boolean; user: { id: string; email: string; role: string; organization_id: string } }>("/auth/supabase-login", { method: "POST", body: JSON.stringify({ access_token }) }),
   logout: () => request<{ authenticated: boolean }>("/auth/logout", { method: "POST" }),
   me: () => request<{ id: string; email: string; role: string }>("/auth/me"),
   requestMagicLink: (email: string) => request<{ requested: boolean; delivery?: string; token?: string }>("/phase4/magic-link/request", { method: "POST", body: JSON.stringify({ email }) }),

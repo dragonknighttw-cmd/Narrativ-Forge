@@ -9,8 +9,6 @@ class Settings(BaseSettings):
     app_env: str = "development"
     database_url: str = "sqlite:///./narrativ_forge.db"
     redis_url: str | None = None
-    bootstrap_admin_email: str = ""
-    bootstrap_admin_password: str = ""
     session_secret: str = ""
     sentry_dsn: SecretStr = SecretStr("")
     session_cookie_name: str = "nf_session"
@@ -26,6 +24,10 @@ class Settings(BaseSettings):
     storage_provider: str = "local"
     supabase_url: str = ""
     supabase_service_role_key: str = ""
+    supabase_anon_key: str = ""
+    supabase_owner_user_id: str = ""
+    supabase_owner_email: str = ""
+    supabase_owner_organization_slug: str = "legacy-workspace"
     supabase_storage_bucket: str = "narrativ-forge"
     supabase_signed_url_expiry_seconds: int = 900
     storage_replica_provider: str = ""
@@ -211,6 +213,10 @@ class Settings(BaseSettings):
             missing = [name for name, value in required.items() if not value]
             if missing:
                 raise RuntimeError("B2 storage configuration missing: " + ", ".join(missing))
+        if not self.supabase_url or not self.supabase_anon_key:
+            raise RuntimeError("SUPABASE_URL and SUPABASE_ANON_KEY are required for production authentication")
+        if not self.supabase_owner_user_id or not self.supabase_owner_email:
+            raise RuntimeError("SUPABASE_OWNER_USER_ID and SUPABASE_OWNER_EMAIL are required for initial Owner provisioning")
 
 
 settings = Settings()

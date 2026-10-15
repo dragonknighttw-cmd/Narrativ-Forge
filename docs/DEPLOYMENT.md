@@ -86,6 +86,24 @@ Live verification on 2026-10-08 confirmed:
 
 Real authenticated audio → Whisper → VTT → Subtitle Studio E2E and fallback behavior remain VERIFY.
 
+
+## Supabase Auth (Owner login)
+
+The production login form authenticates with Supabase Auth and exchanges the returned access token with the API for an HttpOnly application session. Do not create a local password hash or run a bootstrap script.
+
+Configure the API service with these environment variables (values are secrets/config, not source code):
+
+- `SUPABASE_URL`: the canonical Supabase project URL.
+- `SUPABASE_ANON_KEY`: the project's publishable key (legacy anon key also works); server-side verification only.
+- `SUPABASE_OWNER_USER_ID`: the exact UUID of the already-created Supabase Auth Owner.
+- `SUPABASE_OWNER_EMAIL`: the confirmed email for that exact UUID.
+- `SUPABASE_OWNER_ORGANIZATION_SLUG=legacy-workspace`: existing workspace to attach the first Owner to.
+- `SUPABASE_SERVICE_ROLE_KEY`: server-only; used by the invite acceptance endpoint to create invited users in Supabase Auth. Never expose it to the frontend.
+
+Configure the frontend build with `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_API_BASE_URL` pointing at the API's `/api/v1` base. The publishable/anon key is public by design; the service-role key must never use a `NEXT_PUBLIC_` prefix.
+
+The API verifies the access token against Supabase Auth, requires a confirmed email, and auto-provisions the first Owner only when both the server-configured user UUID and email match. All other users must have a workspace membership created by the invitation flow.
+
 ## Environment
 
 Protected configuration belongs in the deployment secret manager. Never document secret values.

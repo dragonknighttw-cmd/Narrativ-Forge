@@ -28,6 +28,10 @@ def production_settings(**overrides) -> Settings:
         "oauth_encryption_key": Fernet.generate_key().decode(),
         "smtp_host": "smtp.example.com",
         "smtp_from_email": "noreply@example.com",
+        "supabase_url": "https://project.supabase.co",
+        "supabase_anon_key": "sb_publishable_test_key",
+        "supabase_owner_user_id": "000afedc-2811-4a4e-9ea0-7d24218c44f2",
+        "supabase_owner_email": "dragonknight.tw@gmail.com",
     }
     values.update(overrides)
     return Settings(**values)

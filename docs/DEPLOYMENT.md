@@ -182,3 +182,8 @@ Default list: google/gemma-4-31b-it:free,cohere/north-mini-code:free,nvidia/nemo
 Free endpoints can be rate-limited or unavailable; failover is only across the explicitly configured free IDs. A :free model endpoint is zero-priced according to OpenRouter's current listing, but provider terms/privacy may permit prompt logging or training. Do not send credentials, secrets, personal data, or confidential production content to trial/free models. Free status and model availability can change, so re-check OpenRouter's official model page before changing the allowlist.
 
 The current production key's validity and runtime behavior are **not verified by code inspection alone**. After the change is merged and OPENROUTER_API_KEY is set in Render, run a controlled health/AI smoke test that records only status, model ID, and success—not the key or prompt contents. Do not add paid model IDs to recover from rate limits.
+
+
+## Cloudflare binding review — 2026-10-15
+
+Read-only Worker settings show `narrativ-forge-whisper` has a secret binding named `NARRATIV_SHARED_SECRET` (value not read), and `ALLOWED_ORIGIN` is set to `https://harmonious-nasturtium-53a1d6.netlify.app`. The connected Netlify site is not yet confirmed as the canonical Narrativ Forge frontend, while Render has a named frontend service. Resolve the canonical frontend/domain first, then review the CORS origin under a controlled change plan. Do not rotate or expose secrets during this check. The edge Worker has no secret bindings returned; verify that is expected. Both Workers have Logpush disabled. See [Infrastructure Audit](../INFRASTRUCTURE_AUDIT.md).

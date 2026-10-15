@@ -103,3 +103,14 @@ The list response did not expose a current deployment ID for either script. This
 ## Evidence limits
 
 This audit is based on provider API inventory, deployment/event metadata, Supabase advisor and migration responses, repository commit search, and documentation reads on 2026-10-15. It did not read secret values, alter resources, run migrations, redeploy services, perform production-data writes, or establish a complete real-media production acceptance. Items not explicitly tested remain pending/verify.
+
+
+## Cloudflare detailed settings follow-up — 2026-10-15
+
+Read-only settings/deployment inspection adds these findings:
+
+- `narrativ-forge-whisper` has a latest listed 100% deployment created 2026-10-12, Workers subdomain enabled, and one secret binding named `NARRATIV_SHARED_SECRET`. Secret values were not retrieved or logged.
+- Whisper's `ALLOWED_ORIGIN` plain-text binding is `https://harmonious-nasturtium-53a1d6.netlify.app`, which matches the unverified Netlify site returned by the connected account. This does **not** match the named Render frontend URL. Confirm the canonical frontend and update CORS origin only through a reviewed, owner-approved change after identifying the intended site; do not change it during a read-only audit.
+- `narrativ-forge-edge` has a latest listed 100% deployment created 2026-10-03, Workers subdomain enabled, and no secret bindings returned. Its script settings returned no bindings. Confirm this is expected for the edge worker and verify its endpoint contract.
+- Both Workers have `logpush=false`; assess whether available observability and alerting are sufficient for release.
+- Public URL requests through the available web inspection path could not be fetched, so no fresh HTTP health/endpoint result is claimed here. Use an authenticated, safe smoke test in the runtime or provider logs.

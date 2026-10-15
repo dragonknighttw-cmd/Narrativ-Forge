@@ -5,14 +5,14 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "web-platform/backend/**"
-      - "web-platform/frontend/**"
+      - "apps/web-platform/backend/**"
+      - "apps/web-platform/frontend/**"
       - ".github/workflows/local-runtime-evidence.yml"
   pull_request:
     branches: ["main"]
     paths:
-      - "web-platform/backend/**"
-      - "web-platform/frontend/**"
+      - "apps/web-platform/backend/**"
+      - "apps/web-platform/frontend/**"
       - ".github/workflows/local-runtime-evidence.yml"
 
 permissions:
@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: web-platform/backend
+        working-directory: apps/web-platform/backend
     env:
       APP_ENV: development
       DATABASE_URL: sqlite:////tmp/narrativ-local-runtime.db
@@ -48,7 +48,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: web-platform/backend/requirements.txt
+          cache-dependency-path: apps/web-platform/backend/requirements.txt
 
       - name: Install backend dependencies
         run: pip install -r requirements.txt

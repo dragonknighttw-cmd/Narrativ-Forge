@@ -44,7 +44,7 @@ jobs:
 
           opener = urllib.request.build_opener(NoRedirect)
           url = os.environ["WORKER_URL"].rstrip("/")
-          config = json.loads(Path("web-platform/cloudflare/whisper-worker/wrangler.jsonc").read_text(encoding="utf-8"))
+          config = json.loads(Path("apps/web-platform/cloudflare/whisper-worker/wrangler.jsonc").read_text(encoding="utf-8"))
           origin = config.get("vars", {}).get("ALLOWED_ORIGIN", "")
           if not origin.startswith("https://"):
               raise SystemExit("::error::Repository ALLOWED_ORIGIN must be a valid HTTPS origin.")
@@ -94,7 +94,7 @@ jobs:
               elif status == 403 and content_type != "application/json" and headers.get("CF-Ray"):
                   raise RuntimeError("Cloudflare edge returned a non-JSON HTTP 403 with CF-Ray before the Worker handler response. Check Cloudflare workers.dev/account access or edge controls and confirm the deployed script/URL. This is not a shared-secret diagnosis. Do not run live inference yet.")
               elif status == 403 and error == "Origin not allowed":
-                  raise RuntimeError("The deployed Worker rejected ALLOWED_ORIGIN. Compare the deployed binding with web-platform/cloudflare/whisper-worker/wrangler.jsonc, then deploy the intended Worker configuration.")
+                  raise RuntimeError("The deployed Worker rejected ALLOWED_ORIGIN. Compare the deployed binding with apps/web-platform/cloudflare/whisper-worker/wrangler.jsonc, then deploy the intended Worker configuration.")
               else:
                   raise RuntimeError(f"Expected Worker JSON HTTP 405 with error='Method not allowed'; got HTTP {status}, content_type={content_type!r}, worker_error={error!r}, cf_ray_present={bool(headers.get('CF-Ray'))}.")
           except urllib.error.URLError as exc:

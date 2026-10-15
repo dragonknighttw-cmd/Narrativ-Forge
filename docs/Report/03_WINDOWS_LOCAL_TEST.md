@@ -27,7 +27,7 @@ From the repository root:
 ```powershell
 $RepoRoot = (git rev-parse --show-toplevel).Trim()
 $LocalRoot = 'PATH_TO_LOCAL_RUNTIME_ROOT'
-Set-Location (Join-Path $RepoRoot 'web-platform\backend')
+Set-Location (Join-Path $RepoRoot 'apps/web-platform\backend')
 & (Join-Path $LocalRoot 'venv\Scripts\python.exe') -m pytest tests\test_real_processing_subprocess.py -q
 ```
 

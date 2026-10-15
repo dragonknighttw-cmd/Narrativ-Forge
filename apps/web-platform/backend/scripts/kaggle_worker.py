@@ -34,7 +34,7 @@ def main() -> None:
         subprocess.run(["git", "clone", "--depth", "1", f"https://github.com/{REPO}.git", str(ROOT)], check=True, stdout=subprocess.DEVNULL, env=clone_env)
     finally:
         askpass.unlink(missing_ok=True)
-    backend = ROOT / "web-platform" / "backend"
+    backend = ROOT / "apps/web-platform" / "backend"
     env = os.environ.copy()
     env["DATABASE_URL"] = database_url
     env.setdefault("APP_ENV", "production")

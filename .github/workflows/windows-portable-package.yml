@@ -5,16 +5,16 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "web-platform/frontend/**"
-      - "web-platform/backend/**"
+      - "apps/web-platform/frontend/**"
+      - "apps/web-platform/backend/**"
       - "scripts/windows-portable/**"
       - "docs/WINDOWS_PORTABLE_PACKAGE.md"
       - ".github/workflows/windows-portable-package.yml"
   pull_request:
     branches: ["main"]
     paths:
-      - "web-platform/frontend/**"
-      - "web-platform/backend/**"
+      - "apps/web-platform/frontend/**"
+      - "apps/web-platform/backend/**"
       - "scripts/windows-portable/**"
       - "docs/WINDOWS_PORTABLE_PACKAGE.md"
       - ".github/workflows/windows-portable-package.yml"
@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: "20"
       - name: Build standalone frontend
-        working-directory: web-platform/frontend
+        working-directory: apps/web-platform/frontend
         env:
           NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000/api/v1
         run: |
@@ -56,7 +56,7 @@ jobs:
           $stage = Join-Path $env:RUNNER_TEMP "narrativ-forge-portable"
           Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
-          Copy-Item "web-platform/backend" (Join-Path $stage "backend") -Recurse
+          Copy-Item "apps/web-platform/backend" (Join-Path $stage "backend") -Recurse
           Remove-Item (Join-Path $stage "backend/tests") -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item (Join-Path $stage "backend/.env") -Force -ErrorAction SilentlyContinue
           Remove-Item (Join-Path $stage "backend/.venv") -Recurse -Force -ErrorAction SilentlyContinue
@@ -68,10 +68,10 @@ jobs:
           $requirements | Set-Content -Encoding utf8 (Join-Path $stage "backend/requirements-windows-portable.txt")
           $frontend = Join-Path $stage "frontend"
           New-Item -ItemType Directory -Force -Path $frontend | Out-Null
-          Copy-Item "web-platform/frontend/.next/standalone/*" $frontend -Recurse -Force
+          Copy-Item "apps/web-platform/frontend/.next/standalone/*" $frontend -Recurse -Force
           New-Item -ItemType Directory -Force -Path (Join-Path $frontend ".next/static") | Out-Null
-          Copy-Item "web-platform/frontend/.next/static/*" (Join-Path $frontend ".next/static") -Recurse -Force
-          if (Test-Path "web-platform/frontend/public") { Copy-Item "web-platform/frontend/public" $frontend -Recurse -Force }
+          Copy-Item "apps/web-platform/frontend/.next/static/*" (Join-Path $frontend ".next/static") -Recurse -Force
+          if (Test-Path "apps/web-platform/frontend/public") { Copy-Item "apps/web-platform/frontend/public" $frontend -Recurse -Force }
           Copy-Item "scripts/windows-portable/Start-NarrativForge.ps1" $stage
           Copy-Item "scripts/windows-portable/Stop-NarrativForge.ps1" $stage
           Copy-Item "docs/WINDOWS_PORTABLE_PACKAGE.md" (Join-Path $stage "PACKAGE-README.md")

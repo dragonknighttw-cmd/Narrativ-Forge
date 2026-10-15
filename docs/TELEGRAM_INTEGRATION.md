@@ -42,9 +42,9 @@ Configure these variables in your local `.env` or in the Render Dashboard under 
 
 ## 4. Code Architecture
 
-* **Service Module:** `web-platform/backend/app/services/telegram.py`
-* **Configuration:** `web-platform/backend/app/core/config.py` (`Settings.telegram_*`)
-* **Template:** `web-platform/backend/.env.example`
+* **Service Module:** `apps/web-platform/backend/app/services/telegram.py`
+* **Configuration:** `apps/web-platform/backend/app/core/config.py` (`Settings.telegram_*`)
+* **Template:** `apps/web-platform/backend/.env.example`
 
 ---
 

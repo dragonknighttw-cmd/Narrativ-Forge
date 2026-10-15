@@ -53,7 +53,7 @@ jobs:
               raise SystemExit("::error::Worker URL must be the expected HTTPS workers.dev hostname; check CLOUDFLARE_WHISPER_WORKER_URL.")
           if parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.path not in ("", "/"):
               raise SystemExit("::error::Worker URL must contain only the HTTPS origin, with no credentials, query, fragment, or custom path.")
-          config_path = Path("web-platform/cloudflare/whisper-worker/wrangler.jsonc")
+          config_path = Path("apps/web-platform/cloudflare/whisper-worker/wrangler.jsonc")
           config = json.loads(config_path.read_text(encoding="utf-8"))
           allowed_origin = config.get("vars", {}).get("ALLOWED_ORIGIN", "")
           if not allowed_origin.startswith("https://"):
@@ -126,7 +126,7 @@ jobs:
           url = os.environ["WORKER_URL"].rstrip("/")
           parsed_url = urlsplit(url)
           secret = os.environ["SHARED_SECRET"]
-          config = json.loads(Path("web-platform/cloudflare/whisper-worker/wrangler.jsonc").read_text(encoding="utf-8"))
+          config = json.loads(Path("apps/web-platform/cloudflare/whisper-worker/wrangler.jsonc").read_text(encoding="utf-8"))
           allowed_origin = config["vars"]["ALLOWED_ORIGIN"]
           episode_id = "live-evidence-" + uuid4().hex
           audio = Path(os.environ["AUDIO_PATH"]).read_bytes()

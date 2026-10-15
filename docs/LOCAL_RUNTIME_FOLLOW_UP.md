@@ -27,7 +27,7 @@ Commit: [`5d292e9584b70614608da58829da3ec13cf5f3eb`](https://github.com/dragonkn
 
 - Root cause: `sqlite3.Connection` context-manager usage does not close the connection handle. On Windows, an open handle can block `Path.replace`.
 - Fix in [`scripts/restore_db.py`](https://github.com/dragonknighttw-cmd/Narrativ-Forge/blob/main/scripts/restore_db.py): explicitly close the temporary SQLite connection before replacing the destination.
-- Test fixture fix in [`test_root_restore_db.py`](https://github.com/dragonknighttw-cmd/Narrativ-Forge/blob/main/web-platform/backend/tests/test_root_restore_db.py): close source/target fixture connections and provide `close()` on the integrity-check mock.
+- Test fixture fix in [`test_root_restore_db.py`](https://github.com/dragonknighttw-cmd/Narrativ-Forge/blob/main/apps/web-platform/backend/tests/test_root_restore_db.py): close source/target fixture connections and provide `close()` on the integrity-check mock.
 - Added the restore regression test to the Windows API + SQLite smoke workflow.
 - [Windows Local Runtime Evidence run #38199416863](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199416863) passed on commit `644f4346f59d03b7185531e8621b26a989e502fb`, including the new Windows restore regression step.
 - [Windows Portable Package Evidence run #38199416864](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38199416864) also passed on that commit.

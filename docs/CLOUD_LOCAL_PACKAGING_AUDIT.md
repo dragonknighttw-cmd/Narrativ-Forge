@@ -45,7 +45,7 @@ real providers           local storage
 
 ### Backend / worker
 
-- `web-platform/backend/Dockerfile` already produces a non-root API runtime.
+- `apps/web-platform/backend/Dockerfile` already produces a non-root API runtime.
 - `Dockerfile.worker` already installs FFmpeg, Whisper dependencies and PyICU.
 - Celery/Redis/PostgreSQL processing is already separated from the API process.
 - `worker-evidence.yml` already builds the worker, runs migrations, performs storage preflight, runs integration tests, prewarms Whisper, starts the real Celery worker and executes deterministic media smoke.

@@ -19,12 +19,12 @@ For security-sensitive work also read `SECURITY.md`.
 
 ## Repository map
 
-- `web-platform/frontend`: Next.js + React + TypeScript frontend.
-- `web-platform/backend`: FastAPI + SQLAlchemy backend.
-- `web-platform/backend/tests`: backend tests.
-- `web-platform/frontend/e2e`: Playwright E2E.
-- `web-platform/backend/alembic`: database migrations.
-- `web-platform/backend/app/workers`: canonical Celery worker path.
+- `apps/web-platform/frontend`: Next.js + React + TypeScript frontend.
+- `apps/web-platform/backend`: FastAPI + SQLAlchemy backend.
+- `apps/web-platform/backend/tests`: backend tests.
+- `apps/web-platform/frontend/e2e`: Playwright E2E.
+- `apps/web-platform/backend/alembic`: database migrations.
+- `apps/web-platform/backend/app/workers`: canonical Celery worker path.
 - `.github/workflows/`: CI, security, CodeQL, worker evidence, and repository gate workflows.
 
 ## Architecture rules
@@ -68,13 +68,13 @@ For security-sensitive work also read `SECURITY.md`.
 ## Validation commands
 
 Frontend:
-- `cd web-platform/frontend && npm run typecheck`
-- `cd web-platform/frontend && npm run build`
-- `cd web-platform/frontend && npm run e2e`
+- `cd apps/web-platform/frontend && npm run typecheck`
+- `cd apps/web-platform/frontend && npm run build`
+- `cd apps/web-platform/frontend && npm run e2e`
 
 Backend:
-- `cd web-platform/backend && pytest`
-- `cd web-platform/backend && pytest -m unit`
+- `cd apps/web-platform/backend && pytest`
+- `cd apps/web-platform/backend && pytest -m unit`
 
 Use the repository's existing CI workflows for integration, security, CodeQL, and real-worker evidence. Do not invent a passing result when a dependency/runtime is unavailable.
 

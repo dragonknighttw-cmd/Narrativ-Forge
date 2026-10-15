@@ -143,7 +143,7 @@ These are not considered DONE merely because the numbers/specification are writt
 
 The detailed single source for these items is `docs/10-runtime-and-storage-lifecycle-plan.md`.
 
-The previous idea of maintaining a separate copied `worker/` application is superseded: local workers must run the repository's actual `web-platform/backend` worker code so local and future paid runtimes do not drift.
+The previous idea of maintaining a separate copied `worker/` application is superseded: local workers must run the repository's actual `apps/web-platform/backend` worker code so local and future paid runtimes do not drift.
 
 
 ## Coding progress — post-infrastructure freeze

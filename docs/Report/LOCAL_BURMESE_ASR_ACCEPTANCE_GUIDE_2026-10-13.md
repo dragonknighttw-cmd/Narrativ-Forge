@@ -2,8 +2,8 @@
 
 **Purpose:** Diagnose and verify the report that Burmese speech about ChatGPT models is sometimes transcribed as Chinese characters.  
 **Related PR:** [#73 — fix: reject ASR transcripts without Myanmar script](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/73)  
-**Code under test:** `web-platform/backend/app/services/real_processing.py`  
-**Focused tests:** `web-platform/backend/tests/test_whisper_fallback.py`  
+**Code under test:** `apps/web-platform/backend/app/services/real_processing.py`
+**Focused tests:** `apps/web-platform/backend/tests/test_whisper_fallback.py`
 **Status:** PR #73 is merged. This guide remains prepared for local execution and has not itself been executed on the user's machine. The Myanmar-script guard is not Burmese speech-quality acceptance.
 
 ---
@@ -73,7 +73,7 @@ If this repository ignores `artifacts/`, keep test outputs there. Otherwise use 
 Use the Python version specified by the current CI workflow (currently Python 3.12) and create a dedicated virtual environment. From the backend folder:
 
 ```powershell
-Set-Location .\web-platform\backend
+Set-Location .\apps/web-platform\backend
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
@@ -99,7 +99,7 @@ If a command is not found or dependency installation fails, capture the error an
 
 ## 4. Run regression tests before real inference
 
-From `web-platform/backend`:
+From `apps/web-platform/backend`:
 
 ```powershell
 $env:PYTHONPATH = "."

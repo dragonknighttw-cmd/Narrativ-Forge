@@ -37,7 +37,7 @@ The older checkpoint notes below are historical. Use this section as the current
 
 1. Run/record focused acceptance for batch generation, Script Studio to scene planning, thumbnail approval, subtitle editing/preview, asset validation, processing state, Series Bible, and tenant/role guards.
 2. Keep Burmese ASR unaccepted until a human reviews dialect/reference transcript and a usable transcript passes quality checks; no cloud inference without approval.
-3. Decide whether generated `web-platform/frontend/tsconfig.tsbuildinfo` should remain tracked.
+3. Decide whether generated `apps/web-platform/frontend/tsconfig.tsbuildinfo` should remain tracked.
 4. Complete safe local/staging upload/playback/source-integrity E2E and the remaining external release gates: managed restore, provider integrations, performance, accessibility, legal/privacy/commercial use, and independent security review.
 5. Do not deploy production or provision billable capacity without explicit owner approval.
 
@@ -50,8 +50,8 @@ The older checkpoint notes below are historical. Use this section as the current
 - **Newly recorded implementation scope:** 8 Burmese hook families; 5-episode batch generator; Script Studio assistant and scene auto-planning; thumbnail generation/shortlisting/human approval workflow; subtitle cue editing and keyboard shortcuts; 9:16 subtitle preview/safe-zone simulator; asset library guidance/filtering; processing stepper; Series Bible; Burmese typography/mobile navigation; and a 512-dimension mock RAG/semantic-search foundation.
 - **Evidence boundary:** repository state records 12 focused backend unit tests and frontend `tsc --noEmit` as passing. The latest main SHA's CI, Security, CodeQL and Repository Gate conclusions were not independently available from the status connector during this reconciliation; rerun/check exact-SHA Actions before treating the current head as green.
 - **Local Burmese ASR acceptance (operator report, 2026-10-13):** tested older application SHA `3b1b3766f2fb132bf4d80203e7174562f2879d9a`, not the new feature SHA. On the same source audio, Whisper small auto-detect, small forced Burmese and large-v3-turbo all emitted non-Myanmar scripts/text (0 Myanmar-script characters); all were correctly rejected as `ASR_LANGUAGE_MISMATCH`. Local focused Whisper/subprocess tests: 15 passed, 2 skipped; unit: 281 passed, 5 skipped; unit/security: 301 passed, 5 skipped. No Cloudflare inference/quota was used. This is a **Burmese quality failure**, not a successful ASR acceptance. Re-run relevant regression tests on current code and obtain human dialect/reference-transcript review before choosing a model/parameter change.
-- **Confirmed release-blocking code defect (not fixed here):** current `web-platform/backend/app/api/routes/review.py` defines `approve_review()` but its return references `approved_at.isoformat()` without defining `approved_at` in that function. The approval request can therefore raise `NameError` after the DB commit. This documentation-only PR records the blocker; application code remains unchanged.
-- **Build artifact hygiene:** `web-platform/frontend/tsconfig.tsbuildinfo` is tracked by the latest commit. Decide whether it should be ignored/removed as generated output; do not treat it as a feature.
+- **Confirmed release-blocking code defect (not fixed here):** current `apps/web-platform/backend/app/api/routes/review.py` defines `approve_review()` but its return references `approved_at.isoformat()` without defining `approved_at` in that function. The approval request can therefore raise `NameError` after the DB commit. This documentation-only PR records the blocker; application code remains unchanged.
+- **Build artifact hygiene:** `apps/web-platform/frontend/tsconfig.tsbuildinfo` is tracked by the latest commit. Decide whether it should be ignored/removed as generated output; do not treat it as a feature.
 - **Deployment boundary:** current main is ahead of the deployed application baseline `3b1b3766`; Render auto-deploy is documented as disabled in the latest live checkpoint. Do not infer the new features are deployed. No deploy, paid worker provisioning, quota-consuming inference or production-data mutation was performed.
 - **Release:** **PENDING — NOT PRODUCTION READY**.
 
@@ -190,12 +190,12 @@ Readiness returned database=`ok`, redis=`ok`.
 
 Repository worker implementation is present:
 
-- Docker image: `web-platform/backend/Dockerfile.worker`
+- Docker image: `apps/web-platform/backend/Dockerfile.worker`
 - Entrypoint: `celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --beat` (configured concurrency defaults to 1 via `WORKER_MAX_CONCURRENCY`)
 - Broker: Redis via `REDIS_URL`
 - Durable job state: PostgreSQL
 - Media tools: FFmpeg + OpenAI Whisper
-- Worker task registration: `web-platform/backend/app/workers/tasks.py`
+- Worker task registration: `apps/web-platform/backend/app/workers/tasks.py`
 - Failure recovery: late ACK, worker-lost rejection, retries, DLQ publication, stale-job recovery.
 
 Current Render service evidence:
@@ -286,7 +286,7 @@ Repository head and live deployment head must be tracked separately.
 ## 2026-10-08 continuation update
 
 - Phase 15–36 continuation contracts/tests are present on `main`.
-- Phase 37–45 operating-maturity contracts/tests are now present on `main` in `web-platform/backend/app/services/operating_maturity.py` and `test_operating_maturity.py`.
+- Phase 37–45 operating-maturity contracts/tests are now present on `main` in `apps/web-platform/backend/app/services/operating_maturity.py` and `test_operating_maturity.py`.
 - The latest known worker evidence attempt reached Docker image build and migrations, then failed during the integration test collection on an `orchestration.py` SyntaxError. The checked `main` source at the recorded SHA currently contains valid `ExecutionPlan.task_names` syntax; the failed attempt has been re-run and is currently in progress. Therefore the worker gate remains **NOT VERIFIED** until that rerun completes successfully.
 - Local test execution from this environment was unavailable because outbound GitHub network resolution is blocked.
 - Live credentials/provider/manual acceptance remain deferred as planned.
@@ -338,12 +338,12 @@ Code-only contracts/tests are now staged for performance/cost budgets, worker au
 
 ## Phase 61–68 code-foundation progress — 2026-10-08
 
-Code-only foundations are now staged in `web-platform/backend/app/services/phase_61_68.py` with unit coverage in `tests/test_phase_61_68.py`: performance/cost budgets, worker autoscaling policy, provenance lineage, enterprise permissions, provider capability discovery, localization quality thresholds, billing metering validation, SLO budgets and incident/rollback policy. Live telemetry, billing, provider, enterprise and post-launch acceptance remain external gates.
+Code-only foundations are now staged in `apps/web-platform/backend/app/services/phase_61_68.py` with unit coverage in `tests/test_phase_61_68.py`: performance/cost budgets, worker autoscaling policy, provenance lineage, enterprise permissions, provider capability discovery, localization quality thresholds, billing metering validation, SLO budgets and incident/rollback policy. Live telemetry, billing, provider, enterprise and post-launch acceptance remain external gates.
 
 
 ## Phase 69–76 code-foundation progress — 2026-10-08
 
-Code-only foundations are staged in `web-platform/backend/app/services/phase_69_76.py` with unit coverage in `tests/test_phase_69_76.py`: rollout/cohort policy, schema-drift detection, restore verification, privacy-request closure, secret/config readiness, dependency-license allowlisting, chaos-drill acceptance, and deterministic release evidence packs. These contracts do not claim live backup, privacy/legal, secret-manager, license, chaos or release acceptance.
+Code-only foundations are staged in `apps/web-platform/backend/app/services/phase_69_76.py` with unit coverage in `tests/test_phase_69_76.py`: rollout/cohort policy, schema-drift detection, restore verification, privacy-request closure, secret/config readiness, dependency-license allowlisting, chaos-drill acceptance, and deterministic release evidence packs. These contracts do not claim live backup, privacy/legal, secret-manager, license, chaos or release acceptance.
 
 ### Phase 69–76 queue
 69 progressive rollout/cohort control; 70 schema/data-quality drift; 71 restore verification; 72 privacy/data-subject operations; 73 secret/config readiness; 74 dependency/license governance; 75 chaos/recovery drills; 76 final release evidence pack.
@@ -360,8 +360,8 @@ Code-only foundations are staged in `web-platform/backend/app/services/phase_69_
 
 ## 2026-10-08 Phase 77–84 code-only completion
 
-- Phase 77–84 service contracts are implemented in `web-platform/backend/app/services/phase_77_84.py`.
-- Unit coverage is present in `web-platform/backend/tests/test_phase_77_84.py` for quota forecasting, API sunset rules, migration retirement safety, deterministic tenant export keys, incident/SLA contracts, settlement math/idempotency, and final governance evidence completeness.
+- Phase 77–84 service contracts are implemented in `apps/web-platform/backend/app/services/phase_77_84.py`.
+- Unit coverage is present in `apps/web-platform/backend/tests/test_phase_77_84.py` for quota forecasting, API sunset rules, migration retirement safety, deterministic tenant export keys, incident/SLA contracts, settlement math/idempotency, and final governance evidence completeness.
 - The complete code-only phase queue through **84** is now staged/implemented on `main`.
 - This does **not** mark production gates VERIFIED: live worker/runtime, provider, billing, backup/restore, privacy/legal, security, accessibility and human acceptance evidence remain external requirements.
 
@@ -369,8 +369,8 @@ Code-only foundations are staged in `web-platform/backend/app/services/phase_69_
 ## Final code-only queue checkpoint — 2026-10-08
 
 - Phases **77–84 are implemented and unit-covered** on `main`.
-- New service: `web-platform/backend/app/services/phase_77_84.py`.
-- New CI-visible unit suite: `web-platform/backend/tests/test_phase_77_84.py` with `pytest.mark.unit`.
+- New service: `apps/web-platform/backend/app/services/phase_77_84.py`.
+- New CI-visible unit suite: `apps/web-platform/backend/tests/test_phase_77_84.py` with `pytest.mark.unit`.
 - Code-only backlog is exhausted through Phase 84. Remaining work is evidence/operations: live worker/runtime, real providers, billing, backup/restore, privacy/legal, security, accessibility, support/incident operations, and human acceptance.
 - Latest main commit for this pass: `233d534f609b32ec86cfbab6af4fdd286a3d083d`.
 
@@ -602,7 +602,7 @@ Release status remains **PENDING — NOT PRODUCTION READY**. Passing CI does not
 
 Code SHA checked: `6c53f953747d7ec3c18cf4872b85b96164c897b7`.
 
-- Hardened `web-platform/cloudflare/whisper-worker/src/index.ts`: reject oversized declared `Content-Length` before reading the request, and enforce the 50 MiB cap while streaming the body so chunked requests cannot bypass the limit by forcing an unbounded `arrayBuffer()` allocation. Added regression tests for declared and chunked oversized bodies.
+- Hardened `apps/web-platform/cloudflare/whisper-worker/src/index.ts`: reject oversized declared `Content-Length` before reading the request, and enforce the 50 MiB cap while streaming the body so chunked requests cannot bypass the limit by forcing an unbounded `arrayBuffer()` allocation. Added regression tests for declared and chunked oversized bodies.
 - Cloudflare Whisper Worker contract tests: **4 passed** locally. Wrangler `deploy --dry-run` completed successfully (5.30 KiB upload / 1.90 KiB gzip); this was a bundle validation only, not a deployment. `git diff --check` passed.
 - Fresh live, non-billable checks: Cloudflare Whisper GET-only probe returned HTTP 405 JSON `Method not allowed` with a Cloudflare Ray ID, confirming the Worker handler is reached. No audio, token, or Workers AI inference was sent. Render `/api/v1/health` returned HTTP 200; `/api/v1/ready` returned HTTP 200 with database and Redis both `ok`.
 - Read-only Cloudflare API audit: `narrativ-forge-whisper` has a 100% traffic deployment and the `NARRATIV_SHARED_SECRET` binding is present; `ALLOWED_ORIGIN` matches the configured Netlify HTTPS origin. The new request-size hardening has **not** been deployed to the live Worker. Deployment remains manual-only and requires explicit confirmation that the Render API shared secret matches the protected GitHub production secret.
@@ -630,7 +630,7 @@ This section supersedes the older statement above that the request-size hardenin
 
 - Documentation-only PR head: `97030d17b5f0d2fd8c121a9b5b590dc1d19df70b`. No application code was changed in this plan-reconciliation PR.
 - Exact-SHA workflows: [Repository Gate #38503795475](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38503795475) **passed**; [Security #38503795675](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38503795675) **passed**; [CodeQL #38503795460](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38503795460) **passed**; [CI #38503795609](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/38503795609) **failed**.
-- CI confirms the approval route defect: backend integration suite **4 failed, 68 passed, 1 skipped**. All four failures report `NameError: name 'approved_at' is not defined` from `web-platform/backend/app/api/routes/review.py`. The Playwright production flow also fails at the approval request; the other two E2E tests passed. This is now tracked as [Issue #76](https://github.com/dragonknighttw-cmd/Narrativ-Forge/issues/76).
+- CI confirms the approval route defect: backend integration suite **4 failed, 68 passed, 1 skipped**. All four failures report `NameError: name 'approved_at' is not defined` from `apps/web-platform/backend/app/api/routes/review.py`. The Playwright production flow also fails at the approval request; the other two E2E tests passed. This is now tracked as [Issue #76](https://github.com/dragonknighttw-cmd/Narrativ-Forge/issues/76).
 - Frontend typecheck/build, backend unit/security job, and Cloudflare Worker contract job passed in the same CI run; this does not offset the failed integration/E2E gates.
 - Do not merge this documentation PR as release approval and do not deploy production. Release remains **PENDING — NOT PRODUCTION READY**. Next code task is the separate fix for Issue #76, followed by exact-SHA backend integration + E2E reruns.
 

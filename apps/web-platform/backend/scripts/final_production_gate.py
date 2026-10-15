@@ -84,7 +84,7 @@ for command, name in [
 if os.environ.get("WHISPER_REMOTE_ENABLED", "true").lower() != "true":
     run_checked(["whisper", "--help"], "whisper")
 
-for script in ("web-platform/backend/scripts/backup_db.py", "web-platform/backend/scripts/restore_db.py"):
+for script in ("apps/web-platform/backend/scripts/backup_db.py", "apps/web-platform/backend/scripts/restore_db.py"):
     if not os.path.isfile(script):
         failures.append(script)
 

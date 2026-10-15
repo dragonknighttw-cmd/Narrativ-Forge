@@ -5,7 +5,7 @@ services:
   - type: worker
     name: narrativ-forge-worker
     runtime: docker
-    rootDir: web-platform/backend
+    rootDir: apps/web-platform/backend
     dockerfilePath: ./Dockerfile.worker
     plan: starter
     branch: main

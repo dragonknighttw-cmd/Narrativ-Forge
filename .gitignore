@@ -20,8 +20,8 @@ coverage/
 *.db
 *.sqlite
 *.sqlite3
-web-platform/backend/storage/
-web-platform/backend/tmp/
+apps/web-platform/backend/storage/
+apps/web-platform/backend/tmp/
 
 # IDE / OS
 .vscode/

@@ -40,7 +40,7 @@ The backend content-plan path must remain free-first and fail closed:
 6. Retry the next reviewed free model after transient HTTP failures or invalid/empty model output; do not cascade on 401/403 authentication/authorization errors.
 7. Never remove the :free suffix to work around an outage. No paid fallback is allowed.
 
-Current code-level guard and tests: web-platform/backend/app/services/ai_adapter.py and web-platform/backend/tests/test_ai_adapter.py.
+Current code-level guard and tests: apps/web-platform/backend/app/services/ai_adapter.py and apps/web-platform/backend/tests/test_ai_adapter.py.
 
 ## Manual live verification
 

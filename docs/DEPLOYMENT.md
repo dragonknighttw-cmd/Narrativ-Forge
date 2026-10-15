@@ -122,7 +122,7 @@ A manifest is not proof of a live deployment.
 
 The repository worker is deployable as a Docker background worker:
 
-- Dockerfile: `web-platform/backend/Dockerfile.worker`
+- Dockerfile: `apps/web-platform/backend/Dockerfile.worker`
 - Command: `celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --beat` (concurrency is configured by `WORKER_MAX_CONCURRENCY`, default `1`)
 - Broker: `REDIS_URL`
 - State: `DATABASE_URL`
@@ -136,7 +136,7 @@ Prepared, intentionally non-auto-provisioning blueprint:
 
 Required owner action:
 1. Create a paid Render Background Worker named `narrativ-forge-worker`.
-2. Use `web-platform/backend/Dockerfile.worker`.
+2. Use `apps/web-platform/backend/Dockerfile.worker`.
 3. Set the variables in `render.worker.yaml`.
 4. Keep concurrency at 1 for the first real-media verification.
 5. Verify Celery worker heartbeat/queue consumption before sending production media.
@@ -149,7 +149,7 @@ Railway can deploy a GitHub repository or Dockerfile as an independent service. 
 
 Exact worker setup:
 - Source: `dragonknighttw-cmd/Narrativ-Forge`, branch `main`
-- Root directory: `web-platform/backend`
+- Root directory: `apps/web-platform/backend`
 - Dockerfile: `Dockerfile.worker`
 - Start command: `celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --concurrency=1 --beat`
 - Required runtime variables: `DATABASE_URL`, `REDIS_URL`, storage credentials, Cloudflare Whisper variables, and any enabled notification/provider credentials.
@@ -179,7 +179,7 @@ Use the non-billable [Cloudflare Whisper Preflight workflow](https://github.com/
 
 ## Cloudflare Whisper live acceptance and secret rotation
 
-The manual workflow `.github/workflows/cloudflare-whisper-live-evidence.yml` verifies the signed-token contract with one synthetic two-second WAV. It checks the canonical workers.dev hostname, sends the allowed Origin configured in `web-platform/cloudflare/whisper-worker/wrangler.jsonc`, does not follow redirects, checks unauthenticated rejection, then performs one authenticated inference. The inference may consume Workers AI quota, so run it only with explicit owner approval.
+The manual workflow `.github/workflows/cloudflare-whisper-live-evidence.yml` verifies the signed-token contract with one synthetic two-second WAV. It checks the canonical workers.dev hostname, sends the allowed Origin configured in `apps/web-platform/cloudflare/whisper-worker/wrangler.jsonc`, does not follow redirects, checks unauthenticated rejection, then performs one authenticated inference. The inference may consume Workers AI quota, so run it only with explicit owner approval.
 
 **Latest observed result:** [run #37895020420](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37895020420) failed at the first unauthenticated request with HTTP 403 instead of 401. Authenticated inference was not reached; the shared secret was not tested by that run.
 

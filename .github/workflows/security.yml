@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Audit Python dependencies
-        working-directory: web-platform/backend
+        working-directory: apps/web-platform/backend
         run: |
           python -m pip install --upgrade pip pip-audit
           pip-audit -r requirements.txt -r requirements-real-processing.txt
@@ -35,10 +35,10 @@ jobs:
         with:
           node-version: "20"
       - name: Require npm lockfile
-        working-directory: web-platform/frontend
+        working-directory: apps/web-platform/frontend
         run: test -f package-lock.json
       - name: Audit frontend dependencies
-        working-directory: web-platform/frontend
+        working-directory: apps/web-platform/frontend
         run: |
           npm ci
           npm audit --audit-level=high
@@ -76,7 +76,7 @@ jobs:
           docker system prune --all --force --volumes
           docker builder prune --all --force
       - name: Build backend image
-        run: docker build --tag narrativ-forge-backend:ci --file web-platform/backend/Dockerfile web-platform/backend
+        run: docker build --tag narrativ-forge-backend:ci --file apps/web-platform/backend/Dockerfile apps/web-platform/backend
       - name: Free disposable Docker build cache
         run: docker builder prune --all --force
       - name: Scan backend image for vulnerabilities

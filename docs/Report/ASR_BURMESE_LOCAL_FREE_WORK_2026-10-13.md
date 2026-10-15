@@ -7,7 +7,7 @@
 
 ## Completed without local execution
 
-- Reviewed the production processing path in `web-platform/backend/app/services/real_processing.py`.
+- Reviewed the production processing path in `apps/web-platform/backend/app/services/real_processing.py`.
 - Added a defensive check before transcript assets are persisted. If neither the transcript's main text nor its segments contain any Myanmar-script characters, processing fails with `ASR_LANGUAGE_MISMATCH` rather than treating likely Chinese/other-script ASR output as a Burmese transcript.
 - Added unit tests for Chinese-only output, Myanmar text in segments, and empty transcript payloads.
 - The first version of the guard incorrectly rejected the generated tone/silence media used by Real Worker Evidence because Whisper returned an empty transcript. Updated the guard to reject only **non-empty** output without Myanmar-script characters, while allowing empty output for silence/tone fixtures.
@@ -43,9 +43,9 @@
 ## Independent isolated-box regression verification — 2026-10-13
 
 - Checked out exact PR #73 head `8dbfe74473fa6e3b3555a1d752dae424ef9787bf` in an isolated repository workspace. No user Windows machine, original media, secrets, provider credentials, or cloud inference were accessed.
-- Backend focused tests: `cd web-platform/backend && PYTHONPATH=. pytest -q tests/test_whisper_fallback.py` — **9 passed**.
-- Backend unit/security selection: `cd web-platform/backend && PYTHONPATH=. pytest -m 'unit or security' -q` — **303 passed, 3 skipped, 84 deselected**; three existing deprecation warnings were emitted.
-- Cloudflare Whisper Worker contract tests: `cd web-platform/cloudflare/whisper-worker && node --experimental-strip-types --test test/worker.test.mjs` — **5 passed** (Node 25.9.0 in the isolated box; repository CI pins Node 22).
+- Backend focused tests: `cd apps/web-platform/backend && PYTHONPATH=. pytest -q tests/test_whisper_fallback.py` — **9 passed**.
+- Backend unit/security selection: `cd apps/web-platform/backend && PYTHONPATH=. pytest -m 'unit or security' -q` — **303 passed, 3 skipped, 84 deselected**; three existing deprecation warnings were emitted.
+- Cloudflare Whisper Worker contract tests: `cd apps/web-platform/cloudflare/whisper-worker && node --experimental-strip-types --test test/worker.test.mjs` — **5 passed** (Node 25.9.0 in the isolated box; repository CI pins Node 22).
 - `git status` was clean before recording these results. These results establish regression behavior for the exact checked-out source only; they do **not** establish Burmese speech accuracy, Windows user-machine acceptance, live provider behavior, or production readiness.
 
 ## Post-merge exact-main verification — 2026-10-13

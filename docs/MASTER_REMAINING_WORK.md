@@ -27,7 +27,7 @@ Earlier entries below are historical and should not override this queue.
 4. **External release gates:** managed full-schema backup/restore; live provider/storage/OAuth/Drive/SMTP/Stripe/Sentry; performance/load; accessibility; privacy/legal/commercial-use review; independent penetration/security sign-off.
 5. **Owner decisions:** approve any paid persistent worker, live inference/quota use, and production deployment only when those gates are ready.
 
-Repository hygiene is complete: PR #80 removed the tracked `web-platform/frontend/tsconfig.tsbuildinfo` and added `*.tsbuildinfo` to `.gitignore`; frontend build/typecheck and the required CI checks passed on its exact head SHA.
+Repository hygiene is complete: PR #80 removed the tracked `apps/web-platform/frontend/tsconfig.tsbuildinfo` and added `*.tsbuildinfo` to `.gitignore`; frontend build/typecheck and the required CI checks passed on its exact head SHA.
 
 No production deployment, billable provisioning, production-data mutation, destructive recovery, or cloud inference was performed. **Release remains PENDING — NOT PRODUCTION READY.**
 
@@ -39,10 +39,10 @@ No production deployment, billable provisioning, production-data mutation, destr
 
 - Application-code checkpoint `f2f45cf` adds hook engineering and a 5-episode batch generator; Script Studio/scene auto-planning; thumbnail candidate generation/shortlisting/human approval; subtitle cue editing and styling; 9:16 safe-zone/preview; asset library and processing-stepper UI; Series Bible; Burmese typography/mobile navigation; and a 512-dimension mock RAG/semantic-search foundation.
 - These are **implemented foundations**, not proof of complete end-to-end product acceptance. The next work is exact-SHA CI, focused acceptance, persistence/authorization checks and regression review—not rebuilding the same features.
-- Latest observed main is `fe17d74229cb51ca4eec125b720594fb85ebbbb6`; this last commit tracks `web-platform/frontend/tsconfig.tsbuildinfo`. Verify whether this generated artifact belongs in Git.
+- Latest observed main is `fe17d74229cb51ca4eec125b720594fb85ebbbb6`; this last commit tracks `apps/web-platform/frontend/tsconfig.tsbuildinfo`. Verify whether this generated artifact belongs in Git.
 - Exact-SHA CI/Security/CodeQL/Repository Gate status for the latest main was not independently confirmed during this reconciliation. Do not label current head green without matching run evidence.
 - The local ASR report tested older SHA `3b1b3766`; three Whisper configurations emitted 0 Myanmar-script characters and were correctly rejected by the guard. No Cloudflare inference/quota was used. This remains a **quality failure**, and is not superseded by unrelated feature commits.
-- **Confirmed blocker:** `web-platform/backend/app/api/routes/review.py::approve_review()` returns `approved_at.isoformat()` but no `approved_at` variable is defined in the current function. This can raise `NameError` after `db.commit()`. Fix and regression-test in a separate application-code change; this plan-only update leaves code untouched.
+- **Confirmed blocker:** `apps/web-platform/backend/app/api/routes/review.py::approve_review()` returns `approved_at.isoformat()` but no `approved_at` variable is defined in the current function. This can raise `NameError` after `db.commit()`. Fix and regression-test in a separate application-code change; this plan-only update leaves code untouched.
 - Deployed app baseline remains `3b1b3766`; current main features are not presumed deployed. Release remains **PENDING — NOT PRODUCTION READY**.
 
 ## Immediate quota-free queue — reordered 2026-10-14
@@ -147,7 +147,7 @@ Do not equate implemented code, passing unit tests, deployed service reachabilit
 
 ### 1.2 Worker and media pipeline
 - [x] Follow-up [Kaggle Dispatcher #12](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37962902195) on `b231e2d` passed configuration and database checks; it found no due `real_processing` jobs, so it intentionally did not launch Kaggle. Dispatcher code/config checks are verified; actual Kaggle execution and completed media processing are not.
-- [ ] Audit `web-platform/backend/Dockerfile.worker`, Celery registration, Redis queue, PostgreSQL state, FFmpeg/Whisper availability, retry policy, DLQ, late ACK, duplicate dispatch, stale-job recovery, and shutdown behavior.
+- [ ] Audit `apps/web-platform/backend/Dockerfile.worker`, Celery registration, Redis queue, PostgreSQL state, FFmpeg/Whisper availability, retry policy, DLQ, late ACK, duplicate dispatch, stale-job recovery, and shutdown behavior.
 - [x] [Real Worker Evidence #190](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/37963422875) passed on `b231e2d`: worker image build, migrations, local storage permissions, Celery readiness, and synthetic media smoke succeeded in an isolated CI environment.
 - [x] Worker Docker build and Alembic migration CI step passed in that run; refresh evidence after every later worker/runtime code change.
 - [x] PostgreSQL/Redis-backed integration and worker smoke checks passed in isolated CI; persistent production worker, external storage, and representative user-media acceptance remain open.

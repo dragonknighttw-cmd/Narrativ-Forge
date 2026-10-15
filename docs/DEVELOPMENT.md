@@ -11,11 +11,11 @@ Use `main` for explicitly authorized direct work. Keep changes scoped and update
 
 ## Application structure
 
-- `web-platform/frontend`: Next.js frontend.
-- `web-platform/backend`: FastAPI backend.
-- `web-platform/backend/tests`: backend tests.
-- `web-platform/frontend/e2e`: Playwright E2E.
-- `web-platform/backend/alembic`: migrations.
+- `apps/web-platform/frontend`: Next.js frontend.
+- `apps/web-platform/backend`: FastAPI backend.
+- `apps/web-platform/backend/tests`: backend tests.
+- `apps/web-platform/frontend/e2e`: Playwright E2E.
+- `apps/web-platform/backend/alembic`: migrations.
 
 ## Development principles
 

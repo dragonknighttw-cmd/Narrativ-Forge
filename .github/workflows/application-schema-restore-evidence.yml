@@ -7,18 +7,18 @@ on:
       - ".github/workflows/application-schema-restore-evidence.yml"
       - "scripts/backup_db.py"
       - "scripts/restore_db.py"
-      - "web-platform/backend/alembic/**"
-      - "web-platform/backend/app/models/**"
-      - "web-platform/backend/requirements.txt"
+      - "apps/web-platform/backend/alembic/**"
+      - "apps/web-platform/backend/app/models/**"
+      - "apps/web-platform/backend/requirements.txt"
   pull_request:
     branches: ["main"]
     paths:
       - ".github/workflows/application-schema-restore-evidence.yml"
       - "scripts/backup_db.py"
       - "scripts/restore_db.py"
-      - "web-platform/backend/alembic/**"
-      - "web-platform/backend/app/models/**"
-      - "web-platform/backend/requirements.txt"
+      - "apps/web-platform/backend/alembic/**"
+      - "apps/web-platform/backend/app/models/**"
+      - "apps/web-platform/backend/requirements.txt"
   workflow_dispatch:
 
 permissions:
@@ -61,7 +61,7 @@ jobs:
       REDIS_URL: redis://127.0.0.1:6379/0
       STORAGE_PROVIDER: local
       UPLOAD_DIR: /tmp/restore-evidence-storage
-      PYTHONPATH: web-platform/backend
+      PYTHONPATH: apps/web-platform/backend
     steps:
       - name: Checkout exact triggering SHA
         uses: actions/checkout@v4
@@ -86,10 +86,10 @@ jobs:
           export PATH="/usr/lib/postgresql/17/bin:$PATH"
           pg_dump --version
           pg_restore --version
-          python -m pip install -r web-platform/backend/requirements.txt
+          python -m pip install -r apps/web-platform/backend/requirements.txt
 
       - name: Apply the full application migration chain to ephemeral source
-        working-directory: web-platform/backend
+        working-directory: apps/web-platform/backend
         env:
           DATABASE_URL: ${{ env.SOURCE_URL }}
           APP_ENV: test

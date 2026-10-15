@@ -103,8 +103,8 @@ The `application-schema-restore-evidence.yml` workflow applies the full Alembic 
 The repository now contains an automated worker evidence path:
 
 - `.github/workflows/worker-evidence.yml`
-- `web-platform/backend/scripts/worker_smoke.py`
-- `web-platform/backend/Dockerfile.worker`
+- `apps/web-platform/backend/scripts/worker_smoke.py`
+- `apps/web-platform/backend/Dockerfile.worker`
 
 The CI gate builds the real worker image, applies Alembic migrations against PostgreSQL, verifies retry/DLQ integration against PostgreSQL + Redis, starts the real Celery worker, generates a deterministic media fixture with FFmpeg, runs the real Whisper CLI, and verifies processed video, transcript, database state, and current subtitle creation.
 

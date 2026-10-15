@@ -15,7 +15,7 @@ The backend already supports these local defaults/configuration points:
 - `REDIS_URL` omitted when a code path does not require Redis
 - `FFMPEG_BINARY`, `FFPROBE_BINARY`, and `WHISPER_COMMAND` configurable for future bundled sidecars
 
-Use `web-platform/backend/.env.example` as the reference for all settings. Never copy production credentials into a local .env file or commit secrets.
+Use `apps/web-platform/backend/.env.example` as the reference for all settings. Never copy production credentials into a local .env file or commit secrets.
 
 ## Reproducible local API smoke
 
@@ -100,7 +100,7 @@ A system service installation needs administrator permission. Memurai Developer 
 4. Use a Python 3.12 environment rooted on D:. Subtitle inputs are Unicode Burmese only; NFC normalization uses the Python standard library, and Zawgyi detection/conversion is unsupported. Install the complete requirements with wheel-only mode so a missing binary package cannot trigger a source build:
 
 ```powershell
-Set-Location D:\Project\dragonknight.tw@gmail.com\Narrativ-Forge\web-platform\backend
+Set-Location D:\Project\dragonknight.tw@gmail.com\Narrativ-Forge\apps/web-platform\backend
 $root = "D:\NarrativForge"
 $env:TEMP = "$root\tmp"
 $env:TMP = "$root\tmp"

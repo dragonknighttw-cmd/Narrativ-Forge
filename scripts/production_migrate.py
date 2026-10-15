@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 
 # Add backend directory to sys.path
-backend_dir = Path(__file__).resolve().parent.parent / "web-platform" / "backend"
+backend_dir = Path(__file__).resolve().parent.parent / "apps/web-platform" / "backend"
 sys.path.insert(0, str(backend_dir))
 
 from sqlalchemy import create_engine, text

@@ -165,7 +165,7 @@ Only do this after you explicitly approve ongoing compute charges.
 
 1. Open the [Render dashboard](https://dashboard.render.com/web/srv-davrqtu7bikc73f7isbg) and the connected workspace.
 2. Use the repository's `render.worker.yaml` as the configuration reference. The blueprint is deliberately separate from the free-only `render.yaml`.
-3. Create a separate **Background Worker** service from repository `dragonknighttw-cmd/Narrativ-Forge`, branch `main`, root directory `web-platform/backend`, Dockerfile `Dockerfile.worker`.
+3. Create a separate **Background Worker** service from repository `dragonknighttw-cmd/Narrativ-Forge`, branch `main`, root directory `apps/web-platform/backend`, Dockerfile `Dockerfile.worker`.
 4. Choose a plan with enough RAM/disk for FFmpeg and the selected Whisper model. Do not assume the lowest plan can run `WHISPER_MODEL=small`; verify resource usage first. Begin with one worker and concurrency 1.
 5. Configure at least:
    - `APP_ENV`

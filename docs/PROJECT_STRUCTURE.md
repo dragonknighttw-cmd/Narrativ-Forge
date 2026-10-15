@@ -22,10 +22,10 @@
 | `archive/legacy/` | Historical documentation and legacy material; not assumed to be active runtime. |
 | `infra/` | Infrastructure-specific assets and runbooks, including Cloudflare Worker and Kaggle-related areas. |
 | `scripts/` | Maintenance, backup/restore, load-test and Windows portable-package helpers. |
-| `web-platform/backend/` | Backend application source and supporting assets. Inspect its package/module structure for authoritative implementation details. |
-| `web-platform/cloudflare/` | Cloudflare/edge integration and related deployment assets. |
-| `web-platform/frontend/` | Next.js/TypeScript frontend, App Router pages, shared components, API helpers and end-to-end tests. |
-| `mobile/` | Mobile-related scope/documentation area; current contents should be checked before assuming a shipped mobile application exists. |
+| `apps/web-platform/backend/` | Backend application source and supporting assets. Inspect its package/module structure for authoritative implementation details. |
+| `apps/web-platform/cloudflare/` | Cloudflare/edge integration and related deployment assets. |
+| `apps/web-platform/frontend/` | Next.js/TypeScript frontend, App Router pages, shared components, API helpers and end-to-end tests. |
+| `apps/mobile/` | Mobile-related scope/documentation area; current contents should be checked before assuming a shipped mobile application exists. |
 | Root Markdown files | Project entry point, current-state notes, roadmap, security/tooling instructions, UI system and audit/phase records. |
 | Root deployment/config files | Render, Netlify, OpenCode and repository ignore/configuration settings. |
 
@@ -146,7 +146,7 @@ Narrativ-Forge/
 │   ├── managed-services.md
 │   └── production-runbook.md
 ├── INFRASTRUCTURE_AUDIT.md
-├── mobile/
+├── apps/mobile/
 │   └── README.md
 ├── netlify.toml
 ├── opencode.json
@@ -166,7 +166,7 @@ Narrativ-Forge/
 ├── SECURITY.md
 ├── TOOL.md
 ├── UI_DESIGN_SYSTEM.md
-└── web-platform/
+└── apps/web-platform/
     ├── backend/
     │   ├── .env.example
     │   ├── alembic/
@@ -489,13 +489,13 @@ Narrativ-Forge/
 
 ### 3. Web platform
 
-- `web-platform/frontend/app/`: route-oriented UI. The tracked tree includes routes for analytics, auth/magic-link, auto mode, dashboard, episodes and episode sub-pages (assets, export, review, scenes, script, subtitle), hooks, ideas, invite, login, manual log, processing, production intelligence, publishing prep, series and usage.
-- `web-platform/frontend/components/`: shared shell, auth guard, domain forms, toast and UI primitives.
-- `web-platform/frontend/lib/`: API client, Cloud Whisper integration and workflow-state helpers.
-- `web-platform/frontend/e2e/`: Playwright tests, including cross-tenant isolation, production flow and series-bible persistence coverage.
-- `web-platform/frontend/package.json`, `package-lock.json`, `tsconfig.json`, `next.config.ts`, `playwright.config.ts`: package scripts/dependencies and build/test configuration. Consult these files for exact commands and versions.
-- `web-platform/backend/`: backend code. The per-file inventory below records every tracked path; inspect backend entry points, route registration, models and tests to determine actual request/data flow.
-- `web-platform/cloudflare/`: edge worker integration/configuration. Confirm bindings, environment variables and routing from source and provider settings.
+- `apps/web-platform/frontend/app/`: route-oriented UI. The tracked tree includes routes for analytics, auth/magic-link, auto mode, dashboard, episodes and episode sub-pages (assets, export, review, scenes, script, subtitle), hooks, ideas, invite, login, manual log, processing, production intelligence, publishing prep, series and usage.
+- `apps/web-platform/frontend/components/`: shared shell, auth guard, domain forms, toast and UI primitives.
+- `apps/web-platform/frontend/lib/`: API client, Cloud Whisper integration and workflow-state helpers.
+- `apps/web-platform/frontend/e2e/`: Playwright tests, including cross-tenant isolation, production flow and series-bible persistence coverage.
+- `apps/web-platform/frontend/package.json`, `package-lock.json`, `tsconfig.json`, `next.config.ts`, `playwright.config.ts`: package scripts/dependencies and build/test configuration. Consult these files for exact commands and versions.
+- `apps/web-platform/backend/`: backend code. The per-file inventory below records every tracked path; inspect backend entry points, route registration, models and tests to determine actual request/data flow.
+- `apps/web-platform/cloudflare/`: edge worker integration/configuration. Confirm bindings, environment variables and routing from source and provider settings.
 
 ### 4. Infrastructure, workers and operational scripts
 
@@ -514,7 +514,7 @@ The repository includes documentation areas for API, database, storage, deployme
 ### 6. Tests and quality gates
 
 - Workflow files under `.github/workflows/` define automation; read their actual YAML to learn what is required, what runs on each event, and which failures block changes.
-- `web-platform/frontend/e2e/` contains tracked browser-level tests.
+- `apps/web-platform/frontend/e2e/` contains tracked browser-level tests.
 - The full inventory below includes all tracked test-related paths visible in this snapshot; tests not named here may be colocated with implementation files.
 
 ## Complete file inventory
@@ -627,7 +627,7 @@ Every tracked file in the inspected tree is listed below. Descriptions are navig
 - `infra/kaggle/test_dispatch.py` — Kaggle worker/runtime support files.
 - `infra/managed-services.md` — Infrastructure configuration or operations runbook.
 - `infra/production-runbook.md` — Infrastructure configuration or operations runbook.
-- `mobile/README.md` — Mobile scope documentation or implementation placeholder; verify README and contents.
+- `apps/mobile/README.md` — Mobile scope documentation or implementation placeholder; verify README and contents.
 - `netlify.toml` — Netlify build/deployment configuration.
 - `opencode.json` — OpenCode project configuration.
 - `render.worker.yaml` — Render deployment/service configuration; verify against live dashboard.
@@ -637,255 +637,255 @@ Every tracked file in the inspected tree is listed below. Descriptions are navig
 - `scripts/restore_db.py` — Python maintenance, test, backup/restore, or load-test script; inspect before execution.
 - `scripts/windows-portable/Start-NarrativForge.ps1` — Windows portable packaging/build helper.
 - `scripts/windows-portable/Stop-NarrativForge.ps1` — Windows portable packaging/build helper.
-- `web-platform/backend/.env.example` — Backend configuration, documentation, or support asset.
-- `web-platform/backend/Dockerfile` — Backend configuration, documentation, or support asset.
-- `web-platform/backend/Dockerfile.worker` — Backend configuration, documentation, or support asset.
-- `web-platform/backend/alembic.ini` — Backend configuration, documentation, or support asset.
-- `web-platform/backend/alembic/env.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/script.py.mako` — Backend configuration, documentation, or support asset.
-- `web-platform/backend/alembic/versions/0001_bootstrap.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0002_asset_storage_metadata.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0003_scene_script_scope.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0004_processing_retry_dlq.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0005_resumable_uploads.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0006_idempotency_keys.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0007_optimistic_locking.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0008_storage_replicas.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0009_phase4_foundations.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0010_tenant_content_scope.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0011_webhook_secret.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0012_stripe_webhook_events.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0013_tenant_scope_integrations.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0014_security_performance_hardening.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0015_revoke_public_table_grants.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0016_scene_constraint_repair.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0017_asset_deleted_at.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0017_release_maturity.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0018_tenant_backfill_guard.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/alembic/versions/0019_series_bible.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/dependencies.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/router.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/assets.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/audit.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/auth.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/auto_mode.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/cloud_processing.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/episodes.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/export.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/google_drive.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/health.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/hooks.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/ideas.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/jobs.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/phase4.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/production_intelligence.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/production_pipeline.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/review.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/scenes.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/scripts.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/search.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/series.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/subtitles.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/telegram.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/api/routes/uploads.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/core/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/core/config.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/db.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/infrastructure/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/infrastructure/redis.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/main.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/metrics.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/middleware/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/middleware/idempotency.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/models/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/models/core.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/models/phase4.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/observability.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/ai_adapter.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/ai_usage_tracker.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/asset_gc.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/audit.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/auto_mode.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/batch_generator.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/code_completion.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/content_quality.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/email.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/expanded_production.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/future_foundations.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/hook_engineering.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/operating_maturity.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/orchestration.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/passwords.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/phase_52_60.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/phase_61_68.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/phase_69_76.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/phase_77_84.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/phase_continuation.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/processing.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/production_pipeline.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/production_scale.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/provider_fallback.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/provider_quota.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/provider_registry.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/rag_embeddings.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/real_processing.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/release_maturity.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/release_maturity_store.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/selective_regeneration.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/series_continuity.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/storage.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/storage_lifecycle.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/subtitles.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/telegram.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/services/thumbnail_candidate.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/workers/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/workers/celery_app.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/workers/concurrency.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/workers/kaggle_job_runner.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/workers/mock_worker.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/workers/real_worker.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/app/workers/tasks.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/pytest.ini` — Backend configuration, documentation, or support asset.
-- `web-platform/backend/requirements-real-processing.txt` — Backend configuration, documentation, or support asset.
-- `web-platform/backend/requirements.txt` — Backend configuration, documentation, or support asset.
-- `web-platform/backend/scripts/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/scripts/backup_db.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/scripts/bootstrap_admin.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/scripts/final_production_gate.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/scripts/free_provider_smoke.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/scripts/kaggle_worker.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/scripts/local_media_preflight.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/scripts/openrouter_free_model_smoke.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/scripts/production_smoke.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/scripts/restore_db.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/scripts/seed_e2e_tenant.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/scripts/verify_postgres_backup.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/scripts/worker_smoke.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/client_utils.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/conftest.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_ai_adapter.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_asset_gc.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_batch_generator.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_checksum_dedupe.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_cloud_processing_security.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_code_completion.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_content_quality.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_database_config.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_expanded_production.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_foundation.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_free_provider_smoke.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_health_and_search.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_hybrid_storage.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_idempotency_postgres.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_infrastructure_integration.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_local_media_preflight.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_magic_link.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_metrics.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_migrations.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_observability.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_openrouter_free_model_smoke.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_operating_maturity.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_optimistic_locking.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_orchestration.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_orm_relationships.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_passwords.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_phase0_security.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_phase4_membership.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_phase_52_60.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_phase_61_68.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_phase_69_76.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_phase_77_84.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_phase_continuation.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_production_foundations.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_production_intelligence.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_production_pipeline.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_production_scale.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_provider_quota.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_provider_registry.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_rag_embeddings.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_real_processing_subprocess.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_redis_config.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_release_maturity.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_release_maturity_store.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_resumable_uploads.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_root_restore_db.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_script_scene_api_security.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_security_config.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_security_hardening.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_security_observability.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_selective_regeneration.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_series_bible.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_series_continuity.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_storage_lifecycle.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_storage_provider.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_storage_routing.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_subtitle_api_security.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_subtitle_normalization.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_supabase_auth.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_tasks_celery.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_tenant_isolation.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_thumbnail_candidate.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_whisper_fallback.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/backend/tests/test_worker_concurrency.py` — Python backend source, task, test, or utility; exact role depends on module.
-- `web-platform/cloudflare/whisper-worker/README.md` — Cloudflare Worker/edge integration or configuration; verify bindings and deployment settings.
-- `web-platform/cloudflare/whisper-worker/src/index.ts` — Cloudflare Worker/edge integration or configuration; verify bindings and deployment settings.
-- `web-platform/cloudflare/whisper-worker/test/worker.test.mjs` — Cloudflare Worker/edge integration or configuration; verify bindings and deployment settings.
-- `web-platform/cloudflare/whisper-worker/wrangler.jsonc` — Cloudflare Worker/edge integration or configuration; verify bindings and deployment settings.
-- `web-platform/docs/architecture.md` — Web-platform-specific documentation.
-- `web-platform/docs/foundation-checklist.md` — Web-platform-specific documentation.
-- `web-platform/docs/runbooks/restore.md` — Web-platform-specific documentation.
-- `web-platform/docs/runbooks/rotate_secrets.md` — Web-platform-specific documentation.
-- `web-platform/docs/runbooks/stuck_job.md` — Web-platform-specific documentation.
-- `web-platform/frontend/.env.example` — Frontend app support file; inspect source for exact responsibility.
-- `web-platform/frontend/app/[...module]/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/analytics/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/auth/magic-link/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/auto-mode/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/dashboard/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/episodes/[id]/assets/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/episodes/[id]/export/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/episodes/[id]/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/episodes/[id]/review/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/episodes/[id]/scenes/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/episodes/[id]/script/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/episodes/[id]/subtitle/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/episodes/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/globals.css` — Frontend route asset/source.
-- `web-platform/frontend/app/hooks/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/ideas/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/invite/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/layout.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/login/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/manual-log/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/processing/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/production-intelligence/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/publishing-prep/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/series/[id]/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/series/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/app/usage/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
-- `web-platform/frontend/components/app-shell.tsx` — Reusable frontend UI component.
-- `web-platform/frontend/components/auth-guard.tsx` — Reusable frontend UI component.
-- `web-platform/frontend/components/domain-forms.tsx` — Reusable frontend UI component.
-- `web-platform/frontend/components/toast.tsx` — Reusable frontend UI component.
-- `web-platform/frontend/components/ui-primitives.tsx` — Reusable frontend UI component.
-- `web-platform/frontend/e2e/cross-tenant-isolation.spec.ts` — Playwright end-to-end test.
-- `web-platform/frontend/e2e/phase4-foundation.spec.ts` — Playwright end-to-end test.
-- `web-platform/frontend/e2e/production-flow.spec.ts` — Playwright end-to-end test.
-- `web-platform/frontend/e2e/series-bible-persistence.spec.ts` — Playwright end-to-end test.
-- `web-platform/frontend/lib/api.ts` — Frontend library/API/state helper.
-- `web-platform/frontend/lib/cloud-whisper.ts` — Frontend library/API/state helper.
-- `web-platform/frontend/lib/workflow-states.ts` — Frontend library/API/state helper.
-- `web-platform/frontend/next-env.d.ts` — Frontend TypeScript configuration/source.
-- `web-platform/frontend/next.config.ts` — Frontend TypeScript configuration/source.
-- `web-platform/frontend/package-lock.json` — Frontend package/configuration or lockfile.
-- `web-platform/frontend/package.json` — Frontend package/configuration or lockfile.
-- `web-platform/frontend/playwright.config.ts` — Frontend TypeScript configuration/source.
-- `web-platform/frontend/tsconfig.json` — Frontend package/configuration or lockfile.
+- `apps/web-platform/backend/.env.example` — Backend configuration, documentation, or support asset.
+- `apps/web-platform/backend/Dockerfile` — Backend configuration, documentation, or support asset.
+- `apps/web-platform/backend/Dockerfile.worker` — Backend configuration, documentation, or support asset.
+- `apps/web-platform/backend/alembic.ini` — Backend configuration, documentation, or support asset.
+- `apps/web-platform/backend/alembic/env.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/script.py.mako` — Backend configuration, documentation, or support asset.
+- `apps/web-platform/backend/alembic/versions/0001_bootstrap.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0002_asset_storage_metadata.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0003_scene_script_scope.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0004_processing_retry_dlq.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0005_resumable_uploads.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0006_idempotency_keys.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0007_optimistic_locking.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0008_storage_replicas.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0009_phase4_foundations.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0010_tenant_content_scope.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0011_webhook_secret.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0012_stripe_webhook_events.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0013_tenant_scope_integrations.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0014_security_performance_hardening.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0015_revoke_public_table_grants.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0016_scene_constraint_repair.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0017_asset_deleted_at.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0017_release_maturity.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0018_tenant_backfill_guard.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/alembic/versions/0019_series_bible.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/dependencies.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/router.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/assets.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/audit.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/auth.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/auto_mode.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/cloud_processing.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/episodes.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/export.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/google_drive.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/health.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/hooks.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/ideas.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/jobs.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/phase4.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/production_intelligence.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/production_pipeline.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/review.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/scenes.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/scripts.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/search.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/series.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/subtitles.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/telegram.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/api/routes/uploads.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/core/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/core/config.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/db.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/infrastructure/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/infrastructure/redis.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/main.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/metrics.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/middleware/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/middleware/idempotency.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/models/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/models/core.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/models/phase4.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/observability.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/ai_adapter.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/ai_usage_tracker.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/asset_gc.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/audit.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/auto_mode.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/batch_generator.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/code_completion.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/content_quality.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/email.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/expanded_production.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/future_foundations.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/hook_engineering.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/operating_maturity.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/orchestration.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/passwords.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/phase_52_60.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/phase_61_68.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/phase_69_76.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/phase_77_84.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/phase_continuation.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/processing.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/production_pipeline.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/production_scale.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/provider_fallback.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/provider_quota.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/provider_registry.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/rag_embeddings.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/real_processing.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/release_maturity.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/release_maturity_store.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/selective_regeneration.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/series_continuity.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/storage.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/storage_lifecycle.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/subtitles.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/telegram.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/services/thumbnail_candidate.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/workers/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/workers/celery_app.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/workers/concurrency.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/workers/kaggle_job_runner.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/workers/mock_worker.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/workers/real_worker.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/app/workers/tasks.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/pytest.ini` — Backend configuration, documentation, or support asset.
+- `apps/web-platform/backend/requirements-real-processing.txt` — Backend configuration, documentation, or support asset.
+- `apps/web-platform/backend/requirements.txt` — Backend configuration, documentation, or support asset.
+- `apps/web-platform/backend/scripts/__init__.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/scripts/backup_db.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/scripts/bootstrap_admin.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/scripts/final_production_gate.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/scripts/free_provider_smoke.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/scripts/kaggle_worker.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/scripts/local_media_preflight.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/scripts/openrouter_free_model_smoke.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/scripts/production_smoke.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/scripts/restore_db.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/scripts/seed_e2e_tenant.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/scripts/verify_postgres_backup.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/scripts/worker_smoke.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/client_utils.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/conftest.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_ai_adapter.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_asset_gc.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_batch_generator.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_checksum_dedupe.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_cloud_processing_security.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_code_completion.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_content_quality.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_database_config.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_expanded_production.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_foundation.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_free_provider_smoke.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_health_and_search.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_hybrid_storage.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_idempotency_postgres.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_infrastructure_integration.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_local_media_preflight.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_magic_link.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_metrics.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_migrations.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_observability.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_openrouter_free_model_smoke.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_operating_maturity.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_optimistic_locking.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_orchestration.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_orm_relationships.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_passwords.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_phase0_security.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_phase4_membership.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_phase_52_60.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_phase_61_68.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_phase_69_76.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_phase_77_84.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_phase_continuation.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_production_foundations.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_production_intelligence.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_production_pipeline.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_production_scale.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_provider_quota.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_provider_registry.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_rag_embeddings.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_real_processing_subprocess.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_redis_config.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_release_maturity.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_release_maturity_store.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_resumable_uploads.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_root_restore_db.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_script_scene_api_security.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_security_config.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_security_hardening.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_security_observability.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_selective_regeneration.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_series_bible.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_series_continuity.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_storage_lifecycle.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_storage_provider.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_storage_routing.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_subtitle_api_security.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_subtitle_normalization.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_supabase_auth.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_tasks_celery.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_tenant_isolation.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_thumbnail_candidate.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_whisper_fallback.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/backend/tests/test_worker_concurrency.py` — Python backend source, task, test, or utility; exact role depends on module.
+- `apps/web-platform/cloudflare/whisper-worker/README.md` — Cloudflare Worker/edge integration or configuration; verify bindings and deployment settings.
+- `apps/web-platform/cloudflare/whisper-worker/src/index.ts` — Cloudflare Worker/edge integration or configuration; verify bindings and deployment settings.
+- `apps/web-platform/cloudflare/whisper-worker/test/worker.test.mjs` — Cloudflare Worker/edge integration or configuration; verify bindings and deployment settings.
+- `apps/web-platform/cloudflare/whisper-worker/wrangler.jsonc` — Cloudflare Worker/edge integration or configuration; verify bindings and deployment settings.
+- `apps/web-platform/docs/architecture.md` — Web-platform-specific documentation.
+- `apps/web-platform/docs/foundation-checklist.md` — Web-platform-specific documentation.
+- `apps/web-platform/docs/runbooks/restore.md` — Web-platform-specific documentation.
+- `apps/web-platform/docs/runbooks/rotate_secrets.md` — Web-platform-specific documentation.
+- `apps/web-platform/docs/runbooks/stuck_job.md` — Web-platform-specific documentation.
+- `apps/web-platform/frontend/.env.example` — Frontend app support file; inspect source for exact responsibility.
+- `apps/web-platform/frontend/app/[...module]/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/analytics/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/auth/magic-link/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/auto-mode/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/dashboard/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/episodes/[id]/assets/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/episodes/[id]/export/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/episodes/[id]/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/episodes/[id]/review/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/episodes/[id]/scenes/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/episodes/[id]/script/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/episodes/[id]/subtitle/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/episodes/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/globals.css` — Frontend route asset/source.
+- `apps/web-platform/frontend/app/hooks/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/ideas/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/invite/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/layout.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/login/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/manual-log/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/processing/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/production-intelligence/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/publishing-prep/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/series/[id]/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/series/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/app/usage/page.tsx` — Next.js App Router page or route UI; verify actual behavior in source.
+- `apps/web-platform/frontend/components/app-shell.tsx` — Reusable frontend UI component.
+- `apps/web-platform/frontend/components/auth-guard.tsx` — Reusable frontend UI component.
+- `apps/web-platform/frontend/components/domain-forms.tsx` — Reusable frontend UI component.
+- `apps/web-platform/frontend/components/toast.tsx` — Reusable frontend UI component.
+- `apps/web-platform/frontend/components/ui-primitives.tsx` — Reusable frontend UI component.
+- `apps/web-platform/frontend/e2e/cross-tenant-isolation.spec.ts` — Playwright end-to-end test.
+- `apps/web-platform/frontend/e2e/phase4-foundation.spec.ts` — Playwright end-to-end test.
+- `apps/web-platform/frontend/e2e/production-flow.spec.ts` — Playwright end-to-end test.
+- `apps/web-platform/frontend/e2e/series-bible-persistence.spec.ts` — Playwright end-to-end test.
+- `apps/web-platform/frontend/lib/api.ts` — Frontend library/API/state helper.
+- `apps/web-platform/frontend/lib/cloud-whisper.ts` — Frontend library/API/state helper.
+- `apps/web-platform/frontend/lib/workflow-states.ts` — Frontend library/API/state helper.
+- `apps/web-platform/frontend/next-env.d.ts` — Frontend TypeScript configuration/source.
+- `apps/web-platform/frontend/next.config.ts` — Frontend TypeScript configuration/source.
+- `apps/web-platform/frontend/package-lock.json` — Frontend package/configuration or lockfile.
+- `apps/web-platform/frontend/package.json` — Frontend package/configuration or lockfile.
+- `apps/web-platform/frontend/playwright.config.ts` — Frontend TypeScript configuration/source.
+- `apps/web-platform/frontend/tsconfig.json` — Frontend package/configuration or lockfile.
 
 ## Accuracy, limitations and maintenance
 

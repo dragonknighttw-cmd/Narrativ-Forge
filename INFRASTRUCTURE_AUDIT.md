@@ -18,8 +18,8 @@ Workspace ID: `tea-davm5augekts73ek09kg`.
 
 | Service | State observed | Configuration / finding |
 |---|---|---|
-| `Narrativ-Forge` | Latest listed deploy is `live`; latest deploy event reports success | Free Python web service, Oregon; repo `dragonknighttw-cmd/Narrativ-Forge`, branch `main`; build `pip install -r web-platform/backend/requirements.txt`; start `cd web-platform/backend && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT`; auto-deploy disabled; public IP allow-list `0.0.0.0/0`. |
-| `narrativ-forge-frontend` | Latest listed deploy is `live`; latest build/deploy events succeeded | Free Node web service, Singapore; same repository/branch; build `cd web-platform/frontend && npm ci && npm run build`; start `cd web-platform/frontend && npm run start`; auto-deploy disabled; public IP allow-list `0.0.0.0/0`. |
+| `Narrativ-Forge` | Latest listed deploy is `live`; latest deploy event reports success | Free Python web service, Oregon; repo `dragonknighttw-cmd/Narrativ-Forge`, branch `main`; build `pip install -r apps/web-platform/backend/requirements.txt`; start `cd apps/web-platform/backend && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT`; auto-deploy disabled; public IP allow-list `0.0.0.0/0`. |
+| `narrativ-forge-frontend` | Latest listed deploy is `live`; latest build/deploy events succeeded | Free Node web service, Singapore; same repository/branch; build `cd apps/web-platform/frontend && npm ci && npm run build`; start `cd apps/web-platform/frontend && npm run start`; auto-deploy disabled; public IP allow-list `0.0.0.0/0`. |
 
 - Render deploy records and service events are evidence of successful historical deploys, **not** a fresh end-to-end health check or proof of production readiness.
 - The frontend service was created 2026-10-13 and has a successful deploy, but its exact live UI/API integration still needs browser E2E verification.

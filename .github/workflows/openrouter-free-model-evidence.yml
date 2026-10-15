@@ -34,7 +34,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           MODEL_ID: ${{ inputs.model }}
         run: |
-          python web-platform/backend/scripts/openrouter_free_model_smoke.py \
+          python apps/web-platform/backend/scripts/openrouter_free_model_smoke.py \
             --model "$MODEL_ID" \
             --output artifacts/openrouter-free-model-evidence.json
       - name: Upload redacted evidence

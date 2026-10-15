@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: web-platform/cloudflare/whisper-worker
+        working-directory: apps/web-platform/cloudflare/whisper-worker
     steps:
       - uses: actions/checkout@v4
 

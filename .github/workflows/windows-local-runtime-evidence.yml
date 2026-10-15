@@ -5,12 +5,12 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "web-platform/backend/**"
+      - "apps/web-platform/backend/**"
       - ".github/workflows/windows-local-runtime-evidence.yml"
   pull_request:
     branches: ["main"]
     paths:
-      - "web-platform/backend/**"
+      - "apps/web-platform/backend/**"
       - ".github/workflows/windows-local-runtime-evidence.yml"
 
 permissions:
@@ -28,7 +28,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-        working-directory: web-platform/backend
+        working-directory: apps/web-platform/backend
     env:
       APP_ENV: development
       DATABASE_URL: sqlite:///C:/narrativ-local-runtime/narrativ_forge.db
@@ -47,7 +47,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: web-platform/backend/requirements.txt
+          cache-dependency-path: apps/web-platform/backend/requirements.txt
 
       - name: Install API smoke dependencies
         run: |

@@ -120,7 +120,7 @@ Canonical domain documents:
 Frontend:
 
 ```bash
-cd web-platform/frontend
+cd apps/web-platform/frontend
 npm install
 npm run dev
 npm run typecheck
@@ -131,7 +131,7 @@ npm run e2e
 Backend:
 
 ```bash
-cd web-platform/backend
+cd apps/web-platform/backend
 python -m venv .venv
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000

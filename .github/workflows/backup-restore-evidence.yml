@@ -7,20 +7,20 @@ on:
     paths:
       - "scripts/backup_db.py"
       - "scripts/restore_db.py"
-      - "web-platform/backend/alembic/**"
-      - "web-platform/backend/app/models/**"
-      - "web-platform/backend/tests/test_root_restore_db.py"
-      - "web-platform/backend/tests/test_tenant_isolation.py"
+      - "apps/web-platform/backend/alembic/**"
+      - "apps/web-platform/backend/app/models/**"
+      - "apps/web-platform/backend/tests/test_root_restore_db.py"
+      - "apps/web-platform/backend/tests/test_tenant_isolation.py"
       - ".github/workflows/backup-restore-evidence.yml"
   pull_request:
     branches: ["main"]
     paths:
       - "scripts/backup_db.py"
       - "scripts/restore_db.py"
-      - "web-platform/backend/alembic/**"
-      - "web-platform/backend/app/models/**"
-      - "web-platform/backend/tests/test_root_restore_db.py"
-      - "web-platform/backend/tests/test_tenant_isolation.py"
+      - "apps/web-platform/backend/alembic/**"
+      - "apps/web-platform/backend/app/models/**"
+      - "apps/web-platform/backend/tests/test_root_restore_db.py"
+      - "apps/web-platform/backend/tests/test_tenant_isolation.py"
       - ".github/workflows/backup-restore-evidence.yml"
 
 permissions:
@@ -64,7 +64,7 @@ jobs:
           python -m pip install "SQLAlchemy>=2.0,<3" "psycopg2-binary>=2.9,<3" "pydantic-settings>=2.6,<3" "cryptography>=50,<51" "alembic>=1.16,<2"
 
       - name: Apply migrations to source database
-        working-directory: web-platform/backend
+        working-directory: apps/web-platform/backend
         env:
           DATABASE_URL: postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_backup_source
         run: PYTHONPATH=. python -m alembic upgrade head
@@ -108,7 +108,7 @@ jobs:
         env:
           PGPASSWORD: ci-test-password
           DATABASE_URL: postgresql://postgres:ci-test-password@127.0.0.1:5432/narrativ_backup_restore
-        working-directory: web-platform/backend
+        working-directory: apps/web-platform/backend
         run: |
           PYTHONPATH=. python -m alembic current | tee "$RUNNER_TEMP/restored-alembic.txt"
           grep -q "0019_series_bible" "$RUNNER_TEMP/restored-alembic.txt"

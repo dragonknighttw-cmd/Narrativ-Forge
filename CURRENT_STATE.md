@@ -1,6 +1,6 @@
 # Authoritative checkpoint — 2026-10-15 UTC
 
-- **Latest repository commit observed:** `d370921054b92bbc89b5cf647680543f714c906d` (2026-10-14 17:17:39 UTC).
+- **Latest application-code commit observed:** `d370921054b92bbc89b5cf647680543f714c906d` (2026-10-14 17:17:39 UTC).
 - **Infrastructure audit:** [INFRASTRUCTURE_AUDIT.md](INFRASTRUCTURE_AUDIT.md). Render API and frontend services have successful listed deploys, but both are still on `3b1b3766f2fb132bf4d80203e7174562f2879d9a`; auto-deploy is disabled, so hosted services lag repository head.
 - **Provider findings:** two active Supabase projects require canonical-target confirmation; security advisor reported 40 RLS/no-policy findings on `Narrativ-Forge` and an exposed SECURITY DEFINER function on `Narrativ-Forge-1`; Cloudflare lists edge and Whisper Workers, but live authenticated media acceptance remains unverified.
 - **Release:** **PENDING — NOT PRODUCTION READY.** Do not redeploy or mutate schema until exact-head CI, canonical database/frontend confirmation, security review, and owner-approved release gates pass.

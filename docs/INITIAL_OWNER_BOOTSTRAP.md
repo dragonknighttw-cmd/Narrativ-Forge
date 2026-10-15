@@ -22,7 +22,7 @@ Use this only for the very first account in a new Narrativ Forge database. The s
 3. Set `DATABASE_URL` in your local shell to the connection string for the intended Supabase project. Get it from the trusted provider dashboard; do not use a connection string for a different project. Do not commit it or share it in chat.
 4. Run the bootstrap script:
    ```powershell
-   python scripts/bootstrap_owner.py --organization-slug legacy-workspace
+   python -m scripts.bootstrap_owner --organization-slug legacy-workspace
    ```
    If the intended organization has a different slug, use its actual slug or pass `--organization-id <id>`.
 5. Enter the Owner email and a new strong password when prompted. The password does not appear on screen.

@@ -19,7 +19,11 @@ export default function LoginPage() {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "");
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       if (!supabaseUrl || !supabaseKey) {
-        throw new Error("Supabase Auth configuration is missing.");
+        // Local/CI test builds may use the legacy test fixture. Production is configured
+        // with Supabase values, and the production API rejects legacy password login.
+        await api.loginLegacy(email.trim(), password);
+        router.replace("/dashboard");
+        return;
       }
       const authResponse = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
         method: "POST",

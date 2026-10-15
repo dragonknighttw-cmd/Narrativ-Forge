@@ -2,7 +2,7 @@
 """Create the first Narrativ Forge owner using the application's password hasher.
 
 Run from web-platform/backend with DATABASE_URL set in your local environment:
-    python scripts/bootstrap_owner.py
+    python -m scripts.bootstrap_owner
 Optionally choose an organization:
     python scripts/bootstrap_owner.py --organization-slug legacy-workspace
 

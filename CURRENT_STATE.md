@@ -650,3 +650,10 @@ This section supersedes the older statement above that the request-size hardenin
 - All exact-SHA workflows on tested candidate `a05a97752a30889d691c687ea47b519a089e7e6b` completed successfully: CI (303 backend unit/security passed, 3 skipped; 72 PostgreSQL/Redis integration passed, 1 skipped; frontend, E2E, Worker contract passed), Security, CodeQL, Repository Gate, Local Runtime Evidence, Windows Local Runtime Evidence, Windows Portable Package Evidence, and Real Worker Evidence.
 - Issue [#76](https://github.com/dragonknighttw-cmd/Narrativ-Forge/issues/76) is closed as completed. No production deployment or cloud inference was performed.
 - These checks validate the fix candidate, not the whole product's release readiness. Burmese real-speech quality acceptance, external provider integration, managed backup/restore, and owner/legal/accessibility/security sign-off remain open. Release remains **PENDING — NOT PRODUCTION READY**.
+
+
+## Cloudflare follow-up — 2026-10-15
+
+- Whisper's `ALLOWED_ORIGIN` points to a Netlify site that has not been confirmed as the canonical frontend; Render also has a named frontend service. Resolve frontend ownership/origin before changing CORS. Secret values were not read.
+- Whisper has a `NARRATIV_SHARED_SECRET` binding; edge Worker returned no secret bindings. Both Workers have Logpush disabled. Current live HTTP smoke tests were not verified through the available inspection path.
+- See [Infrastructure Audit](INFRASTRUCTURE_AUDIT.md) and [Deployment](docs/DEPLOYMENT.md).

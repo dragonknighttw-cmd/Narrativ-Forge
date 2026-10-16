@@ -89,9 +89,19 @@ jobs:
           # Simulate historical broad grants so revision 0021 must remove them.
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO anon, authenticated"
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated"
+          # Simulate Supabase's defaults for objects created by the migration role.
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated"
           PYTHONPATH=. python -m alembic upgrade head
           test "$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.role_table_grants WHERE grantee IN ('anon','authenticated') AND table_schema='public'")" = "0"
           test "$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.role_usage_grants WHERE grantee IN ('anon','authenticated') AND object_schema='public' AND object_type='SEQUENCE'")" = "0"
+          # Verify new objects do not inherit broad client grants after migration.
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE TABLE public.client_grant_probe (id bigint PRIMARY KEY)"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE SEQUENCE public.client_grant_probe_seq"
+          test "$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.role_table_grants WHERE table_name='client_grant_probe' AND grantee IN ('anon','authenticated')")" = "0"
+          test "$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.role_usage_grants WHERE object_name='client_grant_probe_seq' AND grantee IN ('anon','authenticated')")" = "0"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "DROP SEQUENCE public.client_grant_probe_seq"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "DROP TABLE public.client_grant_probe"
 
       - name: Seed deterministic restore marker
         env:

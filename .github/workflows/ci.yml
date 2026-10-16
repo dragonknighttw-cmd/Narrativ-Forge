@@ -258,7 +258,7 @@ jobs:
             const htmlResponse = await fetch(origin + "/login");
             if (!htmlResponse.ok) throw new Error(`/login returned ${htmlResponse.status}`);
             const html = await htmlResponse.text();
-            const assets = [...html.matchAll(/(?:src|href)="([^"]*\\/_next\\/static\\/[^"]+)"/g)]
+            const assets = [...html.matchAll(new RegExp('(?:src|href)="([^"]*_next/static/[^"]+)"', "g"))]
               .map(match => match[1].replaceAll("&amp;", "&"))
               .filter((url, index, all) => all.indexOf(url) === index);
             if (assets.length === 0) throw new Error("No Next.js static assets referenced by /login");

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: narrativ-forge-api
+    name: Narrativ-Forge
     runtime: docker
     rootDir: apps/web-platform/backend
     dockerfilePath: ./Dockerfile
@@ -38,6 +38,12 @@ services:
       - key: CLOUDINARY_CHUNK_SIZE_BYTES
         value: "20971520"
       - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_OWNER_USER_ID
+        sync: false
+      - key: SUPABASE_OWNER_EMAIL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
@@ -164,6 +170,20 @@ services:
         value: "false"
       - key: AI_PROVIDER_TIMEOUT_SECONDS
         value: "45"
+
+  - type: web
+    name: narrativ-forge-frontend
+    runtime: node
+    rootDir: apps/web-platform/frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NEXT_PUBLIC_API_BASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
 
 # Long-running Celery/FFmpeg/Whisper workers are intentionally not declared here.
 # Render does not provide free Background Workers. Keep worker runtime files in

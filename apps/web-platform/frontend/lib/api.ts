@@ -1,4 +1,4 @@
-const configuredBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\\/+$/, "");
+const configuredBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
 const base = configuredBase ?? (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000/api/v1");
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

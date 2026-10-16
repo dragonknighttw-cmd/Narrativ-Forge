@@ -12,7 +12,7 @@ Use the email and password belonging to the invited Supabase Auth account. The a
 
 The Render services were last inspected on 2026-10-16. Their dashboard settings still use the old `web-platform/backend` and `web-platform/frontend` paths, while the current repository paths are under `apps/web-platform/`. The services have auto-deploy disabled, and the deployed commits lag behind `main`. Therefore, the URL is the intended login location, but successful production login has not been verified.
 
-This document and the Render blueprint changes do not deploy or modify live services.
+This document and the Render blueprint changes do not deploy or modify live services. Treat production login as unverified until the corrected configuration is tested in a preview/staging deployment.
 
 ## Required Render configuration
 

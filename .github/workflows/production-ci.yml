@@ -43,8 +43,7 @@ jobs:
           APP_ENV: testing
           DATABASE_URL: sqlite:///:memory:
           SESSION_SECRET: test-secret-key-32-chars-long-minimum!
-        run: |
-          pytest -v tests/ || echo "Tests completed"
+        run: pytest -v tests/
 
   frontend-verification:
     name: Frontend TypeScript & Next.js Production Build

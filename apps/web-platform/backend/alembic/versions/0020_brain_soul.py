@@ -72,8 +72,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Revision 0001_bootstrap imports the current ORM metadata and may have
     # created these tables before this revision ran. Their ownership cannot be
-    # inferred safely, so refusing downgrade avoids deleting existing user data.
-    raise RuntimeError(
-        "Refusing to drop brain soul tables: the bootstrap baseline may have "
-        "created them before revision 0020_brain_soul was applied."
-    )
+    # inferred safely, so retain the tables rather than risk deleting user data.
+    # This is intentionally non-destructive; a downgrade does not remove this
+    # revision's tables when the baseline may own them.
+    return

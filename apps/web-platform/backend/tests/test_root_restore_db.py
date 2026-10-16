@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 RESTORE_SCRIPT = REPO_ROOT / "scripts" / "restore_db.py"
 SPEC = importlib.util.spec_from_file_location("narrativ_root_restore_db", RESTORE_SCRIPT)
 assert SPEC is not None and SPEC.loader is not None

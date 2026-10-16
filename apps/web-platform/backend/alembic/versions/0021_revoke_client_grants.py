@@ -36,6 +36,13 @@ def upgrade() -> None:
                AND EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
                 EXECUTE 'REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM anon, authenticated';
                 EXECUTE 'REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated';
+
+                -- Existing Supabase default ACLs grant these roles access to
+                -- future objects created by the postgres migration role. Clear
+                -- those defaults too, otherwise a later table could silently
+                -- regain direct client privileges after this migration.
+                EXECUTE 'ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated';
+                EXECUTE 'ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE ALL ON SEQUENCES FROM anon, authenticated';
             END IF;
         END
         $body$

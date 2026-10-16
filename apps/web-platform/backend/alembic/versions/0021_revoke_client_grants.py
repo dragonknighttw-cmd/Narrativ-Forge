@@ -30,7 +30,7 @@ def upgrade() -> None:
     # Vanilla PostgreSQL CI does not define Supabase's API roles. Skip there;
     # the migration still runs normally on Supabase where both roles exist.
     op.execute("""
-        DO $
+        DO $body$
         BEGIN
             IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon')
                AND EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
@@ -38,7 +38,7 @@ def upgrade() -> None:
                 EXECUTE 'REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated';
             END IF;
         END
-        $
+        $body$
     """)
 
 

@@ -111,13 +111,15 @@ jobs:
         working-directory: apps/web-platform/backend
         run: |
           PYTHONPATH=. python -m alembic current | tee "$RUNNER_TEMP/restored-alembic.txt"
-          grep -q "0019_series_bible" "$RUNNER_TEMP/restored-alembic.txt"
+          grep -q "0020_brain_soul" "$RUNNER_TEMP/restored-alembic.txt"
 
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT slug FROM organizations WHERE id='backup-evidence-org';" | grep -qx "backup-evidence"
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT email FROM users WHERE id='backup-evidence-user';" | grep -qx "backup-evidence@narrativ.local"
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT role FROM organization_memberships WHERE id='backup-evidence-membership';" | grep -qx "owner"
 
           test "$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM alembic_version;")" = "1"
+          test "$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM pg_tables WHERE schemaname='public' AND tablename IN ('brain_soul_context','brain_soul_syntheses');")" = "2"
+          test "$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname IN ('ix_brain_soul_context_key','ix_brain_soul_context_active','ix_brain_soul_synth_period','ix_brain_soul_synth_topic','ix_brain_soul_synth_created');")" = "5"
           echo "backup -> fresh PostgreSQL restore -> integrity verification: PASS"
 
       - name: Write machine-readable verification manifest

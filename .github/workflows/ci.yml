@@ -47,10 +47,29 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - name: Verify Alembic baseline
+        env:
+          DATABASE_URL: sqlite:////tmp/narrativ-ci.db
         run: |
           rm -f /tmp/narrativ-ci.db
-          DATABASE_URL=sqlite:////tmp/narrativ-ci.db PYTHONPATH=. python -m alembic upgrade head
-          DATABASE_URL=sqlite:////tmp/narrativ-ci.db PYTHONPATH=. python -m alembic current
+          PYTHONPATH=. python -m alembic upgrade head
+          PYTHONPATH=. python -m alembic current
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, inspect
+
+          inspector = inspect(create_engine(os.environ["DATABASE_URL"]))
+          expected_tables = {"brain_soul_context", "brain_soul_syntheses"}
+          expected_indexes = {
+              "brain_soul_context": {"ix_brain_soul_context_key", "ix_brain_soul_context_active"},
+              "brain_soul_syntheses": {"ix_brain_soul_synth_period", "ix_brain_soul_synth_topic", "ix_brain_soul_synth_created"},
+          }
+          tables = set(inspector.get_table_names())
+          assert expected_tables <= tables, f"missing brain soul tables: {expected_tables - tables}"
+          for table, expected in expected_indexes.items():
+              actual = {item["name"] for item in inspector.get_indexes(table)}
+              assert expected <= actual, f"{table} missing indexes: {expected - actual}"
+          print("brain soul migration schema verified on SQLite")
+          PY
       - name: Run backend unit + security regression tests
         run: PYTHONPATH=. pytest -m "unit or security" -vv --junitxml=/tmp/backend-unit-security.xml
       - name: Upload backend unit/security test report
@@ -108,7 +127,25 @@ jobs:
       - name: Apply PostgreSQL migrations
         env:
           DATABASE_URL: postgresql://postgres:ci-test-password@localhost:5432/narrativ_test
-        run: PYTHONPATH=. python -m alembic upgrade head
+        run: |
+          PYTHONPATH=. python -m alembic upgrade head
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, inspect
+
+          inspector = inspect(create_engine(os.environ["DATABASE_URL"]))
+          expected_tables = {"brain_soul_context", "brain_soul_syntheses"}
+          expected_indexes = {
+              "brain_soul_context": {"ix_brain_soul_context_key", "ix_brain_soul_context_active"},
+              "brain_soul_syntheses": {"ix_brain_soul_synth_period", "ix_brain_soul_synth_topic", "ix_brain_soul_synth_created"},
+          }
+          tables = set(inspector.get_table_names())
+          assert expected_tables <= tables, f"missing brain soul tables: {expected_tables - tables}"
+          for table, expected in expected_indexes.items():
+              actual = {item["name"] for item in inspector.get_indexes(table)}
+              assert expected <= actual, f"{table} missing indexes: {expected - actual}"
+          print("brain soul migration schema verified on PostgreSQL")
+          PY
       - name: Run backend integration tests
         env:
           DATABASE_URL: postgresql://postgres:ci-test-password@localhost:5432/narrativ_test

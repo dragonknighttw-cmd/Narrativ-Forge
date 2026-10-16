@@ -332,25 +332,16 @@ class RoutedAIAdapter:
 
 
 def _configured_chat_providers() -> list[ChatProvider]:
-    """Build a prioritized multi-provider chain.
-    Gemini is Priority 1 for Burmese script authenticity, followed by Groq, OpenRouter, Mistral, Cohere, Cloudflare, and NVIDIA.
+    """Build the opt-in provider chain: Groq, Cloudflare AI, Gemini, then fallbacks.
+
+    Providers with a free-tier toggle are never used unless both their API
+    credentials and the explicit enable flag are configured.
     """
     providers: list[ChatProvider] = []
     priority = 1
 
-    # 1. Gemini (Priority 1: Best Burmese nuance & creative scripts)
-    if settings.gemini_api_key:
-        providers.append(ChatProvider(
-            name="gemini",
-            api_key=settings.gemini_api_key,
-            base_url=settings.gemini_base_url,
-            model=settings.gemini_model,
-            priority=priority,
-        ))
-        priority += 1
-
-    # 2. Groq (Priority 2: Ultra-fast fallback, 14,400 req/day free)
-    if settings.groq_api_key:
+    # 1. Groq: fast, free-tier use must be explicitly enabled.
+    if settings.groq_api_key and settings.groq_free_tier_enabled:
         providers.append(ChatProvider(
             name="groq",
             api_key=settings.groq_api_key,
@@ -360,7 +351,33 @@ def _configured_chat_providers() -> list[ChatProvider]:
         ))
         priority += 1
 
-    # 3. OpenRouter (Priority 3: Vetted free chat models)
+    # 2. Cloudflare Workers AI: separately opted in; never reuse the Whisper secret.
+    if (
+        settings.cloudflare_account_id
+        and settings.cloudflare_api_token
+        and settings.cloudflare_ai_free_tier_enabled
+    ):
+        providers.append(ChatProvider(
+            name="cloudflare-ai",
+            api_key=settings.cloudflare_api_token,
+            base_url=f"https://api.cloudflare.com/client/v4/accounts/{settings.cloudflare_account_id}/ai/run",
+            model=settings.cloudflare_ai_model,
+            priority=priority,
+        ))
+        priority += 1
+
+    # 3. Gemini: preferred for Burmese nuance when explicitly enabled.
+    if settings.gemini_api_key and settings.gemini_free_tier_enabled:
+        providers.append(ChatProvider(
+            name="gemini",
+            api_key=settings.gemini_api_key,
+            base_url=settings.gemini_base_url,
+            model=settings.gemini_model,
+            priority=priority,
+        ))
+        priority += 1
+
+    # 4. OpenRouter is constrained to explicitly allowlisted free model IDs.
     if settings.openrouter_api_key:
         models = [item.strip() for item in settings.openrouter_models.split(",") if item.strip()]
         for model in models:
@@ -379,8 +396,8 @@ def _configured_chat_providers() -> list[ChatProvider]:
             ))
             priority += 1
 
-    # 4. Mistral (Priority 4: Structured JSON & breakdown)
-    if settings.mistral_api_key:
+    # 5. Mistral, Cohere and NVIDIA are also explicit opt-in providers.
+    if settings.mistral_api_key and settings.mistral_free_tier_enabled:
         providers.append(ChatProvider(
             name="mistral",
             api_key=settings.mistral_api_key,
@@ -390,8 +407,7 @@ def _configured_chat_providers() -> list[ChatProvider]:
         ))
         priority += 1
 
-    # 5. Cohere (Priority 5: Continuity & Narrative context)
-    if settings.cohere_api_key:
+    if settings.cohere_api_key and settings.cohere_free_tier_enabled:
         providers.append(ChatProvider(
             name="cohere",
             api_key=settings.cohere_api_key,
@@ -401,19 +417,7 @@ def _configured_chat_providers() -> list[ChatProvider]:
         ))
         priority += 1
 
-    # 6. Cloudflare Workers AI (Priority 6: Serverless edge inference)
-    if settings.cloudflare_account_id and settings.cloudflare_api_token:
-        providers.append(ChatProvider(
-            name="cloudflare-ai",
-            api_key=settings.cloudflare_api_token,
-            base_url=f"https://api.cloudflare.com/client/v4/accounts/{settings.cloudflare_account_id}/ai/run",
-            model=settings.cloudflare_ai_model,
-            priority=priority,
-        ))
-        priority += 1
-
-    # 7. NVIDIA Build / NIM (Priority 7)
-    if settings.nvidia_api_key:
+    if settings.nvidia_api_key and settings.nvidia_free_tier_enabled:
         providers.append(ChatProvider(
             name="nvidia",
             api_key=settings.nvidia_api_key,
@@ -421,7 +425,6 @@ def _configured_chat_providers() -> list[ChatProvider]:
             model=settings.nvidia_model,
             priority=priority,
         ))
-        priority += 1
 
     return providers
 

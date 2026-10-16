@@ -80,6 +80,14 @@ If a supporting document conflicts with canonical ownership, reconcile it rather
 | Live provider evidence | provider/runtime environment |
 | External docs | official provider documentation |
 
+### 5.1 Local Development Ports & Verification
+
+- **Web Studio (Next.js):** `cd apps/web-platform/frontend && npm run dev -- -p 3001`
+- **Backend API (FastAPI):** `cd apps/web-platform/backend && uvicorn app.main:app --port 8001 --reload`
+- **Mobile Reviewer (Expo):** `cd apps/mobile && npx expo start --port 8082`
+- **Health Verification:** `curl http://localhost:8001/api/v1/health` (HTTP 200)
+- **Frontend Typecheck:** `cd apps/web-platform/frontend && npx tsc --noEmit`
+
 ## 6. Definition of Done
 
 A code change is not production-ready merely because it compiles.

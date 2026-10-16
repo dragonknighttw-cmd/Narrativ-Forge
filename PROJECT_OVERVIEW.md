@@ -24,24 +24,32 @@ The application database is the workflow/version/subtitle/approval/analytics/aud
 - Publishing preparation, captions, hashtags, schedule metadata, format checks, manual publication records, and analytics are allowed.
 - Human approval remains mandatory before final export.
 
+## Standalone Platform Scope & Ports
+
+| Surface | Platform | Local Development Port |
+|---|---|---|
+| **Web Studio** | Next.js 15+ / React | `http://localhost:3001` |
+| **Backend API** | FastAPI / Python | `http://localhost:8001` |
+| **Mobile Reviewer** | React Native / Expo | Expo Metro `8082` |
+
 ## System architecture
 
 ```
-Next.js + React
+Next.js Studio (Port 3001) / Mobile Reviewer (Port 8082)
+      ↓ REST / SSE
+FastAPI Backend (Port 8001)
       ↓
-FastAPI
+PostgreSQL / SQLite (narrativ_forge.db)
       ↓
-PostgreSQL
-      ↓
-Redis / delivery layer
+Redis / Celery Worker Layer
       ↓
 Worker boundary (when enabled)
-  ├─ FFmpeg
-  ├─ Whisper / Cloudflare Whisper
-  ├─ AI adapters
-  └─ export/storage adapters
+  ├─ FFmpeg (Video assembly & subtitle burn-in)
+  ├─ Whisper / Cloudflare Whisper (Burmese ASR)
+  ├─ AI text adapters (Groq / OpenRouter / Gemma)
+  └─ Storage adapters
       ↓
-B2 / Supabase Storage / Cloudinary
+B2 (Raw media) / Supabase Storage (SRT) / Cloudinary (Previews)
       ↓
 Google Drive approved-output export
 ```

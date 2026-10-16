@@ -115,27 +115,33 @@ Canonical domain documents:
 - `docs/STORAGE.md`
 - `docs/TROUBLESHOOTING.md`
 
-## Development
-
-Frontend:
+Frontend (Next.js Studio — Port 3001):
 
 ```bash
 cd apps/web-platform/frontend
 npm install
-npm run dev
+npm run dev -- -p 3001
 npm run typecheck
 npm run build
-npm run e2e
 ```
 
-Backend:
+Backend (FastAPI Engine — Port 8001):
 
 ```bash
 cd apps/web-platform/backend
 python -m venv .venv
+.\.venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8001
 pytest
+```
+
+Mobile App (Expo Reviewer — Port 8082):
+
+```bash
+cd apps/mobile
+npm install
+npx expo start --port 8082
 ```
 
 Exact environment requirements belong in deployment/development documentation. Never commit credentials.

@@ -1,3 +1,13 @@
+# Authoritative checkpoint — 2026-10-16 UTC (Local Verification & Decoupling)
+
+- **Standalone runtime decoupling:** Port 3001 assigned to Next.js Web Studio; Port 8001 assigned to FastAPI Backend; Port 8082 assigned to Expo Mobile Reviewer.
+- **Backend operational verification:** FastAPI API executed locally via isolated test suite. `GET /api/v1/health` and `GET /` returned `HTTP 200 OK` (`{'status': 'ok', 'service': 'narrativ-forge-api'}`).
+- **Frontend enhancement:** Proportional Multi-Track Visual Timeline Preview strip implemented in `apps/web-platform/frontend/app/episodes/[id]/scenes/page.tsx` displaying visual lanes for Script, Scene Prompts, Voiceover, and Audio. TypeScript typecheck passed with 0 errors (`npx tsc --noEmit`).
+- **Documentation consolidation:** Consolidated 10 fragmented legacy numbered documentation drafts (`01-product.md` through `21-master-completion-matrix.md`) into `archive/legacy_numbered/`. Rewrote `ROADMAP.md` completely in English, synchronizing all 243 legacy extracted backlog items into 5 prioritized categories.
+- **Release status:** **LOCAL STANDALONE VERIFIED; CLOUD RELEASE PENDING.** Live Cloudflare Whisper dialect ASR verification, Redis worker heartbeats, and Render cloud sync remain pending.
+
+---
+
 # Authoritative checkpoint — 2026-10-15 UTC
 
 - **Latest application-code commit observed:** `d370921054b92bbc89b5cf647680543f714c906d` (2026-10-14 17:17:39 UTC).

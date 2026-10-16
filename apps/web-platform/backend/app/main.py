@@ -1,11 +1,18 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 import logging
+from contextlib import asynccontextmanager
 from time import monotonic, perf_counter
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from sentry_sdk.integrations.fastapi import FastApiIntegration
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+
+# Guard sentry import — optional dependency
+try:
+    from sentry_sdk.integrations.fastapi import FastApiIntegration as _FastApiIntegration
+    _SENTRY_FASTAPI_INTEGRATION = _FastApiIntegration
+except ImportError:
+    _SENTRY_FASTAPI_INTEGRATION = None
 
 from .core.config import settings
 from .db import init_db
@@ -15,13 +22,32 @@ from .observability import configure_logging, initialize_sentry
 
 settings.validate_runtime()
 configure_logging(settings.app_env)
+_sentry_integrations = [_SENTRY_FASTAPI_INTEGRATION()] if _SENTRY_FASTAPI_INTEGRATION else []
 initialize_sentry(
     settings.sentry_dsn.get_secret_value(),
     settings.app_env,
-    integrations=[FastApiIntegration()],
+    integrations=_sentry_integrations,
 )
-app = FastAPI(title="Narrativ Forge API", version="0.1.0")
+
 request_logger = logging.getLogger("app.http")
+
+# Rate limit windows: use deque for O(1) popleft instead of list O(n) filter
+_rate_windows: dict[str, deque] = defaultdict(deque)
+_RATE_LIMITS = {
+    "login": (30, 60),
+    "upload": (30, 60),
+    "default": (300, 60),
+}
+
+
+@asynccontextmanager
+async def lifespan(_: "FastAPI"):
+    """Modern lifespan context manager — replaces deprecated @app.on_event."""
+    init_db()
+    yield
+
+
+app = FastAPI(title="Narrativ Forge API", version="0.1.0", lifespan=lifespan)
 
 
 @app.middleware("http")
@@ -73,13 +99,6 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization", "Idempotency-Key"],
 )
 
-_rate_windows: dict[str, list[float]] = defaultdict(list)
-_RATE_LIMITS = {
-    "login": (30, 60),
-    "upload": (30, 60),
-    "default": (300, 60),
-}
-
 
 @app.middleware("http")
 async def baseline_rate_limit(request: Request, call_next):
@@ -93,8 +112,11 @@ async def baseline_rate_limit(request: Request, call_next):
     limit, window = _RATE_LIMITS[bucket]
     key = f"{request.client.host if request.client else 'unknown'}:{bucket}"
     now = monotonic()
-    entries = [timestamp for timestamp in _rate_windows[key] if now - timestamp < window]
-    if len(entries) >= limit:
+    dq = _rate_windows[key]
+    # Evict expired entries from the left (deque is sorted oldest→newest)
+    while dq and now - dq[0] >= window:
+        dq.popleft()
+    if len(dq) >= limit:
         from fastapi.responses import JSONResponse
         return JSONResponse(
             status_code=429,
@@ -105,11 +127,9 @@ async def baseline_rate_limit(request: Request, call_next):
     # Count failed authentication attempts rather than successful logins so
     # the test suite and normal users do not exhaust the brute-force budget.
     if bucket == "login" and response.status_code in {401, 403}:
-        entries.append(now)
-        _rate_windows[key] = entries
+        dq.append(now)
     elif bucket != "login":
-        entries.append(now)
-        _rate_windows[key] = entries
+        dq.append(now)
     return response
 
 
@@ -125,11 +145,6 @@ async def security_headers(request, call_next):
     return response
 
 
-@app.on_event("startup")
-def startup() -> None:
-    init_db()
-
-
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(metrics_router)
 
@@ -137,3 +152,4 @@ app.include_router(metrics_router)
 @app.get("/")
 def root() -> dict[str, str]:
     return {"service": "narrativ-forge-api", "status": "ok"}
+

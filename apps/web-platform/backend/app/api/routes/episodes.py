@@ -153,3 +153,174 @@ def update_episode(episode_id: str, payload: EpisodeUpdate, membership=Depends(g
     db.commit()
     db.refresh(item)
     return item
+
+
+class VoiceoverGenerateRequest(BaseModel):
+    voice: str = "burmese_female"
+    text: str | None = None
+    rate: str = "+0%"
+    pitch: str = "+0Hz"
+
+
+class StoryboardGenerateRequest(BaseModel):
+    aspect_ratio: str = "9:16"
+    model: str = "flux"
+    enhance: bool = True
+
+
+@router.post("/{episode_id}/generate-voiceover")
+async def generate_episode_voiceover(
+    episode_id: str,
+    payload: VoiceoverGenerateRequest,
+    membership=Depends(get_current_membership),
+    db: Session = Depends(get_db),
+):
+    """Synthesize voiceover using zero-cost Microsoft Edge Neural TTS."""
+    from ...services.edge_tts_service import EdgeTTSService
+    from ...services.telegram import send_notification
+    from ...models import Asset, Scene
+
+    episode = db.query(Episode).filter(Episode.id == episode_id, Episode.organization_id == membership.organization_id).first()
+    if not episode:
+        raise HTTPException(status_code=404, detail="Episode not found")
+
+    # Determine narration script text
+    narration_text = payload.text
+    if not narration_text:
+        # Build narration from scenes dialogue/description or synopsis
+        scenes = db.query(Scene).filter(Scene.episode_id == episode_id).order_by(Scene.scene_number).all()
+        scene_dialogues = [s.dialogue or s.description for s in scenes if s.dialogue or s.description]
+        if scene_dialogues:
+            narration_text = " ".join(scene_dialogues)
+        elif episode.synopsis:
+            narration_text = episode.synopsis
+        else:
+            narration_text = f"Welcome to episode {episode.episode_number}: {episode.title}."
+
+    output_dir = Path("storage/uploads/voiceovers")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"voiceover_{episode_id}_{payload.voice}.mp3"
+    filepath = output_dir / filename
+
+    result = await EdgeTTSService.synthesize_to_file(
+        text=narration_text,
+        output_file_path=filepath,
+        voice=payload.voice,
+        rate=payload.rate,
+        pitch=payload.pitch,
+    )
+
+    # Register as asset
+    existing_asset_count = db.query(Asset).filter(Asset.episode_id == episode_id).count()
+    asset = Asset(
+        episode_id=episode_id,
+        asset_type="audio",
+        original_filename=filename,
+        storage_provider="local",
+        local_path=str(filepath),
+        mime_type="audio/mpeg",
+        file_size_bytes=result["file_size_bytes"],
+        version=existing_asset_count + 1,
+        status="ready",
+    )
+    db.add(asset)
+    db.commit()
+    db.refresh(asset)
+
+    # Trigger Telegram notification if configured
+    await send_notification(
+        title=f"Voiceover Generated: {episode.title}",
+        details=f"🎙️ Voice: {result['voice']}\n📊 Size: {result['file_size_bytes']} bytes\n🆔 Asset: <code>{asset.id}</code>",
+        status="SUCCESS",
+    )
+
+    return {
+        "status": "success",
+        "asset_id": asset.id,
+        "voice": result["voice"],
+        "file_path": str(filepath),
+        "vtt_subtitles": result.get("vtt_subtitles", ""),
+    }
+
+
+@router.post("/{episode_id}/generate-storyboards")
+async def generate_episode_storyboards(
+    episode_id: str,
+    payload: StoryboardGenerateRequest,
+    membership=Depends(get_current_membership),
+    db: Session = Depends(get_db),
+):
+    """Generate 9:16 vertical or 16:9 cinematic storyboard visuals via Pollinations FLUX."""
+    from ...services.storyboard_generator import StoryboardGeneratorService
+    from ...services.telegram import send_notification
+    from ...models import Asset, Scene
+
+    episode = db.query(Episode).filter(Episode.id == episode_id, Episode.organization_id == membership.organization_id).first()
+    if not episode:
+        raise HTTPException(status_code=404, detail="Episode not found")
+
+    scenes = db.query(Scene).filter(Scene.episode_id == episode_id).order_by(Scene.scene_number).all()
+    if not scenes:
+        # Generate at least one storyboard for the episode overall
+        fallback_prompt = f"Episode {episode.episode_number} of {episode.title}. {episode.synopsis or 'Cinematic narrative scene.'}"
+        scenes = [Scene(id=None, scene_number=1, purpose=episode.title, description=fallback_prompt)]
+
+    output_dir = Path("storage/uploads/storyboards")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    generated = []
+    w, h = (720, 1280) if payload.aspect_ratio == "9:16" else (1280, 720)
+
+    for sc in scenes:
+        prompt_text = sc.description or sc.purpose or f"Scene {sc.scene_number} for {episode.title}"
+        filename = f"storyboard_{episode_id}_s{sc.scene_number}_{payload.aspect_ratio.replace(':', 'x')}.jpg"
+        filepath = output_dir / filename
+
+        gen_result = await StoryboardGeneratorService.generate_and_save_scene(
+            prompt=prompt_text,
+            output_file_path=filepath,
+            aspect_ratio=payload.aspect_ratio,
+            model=payload.model,
+        )
+
+        existing_asset_count = db.query(Asset).filter(Asset.episode_id == episode_id).count()
+        asset = Asset(
+            episode_id=episode_id,
+            scene_id=sc.id if sc.id else None,
+            asset_type="storyboard",
+            original_filename=filename,
+            storage_provider="local",
+            local_path=str(filepath),
+            mime_type="image/jpeg",
+            file_size_bytes=gen_result["file_size_bytes"],
+            width=w,
+            height=h,
+            version=existing_asset_count + 1,
+            status="ready",
+        )
+        db.add(asset)
+        db.commit()
+        db.refresh(asset)
+
+        generated.append({
+            "scene_number": sc.scene_number,
+            "asset_id": asset.id,
+            "image_url": gen_result["image_url"],
+            "file_path": str(filepath),
+        })
+
+    # Trigger Telegram notification
+    await send_notification(
+        title=f"Storyboards Generated: {episode.title}",
+        details=f"🎨 Generated {len(generated)} {payload.aspect_ratio} storyboard visuals via FLUX.",
+        status="SUCCESS",
+    )
+
+    return {
+        "status": "success",
+        "episode_id": episode_id,
+        "aspect_ratio": payload.aspect_ratio,
+        "count": len(generated),
+        "storyboards": generated,
+    }
+

@@ -46,6 +46,27 @@ def normalize_burmese_text(
     }
 
 
+MYANMAR_SYLLABLE_BREAK = re.compile(r"(?<![်-႟])(?=[က-အဣဤဥဦဧဩဪဿ])")
+
+def wrap_myanmar_text(text: str, max_chars: int = 42, max_lines: int = 2) -> str:
+    """Intelligently wrap Burmese text at syllable/word boundaries to avoid broken characters."""
+    if not text or len(text) <= max_chars:
+        return text
+    syllables = [s for s in MYANMAR_SYLLABLE_BREAK.split(text) if s]
+    lines: list[str] = []
+    current_line = ""
+    for syl in syllables:
+        if len(current_line) + len(syl) <= max_chars:
+            current_line += syl
+        else:
+            if current_line:
+                lines.append(current_line.strip())
+            current_line = syl
+    if current_line:
+        lines.append(current_line.strip())
+    return "\n".join(lines[:max_lines])
+
+
 PRESETS = {
     "burmese_default": {"max_chars": 42, "min_seconds": 1.0, "max_seconds": 7.0, "max_lines": 2},
     "burmese_compact": {"max_chars": 32, "min_seconds": 1.0, "max_seconds": 5.0, "max_lines": 2},

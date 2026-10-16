@@ -27,14 +27,19 @@ def upgrade() -> None:
     # privilege revocation removes unnecessary access grants and avoids relying
     # on policy absence as the only guard. The backend uses its server-side DB
     # credentials; browser roles anon/authenticated must use the API instead.
-    op.execute(
-        "REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public "
-        "FROM anon, authenticated"
-    )
-    op.execute(
-        "REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public "
-        "FROM anon, authenticated"
-    )
+    # Vanilla PostgreSQL CI does not define Supabase's API roles. Skip there;
+    # the migration still runs normally on Supabase where both roles exist.
+    op.execute("""
+        DO $
+        BEGIN
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon')
+               AND EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+                EXECUTE 'REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM anon, authenticated';
+                EXECUTE 'REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated';
+            END IF;
+        END
+        $
+    """)
 
 
 def downgrade() -> None:

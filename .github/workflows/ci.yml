@@ -47,10 +47,29 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - name: Verify Alembic baseline
+        env:
+          DATABASE_URL: sqlite:////tmp/narrativ-ci.db
         run: |
           rm -f /tmp/narrativ-ci.db
-          DATABASE_URL=sqlite:////tmp/narrativ-ci.db PYTHONPATH=. python -m alembic upgrade head
-          DATABASE_URL=sqlite:////tmp/narrativ-ci.db PYTHONPATH=. python -m alembic current
+          PYTHONPATH=. python -m alembic upgrade head
+          PYTHONPATH=. python -m alembic current
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, inspect
+
+          inspector = inspect(create_engine(os.environ["DATABASE_URL"]))
+          expected_tables = {"brain_soul_context", "brain_soul_syntheses"}
+          expected_indexes = {
+              "brain_soul_context": {"ix_brain_soul_context_key", "ix_brain_soul_context_active"},
+              "brain_soul_syntheses": {"ix_brain_soul_synth_period", "ix_brain_soul_synth_topic", "ix_brain_soul_synth_created"},
+          }
+          tables = set(inspector.get_table_names())
+          assert expected_tables <= tables, f"missing brain soul tables: {expected_tables - tables}"
+          for table, expected in expected_indexes.items():
+              actual = {item["name"] for item in inspector.get_indexes(table)}
+              assert expected <= actual, f"{table} missing indexes: {expected - actual}"
+          print("brain soul migration schema verified on SQLite")
+          PY
       - name: Run backend unit + security regression tests
         run: PYTHONPATH=. pytest -m "unit or security" -vv --junitxml=/tmp/backend-unit-security.xml
       - name: Upload backend unit/security test report
@@ -108,7 +127,25 @@ jobs:
       - name: Apply PostgreSQL migrations
         env:
           DATABASE_URL: postgresql://postgres:ci-test-password@localhost:5432/narrativ_test
-        run: PYTHONPATH=. python -m alembic upgrade head
+        run: |
+          PYTHONPATH=. python -m alembic upgrade head
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, inspect
+
+          inspector = inspect(create_engine(os.environ["DATABASE_URL"]))
+          expected_tables = {"brain_soul_context", "brain_soul_syntheses"}
+          expected_indexes = {
+              "brain_soul_context": {"ix_brain_soul_context_key", "ix_brain_soul_context_active"},
+              "brain_soul_syntheses": {"ix_brain_soul_synth_period", "ix_brain_soul_synth_topic", "ix_brain_soul_synth_created"},
+          }
+          tables = set(inspector.get_table_names())
+          assert expected_tables <= tables, f"missing brain soul tables: {expected_tables - tables}"
+          for table, expected in expected_indexes.items():
+              actual = {item["name"] for item in inspector.get_indexes(table)}
+              assert expected <= actual, f"{table} missing indexes: {expected - actual}"
+          print("brain soul migration schema verified on PostgreSQL")
+          PY
       - name: Run backend integration tests
         env:
           DATABASE_URL: postgresql://postgres:ci-test-password@localhost:5432/narrativ_test
@@ -139,7 +176,14 @@ jobs:
         run: test -f package-lock.json
       - run: npm ci
       - run: npm run typecheck
-      - run: npm run build
+      - name: Build and verify standalone frontend package
+        run: |
+          npm run build
+          test -f .next/standalone/server.js
+          if [ -d public ]; then cp -R public .next/standalone/; fi
+          mkdir -p .next/standalone/.next
+          cp -R .next/static .next/standalone/.next/static
+          test -d .next/standalone/.next/static
 
 
   e2e:
@@ -168,8 +212,7 @@ jobs:
           test -n "$E2E_EMAIL" || { echo "E2E_EMAIL GitHub Secret is required"; exit 1; }
           test -n "$E2E_PASSWORD" || { echo "E2E_PASSWORD GitHub Secret is required"; exit 1; }
           CORS_ORIGINS=http://localhost:3000 DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python -m alembic upgrade head
-          BOOTSTRAP_ADMIN_EMAIL="$E2E_EMAIL" BOOTSTRAP_ADMIN_PASSWORD="$E2E_PASSWORD" DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python scripts/bootstrap_admin.py
-          E2E_SECOND_EMAIL=e2e-second-tenant@example.test E2E_SECOND_PASSWORD='E2e-Second-Password-ChangeMe1!' DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python scripts/seed_e2e_tenant.py
+          APP_ENV=testing DATABASE_URL=sqlite:///./narrativ_forge.db PYTHONPATH=. python scripts/seed_e2e_users.py
           # Generate an ephemeral encryption key for this disposable E2E backend only.
           export OAUTH_ENCRYPTION_KEY="$(PYTHONPATH=. python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
           CORS_ORIGINS=http://localhost:3000 PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/narrativ-backend.log 2>&1 &
@@ -192,14 +235,42 @@ jobs:
         run: test -f package-lock.json
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Build frontend with CI API URL
+      - name: Build and package standalone frontend for E2E
         env:
           NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
-        run: npm run build
-      - name: Start frontend
+          NEXT_PUBLIC_E2E_AUTH_MODE: "true"
         run: |
-          NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npm run start > /tmp/narrativ-frontend.log 2>&1 &
+          npm run build
+          test -f .next/standalone/server.js
+          if [ -d public ]; then cp -R public .next/standalone/; fi
+          mkdir -p .next/standalone/.next
+          cp -R .next/static .next/standalone/.next/static
+          test -d .next/standalone/.next/static
+      - name: Start standalone frontend
+        run: |
+          PORT=3000 HOSTNAME=127.0.0.1 node .next/standalone/server.js > /tmp/narrativ-frontend.log 2>&1 &
           node -e "const http=require('http'); let n=0; const f=()=>http.get('http://localhost:3000/login',r=>{if(r.statusCode===200)process.exit(0);setTimeout(f,1000)}).on('error',()=>{if(++n>30)process.exit(1);setTimeout(f,1000)});f()"
+      - name: Verify standalone frontend serves static assets
+        run: |
+          node <<'NODE'
+          (async () => {
+            const origin = "http://127.0.0.1:3000";
+            const htmlResponse = await fetch(origin + "/login");
+            if (!htmlResponse.ok) throw new Error(`/login returned ${htmlResponse.status}`);
+            const html = await htmlResponse.text();
+            const assets = [...html.matchAll(new RegExp('(?:src|href)="([^"]*_next/static/[^"]+)"', "g"))]
+              .map(match => match[1].replaceAll("&amp;", "&"))
+              .filter((url, index, all) => all.indexOf(url) === index);
+            if (assets.length === 0) throw new Error("No Next.js static assets referenced by /login");
+            for (const asset of assets) {
+              const response = await fetch(new URL(asset, origin));
+              if (!response.ok) throw new Error(`Static asset ${asset} returned ${response.status}`);
+              const body = await response.arrayBuffer();
+              if (body.byteLength === 0) throw new Error(`Static asset ${asset} was empty`);
+            }
+            console.log(`Verified ${assets.length} standalone static assets`);
+          })().catch(error => { console.error(error); process.exit(1); });
+          NODE
       - name: Run E2E tests
         env:
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}

@@ -33,6 +33,9 @@ export default function LoginPage() {
           return;
         }
       }
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error("Supabase Auth configuration is missing.");
+      }
       const authResponse = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
         method: "POST",
         headers: { apikey: supabaseKey, "Content-Type": "application/json" },

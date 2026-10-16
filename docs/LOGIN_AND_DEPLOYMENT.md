@@ -67,3 +67,11 @@ Only the Supabase URL and anon/publishable key belong in frontend build variable
 - If sign-in reports a generic failure, check frontend `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, API `SUPABASE_URL` and `SUPABASE_ANON_KEY`, API availability, CORS origin, and the configured owner UUID/email.
 - The first Owner is provisioned only when the confirmed Supabase Auth UUID and email match the server-side configuration and the configured organization exists.
 - Never disable email confirmation or weaken the owner UUID/email check to work around a login issue.
+
+## Database access hardening
+
+The backend is the only application data access path; the browser uses Supabase Auth for identity and sends its access token to the API. Do not grant browser roles direct table access as a workaround for login problems.
+
+The read-only production audit on 2026-10-16 found RLS enabled on 41 public tables with no policies, plus broad table grants for the Supabase `anon` and `authenticated` roles on five tables. RLS with no policies is default-deny, but the extra grants are unnecessary. Revision `0021_revoke_client_grants` revokes table and sequence privileges from those client roles on PostgreSQL/Supabase while preserving server-side database access. It has not been applied to production.
+
+Supabase Security Advisor also reports leaked-password protection disabled. Enable it through the Supabase Auth password security settings after reviewing the expected sign-up/password-reset behavior; this is a project setting and is not changed by repository migrations. After any approved staging migration, verify the advisor and confirm client roles have no table/sequence privileges. Do not add permissive RLS policies merely to silence the advisor.

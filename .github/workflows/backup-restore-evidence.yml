@@ -111,7 +111,7 @@ jobs:
         working-directory: apps/web-platform/backend
         run: |
           PYTHONPATH=. python -m alembic current | tee "$RUNNER_TEMP/restored-alembic.txt"
-          grep -q "0020_brain_soul" "$RUNNER_TEMP/restored-alembic.txt"
+          grep -q "0021_revoke_client_grants" "$RUNNER_TEMP/restored-alembic.txt"
 
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT slug FROM organizations WHERE id='backup-evidence-org';" | grep -qx "backup-evidence"
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT email FROM users WHERE id='backup-evidence-user';" | grep -qx "backup-evidence@narrativ.local"

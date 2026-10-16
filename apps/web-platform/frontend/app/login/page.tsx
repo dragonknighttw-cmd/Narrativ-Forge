@@ -19,14 +19,19 @@ export default function LoginPage() {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "");
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       if (!supabaseUrl || !supabaseKey) {
-        // Never send production credentials to the legacy password endpoint. Public
-        // Supabase settings are embedded at build time, so a missing value requires a rebuild.
-        if (process.env.NODE_ENV === "production") {
+        // The legacy password endpoint is allowed only in disposable local E2E builds.
+        // The explicit flag and loopback API check prevent this fallback from targeting production.
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
+        const localE2EAuth = process.env.NEXT_PUBLIC_E2E_AUTH_MODE === "true"
+          && apiBase === "http://localhost:8000/api/v1";
+        if (process.env.NODE_ENV === "production" && !localE2EAuth) {
           throw new Error("Supabase Auth configuration is missing.");
         }
-        await api.loginLegacy(email.trim(), password);
-        router.replace("/dashboard");
-        return;
+        if (process.env.NODE_ENV !== "production" || localE2EAuth) {
+          await api.loginLegacy(email.trim(), password);
+          router.replace("/dashboard");
+          return;
+        }
       }
       const authResponse = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
         method: "POST",

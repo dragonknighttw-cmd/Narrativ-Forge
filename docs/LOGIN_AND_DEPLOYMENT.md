@@ -14,6 +14,16 @@ The Render services were last inspected on 2026-10-16. Their dashboard settings 
 
 This document and the Render blueprint changes do not deploy or modify live services. Treat production login as unverified until the corrected configuration is tested in a preview/staging deployment.
 
+## Canonical Supabase project
+
+The production project was explicitly confirmed on 2026-10-16:
+
+- Project name: `Narrativ-Forge`
+- Project ref: `xrhlefglqwquhvpoevsg`
+- Project URL: `https://xrhlefglqwquhvpoevsg.supabase.co`
+
+The API `SUPABASE_URL` and frontend `NEXT_PUBLIC_SUPABASE_URL` must both refer to this project. The public anon/publishable key must be obtained from this same project. Do not copy a key from `Narrativ-Forge-1`. The project selection is documented here only; no live Render variables have been changed.
+
 ## Required Render configuration
 
 The blueprint declares these values as `sync: false`; set them in the Render dashboard for the matching service, without committing secrets:

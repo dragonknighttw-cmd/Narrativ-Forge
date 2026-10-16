@@ -2,7 +2,7 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-from app.services.phase_77_84 import (
+from app.services.analytics_reporting import (
     ApiVersionPolicy, CapacityForecast, GovernanceOwner, IncidentCommunication,
     MigrationRetirement, SettlementRecord, SupportSla, TenantExportManifest,
     validate_final_governance,

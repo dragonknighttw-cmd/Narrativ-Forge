@@ -2,7 +2,7 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-from app.services.phase_69_76 import (
+from app.services.distribution_pipeline import (
     ChaosDrill, DependencyLicense, EvidencePack, PrivacyRequest,
     RestoreVerification, RolloutPolicy, SchemaDrift, SecretRequirement,
     validate_release_operations,

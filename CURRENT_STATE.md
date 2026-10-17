@@ -692,3 +692,8 @@ This section supersedes the older statement above that the request-size hardenin
 - Whisper's `ALLOWED_ORIGIN` points to a Netlify site that has not been confirmed as the canonical frontend; Render also has a named frontend service. Resolve frontend ownership/origin before changing CORS. Secret values were not read.
 - Whisper has a `NARRATIV_SHARED_SECRET` binding; edge Worker returned no secret bindings. Both Workers have Logpush disabled. Current live HTTP smoke tests were not verified through the available inspection path.
 - See [Infrastructure Audit](INFRASTRUCTURE_AUDIT.md) and [Deployment](docs/DEPLOYMENT.md).
+
+
+## Render log audit update — 2026-10-17 UTC
+
+Read-only Render inspection confirms the API and frontend have successful latest deploy events and records an API `/api/v1/health` 200 response. It also found a historical failed backend build caused by a missing `web-platform/backend/requirements.txt` path, a `/ready` (not `/api/v1/ready`) 404, no dedicated background worker service, a frontend `next start` versus `output: standalone` warning, and a discrepancy between live Render service settings and `render.yaml`. These observations do not independently verify the owner-reported `/api/v1/ready` or AI usage response. Redis-disabled readiness semantics, live configuration drift, exact-SHA CI evidence, canonical migration state, and RLS/tenant isolation remain open. No production settings or data were changed. See the Render log audit addendum in `docs/PRODUCTION_READINESS_SCORECARD.md`.

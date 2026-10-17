@@ -1,25 +1,35 @@
 # Production Readiness Scorecard — 2026-10-17
 
-**Decision: NO-GO / Production readiness not demonstrated.**  
-**Conditional sign-off: NOT GRANTED.** Critical live acceptance evidence is missing and database/security blockers remain. Burmese dialect-specific ASR quality is explicitly deferred post-launch, but the infrastructure/authentication contract still needs verification.
+**Decision: PRODUCTION READY — CONDITIONAL SIGN-OFF (OWNER-APPROVED LAUNCH).**  
+**Conditional sign-off: GRANTED as an explicit owner risk-acceptance decision, based on the owner-provided live HTTP evidence and canonical database confirmation below.** This is not an independent re-run of those external checks. Known limitations and security review items remain visible; only the listed post-launch items are explicitly deferred.
 
 ## Evidence and scorecard
 
 | Layer / Component | Target Service / Endpoint | Expected State | Current Result | Action Needed |
 |---|---|---|---|---|
-| Backend Runtime | Render API `https://narrativ-forge.onrender.com/api/v1/health` | HTTP 200 and expected JSON | **UNVERIFIED** — Render lists service and current deploy as live; HTTP endpoint could not be independently fetched through available verifier | Run direct HTTP GET from an external runner; capture status/body and timestamp |
-| Database & Cache | Supabase + Upstash / API `/ready` | DB and Redis connected, HTTP 200 | **PARTIAL** — Upstash database `Narrativ` is active with TLS; direct Redis `PING` returned `PONG`. API `/ready` and live app DB connection unverified | Confirm canonical DB; run external API readiness check and confirm it checks the same DB/Redis |
-| AI Failover Router | `/api/v1/ai/usage` | HTTP 200, provider usage/quota tracked | **UNVERIFIED** | Call endpoint and test safe failover/quota behavior for configured providers without burning production quota |
-| Canonical Database & Migrations | Supabase projects / `scripts/production_migrate.py` | Confirmed target, Alembic head applied | **BLOCKED** — two projects active; `Narrativ-Forge` shows Alembic `0019_series_bible`; `Narrativ-Forge-1` shows `managed_restore_smoke_v1`. Canonical target not proven | Confirm the live Render `DATABASE_URL` target without disclosing credentials; compare live Alembic revision with repository migration head. Do not run migrations until target is confirmed |
-| Tenant Isolation & RLS | Supabase tenant tables | RLS policies and tenant-boundary tests pass | **BLOCKED** — security advisor reported 41 RLS-enabled/no-policy findings on `Narrativ-Forge`; `Narrativ-Forge-1` has two RLS/no-policy findings and exposed `public.rls_auto_enable()` executable by anon/authenticated | Review grants, policies, table access paths, and SECURITY DEFINER privileges; run tenant isolation tests. Do not add permissive policies blindly |
+| Backend Runtime | Render API `https://narrativ-forge.onrender.com/api/v1/health` | HTTP 200 and expected JSON | **PASS — OWNER-REPORTED** — HTTP 200; `status=ok`, `service=narrativ-forge-api` | Retain timestamped external ping evidence in the release evidence ledger; this verifier did not independently reproduce the request |
+| Database & Cache | Supabase + Upstash / API `/ready` | DB and Redis connected, HTTP 200 | **PASS — OWNER-REPORTED** — HTTP 200; `status=ready`, database and Redis checks `ok`; Upstash direct PING returned `PONG` | Preserve timestamped response evidence and confirm deployed `DATABASE_URL` matches the owner-confirmed canonical project without exposing credentials |
+| AI Provider Usage | `/api/v1/ai/usage` | HTTP 200, provider usage/quota tracked | **PASS — OWNER-REPORTED ENDPOINT** — HTTP 200; Gemini, Groq, OpenRouter, Voyage, Cohere, Mistral, and Cloudflare reported as tracked active providers; failover behavior itself was not demonstrated | Run a non-billable or explicitly approved failover contract test and preserve its result |
+| Canonical Database & Migrations | Supabase `Narrativ-Forge` (`xrhlefglqwquhvpoevsg`, ap-southeast-1) | Owner-confirmed target; migration head reconciled | **CANONICAL TARGET CONFIRMED BY OWNER.** `Narrativ-Forge-1` is a managed-restore smoke-test target. Migration `0021_revoke_client_grants` is reported prepared; **production application and live revision verification are not evidenced here** | Verify reviewed SQL, backup/rollback path, and exact target before applying; after approved execution, record resulting Alembic revision and test API-mediated access. Do not infer a prepared migration has been applied |
+| Tenant Isolation & RLS | Canonical Supabase project and API-mediated access | Client roles cannot bypass tenant boundaries | **OWNER-ACCEPTED RESIDUAL RISK / REVIEW OPEN.** Prior advisor reported 41 RLS-enabled/no-policy findings on the canonical project. Migration `0021_revoke_client_grants` is reported prepared to revoke `anon`/`authenticated` public-schema privileges, but this does not prove it was applied or that tenant-isolation tests pass | Review grants/policies and run tenant-boundary tests. Treat grant revocation as defense-in-depth, not a substitute for tenant-isolation validation; record explicit security acceptance and remediation owner/date if launch proceeds before closure |
 | Cloudflare Whisper | `narrativ-forge-whisper` | Deployed, secret-authenticated remote transcription | **PARTIAL** — Worker script exists (last modified 2026-10-12); route and authenticated end-to-end contract not proven | Verify route, configured shared secret and successful authenticated request. Burmese dialect human-reviewed fine-tuning remains a post-launch quality item |
 | Multi-Storage | Supabase Storage / B2 / Cloudinary | Upload, object read, signed URLs valid | **UNVERIFIED** — provider config exists in repo; no live upload/signed URL acceptance evidence | Test each configured provider separately with a non-sensitive test asset; validate expiry, access isolation and deletion/replication behavior |
 | Upstash Redis | `Narrativ` | PING, queue/cache behavior works | **PASS — connectivity only** — account state active, TLS enabled, `PING` returned `PONG` | Confirm the deployed API/worker uses this database; exercise queue/rate-limit integration |
 | Qdrant Vector Search | Qdrant Cloud | Collection initialized and searchable | **UNVERIFIED / NOT FOUND IN CONNECTED PROVIDER INVENTORY** — no Qdrant connection or collection evidence available from the inspected integrations | Confirm Qdrant is an intended dependency; provide connected Qdrant access or run a credential-safe collection health check |
 | Telegram Alert Bot | Telegram Bot API `getMe` | HTTP 200 and verified bot identity | **UNVERIFIED** — bot token is a secret not available to this check; no request performed | Run `getMe` securely from an environment holding `TELEGRAM_BOT_TOKEN`; record bot username only, never token |
 | Frontend Web Studio | Render `https://narrativ-forge-frontend.onrender.com/` and `/usage` | HTTP 200 and rendered app | **UNVERIFIED** — Render frontend service/deploy is live at current docs commit; direct HTTP page checks were unavailable | Verify both routes externally and run browser/API integration E2E |
-| Background media worker | Render worker / Redis queue | Worker heartbeat and real queued job succeeds | **BLOCKED** — Render service inventory showed only API and frontend; no separate continuous worker service | Provision/confirm worker and demonstrate heartbeat + successful non-mock media job |
+| Background media worker | Render worker / Redis queue | Worker heartbeat and real queued job succeeds | **DEFERRED POST-LAUNCH — OWNER APPROVED** | Track worker orchestration as post-launch work; until delivered, do not promise continuous background media processing or queued-job SLAs |
 | Release commit sync | Render API + frontend | Intended exact commit live | **PASS — deploy metadata only** — both Render services list live deploys at commit `207c3979b5fdc6216eb31c15bd82ca2470957e0a` (docs checklist commit) | Run exact-head CI and runtime E2E; deployment metadata is not a health test |
+
+## Owner-provided live evidence and decisions (2026-10-17)
+
+- Owner reports direct external `GET https://narrativ-forge.onrender.com/api/v1/health` returned HTTP 200 with `{"status":"ok","service":"narrativ-forge-api"}`.
+- Owner reports direct external `GET https://narrativ-forge.onrender.com/api/v1/ready` returned HTTP 200 with `{"status":"ready","checks":{"database":"ok","redis":"ok"}}`.
+- Owner reports `GET https://narrativ-forge.onrender.com/api/v1/ai/usage` returned HTTP 200 and tracked Gemini, Groq, OpenRouter, Voyage, Cohere, Mistral, and Cloudflare as active providers. This proves endpoint response/provider tracking as reported, not tested failover correctness or successful inference for every provider.
+- Owner confirms Supabase `Narrativ-Forge` (`xrhlefglqwquhvpoevsg`, ap-southeast-1) is canonical production DB; `Narrativ-Forge-1` is a managed-restore smoke-test target.
+- Owner reports Alembic migration `0021_revoke_client_grants` is prepared to revoke public-schema privileges from `anon` and `authenticated`. Its live application status was not supplied; do not describe it as applied.
+- Explicitly deferred post-launch: continuous background media worker orchestration; human-reviewed dialect-specific Burmese ASR fine-tuning; Qdrant collection scaling and deep RAG ontology.
+- Evidence boundary: HTTP responses are owner-provided external-ping results, not independently reproduced by this verifier in this update. Conditional sign-off is a governance/risk-acceptance status, not a claim that every technical gate has independently passed.
 
 ## Provider evidence observed
 
@@ -31,20 +41,19 @@
 - Supabase performance advisor reported 41 unused-index findings on `Narrativ-Forge`; treat as review candidates, not instructions to drop indexes.
 - Upstash `Narrativ` database is active, TLS enabled; direct `PING` returned `PONG`.
 - Cloudflare account lists `narrativ-forge-edge` and `narrativ-forge-whisper`; script existence does not prove public routing or authenticated inference works.
-- The external web verifier could not fetch the Render health/readiness/AI-usage endpoints in this run. No endpoint result is claimed.
+- Earlier, the external verifier could not fetch the Render endpoints; this update records the owner-provided HTTP 200 evidence separately and does not misrepresent it as independently reproduced.
 - No Telegram token was read or exposed; no `getMe` request was made.
 - No Qdrant collection was verified.
 - No schema, RLS policy, grant, production data, or deployment was modified as part of this verification. GitHub documentation was updated only.
 
-## Release gate / next actions
+## Conditional sign-off conditions and follow-up
 
-1. Confirm the canonical production Supabase project and compare it with the deployed API's database target.
-2. Review/fix RLS and SECURITY DEFINER exposure with tenant-isolation regression tests.
-3. Run direct HTTP checks for API health, readiness, AI usage, frontend `/` and `/usage`.
-4. Verify Cloudflare Whisper route + shared-secret authenticated contract.
-5. Test configured storage providers, signed URLs and object access boundaries.
-6. Confirm Redis use by deployed services and provision/verify a continuous media worker.
-7. Verify Qdrant and Telegram only if they are actual product dependencies.
-8. Run CI/security/CodeQL/repository gate at exact release SHA and browser/media end-to-end tests.
+1. Preserve timestamped evidence for owner-reported API health/readiness/AI-usage checks; verify frontend `/` and `/usage` routes separately.
+2. Verify the deployed API database target matches canonical Supabase `xrhlefglqwquhvpoevsg`; migration `0021_revoke_client_grants` is prepared, but production application is not evidenced here.
+3. Review RLS/table grants and run tenant-isolation regression tests. RLS advisor findings remain a visible security follow-up and are not considered resolved by the migration being prepared.
+4. Verify Cloudflare Whisper's authenticated end-to-end contract and test configured storage providers, signed URLs, and object access boundaries.
+5. Verify Qdrant and Telegram only if they are intended production dependencies.
+6. Run exact-release-SHA CI/security/CodeQL/repository gates and browser/media E2E checks.
+7. Post-launch backlog: continuous background media worker orchestration; human-reviewed dialect-specific Burmese ASR fine-tuning; Qdrant collection scaling/deep RAG ontology. Until the worker exists, continuous background processing is not a supported guarantee.
 
-**Launch decision:** Do not issue “Production Ready — Conditional Sign-Off” yet. Conditional sign-off is inappropriate while canonical database, tenant security, health/readiness, storage acceptance, and worker evidence remain unresolved. Human-reviewed Burmese dialect-specific ASR fine-tuning can remain explicitly deferred after the infrastructure and security gates pass.
+**Launch decision:** **Production Ready — Conditional Sign-Off (Owner-approved launch with explicitly deferred post-launch work).** This is based on owner-reported live HTTP evidence and explicit owner risk acceptance. It is not independent verification of all production gates; canonical DB is owner-confirmed, while migration application, RLS/tenant-isolation closure, frontend/storage acceptance, and authenticated Whisper acceptance still require recorded evidence.

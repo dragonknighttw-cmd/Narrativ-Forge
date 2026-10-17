@@ -1,3 +1,16 @@
+# Authoritative checkpoint — Production Readiness Verification (2026-10-17 UTC)
+
+- **Decision: NO-GO / NOT PRODUCTION READY.** Do not grant conditional sign-off yet.
+- **Evidence report:** [docs/PRODUCTION_READINESS_SCORECARD.md](docs/PRODUCTION_READINESS_SCORECARD.md).
+- **Render deploy metadata:** API and frontend both report a live deploy at commit `207c3979b5fdc6216eb31c15bd82ca2470957e0a`; this is deploy metadata only, not proof of live HTTP health.
+- **Upstash:** `Narrativ` database active, TLS enabled; direct Redis `PING` returned `PONG`. Deployed API/worker connection and queue behavior remain unverified.
+- **Supabase:** two projects report ACTIVE_HEALTHY. Canonical production target is not confirmed. `Narrativ-Forge` queried Alembic version `0019_series_bible`; `Narrativ-Forge-1` queried `managed_restore_smoke_v1`. Do not run production migrations until target and expected head are confirmed.
+- **Security blockers:** Supabase advisor reported 41 RLS-enabled tables without policies on `Narrativ-Forge`; `Narrativ-Forge-1` reports two RLS/no-policy findings and an exposed SECURITY DEFINER function `public.rls_auto_enable()` executable by anon/authenticated roles. Review before launch; do not add permissive policies blindly.
+- **Unverified runtime gates:** external verifier could not fetch Render health/readiness/AI usage or frontend routes; Cloudflare Worker scripts exist but authenticated Whisper route was not verified; no continuous Render worker appeared in service inventory; Qdrant collection and Telegram bot were not verified.
+- **No production schema, policy, grant, data, or deployment mutation was performed during verification. GitHub docs only were changed. Burmese dialect-specific human-reviewed ASR fine-tuning remains a post-launch quality roadmap item, not a substitute for infrastructure acceptance.
+
+---
+
 # Authoritative checkpoint — 2026-10-16 UTC (Local Verification & Decoupling)
 
 - **Standalone runtime decoupling:** Port 3001 assigned to Next.js Web Studio; Port 8001 assigned to FastAPI Backend; Port 8082 assigned to Expo Mobile Reviewer.

@@ -1,3 +1,15 @@
+# Authoritative checkpoint — Owner-approved Conditional Production Sign-Off (2026-10-17 UTC)
+
+- **Decision: PRODUCTION READY — CONDITIONAL SIGN-OFF (OWNER-APPROVED LAUNCH WITH EXPLICITLY DEFERRED POST-LAUNCH WORK).**
+- **Evidence report:** [docs/PRODUCTION_READINESS_SCORECARD.md](docs/PRODUCTION_READINESS_SCORECARD.md).
+- **Owner-reported live Render API evidence:** `GET /api/v1/health` returned HTTP 200 with `{"status":"ok","service":"narrativ-forge-api"}`; `GET /api/v1/ready` returned HTTP 200 with database and Redis checks `ok`; `GET /api/v1/ai/usage` returned HTTP 200 and reported Gemini, Groq, OpenRouter, Voyage, Cohere, Mistral, and Cloudflare as tracked active providers. These are owner-provided external-ping results, not independently reproduced in this update. The usage endpoint alone does not prove every provider's inference or failover path.
+- **Canonical database:** Owner confirms Supabase `Narrativ-Forge` (`xrhlefglqwquhvpoevsg`, ap-southeast-1) is the canonical production DB. `Narrativ-Forge-1` is a prior managed-restore smoke-test target.
+- **Migration/security:** Owner reports Alembic migration `0021_revoke_client_grants` is prepared to revoke public-schema privileges from `anon` and `authenticated`. Production application is not evidenced here; do not assume it has run. Prior advisor findings (41 RLS-enabled/no-policy findings on the canonical project) remain a visible security follow-up until grants/policies and tenant-isolation tests are verified. Conditional launch status reflects explicit owner risk acceptance, not a claim that security review is complete.
+- **Explicitly deferred post-launch backlog:** continuous background media worker orchestration; human-reviewed dialect-specific Burmese ASR fine-tuning; Qdrant collection scaling and deep RAG ontology. Do not promise continuous queued media processing before the worker is provisioned and verified.
+- **Other evidence still to close:** frontend route checks; storage/signed URL and access-boundary acceptance; authenticated Cloudflare Whisper contract; Qdrant/Telegram checks if they are production dependencies; exact-release-SHA CI/security and browser/media E2E evidence.
+- **Safety boundary:** no production migration, RLS/grant/schema/data mutation, or deployment was performed as part of this documentation update. This checkpoint records the owner's decision and supplied evidence; it does not itself apply the migration or change infrastructure.
+
+---
 # Authoritative checkpoint — Production Readiness Verification (2026-10-17 UTC)
 
 - **Decision: NO-GO / NOT PRODUCTION READY.** Do not grant conditional sign-off yet.

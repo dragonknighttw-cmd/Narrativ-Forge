@@ -1,12 +1,12 @@
 services:
   - type: web
     name: Narrativ-Forge
-    runtime: docker
-    rootDir: apps/web-platform/backend
-    dockerfilePath: ./Dockerfile
+    runtime: python
+    rootDir: apps/web-platform
+    buildCommand: pip install -r backend/requirements.txt
     healthCheckPath: /api/v1/health
-    # Never run database migrations automatically during service startup.
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # Match the existing Render Python service. Never run database migrations automatically during startup.
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: APP_ENV
         sync: false
@@ -175,13 +175,9 @@ services:
   - type: web
     name: narrativ-forge-frontend
     runtime: node
-    rootDir: apps/web-platform/frontend
-    buildCommand: >-
-      npm ci && npm run build &&
-      if [ -d public ]; then cp -R public .next/standalone/; fi &&
-      mkdir -p .next/standalone/.next &&
-      cp -R .next/static .next/standalone/.next/static
-    startCommand: node .next/standalone/server.js
+    rootDir: apps/web-platform
+    buildCommand: cd frontend && npm ci && npm run build
+    startCommand: cd frontend && npm run start
     envVars:
       - key: NEXT_PUBLIC_API_BASE_URL
         sync: false

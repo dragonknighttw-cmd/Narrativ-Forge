@@ -6,7 +6,7 @@ import { AuthGuard } from "./auth-guard";
 
 const sections = [
   ["Workspace", [["Dashboard","/dashboard"],["Ideas","/ideas"],["Series","/series"],["Episodes","/episodes"]]],
-  ["Production", [["Script Studio","/script-studio"],["Scene Breakdown","/scene-breakdown"],["Asset Library","/assets"],["Processing Queue","/processing"],["Subtitle Studio","/subtitles"]]],
+  ["Production", [["Script Studio","/script-studio"],["Movie Recap AI","/recap"],["Workflow Canvas","/workflows"],["Scene Breakdown","/scene-breakdown"],["Asset Library","/assets"],["Processing Queue","/processing"],["Subtitle Studio","/subtitles"]]],
   ["Control", [["Review Center","/review"],["AI Usage & Limits","/usage"],["Drive Export","/export"],["Publishing Preparation","/publishing-prep"],["Manual Production Log","/manual-log"],["Hook Library","/hooks"],["App Analytics","/analytics"],["Subtitle Presets","/subtitle-presets"]]],
   ["System", [["Settings","/settings"]]],
 ] as const;

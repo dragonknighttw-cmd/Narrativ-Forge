@@ -1,6 +1,11 @@
 from fastapi import APIRouter
 
-from .routes import search, auto_mode, assets, auth, brain_soul, episodes, health, ideas, jobs, scenes, scripts, series, subtitles, review, export, google_drive, production_intelligence, production_pipeline, audit, uploads, phase4, hooks, cloud_processing, telegram, seo_hook
+from .routes import (
+    search, auto_mode, assets, auth, brain_soul, episodes, health, ideas, jobs,
+    scenes, scripts, series, subtitles, review, export, google_drive,
+    production_intelligence, production_pipeline, audit, uploads, phase4, hooks,
+    cloud_processing, telegram, seo_hook, recap
+)
 
 api_router = APIRouter()
 api_router.include_router(telegram.router)
@@ -33,3 +38,4 @@ api_router.include_router(search.router)
 api_router.include_router(auto_mode.router)
 api_router.include_router(phase4.router)
 api_router.include_router(seo_hook.router)
+api_router.include_router(recap.router)

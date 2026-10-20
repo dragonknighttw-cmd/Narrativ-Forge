@@ -170,7 +170,7 @@ export default function DashboardPage() {
               { label: "RAG Vector 1:", value: "Voyage AI (512-D)", color: "#10b981" },
               { label: "RAG Vector 2:", value: "Cohere embed-v4.0", color: "#f8fafc" },
             ].map(({ label, value, color }, i, arr) => (
-              <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none" }}>
+              <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: "10px", flexWrap: "wrap", padding: "10px 0", borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none" }}>
                 <span className="muted">{label}</span>
                 <span style={{ color, fontWeight: color === "#f8fafc" ? 500 : 600 }}>{value}</span>
               </div>

@@ -13,6 +13,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         {children}
         <ToastContainer />
+        {/* Telegram Web App SDK for seamless Mini App integration */}
+        <script src="https://telegram.org/js/telegram-web-app.js" async />
       </body>
     </html>
   );

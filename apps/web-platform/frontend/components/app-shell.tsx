@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ReactNode, useState } from "react";
 import { AuthGuard } from "./auth-guard";
+import { NarrativLogo } from "./NarrativLogo";
 
 const sections = [
   ["Workspace", [["Dashboard","/dashboard"],["Ideas","/ideas"],["Series","/series"],["Episodes","/episodes"]]],
@@ -17,7 +18,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
   return <AuthGuard>
     <div className="shell">
       <aside className="sidebar">
-        <Link href="/dashboard" className="logo"><span>NF</span><strong>Narrativ Forge</strong></Link>
+        <Link href="/dashboard" className="logo block pb-3"><NarrativLogo size={36} /></Link>
         {sections.map(([section, items]) => <div className="nav-group" key={section}>
           <div className="nav-label">{section}</div>
           {items.map(([label, href]) => <Link className="nav-link" href={href} key={href}>{label}</Link>)}

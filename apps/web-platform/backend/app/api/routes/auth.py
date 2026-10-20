@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import secrets
 import re
-import requests
+import httpx
 from sqlalchemy.orm import Session
 
 from ..dependencies import get_current_membership, get_current_user, issue_session, require_roles
@@ -43,7 +43,7 @@ class SupabaseLoginRequest(BaseModel):
 
 
 @router.post("/supabase-login")
-def supabase_login(payload: SupabaseLoginRequest, response: Response, db: Session = Depends(get_db)):
+async def supabase_login(payload: SupabaseLoginRequest, response: Response, db: Session = Depends(get_db)):
     """Validate a Supabase Auth access token and map it to a workspace session.
 
     Only the configured Supabase user may be auto-provisioned as the first Owner.
@@ -56,15 +56,15 @@ def supabase_login(payload: SupabaseLoginRequest, response: Response, db: Sessio
         raise HTTPException(status_code=503, detail="Initial Owner identity is not configured")
 
     try:
-        auth_response = requests.get(
-            settings.supabase_url.rstrip("/") + "/auth/v1/user",
-            headers={
-                "apikey": settings.supabase_anon_key,
-                "Authorization": "Bearer " + payload.access_token,
-            },
-            timeout=8,
-        )
-    except requests.RequestException as exc:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            auth_response = await client.get(
+                settings.supabase_url.rstrip("/") + "/auth/v1/user",
+                headers={
+                    "apikey": settings.supabase_anon_key,
+                    "Authorization": "Bearer " + payload.access_token,
+                },
+            )
+    except httpx.RequestError as exc:
         raise HTTPException(status_code=503, detail="Supabase Auth is temporarily unavailable") from exc
     if auth_response.status_code != 200:
         raise HTTPException(status_code=401, detail="Invalid or expired Supabase session")

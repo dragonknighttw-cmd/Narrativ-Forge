@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   SafeAreaView,
   View,
@@ -26,23 +26,40 @@ export default function App() {
   const [rejectModalVisible, setRejectModalVisible] = useState<boolean>(false);
   const [rejectReason, setRejectReason] = useState<string>('');
 
+  const mountedRef = useRef(true);
+  const [error, setError] = useState<string | null>(null);
+
   const loadData = async () => {
     setLoading(true);
-    const [epData, jobData] = await Promise.all([api.getEpisodes(), api.getJobs()]);
-    setEpisodes(epData);
-    setJobs(jobData);
-    if (epData.length > 0 && !selectedEpisode) {
-      setSelectedEpisode(epData[0]);
+    setError(null);
+    try {
+      const [epData, jobData] = await Promise.all([api.getEpisodes(), api.getJobs()]);
+      if (!mountedRef.current) return;
+      setEpisodes(epData);
+      setJobs(jobData);
+      if (epData.length > 0 && !selectedEpisode) {
+        setSelectedEpisode(epData[0]);
+      }
+    } catch (err) {
+      if (!mountedRef.current) return;
+      setError('ဒေတာ ရယူမရပါ။ ကွန်ရက်ချိတ်ဆက်မှု စစ်ဆေးပါ။');
+    } finally {
+      if (mountedRef.current) setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     loadData();
     const interval = setInterval(() => {
-      api.getJobs().then(setJobs);
+      api.getJobs()
+        .then((jobs) => { if (mountedRef.current) setJobs(jobs); })
+        .catch(() => { /* polling errors are non-fatal; loadData retry is manual */ });
     }, 6000);
-    return () => clearInterval(interval);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleApprove = async (ep: Episode) => {
@@ -65,11 +82,15 @@ export default function App() {
 
   const handleReject = async () => {
     if (!selectedEpisode) return;
-    await api.rejectEpisode(selectedEpisode.id, rejectReason);
-    setRejectModalVisible(false);
-    setRejectReason('');
-    Alert.alert('ပြန်လည်ပြင်ဆင်ခိုင်းပြီးပါပြီ', 'အယ်ဒီတာအဖွဲ့ထံ ပြန်လည်ပြင်ဆင်ရန် အကြောင်းကြားပြီးပါပြီ။');
-    loadData();
+    try {
+      await api.rejectEpisode(selectedEpisode.id, rejectReason);
+      setRejectModalVisible(false);
+      setRejectReason('');
+      Alert.alert('ပြန်လည်ပြင်ဆင်ခိုင်းပြီးပါပြီ', 'အယ်ဒီတာအဖွဲ့ထံ ပြန်လည်ပြင်ဆင်ရန် အကြောင်းကြားပြီးပါပြီ။');
+      loadData();
+    } catch {
+      Alert.alert('အမှားအယွင်း', 'Reject ပြုလုပ်၍ မရပါ။ ထပ်ကြိုးစားပါ။');
+    }
   };
 
   const handleShare = async (ep: Episode) => {
@@ -136,6 +157,13 @@ export default function App() {
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#3b82f6" />
           <Text style={styles.loadingText}>Loading Video Pipelines...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.centerContainer}>
+          <Text style={{ color: '#ef4444', fontSize: 15, textAlign: 'center', marginHorizontal: 24 }}>{error}</Text>
+          <TouchableOpacity style={{ marginTop: 16, backgroundColor: '#3b82f6', paddingVertical: 10, paddingHorizontal: 24, borderRadius: 8 }} onPress={loadData}>
+            <Text style={{ color: '#fff', fontWeight: 'bold' }}>ထပ်ကြိုးစားရန်</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <View style={styles.body}>

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="nfBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#140f1a" />
+      <stop offset="100%" stop-color="#0a070e" />
+    </linearGradient>
+
+    <linearGradient id="nfBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="50%" stop-color="#ea580c" />
+      <stop offset="100%" stop-color="#dc2626" />
+    </linearGradient>
+
+    <linearGradient id="nfFlame" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#dc2626" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#fde047" />
+    </linearGradient>
+
+    <filter id="nfGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Squircle App Container Tile -->
+  <rect x="8" y="8" width="184" height="184" rx="44" fill="url(#nfBg)" stroke="url(#nfBorder)" stroke-width="4.5" />
+
+  <!-- Shutter Blades (Camera Aperture) -->
+  <g fill="#f59e0b" opacity="0.6">
+    <path d="M 68 54 H 132 L 108 84 H 68 Z" />
+    <path d="M 146 68 V 132 L 116 108 V 68 Z" />
+    <path d="M 132 146 H 68 L 92 116 H 132 Z" />
+    <path d="M 54 132 V 68 L 84 92 V 132 Z" />
+  </g>
+
+  <!-- Central "N" & Movie Play Spear -->
+  <path d="M 76 138 V 62 L 124 126 V 62" 
+        stroke="url(#nfFlame)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#nfGlow)" />
+
+  <!-- Golden Play Beat Accent -->
+  <circle cx="134" cy="134" r="7" fill="#fde047" filter="url(#nfGlow)" />
+  <circle cx="134" cy="134" r="3" fill="#ffffff" />
+</svg>

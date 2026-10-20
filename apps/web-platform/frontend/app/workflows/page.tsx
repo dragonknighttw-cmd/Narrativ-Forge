@@ -22,7 +22,7 @@ import {
   Clapperboard,
   Tv,
 } from "lucide-react";
-import { AppShell } from "@/components/app-shell";
+import { AppShell } from "../components/app-shell";
 
 export interface WorkflowNode {
   id: string;

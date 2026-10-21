@@ -102,3 +102,34 @@ This addendum records an independent read-only inspection of the Render workspac
 3. Verify `/api/v1/ready` and `/api/v1/ai/usage` through a direct external HTTP check and preserve timestamped response bodies with secrets removed.
 4. Add or confirm CI checks for the exact deployed commit; no combined status checks were returned for that SHA.
 5. Keep the worker, migration, tenant-isolation, storage acceptance, Cloudflare Whisper contract, and Qdrant checks as explicit gates/backlog until evidence is captured.
+
+
+## Production follow-up evidence — 2026-10-21 (after PR #106)
+
+### Authentication and runtime
+
+- **PR #106 merged:** commit `891aa8b14f93daeff3402df266b1afc682017ce0`, changing production session-cookie SameSite behavior to `None` while retaining the configured Secure flag. This addresses the cross-site frontend/API cookie issue.
+- **Render API deployment:** `dep-dbc8baek1f9s73bse8a0` is `live`; Render build logs report successful build and service live at 2026-10-21 09:29:28 UTC.
+- **Render frontend deployment:** service became live at 2026-10-21 09:29:45 UTC. Its live health-check path is `/api/health`; runtime logs show Next.js standalone server startup.
+- **Post-deploy request evidence:** API logs recorded `POST /api/v1/auth/supabase-login` HTTP 200 at 09:30:15 UTC, followed by `GET /api/v1/auth/me` HTTP 200 at 09:30:17 UTC and repeated `/auth/me` HTTP 200 responses through 09:31:02 UTC. `GET /api/v1/brain/soul/status` also returned HTTP 200 at 09:30:20 UTC. The owner subsequently confirmed that Dashboard access now works.
+- **Scope boundary:** these logs establish successful login/session validation and a dashboard-related API call; they do not independently prove every dashboard feature or every provider integration works.
+
+### Canonical Supabase state rechecked
+
+- Live Alembic revision is `0023_brain_soul_dedupe`.
+- Read-only grant query returned no existing `public` table privileges for `anon` or `authenticated`.
+- Security Advisor currently reports 43 tables with RLS enabled and no policies. With current direct table grants absent, this is restrictive for direct client access, but it does not replace backend authorization and tenant-isolation regression tests.
+- **Open security residuals:** `supabase_admin` default ACLs still grant table, sequence, and function privileges to `anon`/`authenticated`; the current SQL session cannot alter those defaults because it is not a member of `supabase_admin`. Supabase Auth leaked-password protection is still disabled (Security Advisor warning). These require an authorized administrator/configuration change and a follow-up verification.
+- Performance Advisor lists 44 unused-index candidates. Do not drop them without workload review and query-plan evidence.
+
+### Remaining release gates
+
+1. Add and run API-level tenant-isolation tests, including cross-organization reads/writes and unauthorized resource IDs.
+2. Have the owning database administrator remediate `supabase_admin` default ACLs, then re-query the resulting ACLs; enable leaked-password protection and test login/reset flows.
+3. Verify storage upload/download/signed URL expiry and access isolation for each configured provider; verify authenticated Cloudflare Whisper end-to-end behavior.
+4. Demonstrate AI provider failover with an approved, controlled test. The current usage tracker remains process-local, so usage totals reset on restart and are not an audit-grade billing ledger.
+5. Confirm whether Qdrant and Telegram are required production dependencies; if yes, perform credential-safe live checks.
+6. Reconcile Render API live settings with repository `render.yaml` before changing them; do not blindly overwrite a currently working deployment. The frontend is live and configured with `/api/health` as its health check.
+7. Keep continuous background media-worker orchestration and the explicitly deferred post-launch items out of production guarantees until a worker and acceptance evidence exist.
+
+**Updated decision:** Authentication/session flow is now evidenced working in production logs and the owner confirms Dashboard access. This does **not** clear the remaining security and integration gates above; general production sign-off remains conditional until they are verified or explicitly risk-accepted with an owner and date.

@@ -48,8 +48,15 @@ def upgrade() -> None:
                 -- supabase_admin as well as postgres. Clear both creators so
                 -- future tables/sequences do not regain broad client grants.
                 IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_admin') THEN
-                    EXECUTE 'ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated';
-                    EXECUTE 'ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public REVOKE ALL ON SEQUENCES FROM anon, authenticated';
+                    -- ALTER DEFAULT PRIVILEGES can only target a role the
+                    -- migration user is a member of. Some hosted Supabase
+                    -- projects restrict postgres from changing this owner.
+                    -- Do not fail the entire migration in that case; the
+                    -- deployment security check must flag the remaining ACL.
+                    IF pg_has_role(current_user, 'supabase_admin', 'MEMBER') THEN
+                        EXECUTE 'ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated';
+                        EXECUTE 'ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public REVOKE ALL ON SEQUENCES FROM anon, authenticated';
+                    END IF;
                 END IF;
             END IF;
         END

@@ -1,7 +1,27 @@
-# Production Readiness Scorecard — 2026-10-17
+# Production Readiness Scorecard — 2026-10-21
 
-**Decision: PRODUCTION READY — CONDITIONAL SIGN-OFF (OWNER-APPROVED LAUNCH).**  
-**Conditional sign-off: GRANTED as an explicit owner risk-acceptance decision, based on the owner-provided live HTTP evidence and canonical database confirmation below.** This is not an independent re-run of those external checks. Known limitations and security review items remain visible; only the listed post-launch items are explicitly deferred.
+**Current decision: NOT READY FOR GENERAL PRODUCTION SIGN-OFF.** The 2026-10-17 conditional sign-off below is historical and superseded by the current deployment, database, and security evidence recorded here.
+
+## Current verification addendum — 2026-10-21
+
+- **Public HTTP smoke:** GitHub Actions Production HTTP Smoke run #29 passed the frontend health endpoint, frontend homepage, backend health/readiness, and AI usage checks against deployed main commit `e9d8d272e33f4dcc60e7494242913552220db607`. This is direct external-runner evidence that those endpoints responded successfully at that time; it supersedes the earlier “public reachability unverified” note for that commit only.
+- **Frontend API configuration:** The frontend Render environment was updated with the non-secret value `NEXT_PUBLIC_API_BASE_URL=https://narrativ-forge.onrender.com/api/v1`. PR #104 was merged as `69cdeb8f09d3cb254db7589915f6fc1a4862f5fa`, adding a production fallback, documenting the same API URL in `render.yaml`, and routing Brain Soul synthesis through the shared API client. At the time of this addendum, Render had built the merged commit but the deploy was still `update_in_progress`; do not treat the merged commit as production-verified until a post-deploy smoke run succeeds.
+- **Render health-check configuration:** Render dashboard metadata reports the frontend health check path as `/`, while repository `render.yaml` specifies `/api/health`. The frontend homepage redirects to `/dashboard`; align the live Render setting to `/api/health` and confirm a 200 response to avoid relying on a redirect for health checks.
+- **Backend readiness:** The production HTTP Smoke workflow passed backend health/readiness and `/api/v1/ai/usage` on the deployed main commit above. Keep rechecking these endpoints after frontend deploys and any environment change.
+- **Alembic migration head:** The live database query reports `0023_brain_soul_dedupe`. Supabase's migration registry also contains follow-up records through `stamp_alembic_head_0023_brain_soul_dedupe`. The older note that live Alembic was at `0019_series_bible` is stale.
+- **Direct client table access:** Current read-only database checks found no table grants and no sequence usage grants for `anon` or `authenticated`. All 43 public tables have RLS enabled and no policies. With client table grants revoked, the no-policy state is restrictive for direct table access, but backend API access and tenant-isolation tests must still pass before sign-off.
+- **Default privilege residual:** `supabase_admin` default ACLs still grant table, sequence, and function privileges to `anon`/`authenticated`. The current SQL session is `postgres` and is not a member of `supabase_admin`, so it cannot alter that role's defaults with ordinary `ALTER DEFAULT PRIVILEGES`. Have an authorized database administrator manage those defaults as the owning role, then re-query the ACLs. Current existing public routines have no `anon`/`authenticated` grants, but the default function ACL remains broad.
+- **Supabase Auth:** Security Advisor continues to report leaked-password protection as a warning; enable it and verify login/password-reset behavior.
+- **Other release gates:** Storage provider acceptance tests, authenticated Cloudflare Whisper end-to-end test, Qdrant dependency/collection confirmation, Telegram token-safe `getMe` check, and tenant-isolation tests remain unverified or require explicit owner-approved deferral.
+
+**Release gate:** Do not grant general production sign-off until the merged frontend deploy is live and the production HTTP smoke checks pass against that commit; the Render health-check path is aligned; default-privilege residuals are closed or formally risk-accepted; leaked-password protection is enabled; and remaining integration/security gates are verified or explicitly deferred with an owner and date.
+
+---
+
+## Historical decision — 2026-10-17 (superseded)
+
+**Decision at that time: PRODUCTION READY — CONDITIONAL SIGN-OFF (OWNER-APPROVED LAUNCH).**  
+**Historical conditional sign-off:** based on owner-provided live HTTP evidence and canonical database confirmation; it was not an independent re-run of those external checks. Current evidence above supersedes this historical decision.
 
 ## Evidence and scorecard
 

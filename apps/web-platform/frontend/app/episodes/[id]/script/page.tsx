@@ -17,6 +17,38 @@ const HOOK_PRESETS = [
   { type: "number", label: "Number (ကိန်းဂဏန်း)", template: "သင့်ဘဝကို ပြောင်းလဲပေးနိုင်တဲ့ အရေးကြီးအချက် ၃ ချက်!" },
 ];
 
+// -- Word Count + Autosave Indicator ------------------------------------------
+// Drop-in status bar. Pass the current editor text and the last save timestamp.
+// The autosave dot pulses amber when unsaved, turns solid emerald when saved.
+function WordCountBar({ text, savedAt }: { text: string; savedAt: Date | null }) {
+  const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+  const charCount = text.length;
+  const readingMins = Math.max(1, Math.ceil(wordCount / 200)); // avg 200 wpm
+
+  const savedLabel = savedAt
+    ? `Saved ${savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    : 'Unsaved changes';
+
+  return (
+    <div className="flex items-center gap-4 text-xs text-muted-foreground px-2 py-1.5 border-t border-border/40 bg-background/60 backdrop-blur select-none">
+      <span>{wordCount.toLocaleString()} words</span>
+      <span className="opacity-50">|</span>
+      <span>{charCount.toLocaleString()} chars</span>
+      <span className="opacity-50">|</span>
+      <span>~{readingMins} min read</span>
+      <span className="ml-auto flex items-center gap-1.5">
+        <span
+          className={`h-1.5 w-1.5 rounded-full transition-colors ${
+            savedAt ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
+          }`}
+        />
+        {savedLabel}
+      </span>
+    </div>
+  );
+}
+
+
 export default function ScriptStudioPage() {
   const { id } = useParams<{ id: string }>();
   const [scripts, setScripts] = useState<Script[]>([]);

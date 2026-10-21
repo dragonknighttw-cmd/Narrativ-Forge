@@ -80,7 +80,7 @@ function BrainSoulMini() {
         </Link>
         <button
           onClick={async () => {
-            await fetch("/api/brain/soul/synthesize", { method: "POST", credentials: "include" });
+            await api.brainSoulSynthesize();
           }}
           style={{ fontSize: 11, color: BC.green, cursor: "pointer", background: "transparent", border: "none", padding: "4px 0" }}
         >

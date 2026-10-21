@@ -184,7 +184,7 @@ services:
       - key: HOSTNAME
         value: 0.0.0.0
       - key: NEXT_PUBLIC_API_BASE_URL
-        sync: false
+        value: https://narrativ-forge.onrender.com/api/v1
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY

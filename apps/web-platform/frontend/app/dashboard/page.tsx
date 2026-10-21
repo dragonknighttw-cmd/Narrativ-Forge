@@ -73,11 +73,6 @@ function BrainSoulMini() {
             <div style={{ fontSize: 12, color: BC.dim, marginTop: 2 }}>{fmtD(data?.latest_synthesis_at ?? null)}</div>
           </div>
         </div>
-        {data?.latest_synthesis_snippet && (
-          <div style={{ marginTop: 10, fontSize: 11, color: "#94a3b8", borderLeft: `2px solid ${BC.lav}`, paddingLeft: 10, lineHeight: 1.6 }}>
-            {data.latest_synthesis_snippet.slice(0, 180)}{(data.latest_synthesis_snippet.length ?? 0) > 180 ? "…" : ""}
-          </div>
-        )}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
         <Link href="/hooks" className="primary" style={{ padding: "6px 14px", fontSize: 12, whiteSpace: "nowrap" }}>

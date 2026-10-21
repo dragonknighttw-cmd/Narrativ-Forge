@@ -1,5 +1,5 @@
 const configuredBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
-const base = configuredBase ?? (process.env.NODE_ENV === "production" ? "" : "http://localhost:8001/api/v1");
+const base = configuredBase ?? (process.env.NODE_ENV === "production" ? "https://narrativ-forge.onrender.com/api/v1" : "http://localhost:8001/api/v1");
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!base) throw new Error("Backend API configuration is missing.");
@@ -67,6 +67,7 @@ export const api = {
   health: () => request<{ status: string; service: string }>("/health"),
   aiUsage: () => request<{ project: string; timestamp: string; date: string; total_calls_today: number; active_chains: { chat_priority: string[]; rag_priority: string[] }; providers: Record<string, { configured: boolean; status: string; calls_today: number; total_calls: number; errors_today: number; last_used: string | null }> }>("/ai/usage"),
   brainSoulStatus: () => request<{ tables_ready: boolean; active_context_entries: number; total_syntheses: number; latest_synthesis_at: string | null }>("/brain/soul/status"),
+  brainSoulSynthesize: (payload: { topic?: string; force?: boolean } = {}) => request<{ status: string; reason?: string }>("/brain/soul/synthesize", { method: "POST", body: JSON.stringify({ topic: "story", force: false, ...payload }) }),
   loginWithSupabase: (access_token: string) => request<{ authenticated: boolean; user: { id: string; email: string; role: string; organization_id: string } }>("/auth/supabase-login", { method: "POST", body: JSON.stringify({ access_token }) }),
   // Used only when public Supabase Auth configuration is absent (local/test builds). Production API rejects this path.
   loginLegacy: (email: string, password: string) => request<{ authenticated: boolean; user: { email: string; role: string } }>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),

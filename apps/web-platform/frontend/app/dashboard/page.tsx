@@ -20,11 +20,10 @@ function fmtD(iso: string | null) {
 }
 
 interface BrainSoulStatus {
-  total_syntheses?: number;
-  soul_file_entries?: number;
-  latest_synthesis_period?: string;
-  latest_synthesis_at?: string;
-  latest_synthesis_snippet?: string;
+  tables_ready: boolean;
+  total_syntheses: number;
+  active_context_entries: number;
+  latest_synthesis_at: string | null;
 }
 
 function BrainSoulMini() {
@@ -63,11 +62,11 @@ function BrainSoulMini() {
           </div>
           <div>
             <div style={{ fontSize: 10, color: BC.dim }}>Soul Entries</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: BC.blue }}>{data?.soul_file_entries ?? "—"}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: BC.blue }}>{data?.active_context_entries ?? "—"}</div>
           </div>
           <div>
             <div style={{ fontSize: 10, color: BC.dim }}>Last Period</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: BC.lav, marginTop: 2 }}>{data?.latest_synthesis_period ?? "—"}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: BC.lav, marginTop: 2 }}>{data?.tables_ready ? "Ready" : "Unavailable"}</div>
           </div>
           <div>
             <div style={{ fontSize: 10, color: BC.dim }}>Last Synth</div>

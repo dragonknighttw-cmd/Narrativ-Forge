@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AppShell } from "../../../../components/app-shell";
 import { ErrorState } from "../../../../components/domain-forms";
+import { WaveformTimeline } from "../../../../components/WaveformTimeline";
 import { api, Scene } from "../../../../lib/api";
 
 export default function SceneBreakdownPage() {
@@ -45,6 +46,15 @@ export default function SceneBreakdownPage() {
     }
   }
 
+  async function handleUpdateDuration(sceneId: string, newDuration: number) {
+    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, duration_seconds: newDuration } : s));
+    try {
+      await api.updateScene(id, sceneId, { duration_seconds: newDuration });
+    } catch (e) {
+      console.error("Duration update failed", e);
+    }
+  }
+
   const totalDuration = scenes.reduce((sum, s) => sum + (s.duration_seconds || 0), 0);
 
   return <AppShell title="Scene Breakdown">
@@ -71,48 +81,12 @@ export default function SceneBreakdownPage() {
         <input type="number" min="1" value={duration} onChange={e => setDuration(e.target.value)} placeholder="Duration seconds" />
         <button className="primary" disabled={busy || !purpose.trim()} onClick={addScene}>Add scene</button>
       </div>
-      {/* Multi-Track Visual Timeline Preview */}
+      {/* Multi-Track Visual Timeline with Web Audio Waveform */}
       {scenes.length > 0 && (
-        <div style={{ marginTop: "1.5rem", padding: "1rem", background: "rgba(255, 255, 255, 0.03)", borderRadius: "12px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.6)" }}>
-            <span>🎞️ <strong>Visual Multi-Track Timeline</strong> (Total: {totalDuration}s)</span>
-            <span>0s ------------------------------------------------ {totalDuration}s</span>
-          </div>
-          <div style={{ display: "flex", height: "42px", gap: "4px", borderRadius: "8px", overflow: "hidden", background: "rgba(0, 0, 0, 0.3)", padding: "2px" }}>
-            {scenes.map((scene, i) => {
-              const pct = totalDuration > 0 ? ((scene.duration_seconds || 10) / totalDuration) * 100 : 100 / scenes.length;
-              const colors = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4"];
-              const bg = colors[i % colors.length];
-              return (
-                <div
-                  key={scene.id}
-                  title={`Scene ${scene.scene_number}: ${scene.purpose} (${scene.duration_seconds}s)`}
-                  style={{
-                    flex: `0 0 calc(${pct}% - 4px)`,
-                    minWidth: "48px",
-                    background: `${bg}22`,
-                    border: `1px solid ${bg}`,
-                    borderRadius: "6px",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: "2px 4px",
-                    cursor: "pointer",
-                    transition: "transform 0.15s ease",
-                  }}
-                >
-                  <span style={{ fontSize: "0.7rem", fontWeight: 700, color: bg, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    S{scene.scene_number} ({scene.duration_seconds}s)
-                  </span>
-                  <span style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {scene.purpose}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <WaveformTimeline
+          scenes={scenes}
+          onUpdateDuration={handleUpdateDuration}
+        />
       )}
     </section>
     <section className="card">

@@ -97,11 +97,11 @@ class Settings(BaseSettings):
     groq_base_url: str = "https://api.groq.com/openai/v1"
     groq_model: str = "llama-3.3-70b-versatile"
     # Non-OpenRouter providers are opt-in so a key with billing enabled is never used by surprise.
-    groq_free_tier_enabled: bool = False
+    groq_free_tier_enabled: bool = True
     gemini_api_key: str = ""
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
     gemini_model: str = "gemini-2.5-flash"
-    gemini_free_tier_enabled: bool = False
+    gemini_free_tier_enabled: bool = True
     mistral_api_key: str = ""
     mistral_base_url: str = "https://api.mistral.ai/v1"
     mistral_model: str = "mistral-small-latest"

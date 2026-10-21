@@ -66,7 +66,7 @@ function BrainSoulMini() {
           </div>
           <div>
             <div style={{ fontSize: 10, color: BC.dim }}>Last Period</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: BC.lav, marginTop: 2 }}>{data?.tables_ready ? "Ready" : "Unavailable"}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: BC.lav, marginTop: 2 }}>{data ? (data.tables_ready ? "Ready" : "Unavailable") : "—"}</div>
           </div>
           <div>
             <div style={{ fontSize: 10, color: BC.dim }}>Last Synth</div>

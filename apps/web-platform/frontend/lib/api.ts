@@ -66,7 +66,7 @@ export type ProcessingJob = { id: string; episode_id: string; job_type: string; 
 export const api = {
   health: () => request<{ status: string; service: string }>("/health"),
   aiUsage: () => request<{ project: string; timestamp: string; date: string; total_calls_today: number; active_chains: { chat_priority: string[]; rag_priority: string[] }; providers: Record<string, { configured: boolean; status: string; calls_today: number; total_calls: number; errors_today: number; last_used: string | null }> }>("/ai/usage"),
-  brainSoulStatus: () => request<{ total_syntheses?: number; soul_file_entries?: number; latest_synthesis_period?: string; latest_synthesis_at?: string; latest_synthesis_snippet?: string }>("/brain/soul/status"),
+  brainSoulStatus: () => request<{ tables_ready: boolean; active_context_entries: number; total_syntheses: number; latest_synthesis_at: string | null }>("/brain/soul/status"),
   loginWithSupabase: (access_token: string) => request<{ authenticated: boolean; user: { id: string; email: string; role: string; organization_id: string } }>("/auth/supabase-login", { method: "POST", body: JSON.stringify({ access_token }) }),
   // Used only when public Supabase Auth configuration is absent (local/test builds). Production API rejects this path.
   loginLegacy: (email: string, password: string) => request<{ authenticated: boolean; user: { email: string; role: string } }>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),

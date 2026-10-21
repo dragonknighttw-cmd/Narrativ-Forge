@@ -20,11 +20,10 @@ function fmtD(iso: string | null) {
 }
 
 interface BrainSoulStatus {
-  total_syntheses?: number;
-  soul_file_entries?: number;
-  latest_synthesis_period?: string;
-  latest_synthesis_at?: string;
-  latest_synthesis_snippet?: string;
+  tables_ready: boolean;
+  total_syntheses: number;
+  active_context_entries: number;
+  latest_synthesis_at: string | null;
 }
 
 function BrainSoulMini() {
@@ -63,22 +62,17 @@ function BrainSoulMini() {
           </div>
           <div>
             <div style={{ fontSize: 10, color: BC.dim }}>Soul Entries</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: BC.blue }}>{data?.soul_file_entries ?? "—"}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: BC.blue }}>{data?.active_context_entries ?? "—"}</div>
           </div>
           <div>
             <div style={{ fontSize: 10, color: BC.dim }}>Last Period</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: BC.lav, marginTop: 2 }}>{data?.latest_synthesis_period ?? "—"}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: BC.lav, marginTop: 2 }}>{data ? (data.tables_ready ? "Ready" : "Unavailable") : "—"}</div>
           </div>
           <div>
             <div style={{ fontSize: 10, color: BC.dim }}>Last Synth</div>
             <div style={{ fontSize: 12, color: BC.dim, marginTop: 2 }}>{fmtD(data?.latest_synthesis_at ?? null)}</div>
           </div>
         </div>
-        {data?.latest_synthesis_snippet && (
-          <div style={{ marginTop: 10, fontSize: 11, color: "#94a3b8", borderLeft: `2px solid ${BC.lav}`, paddingLeft: 10, lineHeight: 1.6 }}>
-            {data.latest_synthesis_snippet.slice(0, 180)}{(data.latest_synthesis_snippet.length ?? 0) > 180 ? "…" : ""}
-          </div>
-        )}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
         <Link href="/hooks" className="primary" style={{ padding: "6px 14px", fontSize: 12, whiteSpace: "nowrap" }}>

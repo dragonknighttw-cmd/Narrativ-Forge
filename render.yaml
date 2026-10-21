@@ -180,6 +180,9 @@ services:
     healthCheckPath: /api/health
     startCommand: cd frontend && npm run start
     envVars:
+      # Next.js standalone must bind to all interfaces on Render.
+      - key: HOSTNAME
+        value: 0.0.0.0
       - key: NEXT_PUBLIC_API_BASE_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_URL

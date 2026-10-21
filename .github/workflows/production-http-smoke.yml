@@ -1,0 +1,63 @@
+name: Production HTTP Smoke
+
+on:
+  push:
+    branches:
+      - ops/production-http-smoke
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-http-smoke
+  cancel-in-progress: false
+
+jobs:
+  public-http-smoke:
+    name: Check public frontend and API
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check frontend health endpoint
+        run: |
+          set -euo pipefail
+          body="$(mktemp)"
+          set +e
+          status="$(curl --retry 3 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 30 -sS -o "$body" -w '%{http_code}' https://narrativ-forge-frontend.onrender.com/api/health)"
+          curl_exit=$?
+          set -e
+          echo "Frontend health HTTP status: $status (curl exit: $curl_exit)"
+          if [ "$curl_exit" -ne 0 ] || [ "$status" != "200" ]; then cat "$body"; exit 1; fi
+          python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d.get("status") == "ok", d; assert d.get("service") == "narrativ-forge-web", d' "$body"
+      - name: Check frontend homepage
+        run: |
+          set -euo pipefail
+          set +e
+          status="$(curl --retry 3 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 30 -sS -L -o /dev/null -w '%{http_code}' https://narrativ-forge-frontend.onrender.com/)"
+          curl_exit=$?
+          set -e
+          echo "Frontend homepage HTTP status: $status (curl exit: $curl_exit)"
+          if [ "$curl_exit" -ne 0 ] || [ "$status" != "200" ]; then exit 1; fi
+      - name: Check backend health and readiness
+        run: |
+          set -euo pipefail
+          health="$(mktemp)"
+          status="$(curl --retry 3 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 30 -sS -o "$health" -w '%{http_code}' https://narrativ-forge.onrender.com/api/v1/health)"
+          test "$status" = "200"
+          python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d.get("status") == "ok", d; assert d.get("service") == "narrativ-forge-api", d' "$health"
+          ready="$(mktemp)"
+          status="$(curl --retry 3 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 45 -sS -o "$ready" -w '%{http_code}' https://narrativ-forge.onrender.com/api/v1/ready)"
+          test "$status" = "200"
+          python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d.get("status") == "ready", d; c=d.get("checks", {}); assert c.get("database") == "ok", d; assert c.get("redis") == "ok", d' "$ready"
+      - name: Check AI usage endpoint
+        run: |
+          set -euo pipefail
+          body="$(mktemp)"
+          status="$(curl --retry 3 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 45 -sS -o "$body" -w '%{http_code}' https://narrativ-forge.onrender.com/api/v1/ai/usage)"
+          test "$status" = "200"
+          python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert isinstance(d.get("providers"), dict), d; assert "total_calls_today" in d, d' "$body"

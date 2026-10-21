@@ -145,7 +145,7 @@ jobs:
         working-directory: apps/web-platform/backend
         run: |
           PYTHONPATH=. python -m alembic current | tee "$RUNNER_TEMP/restored-alembic.txt"
-          grep -q "0021_revoke_client_grants" "$RUNNER_TEMP/restored-alembic.txt"
+          grep -q "0022_brain_soul_rls" "$RUNNER_TEMP/restored-alembic.txt"
           test "$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.role_table_grants WHERE grantee IN ('anon','authenticated') AND table_schema='public'")" = "0"
           test "$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.role_usage_grants WHERE grantee IN ('anon','authenticated') AND object_schema='public' AND object_type='SEQUENCE'")" = "0"
 

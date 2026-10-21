@@ -81,3 +81,32 @@ This addendum records an independent read-only inspection of the Render workspac
 3. Verify `/api/v1/ready` and `/api/v1/ai/usage` through a direct external HTTP check and preserve timestamped response bodies with secrets removed.
 4. Add or confirm CI checks for the exact deployed commit; no combined status checks were returned for that SHA.
 5. Keep the worker, migration, tenant-isolation, storage acceptance, Cloudflare Whisper contract, and Qdrant checks as explicit gates/backlog until evidence is captured.
+
+
+## Production verification addendum — 2026-10-21
+
+### Frontend 502 remediation deployment
+
+- PR [#100](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/100) was merged; commit `2bad1548529c445629b56efdbbc340f1159ba468` fixes the unresolved `@/components/app-shell` import in `apps/web-platform/frontend/app/workflows/page.tsx`.
+- Render frontend deploy `dep-dbc42feq1p3s73bivhsg` is `live`, with build/deploy completed at 2026-10-21 04:37 UTC. Render service metadata confirms the frontend is not suspended and auto-deploys from `main`.
+- The latest Render frontend request-log query for HTTP 5xx between 2026-10-21 04:30 and 05:45 UTC returned no matching records. This is limited evidence only: an empty query is not proof that the public site is healthy.
+- Independent public HTTP checks for `/`, `/usage`, API `/api/v1/health`, `/api/v1/ready`, and `/api/v1/ai/usage` could not run from the verification environment because outbound DNS resolution failed. Current public availability remains **UNVERIFIED** until a request succeeds from an external client or a network-enabled verifier.
+
+### Current database security findings
+
+- Supabase Security Advisor rechecked at 2026-10-21 05:34 UTC continues to report 41 `rls_enabled_no_policy` findings and one `auth_leaked_password_protection` warning. The RLS findings are not automatically proof of exposure when table privileges are revoked, but must be reconciled with actual grants, API access patterns, and tenant-isolation tests.
+- Supabase's migration registry currently shows three migrations: `narrativ_forge_security_performance_hardening`, `create_narrativ_forge_storage_bucket`, and `revoke_public_table_grants`. These registry records do not by themselves prove the repository's Alembic migration `0021_revoke_client_grants` was applied. Confirm the live Alembic revision and actual table/default/function privileges separately.
+- Leaked-password protection remains disabled according to the advisor; enable it in Supabase Auth after owner approval and validate the login/password-reset experience.
+- No production database DDL, grants, RLS policies, environment variables, or service configuration were changed during this verification.
+
+### Deployment configuration and readiness caveats
+
+- Repository `render.yaml` configures the frontend start command as `cd frontend && npm run start`; the frontend package's `start` script launches `.next/standalone/server.js`. This aligns with the standalone output strategy, despite the Render dashboard displaying the npm script rather than its expanded command.
+- Backend readiness code currently reports Redis as `disabled` when `REDIS_URL` is absent and still allows `status=ready`. Decide explicitly whether Redis is mandatory in production. If required for queues/rate limits, change readiness and add tests so a missing or unreachable Redis URL yields `not_ready`.
+- Current Render deployment being `live` is not equivalent to an independently verified HTTP 200 or a browser-rendered smoke test.
+
+### Updated release status
+
+**Frontend deploy: PASS (build/deploy metadata). Public frontend reachability: UNVERIFIED. API current health/readiness: UNVERIFIED in this verification run. Database security follow-up: OPEN.**
+
+Next evidence required: externally verify frontend `/` and `/usage`, API health/readiness/AI usage; confirm the deployed API's canonical database target and Alembic revision; inspect effective `anon`/`authenticated` table, sequence, function, and default privileges; run tenant-isolation tests; review the leaked-password protection setting; and test storage/Whisper contracts with non-sensitive fixtures.

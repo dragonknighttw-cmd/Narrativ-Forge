@@ -1,13 +1,13 @@
 """Remove redundant Brain Soul context uniqueness constraint.
 
-Revision ID: 0023_drop_duplicate_brain_soul_index
+Revision ID: 0023_brain_soul_dedupe
 Revises: 0022_brain_soul_rls
 """
 from typing import Sequence, Union
 
 from alembic import op
 
-revision: str = "0023_drop_duplicate_brain_soul_index"
+revision: str = "0023_brain_soul_dedupe"
 down_revision: Union[str, Sequence[str], None] = "0022_brain_soul_rls"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

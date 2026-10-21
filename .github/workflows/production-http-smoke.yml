@@ -27,14 +27,22 @@ jobs:
         run: |
           set -euo pipefail
           body="$(mktemp)"
+          set +e
           status="$(curl --retry 3 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 30 -sS -o "$body" -w '%{http_code}' https://narrativ-forge-frontend.onrender.com/api/health)"
-          test "$status" = "200"
+          curl_exit=$?
+          set -e
+          echo "Frontend health HTTP status: $status (curl exit: $curl_exit)"
+          if [ "$curl_exit" -ne 0 ] || [ "$status" != "200" ]; then cat "$body"; exit 1; fi
           python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d.get("status") == "ok", d; assert d.get("service") == "narrativ-forge-web", d' "$body"
       - name: Check frontend homepage
         run: |
           set -euo pipefail
+          set +e
           status="$(curl --retry 3 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 30 -sS -L -o /dev/null -w '%{http_code}' https://narrativ-forge-frontend.onrender.com/)"
-          test "$status" = "200"
+          curl_exit=$?
+          set -e
+          echo "Frontend homepage HTTP status: $status (curl exit: $curl_exit)"
+          if [ "$curl_exit" -ne 0 ] || [ "$status" != "200" ]; then exit 1; fi
       - name: Check backend health and readiness
         run: |
           set -euo pipefail

@@ -30,6 +30,10 @@ def upgrade() -> None:
     # Vanilla PostgreSQL CI does not define Supabase's API roles. Skip there;
     # the migration still runs normally on Supabase where both roles exist.
     op.execute("""
+        ALTER TABLE IF EXISTS public.brain_soul_context ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE IF EXISTS public.brain_soul_syntheses ENABLE ROW LEVEL SECURITY;
+    """)
+    op.execute("""
         DO $body$
         BEGIN
             IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon')

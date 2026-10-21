@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "../../components/app-shell";
+import { api } from "../../lib/api";
 
 interface ProviderStat {
   configured: boolean;
@@ -33,9 +34,7 @@ export default function UsagePage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/v1/ai/usage", { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to fetch usage`);
-      const json = await res.json();
+      const json = await api.aiUsage();
       setData(json);
     } catch (err) {
       console.error(err);

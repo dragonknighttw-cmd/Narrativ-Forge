@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { AppShell } from "../../components/app-shell";
+import { api } from "../../lib/api";
 import { useEffect, useState } from "react";
 
 // ─── Brain Soul mini-status ───────────────────────────────────────
@@ -30,9 +31,8 @@ function BrainSoulMini() {
   const [data, setData] = useState<BrainSoulStatus | null>(null);
 
   useEffect(() => {
-    fetch("/api/brain/soul/status", { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => setData(d as BrainSoulStatus))
+    api.brainSoulStatus()
+      .then((data) => setData(data))
       .catch(() => {});
   }, []);
 

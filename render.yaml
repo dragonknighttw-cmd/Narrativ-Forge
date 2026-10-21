@@ -177,6 +177,7 @@ services:
     runtime: node
     rootDir: apps/web-platform
     buildCommand: cd frontend && npm ci && npm run build
+    healthCheckPath: /api/health
     startCommand: cd frontend && npm run start
     envVars:
       - key: NEXT_PUBLIC_API_BASE_URL

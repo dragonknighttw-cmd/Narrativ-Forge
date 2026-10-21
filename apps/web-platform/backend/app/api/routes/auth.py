@@ -136,7 +136,7 @@ async def supabase_login(payload: SupabaseLoginRequest, response: Response, db: 
         value=issue_session(user.email, membership.role, membership.organization_id),
         httponly=True,
         secure=settings.session_cookie_secure,
-        samesite="strict",
+        samesite="none" if settings.is_production else "strict",
         max_age=settings.session_ttl_seconds,
         path="/",
     )
@@ -185,7 +185,7 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
         value=issue_session(user.email, membership.role, membership.organization_id),
         httponly=True,
         secure=settings.session_cookie_secure,
-        samesite="strict",
+        samesite="none" if settings.is_production else "strict",
         max_age=settings.session_ttl_seconds,
         path="/",
     )
@@ -229,7 +229,7 @@ def switch_workspace(
         value=issue_session(user["email"], membership.role, membership.organization_id),
         httponly=True,
         secure=settings.session_cookie_secure,
-        samesite="strict",
+        samesite="none" if settings.is_production else "strict",
         max_age=settings.session_ttl_seconds,
         path="/",
     )
@@ -370,7 +370,7 @@ def consume_magic_link(token: str, response: Response, db: Session = Depends(get
         value=issue_session(user.email, membership.role, membership.organization_id),
         httponly=True,
         secure=settings.session_cookie_secure,
-        samesite="strict",
+        samesite="none" if settings.is_production else "strict",
         max_age=settings.session_ttl_seconds,
         path="/",
     )

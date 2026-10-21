@@ -25,7 +25,6 @@ class BrainSoulContext(Base):
 
     __tablename__ = "brain_soul_context"
     __table_args__ = (
-        UniqueConstraint("context_key", name="uq_brain_soul_context_key"),
         Index("ix_brain_soul_context_active", "is_active"),
     )
 

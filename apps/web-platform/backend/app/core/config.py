@@ -62,6 +62,8 @@ class Settings(BaseSettings):
     telegram_chat_id: str = ""
     telegram_topic_id: int | None = None
     telegram_enabled: bool = False
+    telegram_gateway_secret: str = ""
+    telegram_allowed_user_ids: str = ""
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_price_pro: str = ""

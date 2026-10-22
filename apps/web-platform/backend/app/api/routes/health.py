@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -16,7 +17,7 @@ def health():
 
 
 @router.get("/ready")
-def readiness(db: Session = Depends(get_db)):
+def readiness(db: Session = Depends(get_db)) -> JSONResponse:
     checks = {"database": "ok", "redis": "disabled"}
     try:
         db.execute(text("SELECT 1"))
@@ -32,7 +33,10 @@ def readiness(db: Session = Depends(get_db)):
             checks["redis"] = "error"
 
     ready = checks["database"] == "ok" and checks["redis"] in {"ok", "disabled"}
-    return {"status": "ready" if ready else "not_ready", "checks": checks}
+    return JSONResponse(
+        status_code=200 if ready else 503,
+        content={"status": "ready" if ready else "not_ready", "checks": checks},
+    )
 
 
 @router.get("/ai/usage")
@@ -40,4 +44,3 @@ def ai_usage():
     """Unified AI key usage, quota status, and active provider chains."""
     from ...services.ai_usage_tracker import get_ai_usage_summary
     return get_ai_usage_summary("Narrativ-Forge")
-

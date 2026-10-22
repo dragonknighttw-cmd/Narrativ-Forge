@@ -48,3 +48,70 @@ def test_telegram_event_id_is_stable_for_retries():
 
     assert _event_pk("callback-query-123") == _event_pk("callback-query-123")
     assert _event_pk("callback-query-123") != _event_pk("callback-query-124")
+
+
+def test_script_approval_persists_and_duplicate_event_is_idempotent(db_session, monkeypatch):
+    import asyncio
+
+    from app.models import Episode, Organization, Script, Series
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    monkeypatch.setattr(telegram.settings, "telegram_allowed_user_ids", "12345")
+
+    async def no_message(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(telegram, "send_telegram_message", no_message)
+
+    organization = Organization(name="Test Org", slug="legacy-workspace")
+    db_session.add(organization)
+    db_session.flush()
+    series = Series(organization_id=organization.id, title="Test Series")
+    db_session.add(series)
+    db_session.flush()
+    episode = Episode(
+        organization_id=organization.id,
+        public_id="telegram-test-episode",
+        series_id=series.id,
+        episode_number=1,
+        title="Telegram Test Episode",
+    )
+    db_session.add(episode)
+    db_session.flush()
+    script = Script(
+        episode_id=episode.id,
+        version=1,
+        title="Test Script",
+        content="A test script",
+        status="draft",
+        is_current=True,
+    )
+    db_session.add(script)
+    db_session.commit()
+
+    payload = telegram.TelegramActionPayload(
+        action=f"nf_script_appr:{script.id}",
+        event_id="telegram-callback-script-approval-1",
+        user_id=12345,
+        username="approved-user",
+    )
+    result = asyncio.run(
+        telegram.handle_telegram_action(
+            payload,
+            x_telegram_gateway_secret="s" * 40,
+            db=db_session,
+        )
+    )
+    assert result["status"] == "ok"
+    assert db_session.get(Script, script.id).status == "approved"
+
+    duplicate = asyncio.run(
+        telegram.handle_telegram_action(
+            payload,
+            x_telegram_gateway_secret="s" * 40,
+            db=db_session,
+        )
+    )
+    assert duplicate["status"] == "duplicate"
+    assert duplicate["id"] == script.id

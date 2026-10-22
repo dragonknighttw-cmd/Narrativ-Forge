@@ -63,6 +63,37 @@ async def send_telegram_message(
         return None
 
 
+async def answer_telegram_callback(
+    callback_query_id: str,
+    text: str = "",
+    *,
+    show_alert: bool = False,
+) -> dict[str, Any] | None:
+    """Acknowledge a Telegram inline-button click so the client stops showing a spinner."""
+    token = settings.telegram_bot_token.get_secret_value() if settings.telegram_bot_token else ""
+    if not token:
+        logger.warning("Cannot acknowledge Telegram callback: bot token is not configured")
+        return None
+    url = f"{TELEGRAM_API_BASE}/bot{token}/answerCallbackQuery"
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                url,
+                json={
+                    "callback_query_id": callback_query_id,
+                    "text": text[:200],
+                    "show_alert": show_alert,
+                },
+            )
+            if response.status_code != 200:
+                logger.error("Telegram callback acknowledgement failed (%s)", response.status_code)
+                return None
+            return response.json()
+    except Exception:
+        logger.warning("Failed to acknowledge Telegram callback", exc_info=True)
+        return None
+
+
 async def send_notification(
     title: str,
     details: str,

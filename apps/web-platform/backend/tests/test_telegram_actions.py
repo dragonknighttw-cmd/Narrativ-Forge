@@ -115,3 +115,73 @@ def test_script_approval_persists_and_duplicate_event_is_idempotent(db_session, 
     )
     assert duplicate["status"] == "duplicate"
     assert duplicate["id"] == script.id
+
+
+
+def test_telegram_webhook_rejects_missing_or_wrong_secret(monkeypatch):
+    import asyncio
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(telegram.telegram_webhook(
+            {"callback_query": {}},
+            x_telegram_bot_api_secret_token="wrong",
+            db=None,
+        ))
+    assert exc.value.status_code == 401
+
+
+def test_telegram_webhook_ignores_non_callback_updates(monkeypatch):
+    import asyncio
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    assert asyncio.run(telegram.telegram_webhook(
+        {"update_id": 123, "message": {"text": "hello"}},
+        x_telegram_bot_api_secret_token="s" * 40,
+        db=None,
+    )) == {"status": "ignored"}
+
+
+def test_telegram_webhook_dispatches_callback_to_action_handler(monkeypatch):
+    import asyncio
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    calls = {}
+
+    async def fake_action(payload, *, x_telegram_gateway_secret, db):
+        calls["payload"] = payload
+        calls["secret"] = x_telegram_gateway_secret
+        return {"status": "ok", "action": "telegram.script.approved", "id": "script-1"}
+
+    async def fake_answer(*args, **kwargs):
+        calls["answered"] = (args, kwargs)
+
+    monkeypatch.setattr(telegram, "handle_telegram_action", fake_action)
+    monkeypatch.setattr(telegram, "answer_telegram_callback", fake_answer)
+    result = asyncio.run(telegram.telegram_webhook(
+        {
+            "update_id": 1,
+            "callback_query": {
+                "id": "callback-1",
+                "from": {"id": 12345, "username": "reviewer"},
+                "data": "nf_script_appr:script-1",
+                "message": {
+                    "message_thread_id": 88,
+                    "chat": {"id": -100123},
+                    "text": "Review script",
+                },
+            },
+        },
+        x_telegram_bot_api_secret_token="s" * 40,
+        db=object(),
+    ))
+    assert result["status"] == "ok"
+    assert calls["payload"].event_id == "callback-1"
+    assert calls["payload"].user_id == 12345
+    assert calls["payload"].topic_id == 88
+    assert calls["payload"].action == "nf_script_appr:script-1"
+    assert calls["secret"] == "s" * 40
+    assert "answered" in calls

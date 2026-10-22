@@ -84,6 +84,10 @@ services:
         sync: false
       - key: SMTP_FROM_EMAIL
         sync: false
+      - key: TELEGRAM_GATEWAY_SECRET
+        sync: false
+      - key: TELEGRAM_ALLOWED_USER_IDS
+        sync: false
       - key: SMTP_USE_TLS
         value: "true"
       - key: STRIPE_SECRET_KEY

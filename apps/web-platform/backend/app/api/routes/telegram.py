@@ -24,7 +24,7 @@ from ...models import (
     Script,
     Subtitle,
 )
-from ...services.telegram import send_telegram_message
+from ...services.telegram import answer_telegram_callback, send_telegram_message
 from ...workers.tasks import enqueue_real_job
 
 logger = logging.getLogger(__name__)
@@ -93,6 +93,70 @@ def _record_event(
             ),
         )
     )
+
+
+@router.post("/webhook")
+async def telegram_webhook(
+    update: dict[str, Any],
+    x_telegram_bot_api_secret_token: str | None = Header(
+        default=None, alias="X-Telegram-Bot-Api-Secret-Token"
+    ),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Receive Telegram Bot API updates and dispatch authorized inline-button callbacks."""
+    expected = settings.telegram_gateway_secret
+    if len(expected) < 32:
+        raise HTTPException(status_code=503, detail="Telegram webhook authentication is not configured")
+    if (
+        not x_telegram_bot_api_secret_token
+        or not hmac.compare_digest(x_telegram_bot_api_secret_token, expected)
+    ):
+        raise HTTPException(status_code=401, detail="Invalid Telegram webhook secret")
+
+    callback = update.get("callback_query")
+    if not isinstance(callback, dict):
+        # Ignore ordinary messages and update types this endpoint does not process.
+        return {"status": "ignored"}
+
+    callback_id = callback.get("id")
+    actor = callback.get("from")
+    action = callback.get("data")
+    message = callback.get("message") or {}
+    chat = message.get("chat") or {}
+    if not isinstance(callback_id, str) or not callback_id or not isinstance(actor, dict):
+        raise HTTPException(status_code=400, detail="Malformed Telegram callback")
+    if not isinstance(action, str) or not action:
+        raise HTTPException(status_code=400, detail="Telegram callback action is missing")
+    user_id = actor.get("id")
+    if not isinstance(user_id, int):
+        raise HTTPException(status_code=400, detail="Telegram callback user is missing")
+
+    message_thread_id = message.get("message_thread_id")
+    payload = TelegramActionPayload(
+        action=action,
+        event_id=callback_id,
+        chat_id=chat.get("id") if isinstance(chat, dict) else None,
+        topic_id=message_thread_id if isinstance(message_thread_id, int) else None,
+        user_id=user_id,
+        username=actor.get("username") if isinstance(actor.get("username"), str) else None,
+        raw_message=message.get("text") if isinstance(message.get("text"), str) else None,
+    )
+    try:
+        result = await handle_telegram_action(
+            payload,
+            x_telegram_gateway_secret=x_telegram_bot_api_secret_token,
+            db=db,
+        )
+    except HTTPException as exc:
+        # Acknowledge user-facing rejections to avoid Telegram retrying a button
+        # click indefinitely. Configuration/database failures remain retryable.
+        if exc.status_code in {401, 403, 404, 409, 422}:
+            await answer_telegram_callback(callback_id, "This action was rejected or is no longer available.", show_alert=True)
+            return {"status": "rejected", "reason": exc.status_code}
+        raise
+
+    await answer_telegram_callback(callback_id, "Action processed.")
+    return result
 
 
 @router.post("/action")

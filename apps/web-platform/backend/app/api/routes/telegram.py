@@ -132,6 +132,22 @@ async def telegram_webhook(
                 7: "Cognix",
             }
             if command in {"/start", "/help", "/ai_status"}:
+                # Diagnostic is deliberately scoped to Narrativ Forge's own
+                # configured Telegram chat/topic; never log secrets or message text.
+                if str(chat.get("id")) == settings.telegram_chat_id and topic_id == settings.telegram_topic_id:
+                    allowed_ids = {
+                        item.strip()
+                        for item in settings.telegram_allowed_user_ids.replace(";", ",").replace("\\n", ",").split(",")
+                        if item.strip()
+                    }
+                    logger.info(
+                        "Narrativ Forge Telegram auth check: chat_match=%s topic_match=%s user_id=%s user_allowed=%s allowed_count=%s",
+                        str(chat.get("id")) == settings.telegram_chat_id,
+                        topic_id == settings.telegram_topic_id,
+                        user_id if isinstance(user_id, int) else "missing",
+                        isinstance(user_id, int) and str(user_id) in allowed_ids,
+                        len(allowed_ids),
+                    )
                 try:
                     _authorize_gateway(x_telegram_bot_api_secret_token, user_id if isinstance(user_id, int) else None)
                 except HTTPException as exc:

@@ -113,6 +113,82 @@ async def telegram_webhook(
     ):
         raise HTTPException(status_code=401, detail="Invalid Telegram webhook secret")
 
+    # Route commands by Telegram forum topic. Never treat a command from one
+    # project's topic as a command for another project.
+    incoming = update.get("message") or update.get("edited_message")
+    if isinstance(incoming, dict):
+        text = incoming.get("text")
+        actor = incoming.get("from") or {}
+        chat = incoming.get("chat") or {}
+        if isinstance(text, str) and text.strip().startswith("/") and isinstance(actor, dict) and isinstance(chat, dict):
+            user_id = actor.get("id")
+            command = text.strip().split()[0].split("@", 1)[0].lower()
+            topic_id = incoming.get("message_thread_id")
+            project_by_topic = {
+                6: "Narrativ Forge",
+                2: "A Little World With Us",
+                5: "Logixa Flow",
+                18: "Doka",
+                7: "Cognix",
+            }
+            if command in {"/start", "/help", "/ai_status"}:
+                try:
+                    _authorize_gateway(x_telegram_bot_api_secret_token, user_id if isinstance(user_id, int) else None)
+                except HTTPException as exc:
+                    if exc.status_code == 403:
+                        await send_telegram_message(
+                            "⛔ This Telegram account is not authorized to use this project bot.",
+                            chat_id=chat.get("id"),
+                            topic_id=topic_id if isinstance(topic_id, int) else None,
+                        )
+                        return {"status": "rejected", "reason": 403}
+                    raise
+
+                project_name = project_by_topic.get(topic_id) if isinstance(topic_id, int) else None
+                if project_name is None:
+                    reply = (
+                        "⚠️ <b>Project topic not recognized.</b>\\n"
+                        "Please run this command inside one of the configured project topics: "
+                        "Narrativ Forge (6), A Little World With Us (2), Logixa Flow (5), Doka (18), or Cognix (7)."
+                    )
+                elif command in {"/start", "/help"}:
+                    reply = (
+                        f"🤖 <b>{html.escape(project_name)} — connected to this topic.</b>\\n\\n"
+                        "Commands:\\n/start — connect to this project's topic\\n"
+                        "/ai_status — check this project's status\\n"
+                        "This command reply is scoped to the current topic."
+                    )
+                elif topic_id == 6:
+                    ai_providers = [
+                        name for name, enabled in (
+                            ("OpenRouter", bool(settings.openrouter_api_key)),
+                            ("Groq", bool(settings.groq_api_key and settings.groq_free_tier_enabled)),
+                            ("Gemini", bool(settings.gemini_api_key and settings.gemini_free_tier_enabled)),
+                            ("Cloudflare Workers AI", bool(settings.cloudflare_account_id and settings.cloudflare_api_token and settings.cloudflare_ai_free_tier_enabled)),
+                        ) if enabled
+                    ]
+                    ai_text = ", ".join(ai_providers) if ai_providers else "No AI provider key is configured as enabled."
+                    reply = (
+                        "🩺 <b>Narrativ Forge status</b>\\n"
+                        f"Telegram notifications: {'enabled' if settings.telegram_enabled else 'disabled'}\\n"
+                        f"Telegram credentials: {'configured' if settings.telegram_bot_token.get_secret_value() else 'missing'}\\n"
+                        f"AI providers configured: {html.escape(ai_text)}"
+                    )
+                else:
+                    reply = (
+                        f"🩺 <b>{html.escape(project_name)} status</b>\\n"
+                        "Topic routing is recognized and isolated.\\n"
+                        "⚠️ Project-specific AI/service health is not connected to this Narrativ Forge backend, "
+                        "so this bot cannot truthfully report that project's provider or workflow health yet."
+                    )
+                await send_telegram_message(
+                    reply,
+                    chat_id=chat.get("id"),
+                    topic_id=topic_id if isinstance(topic_id, int) else None,
+                )
+                return {"status": "command_processed", "command": command, "project": project_name}
+        return {"status": "ignored"}
+
     callback = update.get("callback_query")
     if not isinstance(callback, dict):
         # Ignore ordinary messages and update types this endpoint does not process.

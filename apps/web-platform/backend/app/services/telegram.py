@@ -19,6 +19,7 @@ def is_telegram_configured() -> bool:
 async def send_telegram_message(
     text: str,
     *,
+    chat_id: int | str | None = None,
     topic_id: int | None = None,
     parse_mode: str = "HTML",
     inline_keyboard: list[list[dict[str, str]]] | None = None,
@@ -26,10 +27,10 @@ async def send_telegram_message(
 ) -> dict[str, Any] | None:
     """Send an asynchronous message to Telegram group/topic."""
     token = settings.telegram_bot_token.get_secret_value() if settings.telegram_bot_token else ""
-    chat_id = settings.telegram_chat_id
+    target_chat_id = chat_id if chat_id is not None else settings.telegram_chat_id
     effective_topic = topic_id if topic_id is not None else settings.telegram_topic_id
 
-    if not token or not chat_id:
+    if not token or not target_chat_id:
         logger.info("[Telegram:Narrativ-Forge:DryRun] %s", text.replace("\n", " "))
         return None
 
@@ -39,7 +40,7 @@ async def send_telegram_message(
 
     url = f"{TELEGRAM_API_BASE}/bot{token}/sendMessage"
     payload: dict[str, Any] = {
-        "chat_id": chat_id,
+        "chat_id": target_chat_id,
         "text": text,
         "parse_mode": parse_mode,
         "disable_web_page_preview": disable_web_page_preview,

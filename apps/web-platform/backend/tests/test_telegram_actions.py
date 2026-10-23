@@ -185,3 +185,43 @@ def test_telegram_webhook_dispatches_callback_to_action_handler(monkeypatch):
     assert calls["payload"].action == "nf_script_appr:script-1"
     assert calls["secret"] == "s" * 40
     assert "answered" in calls
+
+
+
+@pytest.mark.parametrize(
+    ("topic_id", "project_name"),
+    [(6, "Narrativ Forge"), (2, "A Little World With Us"), (5, "Logixa Flow"), (18, "Doka"), (7, "Cognix")],
+)
+def test_telegram_commands_are_scoped_to_project_topic(monkeypatch, topic_id, project_name):
+    import asyncio
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    monkeypatch.setattr(telegram.settings, "telegram_allowed_user_ids", "12345")
+    sent = []
+
+    async def fake_send(text, **kwargs):
+        sent.append((text, kwargs))
+        return {"ok": True}
+
+    monkeypatch.setattr(telegram, "send_telegram_message", fake_send)
+    for command in ("/start", "/ai_status"):
+        result = asyncio.run(telegram.telegram_webhook(
+            {
+                "update_id": topic_id,
+                "message": {
+                    "text": command,
+                    "from": {"id": 12345},
+                    "chat": {"id": -100123, "type": "supergroup"},
+                    "message_thread_id": topic_id,
+                },
+            },
+            x_telegram_bot_api_secret_token="s" * 40,
+            db=None,
+        ))
+        assert result["project"] == project_name
+        assert sent[-1][1]["topic_id"] == topic_id
+        assert project_name in sent[-1][0]
+        if topic_id != 6 and command == "/ai_status":
+            assert "not connected to this Narrativ Forge backend" in sent[-1][0]
+            assert "Narrativ Forge status" not in sent[-1][0]

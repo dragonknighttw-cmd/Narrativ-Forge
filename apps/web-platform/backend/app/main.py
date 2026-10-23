@@ -19,6 +19,7 @@ from .db import init_db
 from .api.router import api_router
 from .metrics import observe_http_metrics, router as metrics_router
 from .observability import configure_logging, initialize_sentry
+from .services.telegram_webhook_setup import configure_telegram_webhook
 
 settings.validate_runtime()
 configure_logging(settings.app_env)
@@ -42,8 +43,9 @@ _RATE_LIMITS = {
 
 @asynccontextmanager
 async def lifespan(_: "FastAPI"):
-    """Modern lifespan context manager — replaces deprecated @app.on_event."""
+    """Initialize application services and synchronize the Telegram webhook."""
     init_db()
+    await configure_telegram_webhook()
     yield
 
 
@@ -113,7 +115,6 @@ async def baseline_rate_limit(request: Request, call_next):
     key = f"{request.client.host if request.client else 'unknown'}:{bucket}"
     now = monotonic()
     dq = _rate_windows[key]
-    # Evict expired entries from the left (deque is sorted oldest→newest)
     while dq and now - dq[0] >= window:
         dq.popleft()
     if len(dq) >= limit:
@@ -124,8 +125,6 @@ async def baseline_rate_limit(request: Request, call_next):
             headers={"Retry-After": str(window)},
         )
     response = await call_next(request)
-    # Count failed authentication attempts rather than successful logins so
-    # the test suite and normal users do not exhaust the brute-force budget.
     if bucket == "login" and response.status_code in {401, 403}:
         dq.append(now)
     elif bucket != "login":
@@ -156,4 +155,3 @@ app.include_router(metrics_router)
 @app.get("/")
 def root() -> dict[str, str]:
     return {"service": "narrativ-forge-api", "status": "ok"}
-

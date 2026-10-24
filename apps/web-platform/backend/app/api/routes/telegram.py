@@ -50,7 +50,7 @@ def _authorize_gateway(provided_secret: str | None, user_id: int | None) -> None
     # separated IDs) while keeping the allowlist strict and fail-closed.
     allowed = {
         item.strip().strip("\\'\\\"[]{}()")
-        for item in re.split(r"[,;\\s]+", settings.telegram_allowed_user_ids)
+        for item in re.split(r"[,;\s]+", settings.telegram_allowed_user_ids)
         if item.strip().strip("\\'\\\"[]{}()")
     }
     if len(expected) < 32 or not allowed:

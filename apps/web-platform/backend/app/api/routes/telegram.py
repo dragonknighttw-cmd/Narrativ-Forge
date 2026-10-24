@@ -4,6 +4,7 @@ import html
 import hmac
 import json
 import logging
+import re
 from uuid import NAMESPACE_URL, uuid5
 from typing import Any
 
@@ -45,10 +46,12 @@ class TelegramActionPayload(BaseModel):
 
 def _authorize_gateway(provided_secret: str | None, user_id: int | None) -> None:
     expected = settings.telegram_gateway_secret
+    # Accept common Render dashboard formatting (comma/semicolon/newline
+    # separated IDs) while keeping the allowlist strict and fail-closed.
     allowed = {
-        item.strip()
-        for item in settings.telegram_allowed_user_ids.split(",")
-        if item.strip()
+        item.strip().strip("\\'\\\"[]{}()")
+        for item in re.split(r"[,;\\s]+", settings.telegram_allowed_user_ids)
+        if item.strip().strip("\\'\\\"[]{}()")
     }
     if len(expected) < 32 or not allowed:
         raise HTTPException(

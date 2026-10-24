@@ -231,7 +231,7 @@ async def telegram_webhook(
                                     response = await client.post(
                                         settings.openrouter_base_url.rstrip("/") + "/chat/completions",
                                         headers={
-                                            "Authorization": "Bearer " + settings.openrouter_api_key.get_secret_value(),
+                                            "Authorization": "Bearer " + settings.openrouter_api_key,
                                             "Content-Type": "application/json",
                                             "HTTP-Referer": "https://narrativ-forge.onrender.com",
                                             "X-Title": "Narrativ Forge Telegram AI Test",

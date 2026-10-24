@@ -186,10 +186,23 @@ async def telegram_webhook(
 
                 project_name = project_by_topic.get(topic_id) if isinstance(topic_id, int) else None
                 if project_name is None:
+                    logger.warning(
+                        "Telegram project topic not recognized: chat_id=%s topic_id=%s topic_type=%s command=%s",
+                        chat.get("id"),
+                        topic_id,
+                        type(topic_id).__name__,
+                        command,
+                    )
+                    detected_topic = (
+                        str(topic_id) if isinstance(topic_id, int) else "မတွေ့ပါ (General topic သို့မဟုတ် topic metadata မပါ)"
+                    )
                     reply = (
-                        "⚠️ <b>Project topic not recognized.</b>\\n"
-                        "Please run this command inside one of the configured project topics: "
-                        "Narrativ Forge (6), A Little World With Us (2), Logixa Flow (5), Doka (18), or Cognix (7)."
+                        "⚠️ <b>Project topic ကို မသိရှိနိုင်ပါ။</b>\\n"
+                        f"Telegram က လက်ခံရရှိတဲ့ message_thread_id: <code>{html.escape(detected_topic)}</code>\\n"
+                        "ဒီ command ကို Narrativ Forge ရဲ့ topic ထဲမှာ ပို့ထားကြောင်း စစ်ပါ။ "
+                        "မမှန်သေးရင် ဒီ ID ကို support အတွက် အသုံးပြုနိုင်ပါတယ်။\\n"
+                        "Configured topics: Narrativ Forge (6), A Little World With Us (2), "
+                        "Logixa Flow (5), Doka (18), Cognix (7)."
                     )
                 elif command in {"/start", "/help"}:
                     reply = (

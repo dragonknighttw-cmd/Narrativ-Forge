@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import html
 import hmac
+
+import httpx
 import json
 import logging
 import re
@@ -134,7 +136,7 @@ async def telegram_webhook(
                 18: "Doka",
                 7: "Cognix",
             }
-            if command in {"/start", "/help", "/commands", "/ai_status", "/idea"}:
+            if command in {"/start", "/help", "/commands", "/ai_status", "/ai_test", "/idea"}:
                 # Diagnostic is deliberately scoped to Narrativ Forge's own
                 # configured Telegram chat/topic; never log secrets or message text.
                 if str(chat.get("id")) == settings.telegram_chat_id and topic_id == settings.telegram_topic_id:
@@ -210,9 +212,47 @@ async def telegram_webhook(
                         "Commands:\\n/start — connect to this project's topic\\n"
                         "/commands — list available commands\\n"
                         "/ai_status — check configured AI providers\\n"
+                        "/ai_test — send a test request to OpenRouter\\n"
                         "/idea <text> — save an idea to Narrativ Forge\\n"
                         "This command reply is scoped to the current topic."
                     )
+                elif command == "/ai_test":
+                    if topic_id != 6:
+                        reply = "⛔ /ai_test is available only in the Narrativ Forge topic (6)."
+                    elif not settings.openrouter_api_key:
+                        reply = "⚠️ OpenRouter API key is not configured on the backend."
+                    else:
+                        model = next((item.strip() for item in settings.openrouter_models.split(",") if item.strip()), "")
+                        if not model:
+                            reply = "⚠️ No OpenRouter model is configured."
+                        else:
+                            try:
+                                async with httpx.AsyncClient(timeout=25.0) as client:
+                                    response = await client.post(
+                                        settings.openrouter_base_url.rstrip("/") + "/chat/completions",
+                                        headers={
+                                            "Authorization": "Bearer " + settings.openrouter_api_key.get_secret_value(),
+                                            "Content-Type": "application/json",
+                                            "HTTP-Referer": "https://narrativ-forge.onrender.com",
+                                            "X-Title": "Narrativ Forge Telegram AI Test",
+                                        },
+                                        json={
+                                            "model": model,
+                                            "messages": [{"role": "user", "content": "Reply with exactly: Narrativ Forge AI connection OK"}],
+                                            "max_tokens": 40,
+                                        },
+                                    )
+                                if response.is_success:
+                                    data = response.json()
+                                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                                    safe_content = html.escape(str(content)[:500]) if content else "Provider returned an empty response."
+                                    reply = f"✅ <b>OpenRouter test succeeded</b>\\nModel: <code>{html.escape(model)}</code>\\n{safe_content}"
+                                else:
+                                    logger.warning("OpenRouter Telegram test failed with HTTP %s", response.status_code)
+                                    reply = f"⚠️ OpenRouter test failed (HTTP {response.status_code}). Check backend provider settings/logs."
+                            except Exception:
+                                logger.exception("OpenRouter Telegram test request failed")
+                                reply = "⚠️ OpenRouter request failed. Check backend logs and provider connectivity."
                 elif command == "/idea":
                     if topic_id != 6:
                         reply = "⛔ /idea is available only in the Narrativ Forge topic (6)."

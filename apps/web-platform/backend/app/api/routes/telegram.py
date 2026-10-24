@@ -134,7 +134,7 @@ async def telegram_webhook(
                 18: "Doka",
                 7: "Cognix",
             }
-            if command in {"/start", "/help", "/ai_status"}:
+            if command in {"/start", "/help", "/commands", "/ai_status", "/idea"}:
                 # Diagnostic is deliberately scoped to Narrativ Forge's own
                 # configured Telegram chat/topic; never log secrets or message text.
                 if str(chat.get("id")) == settings.telegram_chat_id and topic_id == settings.telegram_topic_id:
@@ -204,13 +204,40 @@ async def telegram_webhook(
                         "Configured topics: Narrativ Forge (6), A Little World With Us (2), "
                         "Logixa Flow (5), Doka (18), Cognix (7)."
                     )
-                elif command in {"/start", "/help"}:
+                elif command in {"/start", "/help", "/commands"}:
                     reply = (
                         f"🤖 <b>{html.escape(project_name)} — connected to this topic.</b>\\n\\n"
                         "Commands:\\n/start — connect to this project's topic\\n"
-                        "/ai_status — check this project's status\\n"
+                        "/commands — list available commands\\n"
+                        "/ai_status — check configured AI providers\\n"
+                        "/idea <text> — save an idea to Narrativ Forge\\n"
                         "This command reply is scoped to the current topic."
                     )
+                elif command == "/idea":
+                    if topic_id != 6:
+                        reply = "⛔ /idea is available only in the Narrativ Forge topic (6)."
+                    else:
+                        idea_text = text.strip().partition(" ")[2].strip()
+                        if not idea_text:
+                            reply = "💡 Usage: /idea <text>\\nExample: /idea Create a short video about sustainable living"
+                        elif len(idea_text) > 10000:
+                            reply = "⚠️ Idea is too long. Please keep it under 10,000 characters."
+                        else:
+                            action_payload = TelegramActionPayload(
+                                action="nf_idea_capture",
+                                event_id=f"telegram-idea:{chat.get('id')}:{incoming.get('message_id')}:{user_id}",
+                                chat_id=chat.get("id"),
+                                topic_id=topic_id,
+                                user_id=user_id,
+                                username=(actor.get("username") if isinstance(actor.get("username"), str) else None),
+                                raw_message=idea_text,
+                            )
+                            result = await handle_telegram_action(
+                                action_payload,
+                                x_telegram_gateway_secret=x_telegram_bot_api_secret_token,
+                                db=db,
+                            )
+                            return {"status": "ok", "action": "idea_capture", "result": result.get("status")}
                 elif topic_id == 6:
                     ai_providers = [
                         name for name, enabled in (

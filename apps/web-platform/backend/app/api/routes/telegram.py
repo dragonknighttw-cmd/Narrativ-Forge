@@ -151,6 +151,27 @@ async def telegram_webhook(
                         isinstance(user_id, int) and str(user_id) in allowed_ids,
                         len(allowed_ids),
                     )
+                # Telegram reports anonymous group-admin commands as the
+                # synthetic GroupAnonymousBot user (1087968824), not the human
+                # account. Never add that synthetic ID to the allowlist: it would
+                # bypass per-user authorization. Explain the fix only in this
+                # project's configured chat/topic.
+                if (
+                    user_id == 1087968824
+                    and str(chat.get("id")) == settings.telegram_chat_id
+                    and topic_id == settings.telegram_topic_id
+                ):
+                    await send_telegram_message(
+                        "⚠️ Telegram က ဒီ command ကို သင့်ကိုယ်ပိုင် account ID နဲ့မပို့ဘဲ "
+                        "anonymous admin (GroupAnonymousBot) အဖြစ်ပို့နေပါတယ်။ "
+                        "ဒီ project bot ကို သုံးဖို့ group settings → Administrators → "
+                        "သင့် account → Remain Anonymous ကို ခဏပိတ်ပြီး /start ကို ပြန်ပို့ပါ။ "
+                        "သင့်ကိုယ်ပိုင် user ID ကို allowlist ထဲမှာပဲ ဆက်စစ်ထားမှာဖြစ်ပြီး "
+                        "anonymous ID ကို ခွင့်မပြုပါ။",
+                        chat_id=chat.get("id"),
+                        topic_id=topic_id if isinstance(topic_id, int) else None,
+                    )
+                    return {"status": "rejected", "reason": "anonymous_admin"}
                 try:
                     _authorize_gateway(x_telegram_bot_api_secret_token, user_id if isinstance(user_id, int) else None)
                 except HTTPException as exc:

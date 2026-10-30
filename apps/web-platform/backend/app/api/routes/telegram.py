@@ -136,6 +136,8 @@ async def telegram_webhook(
                 18: "Doka",
                 7: "Cognix",
             }
+            if str(chat.get("id")) != settings.telegram_chat_id or not isinstance(topic_id, int) or topic_id not in project_by_topic:
+                return {"status": "ignored", "reason": "unrecognized_chat_or_topic"}
             if command in {"/start", "/help", "/commands", "/ai_status", "/ai_test", "/idea"}:
                 # Diagnostic is deliberately scoped to Narrativ Forge's own
                 # configured Telegram chat/topic; never log secrets or message text.

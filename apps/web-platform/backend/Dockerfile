@@ -11,7 +11,10 @@ RUN apt-get update \
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip setuptools \
-    && pip install --no-cache-dir --upgrade -r requirements.txt
+    && pip install --no-cache-dir --upgrade -r requirements.txt \
+    # pip bundles a stale third-party CycloneDX inventory that can override \
+    # the installed dist-info metadata during Trivy runtime filesystem scans. \
+    && rm -f "$VIRTUAL_ENV/lib/python3.12/site-packages/pip/_vendor/bom.cdx.json"
 
 FROM python:3.12-slim AS runtime
 

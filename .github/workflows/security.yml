@@ -105,6 +105,7 @@ jobs:
       - name: Scan exported runtime filesystem for vulnerabilities
         run: |
           trivy rootfs runtime-rootfs \
+            --debug \
             --scanners vuln \
             --severity HIGH,CRITICAL \
             --ignore-unfixed \
@@ -128,13 +129,8 @@ jobs:
               for vuln in result.get("Vulnerabilities") or []:
                   found += 1
                   print({
-                      "target": result.get("Target"),
-                      "type": result.get("Type"),
-                      "package": vuln.get("PkgName"),
-                      "path": vuln.get("PkgPath"),
-                      "installed": vuln.get("InstalledVersion"),
-                      "fixed": vuln.get("FixedVersion"),
-                      "vulnerability": vuln.get("VulnerabilityID"),
+                      "result": result,
+                      "vulnerability": vuln,
                   })
           if not found:
               print("No vulnerabilities were present in the JSON report.")

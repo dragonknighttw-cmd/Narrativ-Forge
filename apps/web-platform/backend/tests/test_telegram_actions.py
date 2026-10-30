@@ -58,6 +58,8 @@ def test_script_approval_persists_and_duplicate_event_is_idempotent(db_session, 
 
     monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
     monkeypatch.setattr(telegram.settings, "telegram_allowed_user_ids", "12345")
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(telegram.settings, "telegram_topic_id", 6)
 
     async def no_message(*_args, **_kwargs):
         return None
@@ -95,6 +97,8 @@ def test_script_approval_persists_and_duplicate_event_is_idempotent(db_session, 
         event_id="telegram-callback-script-approval-1",
         user_id=12345,
         username="approved-user",
+        chat_id="-100123",
+        topic_id=6,
     )
     result = asyncio.run(
         telegram.handle_telegram_action(
@@ -149,6 +153,8 @@ def test_telegram_webhook_dispatches_callback_to_action_handler(monkeypatch):
     from app.api.routes import telegram
 
     monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(telegram.settings, "telegram_topic_id", 6)
     calls = {}
 
     async def fake_action(payload, *, x_telegram_gateway_secret, db):
@@ -198,6 +204,8 @@ def test_telegram_commands_are_scoped_to_project_topic(monkeypatch, topic_id, pr
 
     monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
     monkeypatch.setattr(telegram.settings, "telegram_allowed_user_ids", "12345")
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(telegram.settings, "telegram_topic_id", 6)
     sent = []
 
     async def fake_send(text, **kwargs):

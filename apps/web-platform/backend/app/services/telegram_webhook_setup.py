@@ -46,6 +46,38 @@ async def configure_telegram_webhook() -> None:
             else:
                 # Never log the request URL or payload: both contain credentials.
                 logger.error("Telegram webhook setup failed: Telegram API returned ok=false")
+                return
+
+            # Publish the command menu for this group. Telegram command menus are
+            # chat-scoped (not forum-topic-scoped); handlers still enforce the
+            # configured project/topic and user allowlist before doing any work.
+            try:
+                command_response = await client.post(
+                    f"https://api.telegram.org/bot{token}/setMyCommands",
+                    json={
+                        "commands": [
+                            {"command": "start", "description": "Connect this project topic"},
+                            {"command": "help", "description": "Show available commands"},
+                            {"command": "commands", "description": "List available commands"},
+                            {"command": "ai_status", "description": "Check Narrativ Forge AI status"},
+                            {"command": "ai_test", "description": "Test AI provider (Narrativ Forge only)"},
+                            {"command": "idea", "description": "Save an idea: /idea <text>"},
+                        ],
+                        "scope": {
+                            "type": "chat",
+                            "chat_id": int(settings.telegram_chat_id),
+                        },
+                    },
+                )
+                command_response.raise_for_status()
+                command_result = command_response.json()
+                if command_result.get("ok") is True:
+                    logger.info("Telegram command menu configured for the Narrativ Forge group")
+                else:
+                    logger.warning("Telegram command menu setup failed: Telegram API returned ok=false")
+            except Exception as exc:
+                # Keep webhook delivery available even if command-menu setup fails.
+                logger.warning("Telegram command menu setup failed (%s)", type(exc).__name__)
     except Exception as exc:
         # Exception strings can include request URLs, so log only the exception type.
         logger.error("Telegram webhook setup failed (%s)", type(exc).__name__)

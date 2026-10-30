@@ -83,8 +83,37 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: narrativ-forge-backend:ci
-          format: table
+          format: json
+          output: trivy-results.json
           exit-code: "1"
           severity: HIGH,CRITICAL
           vuln-type: os,library
           ignore-unfixed: true
+      - name: Report exact vulnerable package paths
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = Path("trivy-results.json")
+          if not report.exists():
+              print("Trivy JSON report was not produced.")
+              raise SystemExit(0)
+          data = json.loads(report.read_text())
+          found = 0
+          for result in data.get("Results", []):
+              for vuln in result.get("Vulnerabilities") or []:
+                  found += 1
+                  print({
+                      "target": result.get("Target"),
+                      "type": result.get("Type"),
+                      "package": vuln.get("PkgName"),
+                      "path": vuln.get("PkgPath"),
+                      "installed": vuln.get("InstalledVersion"),
+                      "fixed": vuln.get("FixedVersion"),
+                      "vulnerability": vuln.get("VulnerabilityID"),
+                  })
+          if not found:
+              print("No vulnerabilities were present in the JSON report.")
+          PY

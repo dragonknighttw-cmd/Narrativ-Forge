@@ -58,6 +58,8 @@ def test_script_approval_persists_and_duplicate_event_is_idempotent(db_session, 
 
     monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
     monkeypatch.setattr(telegram.settings, "telegram_allowed_user_ids", "12345")
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(telegram.settings, "telegram_topic_id", 6)
 
     async def no_message(*_args, **_kwargs):
         return None
@@ -95,6 +97,8 @@ def test_script_approval_persists_and_duplicate_event_is_idempotent(db_session, 
         event_id="telegram-callback-script-approval-1",
         user_id=12345,
         username="approved-user",
+        chat_id="-100123",
+        topic_id=6,
     )
     result = asyncio.run(
         telegram.handle_telegram_action(
@@ -149,6 +153,8 @@ def test_telegram_webhook_dispatches_callback_to_action_handler(monkeypatch):
     from app.api.routes import telegram
 
     monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(telegram.settings, "telegram_topic_id", 6)
     calls = {}
 
     async def fake_action(payload, *, x_telegram_gateway_secret, db):
@@ -198,6 +204,8 @@ def test_telegram_commands_are_scoped_to_project_topic(monkeypatch, topic_id, pr
 
     monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
     monkeypatch.setattr(telegram.settings, "telegram_allowed_user_ids", "12345")
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(telegram.settings, "telegram_topic_id", 6)
     sent = []
 
     async def fake_send(text, **kwargs):
@@ -225,3 +233,59 @@ def test_telegram_commands_are_scoped_to_project_topic(monkeypatch, topic_id, pr
         if topic_id != 6 and command == "/ai_status":
             assert "not connected to this Narrativ Forge backend" in sent[-1][0]
             assert "Narrativ Forge status" not in sent[-1][0]
+
+
+def test_telegram_action_rejects_wrong_chat_or_topic(monkeypatch):
+    import asyncio
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(telegram.settings, "telegram_topic_id", 6)
+    payload = telegram.TelegramActionPayload(
+        action="nf_idea_capture",
+        event_id="cross-topic-action",
+        chat_id="-100999",
+        topic_id=6,
+        user_id=12345,
+        raw_message="should not be saved",
+    )
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(
+            telegram.handle_telegram_action(
+                payload,
+                x_telegram_gateway_secret="s" * 40,
+                db=None,
+            )
+        )
+    assert exc.value.status_code == 403
+
+
+def test_telegram_webhook_ignores_matching_topic_from_another_chat(monkeypatch):
+    import asyncio
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    sent = []
+
+    async def fake_send(*args, **kwargs):
+        sent.append((args, kwargs))
+
+    monkeypatch.setattr(telegram, "send_telegram_message", fake_send)
+    result = asyncio.run(
+        telegram.telegram_webhook(
+            {
+                "update_id": 900,
+                "message": {
+                    "text": "/start",
+                    "from": {"id": 12345},
+                    "chat": {"id": -100999, "type": "supergroup"},
+                    "message_thread_id": 6,
+                },
+            },
+            x_telegram_bot_api_secret_token="s" * 40,
+            db=None,
+        )
+    )
+    assert result == {"status": "ignored", "reason": "unrecognized_chat_or_topic"}
+    assert sent == []

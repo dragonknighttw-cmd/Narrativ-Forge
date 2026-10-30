@@ -79,12 +79,59 @@ jobs:
         run: docker build --tag narrativ-forge-backend:ci --file apps/web-platform/backend/Dockerfile apps/web-platform/backend
       - name: Free disposable Docker build cache
         run: docker builder prune --all --force
-      - name: Scan backend image for vulnerabilities
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: narrativ-forge-backend:ci
-          format: table
-          exit-code: "1"
-          severity: HIGH,CRITICAL
-          vuln-type: os,library
-          ignore-unfixed: true
+      - name: Install Trivy CLI
+        uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514
+      - name: Export the exact runtime image filesystem
+        run: |
+          container_id="$(docker create narrativ-forge-backend:ci)"
+          mkdir -p runtime-rootfs
+          docker export "$container_id" | tar -x -C runtime-rootfs
+          docker rm "$container_id"
+          test -d runtime-rootfs/opt/venv
+          python - <<'PY'
+          import email
+          from pathlib import Path
+
+          metadata = list(Path("runtime-rootfs/opt/venv").glob("lib/python*/site-packages/msgpack-*.dist-info/METADATA"))
+          if len(metadata) != 1:
+              raise SystemExit(f"Expected exactly one msgpack dist-info METADATA, found {len(metadata)}")
+          parsed = email.message_from_bytes(metadata[0].read_bytes())
+          version = parsed.get("Version", "")
+          print(f"Runtime image msgpack version: {version} ({metadata[0]})")
+          parts = tuple(int(part) for part in version.split(".") if part.isdigit())
+          if parts < (1, 2, 3):
+              raise SystemExit(f"Runtime image contains vulnerable msgpack {version}")
+          PY
+      - name: Scan exported runtime filesystem for vulnerabilities
+        run: |
+          trivy rootfs runtime-rootfs \
+            --debug \
+            --scanners vuln \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --format json \
+            --output trivy-results.json \
+            --exit-code 1
+      - name: Report exact vulnerable package paths
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = Path("trivy-results.json")
+          if not report.exists():
+              print("Trivy JSON report was not produced.")
+              raise SystemExit(0)
+          data = json.loads(report.read_text())
+          found = 0
+          for result in data.get("Results", []):
+              for vuln in result.get("Vulnerabilities") or []:
+                  found += 1
+                  print({
+                      "result": result,
+                      "vulnerability": vuln,
+                  })
+          if not found:
+              print("No vulnerabilities were present in the JSON report.")
+          PY

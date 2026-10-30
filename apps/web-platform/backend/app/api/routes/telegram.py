@@ -136,6 +136,8 @@ async def telegram_webhook(
                 18: "Doka",
                 7: "Cognix",
             }
+            if str(chat.get("id")) != settings.telegram_chat_id or not isinstance(topic_id, int) or topic_id not in project_by_topic:
+                return {"status": "ignored", "reason": "unrecognized_chat_or_topic"}
             if command in {"/start", "/help", "/commands", "/ai_status", "/ai_test", "/idea"}:
                 # Diagnostic is deliberately scoped to Narrativ Forge's own
                 # configured Telegram chat/topic; never log secrets or message text.
@@ -362,6 +364,8 @@ async def handle_telegram_action(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Apply an authenticated, allowlisted, idempotent Telegram action."""
+    if str(payload.chat_id) != settings.telegram_chat_id or payload.topic_id != settings.telegram_topic_id:
+        raise HTTPException(status_code=403, detail="Telegram action is outside the configured project topic")
     _authorize_gateway(x_telegram_gateway_secret, payload.user_id)
     event_pk = _event_pk(payload.event_id)
     previous = db.get(AuditEvent, event_pk)

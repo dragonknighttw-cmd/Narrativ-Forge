@@ -8,8 +8,10 @@ on:
         type: boolean
         required: true
         default: false
+  # Hourly polling keeps the free GitHub Actions budget predictable. The
+  # dispatcher launches Kaggle only when a due real_processing job exists.
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "17 * * * *"
 
 permissions:
   contents: read
@@ -20,13 +22,14 @@ concurrency:
 
 jobs:
   dispatch:
-    # Scheduled launches are opt-in via the repository Actions variable
-    # ENABLE_KAGGLE_DISPATCH=true. Manual launches require explicit confirmation.
-    # This keeps an unattended schedule from consuming provider quota unexpectedly.
+    # Scheduled runs are safe because dispatch.py checks the database first,
+    # then checks the existing Kaggle kernel state before pushing anything.
+    # Manual runs still require explicit confirmation.
     if: >-
-      (github.event_name == 'schedule' && vars.ENABLE_KAGGLE_DISPATCH == 'true') ||
+      github.event_name == 'schedule' ||
       (github.event_name == 'workflow_dispatch' && inputs.confirm_kaggle_dispatch == true)
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

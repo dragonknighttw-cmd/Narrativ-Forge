@@ -20,13 +20,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  dispatch:
-    # Keep unattended dispatch explicitly opt-in until the Kaggle credentials
-    # and database connection are configured in repository Actions settings.
-    # Manual runs still require a separate confirmation.
-    if: >-
-      (github.event_name == 'schedule' && vars.ENABLE_KAGGLE_DISPATCH == 'true') ||
-      (github.event_name == 'workflow_dispatch' && inputs.confirm_kaggle_dispatch == true)
+  preflight:
+    # Always run validation/tests on scheduled checks so a missing opt-in flag
+    # is distinguishable from broken credentials or dispatcher code.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -42,20 +39,35 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.KAGGLE_DISPATCH_DATABASE_URL }}
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
-          # Accept either a repository Actions variable or secret to avoid
-          # silently failing when the owner configured the value as a secret.
           KAGGLE_KERNEL_ID: ${{ vars.KAGGLE_KERNEL_ID || secrets.KAGGLE_KERNEL_ID }}
         shell: bash
         run: |
           set -euo pipefail
           test -n "${DATABASE_URL}" || { echo "::error::Missing Actions secret KAGGLE_DISPATCH_DATABASE_URL"; exit 1; }
           test -n "${KAGGLE_API_TOKEN}" || { echo "::error::Missing Actions secret KAGGLE_API_TOKEN"; exit 1; }
-          test -n "${KAGGLE_KERNEL_ID}" || { echo "::error::KAGGLE_KERNEL_ID is empty. Add it as a repository Actions variable or secret (not an Environment-only value unless this job declares that Environment)."; exit 1; }
+          test -n "${KAGGLE_KERNEL_ID}" || { echo "::error::KAGGLE_KERNEL_ID is empty. Add it as a repository Actions variable or secret."; exit 1; }
           if [[ ! "${KAGGLE_KERNEL_ID}" =~ ^[A-Za-z0-9_-]+/[A-Za-z0-9_-]+$ ]]; then
-            echo "::error::KAGGLE_KERNEL_ID must use owner/kernel-slug format, for example thuwon/narrativ-forge. The value is not printed."
+            echo "::error::KAGGLE_KERNEL_ID must use owner/kernel-slug format. The value is not printed."
             exit 1
           fi
           echo "Dispatcher configuration presence and kernel ID format are valid; secret values are not printed."
+
+  dispatch:
+    needs: preflight
+    # Launch remains explicitly opt-in for scheduled runs; manual runs require
+    # a separate confirmation input. Preflight runs either way.
+    if: >-
+      (github.event_name == 'schedule' && vars.ENABLE_KAGGLE_DISPATCH == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.confirm_kaggle_dispatch == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dispatcher dependencies
+        run: python -m pip install --disable-pip-version-check psycopg2-binary kaggle
       - name: Launch one Kaggle session when work is queued
         env:
           DATABASE_URL: ${{ secrets.KAGGLE_DISPATCH_DATABASE_URL }}

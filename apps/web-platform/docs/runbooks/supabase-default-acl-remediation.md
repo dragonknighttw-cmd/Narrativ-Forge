@@ -68,3 +68,17 @@ As of the audit, Supabase Advisor reports 43 public tables with RLS enabled and 
 ## Explicitly out of scope
 
 Leaked Password Protection remains excluded per the project's documented Free-plan constraint.
+
+## Application access-path review (2026-10-30)
+
+Reviewed the production web frontend login and API client:
+- `apps/web-platform/frontend/package.json` does not include `@supabase/supabase-js`.
+- `apps/web-platform/frontend/lib/api.ts` routes application data operations to the backend API and sends the session cookie; it does not create a browser Supabase database client.
+- `apps/web-platform/frontend/app/login/page.tsx` calls Supabase Auth's password-token endpoint directly using the public anon key, then exchanges the returned access token with the backend at `/auth/supabase-login`.
+- `apps/web-platform/frontend/components/auth-guard.tsx` verifies the backend session through `/auth/me`.
+
+Conclusion: the reviewed frontend data path is backend-mediated; direct browser-side PostgREST/table access was not found in these inspected files. The public anon key is used for Supabase Auth only. This supports keeping direct database privileges revoked, but does not grant the current SQL session authority over `supabase_admin` defaults.
+
+## Migration review note
+
+The committed `0021_revoke_client_grants.py` revokes existing table/sequence privileges and postgres-owned defaults. It conditionally attempts supabase_admin defaults only when the migration role is a member of `supabase_admin`; in the current production session that membership check is false. Therefore the migration cannot complete the remaining owner-default cleanup in this project as currently permissioned. Function default EXECUTE was also removed in the separate production cleanup and verified as zero direct function grants; ensure the migration history is reconciled through the approved Alembic path before considering the migration fully applied.

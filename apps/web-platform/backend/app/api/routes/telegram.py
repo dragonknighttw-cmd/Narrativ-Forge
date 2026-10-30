@@ -364,6 +364,8 @@ async def handle_telegram_action(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Apply an authenticated, allowlisted, idempotent Telegram action."""
+    if str(payload.chat_id) != settings.telegram_chat_id or payload.topic_id != settings.telegram_topic_id:
+        raise HTTPException(status_code=403, detail="Telegram action is outside the configured project topic")
     _authorize_gateway(x_telegram_gateway_secret, payload.user_id)
     event_pk = _event_pk(payload.event_id)
     previous = db.get(AuditEvent, event_pk)

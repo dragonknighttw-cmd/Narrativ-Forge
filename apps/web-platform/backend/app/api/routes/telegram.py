@@ -138,7 +138,7 @@ async def telegram_webhook(
             }
             if str(chat.get("id")) != settings.telegram_chat_id or not isinstance(topic_id, int) or topic_id not in project_by_topic:
                 return {"status": "ignored", "reason": "unrecognized_chat_or_topic"}
-            if command in {"/start", "/help", "/commands", "/ai_status", "/ai_test", "/idea"}:
+            if command in {"/start", "/help", "/commands", "/ai_status", "/ai_test", "/idea", "/drafts", "/ideas", "/episodes", "/pipeline", "/assets", "/reviews", "/metrics"}:
                 # Diagnostic is deliberately scoped to Narrativ Forge's own
                 # configured Telegram chat/topic; never log secrets or message text.
                 if str(chat.get("id")) == settings.telegram_chat_id and topic_id == settings.telegram_topic_id:
@@ -216,6 +216,13 @@ async def telegram_webhook(
                         "/ai_status — check configured AI providers\\n"
                         "/ai_test — send a test request to OpenRouter\\n"
                         "/idea <text> — save an idea to Narrativ Forge\\n"
+                        "/drafts — view active script drafts\\n"
+                        "/ideas — view recent ideas\\n"
+                        "/episodes — view recent episodes\\n"
+                        "/pipeline — view active processing jobs\\n"
+                        "/assets — view recent assets\\n"
+                        "/reviews — view recent reviews\\n"
+                        "/metrics — content production metrics\\n"
                         "This command reply is scoped to the current topic."
                     )
                 elif command == "/ai_test":
@@ -280,6 +287,182 @@ async def telegram_webhook(
                                 db=db,
                             )
                             return {"status": "ok", "action": "idea_capture", "result": result.get("status")}
+                elif command == "/drafts":
+                    if topic_id != 6:
+                        reply = "⛔ /drafts is available only in the Narrativ Forge topic (6)."
+                    else:
+                        try:
+                            scripts = (
+                                db.query(Script)
+                                .filter(Script.status.in_(["draft", "pending_review", "needs_approval", "ready_for_review"]))
+                                .filter(Script.is_current.is_(True))
+                                .order_by(Script.updated_at.desc())
+                                .limit(10)
+                                .all()
+                            )
+                            if not scripts:
+                                reply = "📝 No active drafts found."
+                            else:
+                                lines = ["📝 <b>Active Drafts:</b>\\n"]
+                                for i, s in enumerate(scripts, 1):
+                                    title = html.escape(str(s.title or s.id)[:60])
+                                    st = html.escape(str(s.status))
+                                    lines.append(f"{i}. <code>{title}</code> — {st}")
+                                reply = "\\n".join(lines)
+                        except Exception:
+                            logger.exception("Telegram /drafts failed")
+                            reply = "⚠️ Could not fetch drafts. Database may be unavailable."
+
+                elif command == "/ideas":
+                    if topic_id != 6:
+                        reply = "⛔ /ideas is available only in the Narrativ Forge topic (6)."
+                    else:
+                        try:
+                            ideas = (
+                                db.query(Idea)
+                                .filter(Idea.status.in_(["idea", "developing", "approved"]))
+                                .order_by(Idea.created_at.desc())
+                                .limit(10)
+                                .all()
+                            )
+                            if not ideas:
+                                reply = "💡 No ideas found."
+                            else:
+                                lines = ["💡 <b>Recent Ideas:</b>\\n"]
+                                for i, idea in enumerate(ideas, 1):
+                                    title = html.escape(str(idea.title or "Untitled")[:60])
+                                    st = html.escape(str(idea.status))
+                                    lines.append(f"{i}. <code>{title}</code> — {st}")
+                                reply = "\\n".join(lines)
+                        except Exception:
+                            logger.exception("Telegram /ideas failed")
+                            reply = "⚠️ Could not fetch ideas. Database may be unavailable."
+
+                elif command == "/episodes":
+                    if topic_id != 6:
+                        reply = "⛔ /episodes is available only in the Narrativ Forge topic (6)."
+                    else:
+                        try:
+                            episodes = (
+                                db.query(Episode)
+                                .order_by(Episode.updated_at.desc())
+                                .limit(10)
+                                .all()
+                            )
+                            if not episodes:
+                                reply = "🎬 No episodes found."
+                            else:
+                                lines = ["🎬 <b>Recent Episodes:</b>\\n"]
+                                for i, ep in enumerate(episodes, 1):
+                                    title = html.escape(str(ep.title or ep.id)[:60])
+                                    st = html.escape(str(ep.status or "unknown"))
+                                    step = html.escape(str(ep.current_step or ""))
+                                    lines.append(f"{i}. <code>{title}</code> — {st}" + (f" ({step})" if step else ""))
+                                reply = "\\n".join(lines)
+                        except Exception:
+                            logger.exception("Telegram /episodes failed")
+                            reply = "⚠️ Could not fetch episodes. Database may be unavailable."
+
+                elif command == "/pipeline":
+                    if topic_id != 6:
+                        reply = "⛔ /pipeline is available only in the Narrativ Forge topic (6)."
+                    else:
+                        try:
+                            jobs = (
+                                db.query(ProcessingJob)
+                                .filter(ProcessingJob.status.in_(["queued", "processing", "pending"]))
+                                .order_by(ProcessingJob.created_at.desc())
+                                .limit(10)
+                                .all()
+                            )
+                            if not jobs:
+                                reply = "⚙️ No active pipeline jobs."
+                            else:
+                                lines = ["⚙️ <b>Active Pipeline Jobs:</b>\\n"]
+                                for i, j in enumerate(jobs, 1):
+                                    jtype = html.escape(str(j.job_type or "unknown")[:30])
+                                    st = html.escape(str(j.status))
+                                    prog = f" ({j.progress}%)" if hasattr(j, 'progress') and j.progress else ""
+                                    lines.append(f"{i}. <code>{jtype}</code> — {st}{prog}")
+                                reply = "\\n".join(lines)
+                        except Exception:
+                            logger.exception("Telegram /pipeline failed")
+                            reply = "⚠️ Could not fetch pipeline jobs. Database may be unavailable."
+
+                elif command == "/assets":
+                    if topic_id != 6:
+                        reply = "⛔ /assets is available only in the Narrativ Forge topic (6)."
+                    else:
+                        try:
+                            assets = (
+                                db.query(Asset)
+                                .order_by(Asset.created_at.desc())
+                                .limit(10)
+                                .all()
+                            )
+                            if not assets:
+                                reply = "📦 No assets found."
+                            else:
+                                lines = ["📦 <b>Recent Assets:</b>\\n"]
+                                for i, a in enumerate(assets, 1):
+                                    atype = html.escape(str(a.asset_type or "unknown")[:20])
+                                    st = html.escape(str(a.status or "unknown"))
+                                    name = html.escape(str(a.original_filename or a.id)[:40])
+                                    lines.append(f"{i}. [{atype}] <code>{name}</code> — {st}")
+                                reply = "\\n".join(lines)
+                        except Exception:
+                            logger.exception("Telegram /assets failed")
+                            reply = "⚠️ Could not fetch assets. Database may be unavailable."
+
+                elif command == "/reviews":
+                    if topic_id != 6:
+                        reply = "⛔ /reviews is available only in the Narrativ Forge topic (6)."
+                    else:
+                        try:
+                            reviews = (
+                                db.query(ReviewRecord)
+                                .order_by(ReviewRecord.created_at.desc())
+                                .limit(10)
+                                .all()
+                            )
+                            if not reviews:
+                                reply = "📋 No reviews found."
+                            else:
+                                lines = ["📋 <b>Recent Reviews:</b>\\n"]
+                                for i, r in enumerate(reviews, 1):
+                                    decision = html.escape(str(r.decision or "pending"))
+                                    ep_id = html.escape(str(r.episode_id or "?")[:20])
+                                    lines.append(f"{i}. Episode <code>{ep_id}</code> — {decision}")
+                                reply = "\\n".join(lines)
+                        except Exception:
+                            logger.exception("Telegram /reviews failed")
+                            reply = "⚠️ Could not fetch reviews. Database may be unavailable."
+
+                elif command == "/metrics":
+                    if topic_id != 6:
+                        reply = "⛔ /metrics is available only in the Narrativ Forge topic (6)."
+                    else:
+                        try:
+                            from sqlalchemy import func as sa_func
+                            total_eps = db.query(sa_func.count(Episode.id)).scalar() or 0
+                            total_scripts = db.query(sa_func.count(Script.id)).filter(Script.is_current.is_(True)).scalar() or 0
+                            total_ideas = db.query(sa_func.count(Idea.id)).scalar() or 0
+                            total_assets = db.query(sa_func.count(Asset.id)).scalar() or 0
+                            active_jobs = db.query(sa_func.count(ProcessingJob.id)).filter(
+                                ProcessingJob.status.in_(["queued", "processing", "pending"])
+                            ).scalar() or 0
+                            reply = (
+                                "📊 <b>Narrativ Forge Metrics:</b>\\n\\n"
+                                f"🎬 Episodes: <b>{total_eps}</b>\\n"
+                                f"📝 Scripts (current): <b>{total_scripts}</b>\\n"
+                                f"💡 Ideas: <b>{total_ideas}</b>\\n"
+                                f"📦 Assets: <b>{total_assets}</b>\\n"
+                                f"⚙️ Active Jobs: <b>{active_jobs}</b>"
+                            )
+                        except Exception:
+                            logger.exception("Telegram /metrics failed")
+                            reply = "⚠️ Could not fetch metrics. Database may be unavailable."
+
                 elif topic_id == 6:
                     ai_providers = [
                         name for name, enabled in (

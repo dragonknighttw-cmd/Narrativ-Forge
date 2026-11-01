@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict, deque
 import logging
 from contextlib import asynccontextmanager
@@ -49,7 +50,13 @@ async def lifespan(_: "FastAPI"):
     yield
 
 
-app = FastAPI(title="Narrativ Forge API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="Narrativ Forge API",
+    version="0.1.0",
+    lifespan=lifespan,
+    docs_url="/docs" if os.getenv("ENVIRONMENT", "development").lower() != "production" else None,
+    redoc_url="/redoc" if os.getenv("ENVIRONMENT", "development").lower() != "production" else None,
+)
 
 
 @app.middleware("http")

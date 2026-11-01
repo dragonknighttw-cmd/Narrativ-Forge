@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 
 import httpx
 
@@ -8,7 +9,7 @@ from ..core.config import settings
 
 logger = logging.getLogger(__name__)
 
-WEBHOOK_URL = "https://narrativ-forge.onrender.com/api/v1/telegram/webhook"
+_DEFAULT_RENDER_URL = "https://narrativ-forge.onrender.com"
 
 
 async def configure_telegram_webhook() -> None:
@@ -29,9 +30,13 @@ async def configure_telegram_webhook() -> None:
         logger.error("Telegram webhook setup skipped: secret contains characters Telegram does not accept")
         return
 
+    base_url = os.getenv("TELEGRAM_WEBHOOK_URL", "") or os.getenv("RENDER_EXTERNAL_URL", "") or _DEFAULT_RENDER_URL
+    base_url = base_url.rstrip("/")
+    webhook_url = base_url if base_url.endswith("/api/v1/telegram/webhook") else base_url + "/api/v1/telegram/webhook"
+
     url = f"https://api.telegram.org/bot{token}/setWebhook"
     payload = {
-        "url": WEBHOOK_URL,
+        "url": webhook_url,
         "secret_token": secret,
         "allowed_updates": ["message", "edited_message", "callback_query"],
         "drop_pending_updates": False,

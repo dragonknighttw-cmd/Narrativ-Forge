@@ -6,6 +6,7 @@ import hmac
 import httpx
 import json
 import logging
+import os
 import re
 from uuid import NAMESPACE_URL, uuid5
 from typing import Any
@@ -127,7 +128,14 @@ async def telegram_webhook(
         chat = incoming.get("chat") or {}
         if isinstance(text, str) and text.strip().startswith("/") and isinstance(actor, dict) and isinstance(chat, dict):
             user_id = actor.get("id")
-            command = text.strip().split()[0].split("@", 1)[0].lower()
+            command_token = text.strip().split()[0]
+            command, separator, addressed_username = command_token.partition("@")
+            command = command.lower()
+            configured_username = os.getenv("TELEGRAM_BOT_USERNAME", "NarrativForgeBot").lstrip("@").casefold()
+            # Explicitly addressed commands belong only to the named bot.
+            # Do not let Narrativ Forge answer another bot's command.
+            if separator and addressed_username.casefold() != configured_username:
+                return {"status": "ignored", "reason": "command_addressed_to_another_bot"}
             topic_id = incoming.get("message_thread_id")
             # This deployment owns only the dedicated Narrativ Forge bot.
             # Other projects must use their own bot token + webhook deployment.

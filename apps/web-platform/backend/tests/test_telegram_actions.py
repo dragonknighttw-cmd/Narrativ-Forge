@@ -213,7 +213,7 @@ def test_telegram_commands_are_scoped_to_project_topic(monkeypatch, topic_id, pr
         return {"ok": True}
 
     monkeypatch.setattr(telegram, "send_telegram_message", fake_send)
-    for command in ("/start", "/status", "/ai_status"):
+    for command in ("/start", "/start@NarrativForgeBot", "/status", "/ai_status"):
         result = asyncio.run(telegram.telegram_webhook(
             {
                 "update_id": topic_id,
@@ -288,4 +288,39 @@ def test_telegram_webhook_ignores_matching_topic_from_another_chat(monkeypatch):
         )
     )
     assert result == {"status": "ignored", "reason": "unrecognized_chat_or_topic"}
+    assert sent == []
+
+
+def test_telegram_webhook_ignores_command_addressed_to_another_bot(monkeypatch):
+    import asyncio
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setenv("TELEGRAM_BOT_USERNAME", "NarrativForgeBot")
+    sent = []
+
+    async def fake_send(*args, **kwargs):
+        sent.append((args, kwargs))
+
+    monkeypatch.setattr(telegram, "send_telegram_message", fake_send)
+    result = asyncio.run(
+        telegram.telegram_webhook(
+            {
+                "update_id": 901,
+                "message": {
+                    "text": "/start@LogixaFlowBot",
+                    "from": {"id": 12345},
+                    "chat": {"id": -100123, "type": "supergroup"},
+                    "message_thread_id": 6,
+                },
+            },
+            x_telegram_bot_api_secret_token="s" * 40,
+            db=None,
+        )
+    )
+    assert result == {
+        "status": "ignored",
+        "reason": "command_addressed_to_another_bot",
+    }
     assert sent == []

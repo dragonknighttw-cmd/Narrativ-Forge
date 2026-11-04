@@ -42,5 +42,6 @@ def test_webhook_setup_registers_commands(monkeypatch):
     assert calls[1][0].endswith("/setMyCommands")
     assert calls[1][1]["scope"] == {"type": "chat", "chat_id": -1}
     assert {item["command"] for item in calls[1][1]["commands"]} == {
-        "start", "help", "commands", "ai_status", "ai_test", "idea"
+        "start", "help", "commands", "status", "ai_status", "ai_test", "idea",
+        "drafts", "ideas", "episodes", "pipeline", "assets", "reviews", "metrics"
     }

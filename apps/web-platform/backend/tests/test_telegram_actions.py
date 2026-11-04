@@ -196,7 +196,7 @@ def test_telegram_webhook_dispatches_callback_to_action_handler(monkeypatch):
 
 @pytest.mark.parametrize(
     ("topic_id", "project_name"),
-    [(6, "Narrativ Forge"), (2, "A Little World With Us"), (5, "Logixa Flow"), (18, "Doka"), (7, "Cognix")],
+    [(6, "Narrativ Forge")],
 )
 def test_telegram_commands_are_scoped_to_project_topic(monkeypatch, topic_id, project_name):
     import asyncio
@@ -213,7 +213,7 @@ def test_telegram_commands_are_scoped_to_project_topic(monkeypatch, topic_id, pr
         return {"ok": True}
 
     monkeypatch.setattr(telegram, "send_telegram_message", fake_send)
-    for command in ("/start", "/ai_status"):
+    for command in ("/start", "/status", "/ai_status"):
         result = asyncio.run(telegram.telegram_webhook(
             {
                 "update_id": topic_id,

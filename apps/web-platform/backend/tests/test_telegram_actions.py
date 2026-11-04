@@ -213,7 +213,7 @@ def test_telegram_commands_are_scoped_to_project_topic(monkeypatch, topic_id, pr
         return {"ok": True}
 
     monkeypatch.setattr(telegram, "send_telegram_message", fake_send)
-    for command in ("/start", "/status", "/ai_status"):
+    for command in ("/start", "/start@NarrativForgeBot", "/status", "/ai_status"):
         result = asyncio.run(telegram.telegram_webhook(
             {
                 "update_id": topic_id,

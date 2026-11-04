@@ -129,16 +129,14 @@ async def telegram_webhook(
             user_id = actor.get("id")
             command = text.strip().split()[0].split("@", 1)[0].lower()
             topic_id = incoming.get("message_thread_id")
+            # This deployment owns only the dedicated Narrativ Forge bot.
+            # Other projects must use their own bot token + webhook deployment.
             project_by_topic = {
                 6: "Narrativ Forge",
-                2: "A Little World With Us",
-                5: "Logixa Flow",
-                18: "Doka",
-                7: "Cognix",
             }
             if str(chat.get("id")) != settings.telegram_chat_id or not isinstance(topic_id, int) or topic_id not in project_by_topic:
                 return {"status": "ignored", "reason": "unrecognized_chat_or_topic"}
-            if command in {"/start", "/help", "/commands", "/ai_status", "/ai_test", "/idea", "/drafts", "/ideas", "/episodes", "/pipeline", "/assets", "/reviews", "/metrics"}:
+            if command in {"/start", "/help", "/commands", "/status", "/ai_status", "/ai_test", "/idea", "/drafts", "/ideas", "/episodes", "/pipeline", "/assets", "/reviews", "/metrics"}:
                 # Diagnostic is deliberately scoped to Narrativ Forge's own
                 # configured Telegram chat/topic; never log secrets or message text.
                 if str(chat.get("id")) == settings.telegram_chat_id and topic_id == settings.telegram_topic_id:
@@ -213,7 +211,7 @@ async def telegram_webhook(
                         f"🤖 <b>{html.escape(project_name)} — connected to this topic.</b>\\n\\n"
                         "Commands:\\n/start — connect to this project's topic\\n"
                         "/commands — list available commands\\n"
-                        "/ai_status — check configured AI providers\\n"
+                        "/status or /ai_status — check configured AI providers\\n"
                         "/ai_test — send a test request to OpenRouter\\n"
                         "/idea <text> — save an idea to Narrativ Forge\\n"
                         "/drafts — view active script drafts\\n"

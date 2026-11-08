@@ -48,13 +48,13 @@ $webErr = Join-Path $Runtime "web.stderr.log"
 $api = $null
 $web = $null
 try {
-    $api = Start-Process -FilePath $VenvPython -ArgumentList @("-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000") -WorkingDirectory $Backend -PassThru -RedirectStandardOutput $apiOut -RedirectStandardError $apiErr
+    $api = Start-Process -FilePath $VenvPython -ArgumentList @("-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8001") -WorkingDirectory $Backend -PassThru -RedirectStandardOutput $apiOut -RedirectStandardError $apiErr
     $api.Id | Set-Content -Encoding ascii (Join-Path $Runtime "api.pid")
     $apiReady = $false
     for ($i = 0; $i -lt 45; $i++) {
         if ($api.HasExited) { throw "API process exited early. See $apiErr" }
         try {
-            $null = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:8000/api/v1/health" -TimeoutSec 3
+            $null = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:8001/api/v1/health" -TimeoutSec 3
             $apiReady = $true
             break
         } catch { Start-Sleep -Seconds 2 }
@@ -76,7 +76,7 @@ try {
     if (-not $webReady) { throw "Frontend did not become healthy. See $webOut and $webErr" }
     [ordered]@{
         started_at = (Get-Date).ToUniversalTime().ToString("o")
-        api_url = "http://127.0.0.1:8000"
+        api_url = "http://127.0.0.1:8001"
         frontend_url = "http://127.0.0.1:3000"
         api_pid = $api.Id
         frontend_pid = $web.Id
@@ -86,7 +86,7 @@ try {
         offline_capable = $false
     } | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $Runtime "runtime-manifest.json")
     Write-Host "Narrativ Forge portable API/UI runtime is ready."
-    Write-Host "API: http://127.0.0.1:8000"
+    Write-Host "API: http://127.0.0.1:8001"
     Write-Host "UI:  http://127.0.0.1:3000/login"
     if (-not $NoBrowser) { Start-Process "http://127.0.0.1:3000/login" }
 } catch {

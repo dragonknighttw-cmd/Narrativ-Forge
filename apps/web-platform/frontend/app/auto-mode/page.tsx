@@ -3,7 +3,7 @@ import { FormEvent, useState } from "react";
 import { AppShell } from "../../components/app-shell";
 import { Alert, Button, Card, Stack, TextInput } from "../../components/ui-primitives";
 
-const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8001/api/v1";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(base + path, {

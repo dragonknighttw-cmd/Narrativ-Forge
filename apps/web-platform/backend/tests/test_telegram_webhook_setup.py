@@ -14,6 +14,7 @@ def test_webhook_setup_registers_commands(monkeypatch):
     monkeypatch.setattr(setup.settings, "telegram_bot_token", SecretStr("x"))
     monkeypatch.setattr(setup.settings, "telegram_gateway_secret", "s" * 40)
     monkeypatch.setattr(setup.settings, "telegram_chat_id", "-1")
+    monkeypatch.setattr(setup.settings, "frontend_base_url", "https://narrativ-forge.example.test")
     calls = []
 
     class Response:
@@ -37,11 +38,13 @@ def test_webhook_setup_registers_commands(monkeypatch):
     monkeypatch.setattr(setup.httpx, "AsyncClient", lambda **kwargs: Client())
     asyncio.run(setup.configure_telegram_webhook())
 
-    assert len(calls) == 2
+    assert len(calls) == 3
     assert calls[0][0].endswith("/setWebhook")
     assert calls[1][0].endswith("/setMyCommands")
     assert calls[1][1]["scope"] == {"type": "chat", "chat_id": -1}
     assert {item["command"] for item in calls[1][1]["commands"]} == {
         "start", "help", "commands", "status", "ai_status", "ai_test", "idea",
-        "drafts", "ideas", "episodes", "pipeline", "assets", "reviews", "metrics"
+        "drafts", "ideas", "episodes", "pipeline", "assets", "reviews", "metrics", "manga", "clip"
     }
+    assert calls[2][0].endswith("/setChatMenuButton")
+    assert calls[2][1]["menu_button"]["text"] == "Open Flow"

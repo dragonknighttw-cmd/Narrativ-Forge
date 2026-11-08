@@ -4,7 +4,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-api_url = os.environ.get("SMOKE_API_URL", "http://127.0.0.1:8000/api/v1")
+api_url = os.environ.get("SMOKE_API_URL", "http://127.0.0.1:8001/api/v1")
 checks = []
 
 def check(name, fn):

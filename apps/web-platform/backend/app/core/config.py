@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     b2_signed_url_expiry_seconds: int = 900
     google_client_id: str = ""
     google_client_secret: str = ""
-    google_redirect_uri: str = "http://localhost:8000/api/v1/drive/google/callback"
+    google_redirect_uri: str = "http://localhost:8001/api/v1/drive/google/callback"
     oauth_encryption_key: str = ""
     frontend_base_url: str = "http://localhost:3000"
     smtp_host: str = ""

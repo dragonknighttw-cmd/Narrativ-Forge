@@ -32,7 +32,7 @@ test("authenticated production flow reaches approved mock export", async ({ page
   await expect(page.getByText("PRODUCTION WORKSPACES")).toBeVisible();
 
   const episodeId = new URL(page.url()).pathname.split("/").filter(Boolean).pop()!;
-  const apiBase = "http://localhost:8000/api/v1";
+  const apiBase = "http://localhost:8001/api/v1";
   const uploadRequests: { method: string; path: string; idempotencyKey?: string }[] = [];
   page.on("request", request => {
     const url = new URL(request.url());

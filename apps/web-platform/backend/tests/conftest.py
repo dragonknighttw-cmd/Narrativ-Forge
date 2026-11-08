@@ -1,3 +1,12 @@
+import os
+# Ensure safe reproducible test environment defaults
+os.environ.setdefault('APP_ENV', 'test')
+os.environ.setdefault('DATABASE_URL', 'sqlite:///:memory:')
+os.environ.setdefault('SINGLE_USER_EMAIL', 'test@narrativforge.local')
+os.environ.setdefault('STORAGE_PROVIDER', 'local')
+os.environ.setdefault('SESSION_SECRET', 'test-session-secret-at-least-32-chars-long')
+os.environ.setdefault('OAUTH_ENCRYPTION_KEY', 'uE8qYh4Zq9gYgJ_uYt7mY2rZq4aYv_wXy1z_2b3c4dE=')
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

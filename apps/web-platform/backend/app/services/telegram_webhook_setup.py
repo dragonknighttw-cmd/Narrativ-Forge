@@ -75,6 +75,8 @@ async def configure_telegram_webhook() -> None:
                             {"command": "assets", "description": "List recent assets"},
                             {"command": "reviews", "description": "List recent reviews"},
                             {"command": "metrics", "description": "Show production metrics"},
+                            {"command": "manga", "description": "Create a manga storyboard"},
+                            {"command": "clip", "description": "Register a video clip"},
                         ],
                         "scope": {
                             "type": "chat",
@@ -91,6 +93,29 @@ async def configure_telegram_webhook() -> None:
             except Exception as exc:
                 # Keep webhook delivery available even if command-menu setup fails.
                 logger.warning("Telegram command menu setup failed (%s)", type(exc).__name__)
+
+            # This is the same Telegram menu button exposed by BotFather's
+            # "Menu Button" box.  Keeping it in startup configuration makes
+            # a future deployment reproducible instead of manually configured.
+            try:
+                frontend_url = settings.frontend_base_url.strip()
+                if frontend_url.startswith("https://"):
+                    menu_response = await client.post(
+                        f"https://api.telegram.org/bot{token}/setChatMenuButton",
+                        json={
+                            "menu_button": {
+                                "type": "web_app",
+                                "text": "Open Flow",
+                                "web_app": {"url": frontend_url},
+                            }
+                        },
+                    )
+                    menu_response.raise_for_status()
+                    logger.info("Telegram menu button configured for Narrativ Forge")
+                else:
+                    logger.warning("Telegram menu button skipped: FRONTEND_BASE_URL must use HTTPS")
+            except Exception as exc:
+                logger.warning("Telegram menu button setup failed (%s)", type(exc).__name__)
     except Exception as exc:
         # Exception strings can include request URLs, so log only the exception type.
         logger.error("Telegram webhook setup failed (%s)", type(exc).__name__)

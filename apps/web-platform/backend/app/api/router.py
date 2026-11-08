@@ -4,11 +4,13 @@ from .routes import (
     search, auto_mode, assets, auth, brain_soul, episodes, health, ideas, jobs,
     scenes, scripts, series, subtitles, review, export, google_drive,
     production_intelligence, production_pipeline, audit, uploads, phase4, hooks,
-    cloud_processing, telegram, seo_hook, recap, podcast, characters
+    cloud_processing, telegram, seo_hook, recap, podcast, characters, manga, video_composer
 )
 
 api_router = APIRouter()
 api_router.include_router(characters.router)
+api_router.include_router(manga.router)
+api_router.include_router(video_composer.router)
 api_router.include_router(telegram.router)
 api_router.include_router(health.router)
 api_router.include_router(auth.router)

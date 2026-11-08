@@ -17,6 +17,7 @@ export default function PublishingPreparationPage() {
   const [platform, setPlatform] = useState("tiktok");
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState("#မြန်မာ #ဗဟုသုတ #ဇာတ်လမ်းတွဲ #burmesestory #foryou");
+  const [scheduledAt, setScheduledAt] = useState("");
   const [items, setItems] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -59,6 +60,7 @@ export default function PublishingPreparationPage() {
           caption,
           hashtags: hashtags.split(/[ ,]+/).filter(Boolean),
           platform_format_valid: true,
+          schedule_metadata: scheduledAt ? { scheduled_at: new Date(scheduledAt).toISOString(), mode: "manual" } : {},
         }),
       });
       const b = await r.json();
@@ -240,6 +242,12 @@ export default function PublishingPreparationPage() {
             />
           </label>
 
+          <label>
+            Manual content-calendar slot (optional)
+            <input type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} />
+            <span className="muted" style={{ display: "block", fontSize: "0.75rem", marginTop: "0.35rem" }}>This stores a planning reminder only. Narrativ never publishes automatically.</span>
+          </label>
+
           <div>
             <button className="primary" disabled={!episodeId || busy} onClick={save}>
               {busy ? "Saving…" : "Save Publishing Metadata"}
@@ -250,7 +258,7 @@ export default function PublishingPreparationPage() {
 
       {/* Preparation History */}
       <section className="card">
-        <div className="eyebrow">SAVED PREPARATIONS ({items.length})</div>
+        <div className="eyebrow">CONTENT CALENDAR · SAVED PREPARATIONS ({items.length})</div>
         {items.length === 0 ? (
           <div className="empty-state" style={{ marginTop: "1rem" }}>
             No publishing preparation saved yet.
@@ -267,6 +275,7 @@ export default function PublishingPreparationPage() {
                   <p className="burmese-text muted" style={{ margin: "0.25rem 0 0", fontSize: "0.85rem" }}>
                     {x.caption || "No caption"}
                   </p>
+                  {x.schedule_metadata?.scheduled_at && <p className="muted" style={{ margin: "0.25rem 0 0", fontSize: "0.75rem" }}>Manual slot: {new Date(x.schedule_metadata.scheduled_at).toLocaleString()}</p>}
                 </div>
               </div>
             ))}

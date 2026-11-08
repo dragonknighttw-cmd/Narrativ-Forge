@@ -23,7 +23,7 @@ export default function LoginPage() {
         // The explicit flag and loopback API check prevent this fallback from targeting production.
         const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
         const localE2EAuth = process.env.NEXT_PUBLIC_E2E_AUTH_MODE === "true"
-          && apiBase === "http://localhost:8000/api/v1";
+          && apiBase === "http://localhost:8001/api/v1";
         if (process.env.NODE_ENV === "production" && !localE2EAuth) {
           throw new Error("Supabase Auth configuration is missing.");
         }

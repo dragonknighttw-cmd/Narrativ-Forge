@@ -29,12 +29,22 @@ from ...models import (
     Subtitle,
 )
 from ...services.telegram import answer_telegram_callback, send_telegram_message
+from ...services.manga_engine import MangaEngine, LayoutType
+from ...services.video_composer import VideoComposerService, VideoSourceProvider
 from ...workers.tasks import enqueue_real_job
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
 REVIEW_CHECK_KEYS = ("video_watched", "audio_checked", "subtitle_timing_checked", "thumbnail_present")
+
+
+def _dashboard_keyboard() -> list[list[dict[str, str]]] | None:
+    """Return the one consistent dashboard button used by command replies."""
+    url = settings.frontend_base_url.strip()
+    if not url.startswith(("https://", "http://")):
+        return None
+    return [[{"text": "🎬 Open Flow Dashboard", "url": url}]]
 
 
 class TelegramActionPayload(BaseModel):
@@ -144,7 +154,7 @@ async def telegram_webhook(
             }
             if str(chat.get("id")) != settings.telegram_chat_id or not isinstance(topic_id, int) or topic_id not in project_by_topic:
                 return {"status": "ignored", "reason": "unrecognized_chat_or_topic"}
-            if command in {"/start", "/help", "/commands", "/status", "/ai_status", "/ai_test", "/idea", "/drafts", "/ideas", "/episodes", "/pipeline", "/assets", "/reviews", "/metrics"}:
+            if command in {"/start", "/help", "/commands", "/status", "/ai_status", "/ai_test", "/idea", "/drafts", "/ideas", "/episodes", "/pipeline", "/assets", "/reviews", "/metrics", "/manga", "/clip"}:
                 # Diagnostic is deliberately scoped to Narrativ Forge's own
                 # configured Telegram chat/topic; never log secrets or message text.
                 if str(chat.get("id")) == settings.telegram_chat_id and topic_id == settings.telegram_topic_id:
@@ -207,28 +217,28 @@ async def telegram_webhook(
                         str(topic_id) if isinstance(topic_id, int) else "မတွေ့ပါ (General topic သို့မဟုတ် topic metadata မပါ)"
                     )
                     reply = (
-                        "⚠️ <b>Project topic ကို မသိရှိနိုင်ပါ။</b>\\n"
-                        f"Telegram က လက်ခံရရှိတဲ့ message_thread_id: <code>{html.escape(detected_topic)}</code>\\n"
+                        "⚠️ <b>Project topic ကို မသိရှိနိုင်ပါ။</b>\n"
+                        f"Telegram က လက်ခံရရှိတဲ့ message_thread_id: <code>{html.escape(detected_topic)}</code>\n"
                         "ဒီ command ကို Narrativ Forge ရဲ့ topic ထဲမှာ ပို့ထားကြောင်း စစ်ပါ။ "
-                        "မမှန်သေးရင် ဒီ ID ကို support အတွက် အသုံးပြုနိုင်ပါတယ်။\\n"
+                        "မမှန်သေးရင် ဒီ ID ကို support အတွက် အသုံးပြုနိုင်ပါတယ်။\n"
                         "Configured topics: Narrativ Forge (6), A Little World With Us (2), "
                         "Logixa Flow (5), Doka (18), Cognix (7)."
                     )
                 elif command in {"/start", "/help", "/commands"}:
                     reply = (
-                        f"🤖 <b>{html.escape(project_name)} — connected to this topic.</b>\\n\\n"
-                        "Commands:\\n/start — connect to this project's topic\\n"
-                        "/commands — list available commands\\n"
-                        "/status or /ai_status — check configured AI providers\\n"
-                        "/ai_test — send a test request to OpenRouter\\n"
-                        "/idea <text> — save an idea to Narrativ Forge\\n"
-                        "/drafts — view active script drafts\\n"
-                        "/ideas — view recent ideas\\n"
-                        "/episodes — view recent episodes\\n"
-                        "/pipeline — view active processing jobs\\n"
-                        "/assets — view recent assets\\n"
-                        "/reviews — view recent reviews\\n"
-                        "/metrics — content production metrics\\n"
+                        f"🤖 <b>{html.escape(project_name)} — connected to this topic.</b>\n\n"
+                        "Commands:\n/start — connect to this project's topic\n"
+                        "/commands — list available commands\n"
+                        "/status or /ai_status — check configured AI providers\n"
+                        "/ai_test — send a test request to OpenRouter\n"
+                        "/idea <text> — save an idea to Narrativ Forge\n"
+                        "/drafts — view active script drafts\n"
+                        "/ideas — view recent ideas\n"
+                        "/episodes — view recent episodes\n"
+                        "/pipeline — view active processing jobs\n"
+                        "/assets — view recent assets\n"
+                        "/reviews — view recent reviews\n"
+                        "/metrics — content production metrics\n"
                         "This command reply is scoped to the current topic."
                     )
                 elif command == "/ai_test":
@@ -261,7 +271,7 @@ async def telegram_webhook(
                                     data = response.json()
                                     content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
                                     safe_content = html.escape(str(content)[:500]) if content else "Provider returned an empty response."
-                                    reply = f"✅ <b>OpenRouter test succeeded</b>\\nModel: <code>{html.escape(model)}</code>\\n{safe_content}"
+                                    reply = f"✅ <b>OpenRouter test succeeded</b>\nModel: <code>{html.escape(model)}</code>\n{safe_content}"
                                 else:
                                     logger.warning("OpenRouter Telegram test failed with HTTP %s", response.status_code)
                                     reply = f"⚠️ OpenRouter test failed (HTTP {response.status_code}). Check backend provider settings/logs."
@@ -274,7 +284,7 @@ async def telegram_webhook(
                     else:
                         idea_text = text.strip().partition(" ")[2].strip()
                         if not idea_text:
-                            reply = "💡 Usage: /idea <text>\\nExample: /idea Create a short video about sustainable living"
+                            reply = "💡 Usage: /idea <text>\nExample: /idea Create a short video about sustainable living"
                         elif len(idea_text) > 10000:
                             reply = "⚠️ Idea is too long. Please keep it under 10,000 characters."
                         else:
@@ -309,12 +319,12 @@ async def telegram_webhook(
                             if not scripts:
                                 reply = "📝 No active drafts found."
                             else:
-                                lines = ["📝 <b>Active Drafts:</b>\\n"]
+                                lines = ["📝 <b>Active Drafts:</b>\n"]
                                 for i, s in enumerate(scripts, 1):
                                     title = html.escape(str(s.title or s.id)[:60])
                                     st = html.escape(str(s.status))
                                     lines.append(f"{i}. <code>{title}</code> — {st}")
-                                reply = "\\n".join(lines)
+                                reply = "\n".join(lines)
                         except Exception:
                             logger.exception("Telegram /drafts failed")
                             reply = "⚠️ Could not fetch drafts. Database may be unavailable."
@@ -334,12 +344,12 @@ async def telegram_webhook(
                             if not ideas:
                                 reply = "💡 No ideas found."
                             else:
-                                lines = ["💡 <b>Recent Ideas:</b>\\n"]
+                                lines = ["💡 <b>Recent Ideas:</b>\n"]
                                 for i, idea in enumerate(ideas, 1):
                                     title = html.escape(str(idea.title or "Untitled")[:60])
                                     st = html.escape(str(idea.status))
                                     lines.append(f"{i}. <code>{title}</code> — {st}")
-                                reply = "\\n".join(lines)
+                                reply = "\n".join(lines)
                         except Exception:
                             logger.exception("Telegram /ideas failed")
                             reply = "⚠️ Could not fetch ideas. Database may be unavailable."
@@ -358,13 +368,13 @@ async def telegram_webhook(
                             if not episodes:
                                 reply = "🎬 No episodes found."
                             else:
-                                lines = ["🎬 <b>Recent Episodes:</b>\\n"]
+                                lines = ["🎬 <b>Recent Episodes:</b>\n"]
                                 for i, ep in enumerate(episodes, 1):
                                     title = html.escape(str(ep.title or ep.id)[:60])
                                     st = html.escape(str(ep.status or "unknown"))
                                     step = html.escape(str(ep.current_step or ""))
                                     lines.append(f"{i}. <code>{title}</code> — {st}" + (f" ({step})" if step else ""))
-                                reply = "\\n".join(lines)
+                                reply = "\n".join(lines)
                         except Exception:
                             logger.exception("Telegram /episodes failed")
                             reply = "⚠️ Could not fetch episodes. Database may be unavailable."
@@ -384,13 +394,13 @@ async def telegram_webhook(
                             if not jobs:
                                 reply = "⚙️ No active pipeline jobs."
                             else:
-                                lines = ["⚙️ <b>Active Pipeline Jobs:</b>\\n"]
+                                lines = ["⚙️ <b>Active Pipeline Jobs:</b>\n"]
                                 for i, j in enumerate(jobs, 1):
                                     jtype = html.escape(str(j.job_type or "unknown")[:30])
                                     st = html.escape(str(j.status))
                                     prog = f" ({j.progress}%)" if hasattr(j, 'progress') and j.progress else ""
                                     lines.append(f"{i}. <code>{jtype}</code> — {st}{prog}")
-                                reply = "\\n".join(lines)
+                                reply = "\n".join(lines)
                         except Exception:
                             logger.exception("Telegram /pipeline failed")
                             reply = "⚠️ Could not fetch pipeline jobs. Database may be unavailable."
@@ -409,13 +419,13 @@ async def telegram_webhook(
                             if not assets:
                                 reply = "📦 No assets found."
                             else:
-                                lines = ["📦 <b>Recent Assets:</b>\\n"]
+                                lines = ["📦 <b>Recent Assets:</b>\n"]
                                 for i, a in enumerate(assets, 1):
                                     atype = html.escape(str(a.asset_type or "unknown")[:20])
                                     st = html.escape(str(a.status or "unknown"))
                                     name = html.escape(str(a.original_filename or a.id)[:40])
                                     lines.append(f"{i}. [{atype}] <code>{name}</code> — {st}")
-                                reply = "\\n".join(lines)
+                                reply = "\n".join(lines)
                         except Exception:
                             logger.exception("Telegram /assets failed")
                             reply = "⚠️ Could not fetch assets. Database may be unavailable."
@@ -434,12 +444,12 @@ async def telegram_webhook(
                             if not reviews:
                                 reply = "📋 No reviews found."
                             else:
-                                lines = ["📋 <b>Recent Reviews:</b>\\n"]
+                                lines = ["📋 <b>Recent Reviews:</b>\n"]
                                 for i, r in enumerate(reviews, 1):
                                     decision = html.escape(str(r.decision or "pending"))
                                     ep_id = html.escape(str(r.episode_id or "?")[:20])
                                     lines.append(f"{i}. Episode <code>{ep_id}</code> — {decision}")
-                                reply = "\\n".join(lines)
+                                reply = "\n".join(lines)
                         except Exception:
                             logger.exception("Telegram /reviews failed")
                             reply = "⚠️ Could not fetch reviews. Database may be unavailable."
@@ -458,16 +468,72 @@ async def telegram_webhook(
                                 ProcessingJob.status.in_(["queued", "processing", "pending"])
                             ).scalar() or 0
                             reply = (
-                                "📊 <b>Narrativ Forge Metrics:</b>\\n\\n"
-                                f"🎬 Episodes: <b>{total_eps}</b>\\n"
-                                f"📝 Scripts (current): <b>{total_scripts}</b>\\n"
-                                f"💡 Ideas: <b>{total_ideas}</b>\\n"
-                                f"📦 Assets: <b>{total_assets}</b>\\n"
+                        "📊 <b>Narrativ Forge Metrics:</b>\n\n"
+                        f"🎬 Episodes: <b>{total_eps}</b>\n"
+                        f"📝 Scripts (current): <b>{total_scripts}</b>\n"
+                        f"💡 Ideas: <b>{total_ideas}</b>\n"
+                        f"📦 Assets: <b>{total_assets}</b>\n"
                                 f"⚙️ Active Jobs: <b>{active_jobs}</b>"
                             )
                         except Exception:
                             logger.exception("Telegram /metrics failed")
                             reply = "⚠️ Could not fetch metrics. Database may be unavailable."
+                elif command == "/manga":
+                    if topic_id != 6:
+                        reply = "⛔ /manga is available only in the Narrativ Forge topic (6)."
+                    else:
+                        manga_prompt = text.strip().partition(" ")[2].strip()
+                        if not manga_prompt:
+                            reply = "📖 <b>Manga Generator Usage:</b>\n/manga <story prompt>\nExample: <code>/manga Cyber Samurai awakens in ancient Bagan pagoda</code>"
+                        else:
+                            try:
+                                page = MangaEngine.generate_manga_page(
+                                    title=manga_prompt[:40],
+                                    story_synopsis=manga_prompt,
+                                    layout_type=LayoutType.YONKOMA_4KOMA,
+                                )
+                                panels = page.get("panels", [])
+                                p_summary = "\n".join([f"• <b>Panel {p['panel_index']}:</b> {html.escape(p['title'])}" for p in panels[:4]])
+                                reply = (
+                                    f"📖 <b>Manga Storyboard Generated!</b>\n\n"
+                                    f"🏷️ Page ID: <code>{page['page_id']}</code>\n"
+                                    f"📐 Layout: <b>4-Koma Comic Strip</b>\n"
+                                    f"⏱️ Video Duration: <b>{page['estimated_video_duration_seconds']}s</b>\n\n"
+                                    f"{p_summary}\n\n"
+                                    f"🎨 <i>Open <b>/manga-studio</b> in Narrativ Forge to view panels and export motion comic.</i>"
+                                )
+                            except Exception:
+                                logger.exception("Telegram /manga failed")
+                                reply = "⚠️ Could not generate manga layout. Check backend logs."
+
+                elif command == "/clip":
+                    if topic_id != 6:
+                        reply = "⛔ /clip is available only in the Narrativ Forge topic (6)."
+                    else:
+                        clip_args = text.strip().partition(" ")[2].strip().split(" ", 1)
+                        if len(clip_args) < 2 or not clip_args[0].startswith("http"):
+                            reply = "🎬 <b>Clip Importer Usage:</b>\n/clip <url> <title>\nExample: <code>/clip https://example.com/clip.mp4 Runway Battle Scene</code>"
+                        else:
+                            try:
+                                c_url = clip_args[0]
+                                c_title = clip_args[1]
+                                clip = VideoComposerService.register_external_clip(
+                                    source_url=c_url,
+                                    provider=VideoSourceProvider.CUSTOM_URL,
+                                    title=c_title,
+                                    duration_seconds=5.0,
+                                )
+                                reply = (
+                                    f"🎞️ <b>AI Video Clip Registered!</b>\n\n"
+                                    f"🆔 ID: <code>{clip['id']}</code>\n"
+                                    f"🏷️ Title: <b>{html.escape(clip['title'])}</b>\n"
+                                    f"⏱️ Duration: <b>{clip['duration_seconds']}s</b>\n\n"
+                                    f"✂️ <i>Open <b>/video-composer</b> in Narrativ Forge to assemble timeline tracks.</i>"
+                                )
+                            except Exception:
+                                logger.exception("Telegram /clip failed")
+                                reply = "⚠️ Could not register video clip. Check backend logs."
+
 
                 elif topic_id == 6:
                     ai_providers = [
@@ -480,15 +546,15 @@ async def telegram_webhook(
                     ]
                     ai_text = ", ".join(ai_providers) if ai_providers else "No AI provider key is configured as enabled."
                     reply = (
-                        "🩺 <b>Narrativ Forge status</b>\\n"
-                        f"Telegram notifications: {'enabled' if settings.telegram_enabled else 'disabled'}\\n"
-                        f"Telegram credentials: {'configured' if settings.telegram_bot_token.get_secret_value() else 'missing'}\\n"
+                        "🩺 <b>Narrativ Forge status</b>\n"
+                        f"Telegram notifications: {'enabled' if settings.telegram_enabled else 'disabled'}\n"
+                        f"Telegram credentials: {'configured' if settings.telegram_bot_token.get_secret_value() else 'missing'}\n"
                         f"AI providers configured: {html.escape(ai_text)}"
                     )
                 else:
                     reply = (
-                        f"🩺 <b>{html.escape(project_name)} status</b>\\n"
-                        "Topic routing is recognized and isolated.\\n"
+                        f"🩺 <b>{html.escape(project_name)} status</b>\n"
+                        "Topic routing is recognized and isolated.\n"
                         "⚠️ Project-specific AI/service health is not connected to this Narrativ Forge backend, "
                         "so this bot cannot truthfully report that project's provider or workflow health yet."
                     )
@@ -496,6 +562,7 @@ async def telegram_webhook(
                     reply,
                     chat_id=chat.get("id"),
                     topic_id=topic_id if isinstance(topic_id, int) else None,
+                    inline_keyboard=_dashboard_keyboard(),
                 )
                 return {"status": "command_processed", "command": command, "project": project_name}
         return {"status": "ignored"}

@@ -1,8 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { apiBase } from "../../lib/api";
 
-const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+const base = apiBase;
 
 type Hook = { id: string; hook_text: string; hook_type: string; topic?: string; emotion?: string; used_count: number; views_average?: number; completion_average?: number; shares_average?: number; performance_score?: number; is_default: boolean };
 type Log = { id: string; topic: string; category?: string; hook?: string; hook_type?: string; duration_seconds?: number; scene_count?: number; production_time_seconds?: number; quality_score?: number; published: boolean; platform?: string; views?: number; completion_rate?: number; shares?: number; saves?: number; notes?: string };

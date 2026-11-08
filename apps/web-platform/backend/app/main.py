@@ -47,12 +47,13 @@ async def lifespan(_: "FastAPI"):
     """Initialize application services and synchronize the Telegram webhook."""
     init_db()
     await configure_telegram_webhook()
-    # Startup Telegram notification
+    # Avoid repeated "online" posts whenever Render restarts the service.
+    # Operators can opt in for troubleshooting with TELEGRAM_STARTUP_NOTIFICATION=true.
     try:
         from app.services.telegram import send_telegram_message
         import os as _os
         _topic = int(_os.getenv("TELEGRAM_TOPIC_ID", "0")) or None
-        if _topic:
+        if _topic and _os.getenv("TELEGRAM_STARTUP_NOTIFICATION", "").strip().lower() in {"1", "true", "yes", "on"}:
             await send_telegram_message(
                 "🟢 <b>Narrativ Forge Backend</b> is now online and ready!",
                 topic_id=_topic,

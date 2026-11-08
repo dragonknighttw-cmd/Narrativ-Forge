@@ -1,9 +1,9 @@
 const configuredBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
-const base = configuredBase ?? (process.env.NODE_ENV === "production" ? "https://narrativ-forge.onrender.com/api/v1" : "http://localhost:8001/api/v1");
+export const apiBase = configuredBase ?? (process.env.NODE_ENV === "production" ? "https://narrativ-forge.onrender.com/api/v1" : "http://localhost:8001/api/v1");
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  if (!base) throw new Error("Backend API configuration is missing.");
-  const response = await fetch(base + path, {
+  if (!apiBase) throw new Error("Backend API configuration is missing.");
+  const response = await fetch(apiBase + path, {
     ...init,
     credentials: "include",
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
@@ -42,6 +42,7 @@ export type Script = { id: string; episode_id: string; version: number; title?: 
 export type EpisodeUpdateInput = Partial<Omit<Episode, "id" | "row_version" | "created_at" | "updated_at">> & { expected_row_version: number };
 export type Scene = { id: string; episode_id: string; script_id?: string | null; scene_number: number; purpose: string; description?: string | null; dialogue?: string | null; duration_seconds?: number | null; created_at: string; updated_at: string };
 export type Asset = { id: string; episode_id: string; scene_id?: string | null; asset_type: string; original_filename: string; storage_provider: string; local_path?: string | null; mime_type: string; file_size_bytes: number; version: number; copyright_status: string; is_final: boolean; status: string; created_at: string };
+export type ManualPersonaPack = { actor_id: string; actor_name: string; role?: string; voice_binding: Record<string, unknown>; vrm_model_path?: string; character_meta?: Record<string, unknown> };
 type UploadPart = { part_number: number; size_bytes: number; checksum_sha256: string };
 type UploadSession = {
   id: string;
@@ -98,6 +99,7 @@ export const api = {
 
 
   listIdeas: () => request<Idea[]>("/ideas"),
+  importPersonaPacks: (packs: ManualPersonaPack[]) => request<{ imported: number; skipped: number }>("/characters/import-avatar-batch", { method: "POST", body: JSON.stringify({ packs }) }),
   createIdea: (data: { title: string; concept?: string; category?: string; hook?: string; content_warning?: string }) => request<Idea>("/ideas", { method: "POST", body: JSON.stringify(data) }),
   updateIdea: (id: string, data: Partial<Idea>) => request<Idea>(`/ideas/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   listSeries: () => request<Series[]>("/series"),
@@ -135,7 +137,7 @@ export const api = {
   updateSubtitle: (subtitleId: string, data: { cues?: SubtitleCue[]; preset?: string; format?: string }) => request<Subtitle>(`/subtitles/${subtitleId}`, { method: "PATCH", body: JSON.stringify(data) }),
   validateSubtitle: (episodeId: string) => request<{ valid: boolean; errors: Subtitle["validation_errors"]; subtitle_id: string }>(`/episodes/${episodeId}/subtitles/validate`, { method: "POST" }),
   approveSubtitle: (episodeId: string) => request<Subtitle>(`/episodes/${episodeId}/subtitles/approve`, { method: "POST" }),
-  exportSubtitle: (subtitleId: string, format: "srt" | "vtt") => `${base}/subtitles/${subtitleId}/export?format=${format}`,
+  exportSubtitle: (subtitleId: string, format: "srt" | "vtt") => `${apiBase}/subtitles/${subtitleId}/export?format=${format}`,
   getThumbnailCandidates: (episodeId: string) => request<{
     episode_id: string;
     total_generated: number;
@@ -194,7 +196,7 @@ export const api = {
     const createSession = async () => {
       const idempotencyKey = localStorage.getItem(idempotencyStorageKey) ?? crypto.randomUUID();
       localStorage.setItem(idempotencyStorageKey, idempotencyKey);
-      return readResponse<UploadSession>(await fetch(base + "/uploads", {
+      return readResponse<UploadSession>(await fetch(apiBase + "/uploads", {
         method: "POST",
         credentials: "include",
         headers: {
@@ -215,7 +217,7 @@ export const api = {
     let session: UploadSession | undefined;
     const savedSessionId = localStorage.getItem(resumeKey);
     if (savedSessionId) {
-      const response = await fetch(base + `/uploads/${encodeURIComponent(savedSessionId)}`, {
+      const response = await fetch(apiBase + `/uploads/${encodeURIComponent(savedSessionId)}`, {
         credentials: "include",
       });
       if (response.ok) {
@@ -245,7 +247,7 @@ export const api = {
           }
         }
         if (!session) {
-          const deleted = await fetch(base + `/uploads/${encodeURIComponent(savedSessionId)}`, {
+          const deleted = await fetch(apiBase + `/uploads/${encodeURIComponent(savedSessionId)}`, {
             method: "DELETE",
             credentials: "include",
           });
@@ -278,7 +280,7 @@ export const api = {
       for (let attempt = 0; attempt < 3; attempt += 1) {
         try {
           const response = await fetch(
-            base + `/uploads/${encodeURIComponent(session.id)}/chunks?part_number=${partNumber}&offset=${offset}`,
+            apiBase + `/uploads/${encodeURIComponent(session.id)}/chunks?part_number=${partNumber}&offset=${offset}`,
             {
               method: "PUT",
               credentials: "include",
@@ -299,7 +301,7 @@ export const api = {
       if (lastError) throw lastError;
     }
 
-    const response = await fetch(base + `/uploads/${encodeURIComponent(session.id)}/commit`, {
+    const response = await fetch(apiBase + `/uploads/${encodeURIComponent(session.id)}/commit`, {
       method: "POST",
       credentials: "include",
     });

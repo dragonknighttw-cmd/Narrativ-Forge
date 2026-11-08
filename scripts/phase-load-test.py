@@ -20,7 +20,7 @@ def request(url: str, timeout: float) -> float:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--url", default="http://127.0.0.1:8000/api/v1/health")
+    parser.add_argument("--url", default="http://127.0.0.1:8001/api/v1/health")
     parser.add_argument("--requests", type=int, default=50)
     parser.add_argument("--concurrency", type=int, default=5)
     parser.add_argument("--timeout", type=float, default=5.0)

@@ -9,7 +9,7 @@ import { api, Asset } from "../../../../lib/api";
 export default function AssetLibraryPage() {
   const { id } = useParams<{ id: string }>();
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [type, setType] = useState("video");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -18,8 +18,14 @@ export default function AssetLibraryPage() {
   useEffect(() => { if (id) load(); }, [id]);
 
   async function upload() {
-    if (!file) return; setBusy(true); setError("");
-    try { await api.uploadAsset(id, file, type); setFile(null); await load(); }
+    if (files.length === 0) return; setBusy(true); setError("");
+    try {
+      for (const f of files) {
+        await api.uploadAsset(id, f, type);
+      }
+      setFiles([]);
+      await load();
+    }
     catch (e) { setError(e instanceof Error ? e.message : "Upload failed"); } finally { setBusy(false); }
   }
 
@@ -62,11 +68,12 @@ export default function AssetLibraryPage() {
         </select>
         <input
           type="file"
+          multiple
           accept={type === "video" ? "video/*" : type === "audio" ? "audio/*" : "image/*"}
-          onChange={e => setFile(e.target.files?.[0] ?? null)}
+          onChange={e => setFiles(Array.from(e.target.files || []))}
         />
-        <button className="primary" disabled={!file || busy} onClick={upload}>
-          {busy ? "Uploading…" : "Upload Asset"}
+        <button className="primary" disabled={files.length === 0 || busy} onClick={upload}>
+          {busy ? "Uploading…" : files.length > 1 ? `Bulk Upload (${files.length} Assets)` : "Upload Asset"}
         </button>
       </div>
     </section>

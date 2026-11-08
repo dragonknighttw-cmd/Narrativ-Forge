@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 VOICE_CATALOG = {
     "burmese_female": "my-MM-NilarNeural",
     "burmese_male": "my-MM-ThihaNeural",
+    "japanese_anime_female": "ja-JP-NanamiNeural",
+    "japanese_anime_male": "ja-JP-KeitaNeural",
     "english_female": "en-US-JennyNeural",
     "english_male": "en-US-GuyNeural",
     "english_aria": "en-US-AriaNeural",

@@ -7,6 +7,8 @@ import { api, Episode } from "../../lib/api";
 
 const studioMappings: Record<string, { title: string; subpath: string; icon: string; desc: string }> = {
   "script-studio": { title: "Script Studio", subpath: "script", icon: "📝", desc: "Write, generate with Gemini/Groq, and edit Burmese video scripts." },
+  "manga-studio": { title: "Manga & Webtoon AI Studio", subpath: "manga", icon: "📖", desc: "Create 4-Koma, vertical webtoons, anime speech bubbles, and export motion comics." },
+  "video-composer": { title: "Multi-Track Video Composer", subpath: "composer", icon: "🎞️", desc: "Import Runway/Kling AI clips, assemble video tracks, dubbing, BGM auto-ducking, and SFX." },
   "scene-breakdown": { title: "Scene Breakdown Studio", subpath: "scenes", icon: "🎬", desc: "Visual prompts, B-roll timing, and audio cues per scene." },
   "assets": { title: "Asset Library", subpath: "assets", icon: "📁", desc: "Audio voiceovers, video cuts, and media attachments for episodes." },
   "subtitles": { title: "Subtitle Studio", subpath: "subtitle", icon: "💬", desc: "AI Speech-to-Text transcription with Groq Whisper & Cloudflare." },

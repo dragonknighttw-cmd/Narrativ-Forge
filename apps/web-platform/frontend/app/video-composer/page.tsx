@@ -55,6 +55,8 @@ export default function VideoComposerPage() {
   const [currentTime, setCurrentTime] = useState(0.0);
   const [ffmpegCommand, setFfmpegCommand] = useState<string | null>(null);
   const [isCompiled, setIsCompiled] = useState(false);
+  const [isCompiling, setIsCompiling] = useState(false);
+  const [compileStatus, setCompileStatus] = useState("");
   const [renderJobs, setRenderJobs] = useState<LocalRenderJob[]>([]);
   const queueImportRef = useRef<HTMLInputElement>(null);
 
@@ -132,6 +134,9 @@ export default function VideoComposerPage() {
   };
 
   const handleCompileTimeline = async () => {
+    if (isCompiling || clips.length === 0) return;
+    setIsCompiling(true);
+    setCompileStatus("Building a local render plan…");
     setIsCompiled(true);
     try {
       const res = await fetch(`${apiBase}/video-composer/render-ffmpeg-spec`, {
@@ -152,12 +157,16 @@ export default function VideoComposerPage() {
       }
       setFfmpegCommand(command);
       saveRenderJobs([{ id: crypto.randomUUID(), title: "Anime Battle Episode 1 Final Cut", createdAt: new Date().toISOString(), duration: totalDuration, status: "ready", command }, ...renderJobs]);
+      setCompileStatus("Render plan ready. Copy or export the command to render locally.");
     } catch {
       const command = `ffmpeg -y -f lavfi -i color=c=black:s=1080x1920:r=30:d=${totalDuration} -c:v libx264 -b:a 192k output_shorts_1080x1920.mp4`;
       setFfmpegCommand(command);
       saveRenderJobs([{ id: crypto.randomUUID(), title: "Anime Battle Episode 1 Final Cut", createdAt: new Date().toISOString(), duration: totalDuration, status: "planned", command }, ...renderJobs]);
+      setCompileStatus("The API was unavailable. A local fallback render plan was saved.");
+    } finally {
+      setIsCompiling(false);
+      setIsCompiled(false);
     }
-    setTimeout(() => setIsCompiled(false), 3000);
   };
 
   return (
@@ -189,10 +198,11 @@ export default function VideoComposerPage() {
               <button
                 type="button"
                 onClick={handleCompileTimeline}
+                disabled={isCompiling || clips.length === 0}
                 className="ds-button primary"
                 style={{ fontSize: "12px", padding: "8px 16px" }}
               >
-                {isCompiled ? "✅ Compiled Ready!" : "⚡ Compile & Export (FFmpeg)"}
+                {isCompiling ? "Building render plan…" : isCompiled ? "✅ Compiled Ready!" : "⚡ Compile & Export (FFmpeg)"}
               </button>
             </div>
           </div>
@@ -279,6 +289,7 @@ export default function VideoComposerPage() {
                     <span style={{ color: "#38bdf8", fontWeight: 700 }}>{currentTime.toFixed(1)}s / {totalDuration.toFixed(1)}s</span>
                   </div>
                   <input
+                    aria-label="Timeline seek position"
                     type="range"
                     min="0"
                     max={totalDuration || 10}
@@ -294,6 +305,7 @@ export default function VideoComposerPage() {
                   <button
                     type="button"
                     onClick={() => setIsPlaying(!isPlaying)}
+                    aria-pressed={isPlaying}
                     className="ds-button primary"
                     style={{ padding: "8px 24px", fontSize: "13px", fontWeight: 700 }}
                   >
@@ -324,6 +336,7 @@ export default function VideoComposerPage() {
             </div>
           </div>
         </div>
+        <p aria-live="polite" className="sr-only">{compileStatus}</p>
 
         {/* Import Clip Box */}
         <div className="ds-card" style={{ padding: "18px" }}>

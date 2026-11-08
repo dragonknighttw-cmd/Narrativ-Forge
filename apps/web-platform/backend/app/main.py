@@ -67,8 +67,8 @@ app = FastAPI(
     title="Narrativ Forge API",
     version="0.1.0",
     lifespan=lifespan,
-    docs_url="/docs" if os.getenv("ENVIRONMENT", "development").lower() != "production" else None,
-    redoc_url="/redoc" if os.getenv("ENVIRONMENT", "development").lower() != "production" else None,
+    docs_url="/docs" if not settings.is_production else None,
+    redoc_url="/redoc" if not settings.is_production else None,
 )
 
 

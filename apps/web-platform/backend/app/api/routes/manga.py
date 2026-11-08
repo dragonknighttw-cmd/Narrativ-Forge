@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import edge_tts
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 
 from ...services.manga_engine import (
@@ -11,8 +11,16 @@ from ...services.manga_engine import (
     LayoutType,
     MANGA_SFX_CATALOG,
 )
+from ..dependencies import get_current_membership, require_roles
 
-router = APIRouter(prefix="/manga", tags=["manga-webtoon-studio"])
+# Manga prompts and generated audio are workspace content.  Keep even the
+# catalogue endpoints behind a membership check so this private studio cannot
+# be used as a public generation API.
+router = APIRouter(
+    prefix="/manga",
+    tags=["manga-webtoon-studio"],
+    dependencies=[Depends(get_current_membership)],
+)
 
 
 class BubbleVoiceRequest(BaseModel):
@@ -48,7 +56,10 @@ def list_sfx_catalog():
 
 
 @router.post("/generate")
-def generate_manga_storyboard(payload: MangaGenerateRequest):
+def generate_manga_storyboard(
+    payload: MangaGenerateRequest,
+    _=Depends(require_roles("owner", "editor")),
+):
     """Generate multi-panel layout, visual prompts, and speech bubbles for a scene."""
     page = MangaEngine.generate_manga_page(
         title=payload.title,
@@ -61,7 +72,10 @@ def generate_manga_storyboard(payload: MangaGenerateRequest):
 
 
 @router.post("/motion-comic/export")
-def export_motion_comic(payload: MotionComicExportRequest):
+def export_motion_comic(
+    payload: MotionComicExportRequest,
+    _=Depends(require_roles("owner", "editor")),
+):
     """Compile a manga page into an animated Motion Comic video timeline."""
     timeline = MangaEngine.compile_motion_comic_timeline(
         manga_page=payload.manga_page,
@@ -71,7 +85,10 @@ def export_motion_comic(payload: MotionComicExportRequest):
 
 
 @router.post("/synthesize-bubble-voice")
-async def synthesize_bubble_voice(payload: BubbleVoiceRequest):
+async def synthesize_bubble_voice(
+    payload: BubbleVoiceRequest,
+    _=Depends(require_roles("owner", "editor")),
+):
     """Generate audio stream for dialogue bubble using Edge-TTS."""
     try:
         communicate = edge_tts.Communicate(text=payload.text, voice=payload.voice)

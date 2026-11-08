@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from ...services.video_composer import (
@@ -9,8 +9,13 @@ from ...services.video_composer import (
     VideoSourceProvider,
     TransitionType,
 )
+from ..dependencies import get_current_membership, require_roles
 
-router = APIRouter(prefix="/video-composer", tags=["video-composer-editor"])
+router = APIRouter(
+    prefix="/video-composer",
+    tags=["video-composer-editor"],
+    dependencies=[Depends(get_current_membership)],
+)
 
 
 class ExternalClipImportRequest(BaseModel):
@@ -46,7 +51,10 @@ def list_video_providers():
 
 
 @router.post("/import-clip")
-def import_external_clip(payload: ExternalClipImportRequest):
+def import_external_clip(
+    payload: ExternalClipImportRequest,
+    _=Depends(require_roles("owner", "editor")),
+):
     """Register an external AI video clip into the production asset library."""
     clip = VideoComposerService.register_external_clip(
         source_url=payload.source_url,
@@ -58,7 +66,10 @@ def import_external_clip(payload: ExternalClipImportRequest):
 
 
 @router.post("/timeline")
-def build_multi_track_timeline(payload: TimelineBuildRequest):
+def build_multi_track_timeline(
+    payload: TimelineBuildRequest,
+    _=Depends(require_roles("owner", "editor")),
+):
     """Assemble multi-track timeline with video clips, dubbing, BGM auto-ducking, SFX, and subtitles."""
     timeline = VideoComposerService.build_timeline(
         title=payload.title,
@@ -74,7 +85,10 @@ def build_multi_track_timeline(payload: TimelineBuildRequest):
 
 
 @router.post("/render-ffmpeg-spec")
-def generate_ffmpeg_spec(payload: TimelineBuildRequest):
+def generate_ffmpeg_spec(
+    payload: TimelineBuildRequest,
+    _=Depends(require_roles("owner", "editor")),
+):
     """Generate exact FFmpeg command and script to compile 9:16 vertical video with mixed audio."""
     timeline = VideoComposerService.build_timeline(
         title=payload.title,

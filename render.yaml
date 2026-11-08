@@ -3,7 +3,7 @@ services:
     name: Narrativ-Forge
     runtime: python
     rootDir: apps/web-platform
-    buildCommand: pip install -r backend/requirements.txt
+    buildCommand: pip install -r backend/requirements.lock
     healthCheckPath: /api/v1/ready
     # Match the existing Render Python service. Never run database migrations automatically during startup.
     startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
@@ -25,7 +25,9 @@ services:
       - key: TRUSTED_HOSTS
         sync: false
       - key: UPLOAD_DIR
-        value: /var/lib/narrativ-forge/uploads
+        # Render's web-service filesystem is ephemeral. Durable media must go
+        # through the configured hybrid storage provider, never this staging dir.
+        value: /tmp/narrativ-forge/uploads
       - key: STORAGE_PROVIDER
         value: hybrid
       - key: CLOUDINARY_CLOUD_NAME

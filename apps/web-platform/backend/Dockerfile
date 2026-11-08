@@ -9,9 +9,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends g++ pkg-config libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt ./
+COPY requirements.txt requirements.lock ./
 RUN pip install --no-cache-dir --upgrade pip setuptools \
-    && pip install --no-cache-dir --upgrade -r requirements.txt \
+    && pip install --no-cache-dir -r requirements.txt \
     # pip bundles a stale third-party CycloneDX inventory that can override \
     # the installed dist-info metadata during Trivy runtime filesystem scans. \
     && rm -f "$VIRTUAL_ENV/lib/python3.12/site-packages/pip/_vendor/bom.cdx.json"

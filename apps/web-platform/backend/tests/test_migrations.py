@@ -81,7 +81,7 @@ def test_fresh_database_migrates_to_head_with_expected_schema(tmp_path):
     schema = migrated_schema(database_path)
     assert {
         "users", "series", "episodes", "scripts", "scenes", "assets",
-        "upload_sessions", "upload_parts", "idempotency_records",
+        "upload_sessions", "upload_parts", "idempotency_records", "character_registry",
     } <= schema.keys()
     assert {"password_hash", "is_active", "updated_at"} <= schema["users"]["columns"]
     assert "row_version" in schema["episodes"]["columns"]

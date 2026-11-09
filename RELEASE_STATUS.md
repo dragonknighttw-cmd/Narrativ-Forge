@@ -12,18 +12,18 @@
 * **Assigned Telegram Topic:** `Topic 6`
 * **Primary Telegram Bot:** `@NarrativForgeBot`
 * **Inbound Webhook Target:** `https://narrativ-forge.onrender.com/api/v1/telegram/webhook`
-* **Test Suite Status:** PR #119: backend 332 passed/3 skipped, integration 77 passed/1 skipped, browser E2E passed, Real Worker Evidence passed; main SHA re-run still has Real Worker E2E and Repository Gate pending at checkpoint time.
+* **Test Suite Status:** application SHA `eaa29c7`: backend 332 passed/3 skipped, integration 77 passed/1 skipped, browser E2E passed, Real Worker Evidence passed; all exact-SHA CI and Repository Gate checks passed.
 
 ---
 
 ## 2. Release Gates & Verification Matrix
 - [X] Code & Architecture Scan
 - [X] Local .env DATABASE_URL & SINGLE_USER_EMAIL restored
-- [X] Live Telegram getMe & getWebhookInfo 100% healthy (last user-provided check; revalidate after topic-routing deployment)
+- [ ] Owner-side Telegram Bot API getWebhookInfo and live message smoke after topic-routing deployment
 - [X] PR #118 CI E2E, backend, frontend, CodeQL, security, Windows runtime and portable-package gates
 - [X] PR #119 five-topic Telegram routing and tenant-isolation tests; merged to main as `eaa29c7`
 - [X] Render API and frontend deployed live from main SHA `eaa29c7`; API readiness returned HTTP 200 after rollout
-- [ ] Exact-main Real Worker E2E and Repository Gate completion
+- [X] Exact application-SHA Real Worker E2E and Repository Gate completion (`eaa29c7`)
 - [ ] Dedicated persistent background worker for FFmpeg & Whisper
 - [ ] Staging database migration rehearsal
 - [ ] Owner-side Telegram smoke test in all five forum topics

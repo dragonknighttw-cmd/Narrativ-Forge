@@ -1,4 +1,53 @@
-# Production Readiness Scorecard — 2026-10-21
+# Production Readiness Scorecard — 2026-11-09
+
+**Current decision: NOT READY FOR GENERAL PRODUCTION SIGN-OFF.** The app deployment and repository CI are green, but security ownership, branch governance, and several live provider acceptance gates remain open.
+
+## Current verification addendum — 2026-11-09
+
+### Deployment and repository evidence
+
+- **Main commit:** `9067494e7eb56c7aba3e0b582563616453459f31` (PR #120, Character Studio durable registry).
+- **GitHub CI:** all 18 check runs on this exact commit completed successfully, including backend, backend integration, frontend, E2E, dependency audit, SAST, container scan, PostgreSQL backup/restore, application schema restore, real-worker E2E, public frontend/API smoke, and Repository Gate.
+- **Render API:** service `Narrativ-Forge` deploy for the exact commit is `live`; configured health path is `/api/v1/ready`.
+- **Render frontend:** service `narrativ-forge-frontend` deploy for the exact commit is `live`; configured health path is `/api/health`.
+- **Render configuration review:** both services use the expected `apps/web-platform` root. The API runtime/start command and frontend standalone Next.js start script were checked against the repository configuration. No production service settings were changed during this review.
+- **Render log window:** from 2026-11-09 09:00 UTC through approximately 10:02 UTC, the queried API/frontend app error/fatal logs and HTTP 5xx request logs returned no matching entries. This is a bounded log observation, not a load or availability guarantee.
+- **Open PRs:** none were returned by the connected repository query. Open follow-ups are tracked in issues [#98](https://github.com/dragonknighttw-cmd/Narrativ-Forge/issues/98) and [#123](https://github.com/dragonknighttw-cmd/Narrativ-Forge/issues/123).
+
+### Supabase production database and access boundary
+
+- **Canonical project:** `xrhlefglqwquhvpoevsg`.
+- **Alembic revision:** `0024_character_registry`.
+- **Character Studio registry:** `public.character_registry` exists; the current row count is 0, matching the owner's confirmation that no old Character Studio records needed preservation.
+- **Registry security:** RLS is enabled. Direct table grants to `anon` and `authenticated` are absent.
+- **Public schema direct grants:** current queries returned 0 direct `anon`/`authenticated` table grants, 0 function grants, and 0 sequence grants.
+- **RLS advisor:** 44 public tables have RLS enabled and no policies. This is an INFO finding in this backend-mediated architecture; do not add blanket client policies. Continue table-by-table authorization review.
+- **Default ACL residual — OPEN, issue #98:** `postgres` defaults for tables, sequences, and functions are restricted to `postgres` and `service_role`. However, `supabase_admin` defaults still include `anon` and `authenticated` privileges for tables (`r`), sequences (`S`), and functions (`f`). The live session is `postgres`, not a member of `supabase_admin`; no supported owner-role path is available through this connection. Do not attempt ownership bypasses or protected-catalog edits. Obtain Supabase-supported owner/admin remediation or Support guidance, then verify the ACLs and rerun auth/API regression checks.
+- **Leaked Password Protection:** remains excluded from this project's P0 scope per the owner's Free-plan constraint.
+- **Performance advisor:** reports unused-index candidates. Do not drop indexes solely from advisor output; collect representative workload and query-plan evidence first.
+
+### Repository governance — OPEN, issue #123
+
+- GitHub branch metadata reports `main` as unprotected, with required status checks disabled.
+- The connected GitHub integration does not expose a branch-protection write action; the branch-protection API read was denied. No repository settings were changed.
+- An authorized GitHub admin should enable a ruleset for `main`: require PRs, require the successful current CI checks, block force pushes and deletion, and verify the ruleset with a test PR.
+
+### Remaining production acceptance gates
+
+1. Resolve Supabase `supabase_admin` default ACLs through an authorized owner/admin route; verify table, sequence, and function defaults afterward.
+2. Enable and verify GitHub `main` branch protection / required checks through an authorized repository-admin route.
+3. Complete owner-side live Telegram smoke tests: `/start`, `/status`, and `/ai_status` in topics 2, 5, 18, and 7; verify full Narrativ commands and approval callbacks only in topic 6. Automated handler tests and deployment are not a substitute for a real Telegram interaction.
+4. Verify storage provider upload/download, signed URL expiry, access isolation, and deletion behavior with non-sensitive test assets.
+5. Verify authenticated Cloudflare Whisper end-to-end behavior only under an owner-approved, quota-aware test. Do not trigger live inference or paid resources without explicit approval.
+6. Keep background media-worker orchestration outside production guarantees until a persistent worker and a real queued-job acceptance test exist; current Render topology has only API and frontend free services.
+7. Preserve the limitation that AI usage counters are process-local until usage/quota events are durably stored; do not treat those counters as an audit-grade billing ledger.
+8. Complete any required AI failover, OAuth/Drive, SMTP, Stripe, accessibility, load, rollback, and independent security testing before general production sign-off.
+
+**Updated decision:** the latest app commit is merged, CI is 18/18 green, and both Render services are live. General production sign-off remains **NOT READY** until the remaining security, governance, and provider acceptance gates are verified or explicitly risk-accepted with an owner and date.
+
+---
+
+# Production Readiness Scorecard — historical baseline (2026-10-21)
 
 **Current decision: NOT READY FOR GENERAL PRODUCTION SIGN-OFF.** The 2026-10-17 conditional sign-off below is historical and superseded by the current deployment, database, and security evidence recorded here.
 

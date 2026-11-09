@@ -1,3 +1,20 @@
+# Current verified checkpoint — 2026-11-09 UTC
+
+- **Latest main commit:** `eaa29c73e968a64601ef0ed4134da494a202289b`.
+- **Merged fixes:** PR #118 aligned CI E2E and Windows runtime ports/requirements; PR #119 implemented the five-topic Telegram routing map and organization-scoped Telegram reads/actions.
+- **Render deployment:** API (`Narrativ-Forge`) and frontend (`narrativ-forge-frontend`) both deployed `eaa29c7` and report `live`. API `GET /api/v1/ready` returned HTTP 200 on the new instance after rollout; no warning/error app logs were observed in the rollout window.
+- **Telegram topic contract:** topic 6 = Narrativ Forge (full commands and approval callbacks); topic 2 = A Little World With Us; topic 5 = Logixa Flow; topic 18 = Doka; topic 7 = Cognix. The four non-Narrativ topics receive only `/start`, `/status`, and `/ai_status` acknowledgements. Narrativ data commands and callback actions are restricted to topic 6 and the configured `legacy-workspace` organization.
+- **Telegram verification boundary:** handler tests cover all five topics, cross-topic action rejection, and cross-organization idea/script access. Live Telegram messages in all five topics still need an owner-side confirmation after deployment; the webhook URL remains `https://narrativ-forge.onrender.com/api/v1/telegram/webhook`.
+- **Supabase:** canonical project `xrhlefglqwquhvpoevsg`; live Alembic version is `0023_brain_soul_dedupe`. The live organization slug is `legacy-workspace`. The security audit found 43 RLS-enabled tables without policies and no direct `anon`/`authenticated` SELECT grants on the checked `assets` and `episodes` tables. No live database schema or permission changes were made in this checkpoint.
+- **Character Studio durability:** draft PR #120 adds organization-scoped `character_registry` storage and Alembic revision `0024_character_registry`; its full CI, migration restore, and Real Worker Evidence checks pass. It is intentionally not merged or deployed because the production migration is not applied and possible existing local JSON registry data has not been exported/preserved.
+- **Worker boundary:** Render currently has only the API and frontend web services; no persistent background worker is provisioned. Do not claim continuous FFmpeg/Whisper processing in production until a worker deployment and live queue smoke are completed.
+- **Remaining main-SHA gates at checkpoint time:** the exact-main `real-worker-e2e` and `Repository Gate` checks are still running; all other listed main checks are passing.
+- **Plan exception:** Supabase Leaked Password Protection remains excluded from P0 because the owner reports it is unavailable on the current Free plan.
+
+This checkpoint supersedes older status statements below. Older checkpoints remain as historical evidence, not current release guidance.
+
+---
+
 # Authoritative checkpoint — Owner-approved Conditional Production Sign-Off (2026-10-17 UTC)
 
 - **Decision: PRODUCTION READY — CONDITIONAL SIGN-OFF (OWNER-APPROVED LAUNCH WITH EXPLICITLY DEFERRED POST-LAUNCH WORK).**

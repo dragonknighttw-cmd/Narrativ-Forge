@@ -166,8 +166,10 @@ async def telegram_webhook(
                 6: "Narrativ Forge",
                 2: "A Little World With Us",
                 5: "Logixa Flow",
+                8: "Doka",
                 18: "Doka",
                 7: "Cognix",
+                215: "AuraCraft Studio",
             }
             if str(chat.get("id")) != settings.telegram_chat_id or not isinstance(topic_id, int) or topic_id not in project_by_topic:
                 return {"status": "ignored", "reason": "unrecognized_chat_or_topic"}

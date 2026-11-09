@@ -83,6 +83,18 @@ def _event_pk(event_id: str) -> str:
     return str(uuid5(NAMESPACE_URL, "narrativ-forge:telegram:" + event_id))
 
 
+def _narrativ_organization_id(db: Session) -> str:
+    """Resolve the one organization owned by this dedicated Narrativ bot."""
+    organization_id = (
+        db.query(Organization.id)
+        .filter(Organization.slug == settings.supabase_owner_organization_slug)
+        .scalar()
+    )
+    if not organization_id:
+        raise RuntimeError("Narrativ Forge organization is not configured")
+    return str(organization_id)
+
+
 def _record_event(
     db: Session,
     *,
@@ -147,10 +159,15 @@ async def telegram_webhook(
             if separator and addressed_username.casefold() != configured_username:
                 return {"status": "ignored", "reason": "command_addressed_to_another_bot"}
             topic_id = incoming.get("message_thread_id")
-            # This deployment owns only the dedicated Narrativ Forge bot.
-            # Other projects must use their own bot token + webhook deployment.
+            # One bot serves the shared forum, but only Narrativ Forge topic 6
+            # is connected to this backend's project data and approval actions.
+            # Other topics receive only isolated connection/status replies.
             project_by_topic = {
                 6: "Narrativ Forge",
+                2: "A Little World With Us",
+                5: "Logixa Flow",
+                18: "Doka",
+                7: "Cognix",
             }
             if str(chat.get("id")) != settings.telegram_chat_id or not isinstance(topic_id, int) or topic_id not in project_by_topic:
                 return {"status": "ignored", "reason": "unrecognized_chat_or_topic"}
@@ -225,22 +242,31 @@ async def telegram_webhook(
                         "Logixa Flow (5), Doka (18), Cognix (7)."
                     )
                 elif command in {"/start", "/help", "/commands"}:
-                    reply = (
-                        f"🤖 <b>{html.escape(project_name)} — connected to this topic.</b>\n\n"
-                        "Commands:\n/start — connect to this project's topic\n"
-                        "/commands — list available commands\n"
-                        "/status or /ai_status — check configured AI providers\n"
-                        "/ai_test — send a test request to OpenRouter\n"
-                        "/idea <text> — save an idea to Narrativ Forge\n"
-                        "/drafts — view active script drafts\n"
-                        "/ideas — view recent ideas\n"
-                        "/episodes — view recent episodes\n"
-                        "/pipeline — view active processing jobs\n"
-                        "/assets — view recent assets\n"
-                        "/reviews — view recent reviews\n"
-                        "/metrics — content production metrics\n"
-                        "This command reply is scoped to the current topic."
-                    )
+                    if topic_id == 6:
+                        reply = (
+                            f"🤖 <b>{html.escape(project_name)} — connected to this topic.</b>\n\n"
+                            "Commands:\n/start — connect to this project's topic\n"
+                            "/commands — list available commands\n"
+                            "/status or /ai_status — check configured AI providers\n"
+                            "/ai_test — send a test request to OpenRouter\n"
+                            "/idea <text> — save an idea to Narrativ Forge\n"
+                            "/drafts — view active script drafts\n"
+                            "/ideas — view recent ideas\n"
+                            "/episodes — view recent episodes\n"
+                            "/pipeline — view active processing jobs\n"
+                            "/assets — view recent assets\n"
+                            "/reviews — view recent reviews\n"
+                            "/metrics — content production metrics\n"
+                            "/manga and /clip — create storyboard/clip records\n"
+                            "This command reply is scoped to the current topic."
+                        )
+                    else:
+                        reply = (
+                            f"🤖 <b>{html.escape(project_name)} — connected to this topic.</b>\n\n"
+                            "Available commands: /start, /status, /ai_status.\n"
+                            "This topic is isolated from Narrativ Forge project data; its own AI/workflow "
+                            "integrations are not connected to this backend."
+                        )
                 elif command == "/ai_test":
                     if topic_id != 6:
                         reply = "⛔ /ai_test is available only in the Narrativ Forge topic (6)."
@@ -310,6 +336,8 @@ async def telegram_webhook(
                         try:
                             scripts = (
                                 db.query(Script)
+                                .join(Episode, Script.episode_id == Episode.id)
+                                .filter(Episode.organization_id == _narrativ_organization_id(db))
                                 .filter(Script.status.in_(["draft", "pending_review", "needs_approval", "ready_for_review"]))
                                 .filter(Script.is_current.is_(True))
                                 .order_by(Script.updated_at.desc())
@@ -336,6 +364,7 @@ async def telegram_webhook(
                         try:
                             ideas = (
                                 db.query(Idea)
+                                .filter(Idea.organization_id == _narrativ_organization_id(db))
                                 .filter(Idea.status.in_(["idea", "developing", "approved"]))
                                 .order_by(Idea.created_at.desc())
                                 .limit(10)
@@ -361,6 +390,7 @@ async def telegram_webhook(
                         try:
                             episodes = (
                                 db.query(Episode)
+                                .filter(Episode.organization_id == _narrativ_organization_id(db))
                                 .order_by(Episode.updated_at.desc())
                                 .limit(10)
                                 .all()
@@ -386,6 +416,8 @@ async def telegram_webhook(
                         try:
                             jobs = (
                                 db.query(ProcessingJob)
+                                .join(Episode, ProcessingJob.episode_id == Episode.id)
+                                .filter(Episode.organization_id == _narrativ_organization_id(db))
                                 .filter(ProcessingJob.status.in_(["queued", "processing", "pending"]))
                                 .order_by(ProcessingJob.created_at.desc())
                                 .limit(10)
@@ -412,6 +444,8 @@ async def telegram_webhook(
                         try:
                             assets = (
                                 db.query(Asset)
+                                .join(Episode, Asset.episode_id == Episode.id)
+                                .filter(Episode.organization_id == _narrativ_organization_id(db))
                                 .order_by(Asset.created_at.desc())
                                 .limit(10)
                                 .all()
@@ -437,6 +471,8 @@ async def telegram_webhook(
                         try:
                             reviews = (
                                 db.query(ReviewRecord)
+                                .join(Episode, ReviewRecord.episode_id == Episode.id)
+                                .filter(Episode.organization_id == _narrativ_organization_id(db))
                                 .order_by(ReviewRecord.created_at.desc())
                                 .limit(10)
                                 .all()
@@ -460,12 +496,27 @@ async def telegram_webhook(
                     else:
                         try:
                             from sqlalchemy import func as sa_func
-                            total_eps = db.query(sa_func.count(Episode.id)).scalar() or 0
-                            total_scripts = db.query(sa_func.count(Script.id)).filter(Script.is_current.is_(True)).scalar() or 0
-                            total_ideas = db.query(sa_func.count(Idea.id)).scalar() or 0
-                            total_assets = db.query(sa_func.count(Asset.id)).scalar() or 0
-                            active_jobs = db.query(sa_func.count(ProcessingJob.id)).filter(
-                                ProcessingJob.status.in_(["queued", "processing", "pending"])
+                            organization_id = _narrativ_organization_id(db)
+                            total_eps = db.query(sa_func.count(Episode.id)).filter(
+                                Episode.organization_id == organization_id
+                            ).scalar() or 0
+                            total_scripts = db.query(sa_func.count(Script.id)).join(
+                                Episode, Script.episode_id == Episode.id
+                            ).filter(
+                                Episode.organization_id == organization_id,
+                                Script.is_current.is_(True),
+                            ).scalar() or 0
+                            total_ideas = db.query(sa_func.count(Idea.id)).filter(
+                                Idea.organization_id == organization_id
+                            ).scalar() or 0
+                            total_assets = db.query(sa_func.count(Asset.id)).join(
+                                Episode, Asset.episode_id == Episode.id
+                            ).filter(Episode.organization_id == organization_id).scalar() or 0
+                            active_jobs = db.query(sa_func.count(ProcessingJob.id)).join(
+                                Episode, ProcessingJob.episode_id == Episode.id
+                            ).filter(
+                                Episode.organization_id == organization_id,
+                                ProcessingJob.status.in_(["queued", "processing", "pending"]),
                             ).scalar() or 0
                             reply = (
                         "📊 <b>Narrativ Forge Metrics:</b>\n\n"
@@ -632,11 +683,19 @@ async def handle_telegram_action(
             "id": previous.resource_id,
         }
 
+    organization = (
+        db.query(Organization)
+        .filter(Organization.slug == settings.supabase_owner_organization_slug)
+        .first()
+    )
+    if not organization:
+        raise HTTPException(status_code=503, detail="Narrativ Forge organization is not configured")
+
     action = payload.action
     target_id = ""
     target_type = ""
     action_name = ""
-    organization_id: str | None = None
+    organization_id: str | None = organization.id
     message = ""
     queue_job_id: str | None = None
 
@@ -649,7 +708,11 @@ async def handle_telegram_action(
             script = (
                 db.query(Script)
                 .join(Episode, Script.episode_id == Episode.id)
-                .filter(Script.id == script_id, Script.is_current.is_(True))
+                .filter(
+                    Script.id == script_id,
+                    Script.is_current.is_(True),
+                    Episode.organization_id == organization.id,
+                )
                 .first()
             )
             if not script:
@@ -671,10 +734,18 @@ async def handle_telegram_action(
 
         elif action.startswith("nf_video_appr:"):
             asset_id = action.split(":", 1)[1].strip()
-            asset = db.query(Asset).filter(Asset.id == asset_id).first()
+            asset = (
+                db.query(Asset)
+                .join(Episode, Asset.episode_id == Episode.id)
+                .filter(Asset.id == asset_id, Episode.organization_id == organization.id)
+                .first()
+            )
             if not asset or asset.asset_type not in {"processed_video", "video"}:
                 raise HTTPException(status_code=404, detail="Video asset not found")
-            episode = db.query(Episode).filter(Episode.id == asset.episode_id).first()
+            episode = db.query(Episode).filter(
+                Episode.id == asset.episode_id,
+                Episode.organization_id == organization.id,
+            ).first()
             review = db.query(ReviewRecord).filter(ReviewRecord.episode_id == asset.episode_id).first()
             subtitle = (
                 db.query(Subtitle)
@@ -712,10 +783,18 @@ async def handle_telegram_action(
 
         elif action.startswith("nf_video_rerun:"):
             asset_id = action.split(":", 1)[1].strip()
-            asset = db.query(Asset).filter(Asset.id == asset_id).first()
+            asset = (
+                db.query(Asset)
+                .join(Episode, Asset.episode_id == Episode.id)
+                .filter(Asset.id == asset_id, Episode.organization_id == organization.id)
+                .first()
+            )
             if not asset or asset.asset_type not in {"processed_video", "video"}:
                 raise HTTPException(status_code=404, detail="Video asset not found")
-            episode = db.query(Episode).filter(Episode.id == asset.episode_id).first()
+            episode = db.query(Episode).filter(
+                Episode.id == asset.episode_id,
+                Episode.organization_id == organization.id,
+            ).first()
             if not episode:
                 raise HTTPException(status_code=404, detail="Episode not found")
             job = ProcessingJob(
@@ -737,13 +816,6 @@ async def handle_telegram_action(
             idea_text = (payload.raw_message or "").strip()
             if not idea_text:
                 raise HTTPException(status_code=422, detail="Idea text is required")
-            organization = (
-                db.query(Organization)
-                .filter(Organization.slug == settings.supabase_owner_organization_slug)
-                .first()
-            )
-            if not organization:
-                raise HTTPException(status_code=503, detail="Default organization is not configured")
             idea = Idea(
                 organization_id=organization.id,
                 title=idea_text[:255] or "Telegram idea",

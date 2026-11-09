@@ -196,7 +196,13 @@ def test_telegram_webhook_dispatches_callback_to_action_handler(monkeypatch):
 
 @pytest.mark.parametrize(
     ("topic_id", "project_name"),
-    [(6, "Narrativ Forge")],
+    [
+        (6, "Narrativ Forge"),
+        (2, "A Little World With Us"),
+        (5, "Logixa Flow"),
+        (18, "Doka"),
+        (7, "Cognix"),
+    ],
 )
 def test_telegram_commands_are_scoped_to_project_topic(monkeypatch, topic_id, project_name):
     import asyncio
@@ -232,8 +238,11 @@ def test_telegram_commands_are_scoped_to_project_topic(monkeypatch, topic_id, pr
         assert sent[-1][1]["inline_keyboard"][0][0]["text"] == "🎬 Open Flow Dashboard"
         assert project_name in sent[-1][0]
         if topic_id != 6 and command == "/ai_status":
-            assert "not connected to this Narrativ Forge backend" in sent[-1][0]
+            assert "not connected to this backend" in sent[-1][0]
             assert "Narrativ Forge status" not in sent[-1][0]
+        if topic_id != 6 and command in {"/start", "/start@NarrativForgeBot"}:
+            assert "Available commands: /start, /status, /ai_status." in sent[-1][0]
+            assert "/drafts" not in sent[-1][0]
 
 
 def test_telegram_action_rejects_wrong_chat_or_topic(monkeypatch):
@@ -325,3 +334,51 @@ def test_telegram_webhook_ignores_command_addressed_to_another_bot(monkeypatch):
         "reason": "command_addressed_to_another_bot",
     }
     assert sent == []
+
+
+@pytest.mark.integration
+@pytest.mark.security
+def test_telegram_script_callback_cannot_approve_another_organization_script(db_session, monkeypatch):
+    import asyncio
+
+    from app.models import Episode, Organization, Script, Series
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    monkeypatch.setattr(telegram.settings, "telegram_allowed_user_ids", "12345")
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(telegram.settings, "telegram_topic_id", 6)
+    monkeypatch.setattr(telegram.settings, "supabase_owner_organization_slug", "narrativ-owner")
+
+    owner = Organization(name="Narrativ Owner", slug="narrativ-owner")
+    other = Organization(name="Other Tenant", slug="other-tenant")
+    db_session.add_all([owner, other])
+    db_session.flush()
+    other_series = Series(organization_id=other.id, title="Other tenant series")
+    db_session.add(other_series)
+    db_session.flush()
+    episode = Episode(
+        organization_id=other.id,
+        public_id="foreign-telegram-episode",
+        series_id=other_series.id,
+        episode_number=1,
+        title="Foreign episode",
+    )
+    db_session.add(episode)
+    db_session.flush()
+    script = Script(episode_id=episode.id, version=1, title="Foreign script", content="private", status="draft", is_current=True)
+    db_session.add(script)
+    db_session.commit()
+
+    payload = telegram.TelegramActionPayload(
+        action=f"nf_script_appr:{script.id}",
+        event_id="telegram-cross-tenant-script-approval",
+        user_id=12345,
+        chat_id="-100123",
+        topic_id=6,
+    )
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(telegram.handle_telegram_action(payload, x_telegram_gateway_secret="s" * 40, db=db_session))
+    assert exc.value.status_code == 404
+    db_session.refresh(script)
+    assert script.status == "draft"

@@ -131,7 +131,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Studio Quick Actions & Fallback Health */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "18px", marginTop: "18px" }}>
+      <div className="split-grid">
         <section className="card" style={{ padding: "22px" }}>
           <div className="eyebrow">END-TO-END PIPELINE</div>
           <h3 style={{ fontSize: "18px", fontWeight: "600", margin: "8px 0 16px 0" }}>Pipeline Stages &amp; Quick Access</h3>

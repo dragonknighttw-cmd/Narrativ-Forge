@@ -1,9 +1,9 @@
 # Canonical Release Status: Narrativ Forge
 
-> **Current Tracked Release SHA:** `63f248b9e0b749f4025458160a15299469a20090`  
+> **Current Tracked Release SHA:** `db28753d331bc2c7a5e639fd64efd65d023cad6c`  
 > **Target Branch:** `main`  
-> **Audit Status:** Conditional Sign-Off (Local Complete, Production Gates Tracked)  
-> **Last Verification Date:** 2026-11-05 21:12:00 +06:30  
+> **Audit Status:** Conditional Sign-Off (CI green; production worker and data durability gates remain)  
+> **Last Verification Date:** 2026-11-09 14:42:00 +06:30  
 
 ---
 
@@ -19,9 +19,13 @@
 ## 2. Release Gates & Verification Matrix
 - [X] Code & Architecture Scan
 - [X] Local .env DATABASE_URL & SINGLE_USER_EMAIL restored
-- [X] Live Telegram getMe & getWebhookInfo 100% healthy
+- [X] Live Telegram getMe & getWebhookInfo 100% healthy (last user-provided check; revalidate after topic-routing deployment)
+- [X] CI E2E, backend unit/integration, frontend, CodeQL, SAST, dependency, container, Windows runtime and portable-package gates (main SHA `db28753`)
+- [X] Render API and frontend deployed successfully from main SHA `db28753`; API readiness observed returning HTTP 200 in Render logs
 - [ ] Dedicated persistent background worker for FFmpeg & Whisper
 - [ ] Staging database migration rehearsal
+- [ ] Verify live multi-topic Telegram routing and callback isolation
+- [ ] Move Character Studio registry from ephemeral local JSON to durable database storage
 
 ---
 

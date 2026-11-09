@@ -273,6 +273,7 @@ jobs:
           NODE
       - name: Run E2E tests
         env:
+          E2E_API_BASE_URL: http://localhost:8000/api/v1
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
           E2E_ADMIN_EMAIL: ${{ secrets.E2E_EMAIL }}

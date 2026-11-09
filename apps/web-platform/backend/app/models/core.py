@@ -596,3 +596,25 @@ class LaunchWatchEventRecord(Base):
     rollback_decision: Mapped[str] = mapped_column(String(40), default="none")
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class CharacterRegistry(Base):
+    """Organization-scoped durable registry for imported virtual actors."""
+    __tablename__ = "character_registry"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "actor_id", name="uq_character_registry_org_actor"),
+        Index("ix_character_registry_organization_id", "organization_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    actor_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    actor_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    role: Mapped[str] = mapped_column(String(100), default="Virtual Actor", nullable=False)
+    source_studio: Mapped[str] = mapped_column(String(120), default="AuraCraft Studio", nullable=False)
+    voice_binding_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
+    vrm_model_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    expression_map_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    character_meta_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now, nullable=False)

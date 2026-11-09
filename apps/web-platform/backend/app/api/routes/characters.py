@@ -8,9 +8,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..db import get_db
+from ...db import get_db
 from ..dependencies import get_current_membership, require_roles
-from ..models import CharacterRegistry
+from ...models import CharacterRegistry
 
 router = APIRouter(prefix="/characters", tags=["characters-avatar-studio"])
 

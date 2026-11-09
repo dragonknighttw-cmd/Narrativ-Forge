@@ -54,9 +54,11 @@ jobs:
           # PyICU requires a native ICU/pkg-config toolchain that is not installed on the stock Windows runner.
           # This API-only smoke deliberately excludes ICU-dependent Burmese text normalization packages;
           # those dependencies must be validated in the separate packaged media-runtime gate.
-          $requirements = Get-Content requirements.txt | Where-Object { $_ -notmatch '^(PyICU|myanmartools)(==|>=|<=|>|<|$)' }
+          # pip resolves nested -r paths relative to the temporary file, not the repository.
+          # Rewrite the lock include to an absolute path before installing.
           $requirementsFile = "$env:RUNNER_TEMP/windows-api-smoke-requirements.txt"
-          $requirements | Set-Content -Encoding utf8 $requirementsFile
+          $lockFile = (Join-Path (Get-Location).Path "requirements.lock") -replace '\\', '/'
+          "-r $lockFile" | Set-Content -Encoding utf8 $requirementsFile
           python -m pip install -r $requirementsFile
 
       - name: Prepare evidence and local directories

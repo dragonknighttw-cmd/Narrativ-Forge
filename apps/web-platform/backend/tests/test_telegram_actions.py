@@ -409,3 +409,53 @@ def test_telegram_action_rejects_other_project_topic(monkeypatch):
             )
         )
     assert exc.value.status_code == 403
+
+
+@pytest.mark.integration
+@pytest.mark.security
+def test_telegram_ideas_command_does_not_leak_other_organization_ideas(db_session, monkeypatch):
+    import asyncio
+
+    from app.models import Idea, Organization
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    monkeypatch.setattr(telegram.settings, "telegram_allowed_user_ids", "12345")
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(telegram.settings, "telegram_topic_id", 6)
+    monkeypatch.setattr(telegram.settings, "supabase_owner_organization_slug", "narrativ-owner")
+
+    owner = Organization(name="Narrativ Owner", slug="narrativ-owner")
+    other = Organization(name="Other Tenant", slug="other-tenant")
+    db_session.add_all([owner, other])
+    db_session.flush()
+    db_session.add_all([
+        Idea(organization_id=owner.id, title="Owner private idea", concept="Owner concept", status="idea"),
+        Idea(organization_id=other.id, title="Other tenant secret idea", concept="Private concept", status="idea"),
+    ])
+    db_session.commit()
+
+    sent = []
+
+    async def fake_send(message, **kwargs):
+        sent.append((message, kwargs))
+        return {"ok": True}
+
+    monkeypatch.setattr(telegram, "send_telegram_message", fake_send)
+    result = asyncio.run(telegram.telegram_webhook(
+        {
+            "update_id": 9901,
+            "message": {
+                "text": "/ideas",
+                "from": {"id": 12345},
+                "chat": {"id": -100123, "type": "supergroup"},
+                "message_thread_id": 6,
+            },
+        },
+        x_telegram_bot_api_secret_token="s" * 40,
+        db=db_session,
+    ))
+
+    assert result["project"] == "Narrativ Forge"
+    assert "Owner private idea" in sent[-1][0]
+    assert "Other tenant secret idea" not in sent[-1][0]

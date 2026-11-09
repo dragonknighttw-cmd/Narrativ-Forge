@@ -382,3 +382,30 @@ def test_telegram_script_callback_cannot_approve_another_organization_script(db_
     assert exc.value.status_code == 404
     db_session.refresh(script)
     assert script.status == "draft"
+
+
+@pytest.mark.unit
+@pytest.mark.security
+def test_telegram_action_rejects_other_project_topic(monkeypatch):
+    import asyncio
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(telegram.settings, "telegram_topic_id", 6)
+    payload = telegram.TelegramActionPayload(
+        action="nf_idea_capture",
+        event_id="cross-project-topic-action",
+        chat_id="-100123",
+        topic_id=2,
+        user_id=12345,
+        raw_message="must not enter Narrativ Forge",
+    )
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(
+            telegram.handle_telegram_action(
+                payload,
+                x_telegram_gateway_secret="s" * 40,
+                db=None,
+            )
+        )
+    assert exc.value.status_code == 403

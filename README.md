@@ -10,7 +10,7 @@ Private, invite-only Burmese short-form video production workspace.
 
 > Owner: Project maintainers  
 > Update when: project boundary, current implementation, deployment topology, or release blockers change  
-> Last Updated: 2026-10-11 UTC  
+> Last Updated: 2026-11-09 UTC  
 > Do NOT put here: detailed domain specifications, full runbooks, or duplicate roadmaps
 
 ## What it is
@@ -37,17 +37,17 @@ Implemented/foundation work includes the core Next.js/FastAPI workflow, authenti
 
 | Layer | Current target |
 |---|---|
-| Frontend | Netlify |
-| API | Render Free Web Service |
-| Database | PostgreSQL via `DATABASE_URL` |
-| Queue/delivery | External Redis/delivery services where configured |
+| Frontend | Render Web Service (`narrativ-forge-frontend`) |
+| API | Render Web Service (`Narrativ-Forge`) |
+| Database | Supabase PostgreSQL via `DATABASE_URL` |
+| Queue/delivery | Upstash Redis and configured delivery services |
 | Raw/large media | Backblaze B2 |
 | Small workflow files | Supabase Storage |
 | Images/previews | Cloudinary |
 | Approved exports | User-owned Google Drive |
 | Transcription | Cloudflare Workers AI Whisper path + worker fallback |
 
-The current Render blueprint intentionally provisions the API web service only. A paid Render Background Worker is not silently provisioned.
+The current Render blueprint provisions the API and frontend web services only. It does not provision a dedicated persistent background worker; continuous FFmpeg/Whisper queue processing remains a separate deployment gate. Netlify is not the current primary production frontend target.
 
 ## Storage routing
 

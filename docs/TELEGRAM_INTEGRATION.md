@@ -21,9 +21,19 @@ Producers can review and approve scripts or videos directly from Telegram via **
 
 ## 2. Topic Configuration
 
-* **Suggested Topic Name:** `🎬 Narrativ-Forge`
-* **Suggested Topic ID:** `1` (or your assigned `message_thread_id`)
-* **Color / Icon:** 🎬 Film Slate / Video Production
+The shared Telegram supergroup uses one bot and these forum-topic IDs:
+
+| Topic ID | Project | Supported bot behavior |
+|---:|---|---|
+| `6` | Narrativ Forge | Full Narrativ commands and review callbacks |
+| `2` | A Little World With Us | `/start`, `/status`, `/ai_status` topic acknowledgement only |
+| `5` | Logixa Flow | `/start`, `/status`, `/ai_status` topic acknowledgement only |
+| `18` | Doka | `/start`, `/status`, `/ai_status` topic acknowledgement only |
+| `7` | Cognix | `/start`, `/status`, `/ai_status` topic acknowledgement only |
+
+The bot validates both the configured supergroup chat ID and the incoming Telegram `message_thread_id`.
+Only topic 6 is connected to this backend's Narrativ data and approve/reject actions.
+The other four topics are acknowledged independently and must not read or mutate Narrativ data.
 
 ---
 
@@ -104,7 +114,7 @@ await notify_pipeline_error(
 
 ## 6. Cloud Deployment Checklist (Render)
 
-1. Open Render dashboard -> `narrativ-forge-api` service.
+1. Open Render dashboard -> `Narrativ-Forge` API service.
 2. Go to **Environment** tab.
 3. Add `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_TOPIC_ID`, and set `TELEGRAM_ENABLED=true`.
 4. Save Changes (Render will auto-deploy).
@@ -118,9 +128,9 @@ This project includes a dedicated inbound endpoint to receive callbacks from the
 * **Supported Actions:**
   * `nf_script_appr:<id>` -> Approves script and notifies topic
   * `nf_script_rej:<id>` -> Rejects script and requests revision
-  * `nf_video_appr:<id>` -> Approves video and triggers Google Drive upload
-  * `nf_video_rerun:<id>` -> Queues fresh render task to Celery/workers
-  * `nf_idea_capture` -> Saves message text as a new script draft in Studio
+  * `nf_video_appr:<id>` -> Marks a fully reviewed video asset as final/approved
+  * `nf_video_rerun:<id>` -> Records and queues a fresh render job (requires a running worker)
+  * `nf_idea_capture` -> Saves message text as a new Idea in the Narrativ Forge organization
 
 ---
 

@@ -120,6 +120,61 @@ def test_whisper_usage_claims_include_workspace_binding(monkeypatch):
     assert claims["episode_id"] == "episode-1"
 
 
+def test_telegram_api_error_logs_do_not_expose_response_body_or_bot_token(monkeypatch, caplog):
+    import asyncio
+    import logging
+    from pydantic import SecretStr
+    from app.core.config import settings
+    from app.services import telegram as telegram_service
+
+    class FakeResponse:
+        status_code = 400
+        text = '{"description":"invalid bot token bot-secret"}'
+
+    class FakeClient:
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *_args):
+            return False
+        async def post(self, *_args, **_kwargs):
+            return FakeResponse()
+
+    monkeypatch.setattr(settings, "telegram_bot_token", SecretStr("bot-secret"))
+    monkeypatch.setattr(settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(settings, "telegram_enabled", True)
+    monkeypatch.setattr(telegram_service.httpx, "AsyncClient", lambda **_kwargs: FakeClient())
+    caplog.set_level(logging.WARNING)
+
+    asyncio.run(telegram_service.send_telegram_message("safe message"))
+
+    assert "HTTP 400" in caplog.text
+    assert "bot-secret" not in caplog.text
+    assert "invalid bot token" not in caplog.text
+
+
+def test_telegram_domain_notification_fields_escape_html(monkeypatch):
+    import asyncio
+    from app.services import telegram as telegram_service
+    captured = []
+
+    async def fake_send_notification(title, details, **kwargs):
+        captured.append((title, details, kwargs))
+
+    monkeypatch.setattr(telegram_service, "send_notification", fake_send_notification)
+    asyncio.run(telegram_service.notify_script_review(
+        "script<id>", "Draft <script>alert(1)</script>", author="A & B"
+    ))
+    asyncio.run(telegram_service.notify_pipeline_error(
+        "render<stage>", "provider <error> & details", project_id="project<id>"
+    ))
+
+    assert "&lt;script&gt;" in captured[0][1]
+    assert "A &amp; B" in captured[0][1]
+    assert "render&lt;stage&gt;" in captured[1][1]
+    assert "provider &lt;error&gt; &amp; details" in captured[1][1]
+    assert "project&lt;id&gt;" in captured[1][1]
+
+
 def test_cookie_session_rejects_untrusted_origin_but_bearer_auth_is_not_csrf_gated():
     from app.main import app
     from app.core.config import settings

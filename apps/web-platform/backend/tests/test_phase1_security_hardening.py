@@ -19,6 +19,30 @@ def test_google_oauth_state_is_signed_and_contains_browser_nonce(monkeypatch):
     assert raised.value.status_code == 400
 
 
+def test_google_oauth_nonce_cookie_is_short_lived_and_callback_scoped(monkeypatch):
+    from starlette.responses import Response
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "google_client_id", "test-client")
+    monkeypatch.setattr(settings, "google_client_secret", "test-secret")
+    monkeypatch.setattr(settings, "oauth_encryption_key", "test-oauth-state-signing-key")
+    monkeypatch.setattr(settings, "session_cookie_secure", True)
+    response = Response()
+
+    google_drive.google_start(
+        response,
+        user={"email": "owner@example.test"},
+        membership=SimpleNamespace(organization_id="org-1"),
+    )
+
+    cookie = response.headers["set-cookie"].lower()
+    assert "httponly" in cookie
+    assert "secure" in cookie
+    assert "samesite=lax" in cookie
+    assert "max-age=600" in cookie
+    assert "path=/api/v1/drive/google/callback" in cookie
+
+
 def test_webhook_requires_explicit_event_subscriptions():
     with pytest.raises(ValueError):
         phase4.WebhookCreate(url="https://hooks.example.test/narrativ", events=[])
@@ -28,6 +52,20 @@ def test_webhook_requires_explicit_event_subscriptions():
         url="https://hooks.example.test/narrativ", events=["episode.created", "script.ready"]
     )
     assert payload.events == ["episode.created", "script.ready"]
+
+
+def test_usage_record_rejects_unbounded_or_empty_fields():
+    import pytest
+    from pydantic import ValidationError
+
+    for payload in (
+        {"metric": "   "},
+        {"metric": "render_seconds", "quantity": 100001},
+        {"metric": "render_seconds", "unit": ""},
+        {"metric": "render_seconds", "idempotency_key": ""},
+    ):
+        with pytest.raises(ValidationError):
+            phase4.UsageRecord(**payload)
 
 
 def test_manual_billing_plan_change_is_disabled():

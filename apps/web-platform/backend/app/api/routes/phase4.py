@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Response, Request
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -165,11 +165,20 @@ class TagAssign(BaseModel):
 
 
 class UsageRecord(BaseModel):
-    metric: str
-    quantity: int = 1
-    unit: str = "unit"
-    idempotency_key: str | None = None
-    metadata: dict = {}
+    metric: str = Field(min_length=1, max_length=80)
+
+    @field_validator("metric")
+    @classmethod
+    def clean_metric(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Usage metric is required")
+        return value
+
+    quantity: int = Field(default=1, ge=1, le=100000)
+    unit: str = Field(default="unit", min_length=1, max_length=30)
+    idempotency_key: str | None = Field(default=None, min_length=1, max_length=200)
+    metadata: dict = Field(default_factory=dict)
 
 
 @router.get("/workspace")

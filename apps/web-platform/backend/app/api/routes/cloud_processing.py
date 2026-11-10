@@ -173,15 +173,16 @@ def record_whisper_usage(
         raise HTTPException(status_code=403, detail="Whisper usage key does not belong to the current user")
     if usage_claims.get("organization_id") != membership.organization_id:
         raise HTTPException(status_code=403, detail="Whisper usage key does not belong to the current workspace")
-    episode = db.query(Episode).filter(
-        Episode.id == usage_claims.get("episode_id"),
+    episode_id = usage_claims.get("episode_id")
+    episode = db.query(Episode.id).filter(
+        Episode.id == episode_id,
         Episode.organization_id == membership.organization_id,
     ).first()
     if not episode:
-        raise HTTPException(status_code=403, detail="Whisper usage key episode is not in the current workspace")
+        raise HTTPException(status_code=404, detail="Whisper usage episode not found in this workspace")
     if payload.audio_seconds > int(usage_claims.get("max_audio_seconds", 0)):
         raise HTTPException(status_code=400, detail="Recorded audio exceeds the signed Whisper estimate")
-    key = f"cloud-whisper:{usage_claims['jti']}"
+    key = f"{membership.organization_id}:cloud-whisper:{usage_claims['jti']}"
     existing = db.query(UsageEvent).filter(
         UsageEvent.organization_id == membership.organization_id,
         UsageEvent.idempotency_key == key,

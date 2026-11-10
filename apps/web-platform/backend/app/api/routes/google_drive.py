@@ -30,6 +30,7 @@ def _fernet():
         raise HTTPException(status_code=503, detail="Drive disconnected: invalid OAuth encryption key") from exc
 
 GOOGLE_OAUTH_STATE_COOKIE = "nf_google_oauth_state"
+GOOGLE_OAUTH_STATE_COOKIE_PATH = "/api/v1/drive/google/callback"
 
 
 def _state(email: str, organization_id: str):
@@ -74,9 +75,9 @@ def google_start(response: Response, user=Depends(require_roles("owner", "editor
         value=nonce,
         httponly=True,
         secure=settings.session_cookie_secure,
-        samesite="none" if settings.session_cookie_secure else "lax",
+        samesite="lax",
         max_age=600,
-        path="/",
+        path=GOOGLE_OAUTH_STATE_COOKIE_PATH,
     )
     params = {
         "client_id": settings.google_client_id,
@@ -102,10 +103,10 @@ async def google_callback(
         raise HTTPException(status_code=400, detail="OAuth state is not bound to this browser session")
     response.delete_cookie(
         key=GOOGLE_OAUTH_STATE_COOKIE,
-        path="/",
+        path=GOOGLE_OAUTH_STATE_COOKIE_PATH,
         secure=settings.session_cookie_secure,
         httponly=True,
-        samesite="none" if settings.session_cookie_secure else "lax",
+        samesite="lax",
     )
     member = db.query(OrganizationMembership).join(User, User.id == OrganizationMembership.user_id).filter(
         User.email == email, OrganizationMembership.organization_id == organization_id

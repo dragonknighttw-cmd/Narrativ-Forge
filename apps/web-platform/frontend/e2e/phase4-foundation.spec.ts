@@ -22,10 +22,12 @@ test.describe("Phase 4 foundation", () => {
     const usage = await request.post(`${apiBase}/phase4/usage`, {
       data: { metric: "e2e_processing_minutes", quantity: 1, unit: "minute", idempotency_key: `e2e-${Date.now()}` },
     });
-    expect(usage.ok()).toBeTruthy();
+    // Client-submitted usage is intentionally disabled; only trusted server-side
+    // processing may create billable usage events.
+    expect(usage.status()).toBe(410);
     const summary = await request.get(`${apiBase}/phase4/usage`);
     expect(summary.ok()).toBeTruthy();
-    expect((await summary.json()).totals.e2e_processing_minutes).toBeGreaterThanOrEqual(1);
+    expect(Number((await summary.json()).totals.e2e_processing_minutes ?? 0)).toBe(0);
 
     const billing = await request.get(`${apiBase}/phase4/billing`);
     expect(billing.ok()).toBeTruthy();

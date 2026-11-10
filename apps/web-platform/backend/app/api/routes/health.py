@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from ...core.config import settings
 from ...db import get_db
+from ..dependencies import require_roles
 
 router = APIRouter(tags=["system"])
 
@@ -40,7 +41,7 @@ def readiness(db: Session = Depends(get_db)) -> JSONResponse:
 
 
 @router.get("/ai/usage")
-def ai_usage():
+def ai_usage(user=Depends(require_roles("owner", "editor"))):
     """Unified AI key usage, quota status, and active provider chains."""
     from ...services.ai_usage_tracker import get_ai_usage_summary
     return get_ai_usage_summary("Narrativ-Forge")

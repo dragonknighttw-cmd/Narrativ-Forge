@@ -7,4 +7,4 @@ def create_test_client(app: FastAPI) -> TestClient:
     rate_windows = getattr(__import__("app.main", fromlist=["_rate_windows"]), "_rate_windows", None)
     if rate_windows is not None:
         rate_windows.clear()
-    return TestClient(app, base_url="http://localhost")
+    return TestClient(app, base_url="http://localhost", headers={"Origin": "http://localhost:3000"})

@@ -51,9 +51,13 @@ def main() -> None:
     env = os.environ.copy()
     env["DATABASE_URL"] = database_url
     env.setdefault("APP_ENV", "production")
+    storage_provider = secret("STORAGE_PROVIDER").strip().lower()
+    if storage_provider not in {"cloudinary", "b2", "hybrid"}:
+        raise RuntimeError("Kaggle worker requires durable STORAGE_PROVIDER=cloudinary, b2, or hybrid.")
+    env["STORAGE_PROVIDER"] = storage_provider
     env["PYTHONPATH"] = str(backend)
     for name in (
-        "REDIS_URL", "STORAGE_PROVIDER", "B2_APPLICATION_KEY_ID", "B2_APPLICATION_KEY",
+        "REDIS_URL", "STORAGE_REPLICA_ENABLED", "STORAGE_REPLICA_PROVIDER", "B2_APPLICATION_KEY_ID", "B2_APPLICATION_KEY",
         "B2_BUCKET_NAME", "B2_REGION", "B2_ENDPOINT_URL", "SUPABASE_URL",
         "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_STORAGE_BUCKET", "CLOUDINARY_CLOUD_NAME",
         "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET", "CLOUDFLARE_WHISPER_WORKER_URL",
@@ -64,12 +68,36 @@ def main() -> None:
         value = secret(name, required=False)
         if value:
             env[name] = value
+    required_storage_secrets = {
+        "cloudinary": ("CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"),
+        "b2": ("B2_APPLICATION_KEY_ID", "B2_APPLICATION_KEY", "B2_BUCKET_NAME", "B2_REGION"),
+        "hybrid": (
+            "CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET",
+            "B2_APPLICATION_KEY_ID", "B2_APPLICATION_KEY", "B2_BUCKET_NAME", "B2_REGION",
+            "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_STORAGE_BUCKET",
+        ),
+    }
+    missing = [name for name in required_storage_secrets[storage_provider] if not env.get(name)]
+    if missing:
+        raise RuntimeError(
+            "Missing Kaggle Secrets for selected durable storage provider: " + ", ".join(missing)
+        )
+    if env.get("STORAGE_REPLICA_ENABLED", "").strip().lower() in {"1", "true", "yes"}:
+        replica_provider = env.get("STORAGE_REPLICA_PROVIDER", "").strip().lower()
+        if replica_provider not in {"cloudinary", "b2"} or replica_provider == storage_provider:
+            raise RuntimeError("Invalid STORAGE_REPLICA_PROVIDER for Kaggle worker.")
+        replica_missing = [name for name in required_storage_secrets[replica_provider] if not env.get(name)]
+        if replica_missing:
+            raise RuntimeError(
+                "Missing Kaggle Secrets for storage replica: " + ", ".join(replica_missing)
+            )
     worker_requirements = backend / "requirements-real-processing.txt"
     subprocess.run([
         "python", "-m", "pip", "install", "--disable-pip-version-check",
         "--no-cache-dir", "-r", str(worker_requirements),
     ], check=True, env=env)
     subprocess.run(["ffmpeg", "-version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["ffprobe", "-version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print(f"Narrativ Forge Kaggle worker pinned to {TARGET_GIT_SHA}")
     subprocess.run(["python", "-m", "app.workers.kaggle_job_runner"], check=True, cwd=backend, env=env)
 

@@ -1,6 +1,6 @@
 # Production Readiness Scorecard — 2026-11-10
 
-**Current decision: NOT READY FOR GENERAL PRODUCTION RELEASE.** The consolidated security candidate is PR #131 and remains a draft. No production database migration or deployment has been performed.
+**Current decision: NOT READY FOR GENERAL PRODUCTION RELEASE.** The consolidated security candidate is PR #131. Production Supabase migration `0025_usage_event_org_idempotency` has been applied and verified; no merge to `main` or Render deployment has been performed.
 
 ## Current verification addendum — 2026-11-10
 
@@ -11,21 +11,22 @@
 - **Local backend non-integration suite:** 384 passed, 78 deselected.
 - **Focused backend security/unit suite:** 351 passed, 3 skipped, 108 deselected.
 - **Kaggle dispatcher tests:** 8 passed. Frontend TypeScript check, Playwright test discovery, production build, Python compileall, and git diff --check passed locally.
-- **GitHub checks on the candidate:** backend, frontend, Cloudflare Whisper contract tests, SAST, dependency audit, container scan, CodeQL, schema restore, backup/restore, local runtime evidence, production HTTP smoke, and Repository Gate passed at the recorded check; backend integration, E2E, real-worker E2E, and Windows portable evidence were still running at the time of this snapshot. Re-check PR #131 before any merge.
+- **GitHub checks on the exact candidate head `26a3de25cb2b1a1564a3caf2d6696269f3851d35`:** CI backend, backend integration, frontend, Cloudflare Whisper contract tests, and E2E passed; SAST, dependency audit, container scan, CodeQL, Repository Gate, application schema restore, backup/restore, Linux and Windows runtime evidence, Windows portable package, and Production HTTP Smoke passed. Real Worker Evidence run #475 also passed through worker image build, migration test, shared storage checks, retry/DLQ and tenant integration, worker startup, real-media smoke, and redacted evidence collection. A duplicate run was cancelled; the successful exact-head run is #475.
 
 ### Render production deployment boundary
 
 - **API service:** Narrativ-Forge, free plan, autoDeploy enabled, latest live deploy commit 4b97b05e63caf513941c0fde4723ad9f811b34f0.
 - **Frontend service:** narrativ-forge-frontend, free plan, autoDeploy enabled, latest live deploy commit 4b97b05e63caf513941c0fde4723ad9f811b34f0.
-- The API start command runs Uvicorn directly; it does not run Alembic migrations. Therefore migration 0025 must be applied and verified before deploying the matching API code.
+- The API start command runs Uvicorn directly; it does not run Alembic migrations. Migration 0025 was therefore applied and verified on the canonical database before any matching API deployment.
 - Merging a PR into main will automatically trigger Render deployments for both services. No deploy was triggered by this review.
 
 ### Supabase schema and security boundary
 
 - **Project:** xrhlefglqwquhvpoevsg, active/healthy, PostgreSQL 17.11.
-- **Live Alembic revision:** 0024_character_registry. Candidate migration 0025_usage_event_org_idempotency is pending.
-- **Current usage_events uniqueness:** the live database still has a global UNIQUE(idempotency_key) constraint named usage_events_idempotency_key_key.
-- **Current usage_events rows:** 0; duplicate organization/idempotency pairs: 0. Migration 0025 replaces the global unique constraint with organization-scoped uniqueness. It has not been applied to production.
+- **Live Alembic revision:** `0025_usage_event_org_idempotency`, applied and verified on 2026-11-10.
+- **Supabase migration ledger:** entry `20261110083526` (`usage_event_org_idempotency_0025`) is present.
+- **Current usage_events uniqueness:** `uq_usage_event_org_idempotency` enforces `UNIQUE (organization_id, idempotency_key)`; the former global key constraint is absent.
+- **Current usage_events rows:** 0 at migration time; the pre-migration duplicate organization/idempotency-pair check returned 0.
 - **Security advisor:** 44 public tables have RLS enabled but no policies (INFO); prior grant review found no direct anon/authenticated table or function grants. Do not add blanket client policies.
 - **Performance advisor:** 43 unused-index candidates. Do not drop indexes without workload and query-plan evidence.
 - **Leaked Password Protection:** remains excluded from this project's P0 scope per the owner's Free-plan constraint.
@@ -40,14 +41,13 @@
 
 ### Remaining release gates
 
-1. Confirm all CI/E2E and real-worker evidence on PR #131 is green.
-2. Apply migration 0025 to Supabase and verify Alembic revision 0025 before the matching API deployment.
-3. Explicitly approve the main merge knowing it auto-deploys both free Render services.
-4. Enable and verify GitHub main branch protection/required checks through an authorized repository administrator.
-5. Resolve Supabase admin default ACLs through a supported owner/admin route.
-6. Complete owner-side Telegram, storage, OAuth/Drive, and provider smoke tests.
-7. Review the prior Cloudflare live Worker drift and account 2FA-enforcement finding through an authorized owner route.
-8. Keep the Free-plan leaked-password-protection exception documented and risk-accepted.
+1. Re-run the required checks after this scorecard-only update, then mark PR #131 ready and merge it; merging to `main` automatically deploys both free Render services.
+2. Enable and verify GitHub `main` branch protection/required checks through an authorized repository administrator; the connected GitHub actions do not expose a branch-protection write operation.
+3. Resolve Supabase `supabase_admin` default ACLs through a supported owner/admin route; do not attempt ownership bypasses or protected-catalog edits.
+4. Complete owner-side Telegram, storage, Google Drive OAuth, and provider smoke tests.
+5. Configure required GitHub Actions variables/secrets and Kaggle kernel Secrets through the owner UI; production Kaggle dispatch remains disabled until verified and explicitly enabled.
+6. Review the prior Cloudflare live Worker drift and account 2FA-enforcement finding through an authorized owner route.
+7. Keep the Free-plan leaked-password-protection exception documented and risk-accepted.
 
 **Current decision remains NOT READY for general production sign-off.** The security code is prepared in a draft PR; the production database schema, branch governance, owner-side secrets, and deployment approval remain release gates.
 

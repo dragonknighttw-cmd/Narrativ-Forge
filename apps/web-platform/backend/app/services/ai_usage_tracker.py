@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import os
 import threading
 from datetime import datetime, timezone
@@ -69,9 +70,9 @@ def _dispatch_quota_alert(project: str, provider: str, reason: str):
                 return
             msg = (
                 f"⚠️ <b>[AI Quota Exhaustion Alert]</b>\n\n"
-                f"• <b>Project:</b> {project}\n"
-                f"• <b>Provider:</b> <code>{provider.upper()}</code>\n"
-                f"• <b>Reason:</b> {reason}\n"
+                f"• <b>Project:</b> {html.escape(project)}\n"
+                f"• <b>Provider:</b> <code>{html.escape(provider.upper())}</code>\n"
+                f"• <b>Reason:</b> {html.escape(reason)}\n"
                 f"• <b>Status:</b> Auto-switched to next candidate in Fallback Chain."
             )
             payload = {

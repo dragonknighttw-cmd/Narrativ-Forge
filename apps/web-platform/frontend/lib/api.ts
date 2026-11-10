@@ -91,7 +91,7 @@ export const api = {
   listHooks: (q?: string) => request<Array<{ id: string; hook_text: string; hook_type: string; topic?: string; emotion?: string; used_count: number; performance_score?: number }>>("/hooks" + (q ? "?q=" + encodeURIComponent(q) : "")),
   createHook: (data: { hook_text: string; hook_type?: string; topic?: string; emotion?: string }) => request("/hooks", { method: "POST", body: JSON.stringify(data) }),
   setPlan: (plan: string) => request("/phase4/billing/plan?plan=" + encodeURIComponent(plan), { method: "POST" }),
-  createWebhook: (url: string, events: string[] = []) => request<{ id: string; url: string; events: string[]; secret: string }>("/phase4/webhooks", { method: "POST", body: JSON.stringify({ url, events }) }),
+  createWebhook: (url: string, events: string[]) => request<{ id: string; url: string; events: string[]; secret: string }>("/phase4/webhooks", { method: "POST", body: JSON.stringify({ url, events }) }),
   listWebhooks: () => request<Array<{ id: string; url: string; events: string[]; is_active: boolean }>>("/phase4/webhooks"),
   deleteWebhook: (id: string) => request<{ id: string; is_active: boolean }>(`/phase4/webhooks/${id}`, { method: "DELETE" }),
   createNotification: (event_type: string, payload: Record<string, unknown> = {}) => request<{ id: string; status: string }>("/phase4/notifications", { method: "POST", body: JSON.stringify({ event_type, payload }) }),

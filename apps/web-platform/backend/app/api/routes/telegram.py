@@ -37,6 +37,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
 REVIEW_CHECK_KEYS = ("video_watched", "audio_checked", "subtitle_timing_checked", "thumbnail_present")
+PROJECT_BY_TOPIC = {
+    6: "Narrativ Forge",
+    2: "A Little World With Us",
+    5: "Logixa Flow",
+    18: "Doka",
+    7: "Cognix",
+    215: "AuraCraft Studio",
+}
 
 
 def _dashboard_keyboard() -> list[list[dict[str, str]]] | None:
@@ -162,15 +170,7 @@ async def telegram_webhook(
             # One bot serves the shared forum, but only Narrativ Forge topic 6
             # is connected to this backend's project data and approval actions.
             # Other topics receive only isolated connection/status replies.
-            project_by_topic = {
-                6: "Narrativ Forge",
-                2: "A Little World With Us",
-                5: "Logixa Flow",
-                8: "Doka",
-                18: "Doka",
-                7: "Cognix",
-                215: "AuraCraft Studio",
-            }
+            project_by_topic = PROJECT_BY_TOPIC
             if str(chat.get("id")) != settings.telegram_chat_id or not isinstance(topic_id, int) or topic_id not in project_by_topic:
                 return {"status": "ignored", "reason": "unrecognized_chat_or_topic"}
             if command in {"/start", "/help", "/commands", "/status", "/ai_status", "/ai_test", "/idea", "/drafts", "/ideas", "/episodes", "/pipeline", "/assets", "/reviews", "/metrics", "/manga", "/clip"}:
@@ -241,7 +241,7 @@ async def telegram_webhook(
                         "ဒီ command ကို Narrativ Forge ရဲ့ topic ထဲမှာ ပို့ထားကြောင်း စစ်ပါ။ "
                         "မမှန်သေးရင် ဒီ ID ကို support အတွက် အသုံးပြုနိုင်ပါတယ်။\n"
                         "Configured topics: Narrativ Forge (6), A Little World With Us (2), "
-                        "Logixa Flow (5), Doka (8), Cognix (7), AuraCraft Studio (215)."
+                        "Logixa Flow (5), Doka (18), Cognix (7), AuraCraft Studio (215)."
                     )
                 elif command in {"/start", "/help", "/commands"}:
                     if topic_id == 6:
@@ -303,8 +303,8 @@ async def telegram_webhook(
                                 else:
                                     logger.warning("OpenRouter Telegram test failed with HTTP %s", response.status_code)
                                     reply = f"⚠️ OpenRouter test failed (HTTP {response.status_code}). Check backend provider settings/logs."
-                            except Exception:
-                                logger.exception("OpenRouter Telegram test request failed")
+                            except Exception as exc:
+                                logger.warning("OpenRouter Telegram test request failed (%s)", type(exc).__name__)
                                 reply = "⚠️ OpenRouter request failed. Check backend logs and provider connectivity."
                 elif command == "/idea":
                     if topic_id != 6:
@@ -355,8 +355,8 @@ async def telegram_webhook(
                                     st = html.escape(str(s.status))
                                     lines.append(f"{i}. <code>{title}</code> — {st}")
                                 reply = "\n".join(lines)
-                        except Exception:
-                            logger.exception("Telegram /drafts failed")
+                        except Exception as exc:
+                            logger.warning("Telegram /drafts failed (%s)", type(exc).__name__)
                             reply = "⚠️ Could not fetch drafts. Database may be unavailable."
 
                 elif command == "/ideas":
@@ -381,8 +381,8 @@ async def telegram_webhook(
                                     st = html.escape(str(idea.status))
                                     lines.append(f"{i}. <code>{title}</code> — {st}")
                                 reply = "\n".join(lines)
-                        except Exception:
-                            logger.exception("Telegram /ideas failed")
+                        except Exception as exc:
+                            logger.warning("Telegram /ideas failed (%s)", type(exc).__name__)
                             reply = "⚠️ Could not fetch ideas. Database may be unavailable."
 
                 elif command == "/episodes":
@@ -407,8 +407,8 @@ async def telegram_webhook(
                                     step = html.escape(str(ep.current_step or ""))
                                     lines.append(f"{i}. <code>{title}</code> — {st}" + (f" ({step})" if step else ""))
                                 reply = "\n".join(lines)
-                        except Exception:
-                            logger.exception("Telegram /episodes failed")
+                        except Exception as exc:
+                            logger.warning("Telegram /episodes failed (%s)", type(exc).__name__)
                             reply = "⚠️ Could not fetch episodes. Database may be unavailable."
 
                 elif command == "/pipeline":
@@ -435,8 +435,8 @@ async def telegram_webhook(
                                     prog = f" ({j.progress}%)" if hasattr(j, 'progress') and j.progress else ""
                                     lines.append(f"{i}. <code>{jtype}</code> — {st}{prog}")
                                 reply = "\n".join(lines)
-                        except Exception:
-                            logger.exception("Telegram /pipeline failed")
+                        except Exception as exc:
+                            logger.warning("Telegram /pipeline failed (%s)", type(exc).__name__)
                             reply = "⚠️ Could not fetch pipeline jobs. Database may be unavailable."
 
                 elif command == "/assets":
@@ -462,8 +462,8 @@ async def telegram_webhook(
                                     name = html.escape(str(a.original_filename or a.id)[:40])
                                     lines.append(f"{i}. [{atype}] <code>{name}</code> — {st}")
                                 reply = "\n".join(lines)
-                        except Exception:
-                            logger.exception("Telegram /assets failed")
+                        except Exception as exc:
+                            logger.warning("Telegram /assets failed (%s)", type(exc).__name__)
                             reply = "⚠️ Could not fetch assets. Database may be unavailable."
 
                 elif command == "/reviews":
@@ -488,8 +488,8 @@ async def telegram_webhook(
                                     ep_id = html.escape(str(r.episode_id or "?")[:20])
                                     lines.append(f"{i}. Episode <code>{ep_id}</code> — {decision}")
                                 reply = "\n".join(lines)
-                        except Exception:
-                            logger.exception("Telegram /reviews failed")
+                        except Exception as exc:
+                            logger.warning("Telegram /reviews failed (%s)", type(exc).__name__)
                             reply = "⚠️ Could not fetch reviews. Database may be unavailable."
 
                 elif command == "/metrics":
@@ -528,8 +528,8 @@ async def telegram_webhook(
                         f"📦 Assets: <b>{total_assets}</b>\n"
                                 f"⚙️ Active Jobs: <b>{active_jobs}</b>"
                             )
-                        except Exception:
-                            logger.exception("Telegram /metrics failed")
+                        except Exception as exc:
+                            logger.warning("Telegram /metrics failed (%s)", type(exc).__name__)
                             reply = "⚠️ Could not fetch metrics. Database may be unavailable."
                 elif command == "/manga":
                     if topic_id != 6:
@@ -549,14 +549,14 @@ async def telegram_webhook(
                                 p_summary = "\n".join([f"• <b>Panel {p['panel_index']}:</b> {html.escape(p['title'])}" for p in panels[:4]])
                                 reply = (
                                     f"📖 <b>Manga Storyboard Generated!</b>\n\n"
-                                    f"🏷️ Page ID: <code>{page['page_id']}</code>\n"
+                                    f"🏷️ Page ID: <code>{html.escape(str(page['page_id']))}</code>\n"
                                     f"📐 Layout: <b>4-Koma Comic Strip</b>\n"
                                     f"⏱️ Video Duration: <b>{page['estimated_video_duration_seconds']}s</b>\n\n"
                                     f"{p_summary}\n\n"
                                     f"🎨 <i>Open <b>/manga-studio</b> in Narrativ Forge to view panels and export motion comic.</i>"
                                 )
-                            except Exception:
-                                logger.exception("Telegram /manga failed")
+                            except Exception as exc:
+                                logger.warning("Telegram /manga failed (%s)", type(exc).__name__)
                                 reply = "⚠️ Could not generate manga layout. Check backend logs."
 
                 elif command == "/clip":
@@ -578,13 +578,13 @@ async def telegram_webhook(
                                 )
                                 reply = (
                                     f"🎞️ <b>AI Video Clip Registered!</b>\n\n"
-                                    f"🆔 ID: <code>{clip['id']}</code>\n"
+                                    f"🆔 ID: <code>{html.escape(str(clip['id']))}</code>\n"
                                     f"🏷️ Title: <b>{html.escape(clip['title'])}</b>\n"
                                     f"⏱️ Duration: <b>{clip['duration_seconds']}s</b>\n\n"
                                     f"✂️ <i>Open <b>/video-composer</b> in Narrativ Forge to assemble timeline tracks.</i>"
                                 )
-                            except Exception:
-                                logger.exception("Telegram /clip failed")
+                            except Exception as exc:
+                                logger.warning("Telegram /clip failed (%s)", type(exc).__name__)
                                 reply = "⚠️ Could not register video clip. Check backend logs."
 
 
@@ -848,9 +848,9 @@ async def handle_telegram_action(
     except HTTPException:
         db.rollback()
         raise
-    except Exception:
+    except Exception as exc:
         db.rollback()
-        logger.exception("Telegram action failed")
+        logger.warning("Telegram action failed (%s)", type(exc).__name__)
         raise HTTPException(status_code=500, detail="Telegram action failed")
 
     # Queue only after the transaction is committed. If queueing fails, mark the
@@ -858,8 +858,8 @@ async def handle_telegram_action(
     if queue_job_id:
         try:
             enqueue_real_job(queue_job_id)
-        except Exception:
-            logger.exception("Failed to enqueue Telegram-triggered render job")
+        except Exception as exc:
+            logger.warning("Failed to enqueue Telegram-triggered render job (%s)", type(exc).__name__)
             job = db.query(ProcessingJob).filter(ProcessingJob.id == queue_job_id).first()
             if job:
                 job.status = "failed"

@@ -32,7 +32,7 @@ async def send_telegram_message(
     effective_topic = topic_id if topic_id is not None else settings.telegram_topic_id
 
     if not token or not target_chat_id:
-        logger.info("[Telegram:Narrativ-Forge:DryRun] message prepared (%s chars)", len(text))
+        logger.info("[Telegram:Narrativ-Forge:DryRun] message suppressed (chars=%s)", len(text))
         return None
 
     if not settings.telegram_enabled:

@@ -459,3 +459,26 @@ def test_telegram_ideas_command_does_not_leak_other_organization_ideas(db_sessio
     assert result["project"] == "Narrativ Forge"
     assert "Owner private idea" in sent[-1][0]
     assert "Other tenant secret idea" not in sent[-1][0]
+
+
+def test_telegram_topic_8_is_not_mapped_to_doka(monkeypatch):
+    import asyncio
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(telegram.settings, "telegram_topic_id", 6)
+    result = asyncio.run(telegram.telegram_webhook(
+        {
+            "update_id": 800,
+            "message": {
+                "text": "/start",
+                "from": {"id": 12345},
+                "chat": {"id": -100123, "type": "supergroup"},
+                "message_thread_id": 8,
+            },
+        },
+        x_telegram_bot_api_secret_token="s" * 40,
+        db=object(),
+    ))
+    assert result == {"status": "ignored", "reason": "unrecognized_chat_or_topic"}

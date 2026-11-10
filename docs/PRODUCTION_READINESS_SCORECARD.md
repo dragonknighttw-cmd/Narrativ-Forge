@@ -7,11 +7,11 @@
 ### Repository and candidate evidence
 
 - **Current main commit:** 4b97b05e63caf513941c0fde4723ad9f811b34f0.
-- **Candidate PR:** [#131 — Security hardening: production safeguards and free Kaggle worker](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/131), draft branch security/phase1-release-candidate-verified-20261110.
+- **Candidate PR:** [#132 — Production hardening and free Kaggle worker — final release candidate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/132), draft branch security/phase1-production-release-20261110.
 - **Local backend non-integration suite:** 384 passed, 78 deselected.
 - **Focused backend security/unit suite:** 351 passed, 3 skipped, 108 deselected.
 - **Kaggle dispatcher tests:** 8 passed. Frontend TypeScript check, Playwright test discovery, production build, Python compileall, and git diff --check passed locally.
-- **GitHub checks on the candidate:** backend, frontend, Cloudflare Whisper contract tests, SAST, dependency audit, container scan, CodeQL, schema restore, backup/restore, local runtime evidence, production HTTP smoke, and Repository Gate passed at the recorded check; backend integration, E2E, real-worker E2E, and Windows portable evidence were still running at the time of this snapshot. Re-check PR #131 before any merge.
+- **GitHub checks on the candidate:** backend, frontend, Cloudflare Whisper contract tests, SAST, dependency audit, container scan, CodeQL, schema restore, backup/restore, local runtime evidence, production HTTP smoke, and Repository Gate passed at the recorded check; backend integration, E2E, real-worker E2E, and Windows portable evidence were still running at the time of this snapshot. Re-check PR #132 before any merge.
 
 ### Render production deployment boundary
 

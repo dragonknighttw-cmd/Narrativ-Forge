@@ -1062,6 +1062,50 @@ def test_webhook_destination_requires_https_and_rejects_embedded_credentials(mon
         tasks_module._validate_webhook_destination("https://user:password@hooks.example.test/events")
 
 
+def test_webhook_delivery_uses_the_validated_ip_without_a_second_dns_lookup(monkeypatch):
+    captured = {}
+
+    monkeypatch.setattr(
+        tasks_module.socket,
+        "getaddrinfo",
+        lambda host, port, type: [(None, None, None, None, ("8.8.8.8", port))],
+    )
+
+    class FakeResponse:
+        status = 204
+
+        def read(self, _limit):
+            return b""
+
+    class FakeConnection:
+        def __init__(self, host, port, pinned_ip, timeout):
+            captured.update(host=host, port=port, pinned_ip=pinned_ip, timeout=timeout)
+
+        def request(self, method, target, body, headers):
+            captured.update(method=method, target=target, body=body, headers=headers)
+
+        def getresponse(self):
+            return FakeResponse()
+
+        def close(self):
+            captured["closed"] = True
+
+    monkeypatch.setattr(tasks_module, "_PinnedHTTPSConnection", FakeConnection)
+    status = tasks_module._post_webhook(
+        "https://hooks.example.test:8443/events?tenant=1",
+        b'{"ok":true}',
+        {"Content-Type": "application/json"},
+    )
+
+    assert status == 204
+    assert captured["pinned_ip"] == "8.8.8.8"
+    assert captured["host"] == "hooks.example.test"
+    assert captured["port"] == 8443
+    assert captured["target"] == "/events?tenant=1"
+    assert captured["headers"]["Host"] == "hooks.example.test:8443"
+    assert captured["closed"] is True
+
+
 def test_webhook_destination_rejects_non_global_and_mixed_dns_results(monkeypatch):
     monkeypatch.setattr(
         tasks_module.socket,
@@ -1135,12 +1179,13 @@ def test_notification_retries_when_any_subscribed_webhook_fails(testing_db, monk
             if self.should_fail:
                 raise RuntimeError("receiver unavailable")
 
-    def fake_post(url, **kwargs):
-        calls.append((url, kwargs))
-        return Response("failure.example" in url)
+    def fake_post(url, payload, headers, timeout=10.0):
+        calls.append((url, {"payload": payload, "headers": headers, "timeout": timeout}))
+        if "failure.example" in url:
+            raise RuntimeError("receiver unavailable")
+        return 204
 
-    monkeypatch.setattr(tasks_module, "_validate_webhook_destination", lambda _url: None)
-    monkeypatch.setattr("httpx.post", fake_post)
+    monkeypatch.setattr(tasks_module, "_post_webhook", fake_post)
 
     # Use Celery's eager apply path rather than calling .run() directly. Disable
     # eager exception propagation so Celery recursively executes the autoretry
@@ -1148,14 +1193,15 @@ def test_notification_retries_when_any_subscribed_webhook_fails(testing_db, monk
     celery.conf.task_eager_propagates = False
     result = task.apply(args=(event_id,))
     assert result.failed()
-    assert "receiver unavailable" in str(result.result)
+    assert "Webhook delivery failed" in str(result.result)
 
     verify = Session()
     persisted = verify.get(NotificationEvent, event_id)
     assert persisted.status == "failed"
     assert persisted.delivered_at is None
     assert persisted.attempts == 6  # initial attempt plus max_retries=5
-    assert "receiver unavailable" in persisted.last_error
+    assert "Webhook delivery failed" in persisted.last_error
+    assert "receiver unavailable" not in persisted.last_error
     assert len(calls) == 12  # both eligible endpoints are visited on every attempt
     # The stable delivery ID lets each receiver deduplicate retries safely.
     assert all(call[1]["headers"]["X-Narrativ-Delivery"] == event_id for call in calls)

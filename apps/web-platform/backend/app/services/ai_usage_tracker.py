@@ -42,7 +42,7 @@ def record_ai_usage(provider: str, task: str = "chat", success: bool = True, err
                 _EXHAUSTED_PROVIDERS.add(p)
 
     if exhausted_newly:
-        _dispatch_quota_alert("Narrativ-Forge", p, error or "HTTP 429 Rate Limit / Quota Exhausted")
+        _dispatch_quota_alert("Narrativ-Forge", p, "HTTP 429 / quota or rate limit")
 
 
 def mark_provider_exhausted(provider: str):

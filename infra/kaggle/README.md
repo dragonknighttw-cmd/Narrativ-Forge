@@ -20,7 +20,11 @@ The Kaggle kernel is an opt-in, one-job worker. It is not a continuously availab
 ## Kaggle kernel Secrets
 
 - Required: DATABASE_URL for the worker's database operations.
-- Optional/feature-dependent: REDIS_URL, STORAGE_PROVIDER and credentials for the selected durable storage backend, Cloudflare Whisper URL/shared secret, and FFmpeg/Whisper overrides.
+- Required: STORAGE_PROVIDER set to cloudinary, b2, or hybrid; the bootstrap fails closed if durable storage is not configured.
+- Cloudinary requires CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.
+- B2 requires B2_APPLICATION_KEY_ID, B2_APPLICATION_KEY, B2_BUCKET_NAME, and B2_REGION.
+- Hybrid requires both Cloudinary and B2 credentials plus SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_STORAGE_BUCKET.
+- Optional/feature-dependent: REDIS_URL, storage replica settings, Cloudflare Whisper URL/shared secret, and FFmpeg/Whisper overrides.
 - The repository is public; the bootstrap does not require a GitHub token.
 
 Never print secret values. A successful dispatcher run or kernel push does not prove media processing completed. Verify the processing job state, worker outcome, and persisted output asset independently.

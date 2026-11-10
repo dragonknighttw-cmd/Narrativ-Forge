@@ -1060,6 +1060,8 @@ def test_webhook_destination_requires_https_and_rejects_embedded_credentials(mon
         tasks_module._validate_webhook_destination("http://hooks.example.test/events")
     with pytest.raises(ValueError, match="embedded credentials"):
         tasks_module._validate_webhook_destination("https://user:password@hooks.example.test/events")
+    with pytest.raises(ValueError, match="disallowed port"):
+        tasks_module._validate_webhook_destination("https://hooks.example.test:25/events")
 
 
 def test_webhook_delivery_uses_the_validated_ip_without_a_second_dns_lookup(monkeypatch):

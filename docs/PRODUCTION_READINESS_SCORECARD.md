@@ -1,13 +1,13 @@
 # Production Readiness Scorecard — 2026-11-10
 
-**Current decision: NOT READY FOR GENERAL PRODUCTION RELEASE.** The consolidated security candidate is PR #131. Production Supabase migration `0025_usage_event_org_idempotency` has been applied and verified; no merge to `main` or Render deployment has been performed.
+**Current decision: NOT READY FOR GENERAL PRODUCTION RELEASE.** PR #131 was merged to `main` as `498560ed04b3c5ea9fa30d049079b7444e4c889c`. Both free Render services are live on that commit. The post-deploy smoke check was corrected and passed in PR #134; final CI on PR #134 is pending.
 
 ## Current verification addendum — 2026-11-10
 
 ### Repository and candidate evidence
 
-- **Current main commit:** 4b97b05e63caf513941c0fde4723ad9f811b34f0.
-- **Candidate PR:** [#131 — Security hardening: production safeguards and free Kaggle worker](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/131), draft branch security/phase1-release-candidate-verified-20261110.
+- **Current main commit:** `498560ed04b3c5ea9fa30d049079b7444e4c889c` (merged PR #131).
+- **Consolidated PR:** [#131 — Security hardening: production safeguards and free Kaggle worker](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/131), merged. Its Nov 9 evidence addendum is preserved in this scorecard. Earlier duplicate PRs #125–#130 were closed as superseded.
 - **Local backend non-integration suite:** 384 passed, 78 deselected.
 - **Focused backend security/unit suite:** 351 passed, 3 skipped, 108 deselected.
 - **Kaggle dispatcher tests:** 8 passed. Frontend TypeScript check, Playwright test discovery, production build, Python compileall, and git diff --check passed locally.
@@ -15,10 +15,10 @@
 
 ### Render production deployment boundary
 
-- **API service:** Narrativ-Forge, free plan, autoDeploy enabled, latest live deploy commit 4b97b05e63caf513941c0fde4723ad9f811b34f0.
-- **Frontend service:** narrativ-forge-frontend, free plan, autoDeploy enabled, latest live deploy commit 4b97b05e63caf513941c0fde4723ad9f811b34f0.
-- The API start command runs Uvicorn directly; it does not run Alembic migrations. Migration 0025 was therefore applied and verified on the canonical database before any matching API deployment.
-- Merging a PR into main will automatically trigger Render deployments for both services. No deploy was triggered by this review.
+- **API service:** Narrativ-Forge, free plan, autoDeploy enabled, live deploy `dep-dbpdhafavr4c73eja61g` on commit `498560ed04b3c5ea9fa30d049079b7444e4c889c`.
+- **Frontend service:** narrativ-forge-frontend, free plan, autoDeploy enabled, live deploy `dep-dbpdhafavr4c73eja840` on the same commit.
+- The API start command runs Uvicorn directly; it does not run Alembic migrations. Migration 0025 was applied and verified before this deployment.
+- Post-deploy Render application logs contained no error/fatal entries in the checked window. Production HTTP Smoke run #162 passed the live frontend/API checks, including the anonymous AI-usage 401 guard.
 
 ### Supabase schema and security boundary
 
@@ -41,15 +41,15 @@
 
 ### Remaining release gates
 
-1. Re-run the required checks after this scorecard-only update, then mark PR #131 ready and merge it; merging to `main` automatically deploys both free Render services.
+1. Complete all PR #134 checks after its final workflow fixes, then merge it. Its changes update the smoke test to assert the anonymous AI usage endpoint returns 401, fix invalid YAML in the legacy production pipeline, and fix two Flake8 findings.
 2. Enable and verify GitHub `main` branch protection/required checks through an authorized repository administrator; the connected GitHub actions do not expose a branch-protection write operation.
-3. Resolve Supabase `supabase_admin` default ACLs through a supported owner/admin route; do not attempt ownership bypasses or protected-catalog edits.
-4. Complete owner-side Telegram, storage, Google Drive OAuth, and provider smoke tests.
-5. Configure required GitHub Actions variables/secrets and Kaggle kernel Secrets through the owner UI; production Kaggle dispatch remains disabled until verified and explicitly enabled.
-6. Review the prior Cloudflare live Worker drift and account 2FA-enforcement finding through an authorized owner route.
-7. Keep the Free-plan leaked-password-protection exception documented and risk-accepted.
+3. Resolve Supabase `supabase_admin` default ACLs through a supported owner/admin route. Current `postgres` connection is neither superuser nor a member of `supabase_admin`; all 44 public tables are owned by `postgres`, and no current public functions are owned by `supabase_admin`. Do not attempt ownership bypasses or protected-catalog edits.
+4. Complete owner-side Telegram topic/action tests, storage acceptance, Google Drive OAuth, and provider smoke tests.
+5. Configure GitHub Actions variables/secrets and Kaggle kernel Secrets through the owner UI; production Kaggle dispatch remains disabled until verified and explicitly enabled. No paid Render worker or paid resource was created.
+6. Cloudflare account `enforce_twofactor` is false, and the sole account member currently has 2FA disabled. Enable MFA on that member before enabling account enforcement to avoid lockout. The live edge Worker is workers.dev-enabled, has permissive Origin reflection and a hard-coded upstream; repository config still has a placeholder API origin. The live Whisper Worker allows the Render frontend origin, while its repository config still lists the old Netlify origin. Source/config reconciliation and a controlled Worker deployment remain open.
+7. Keep the Supabase Free-plan leaked-password-protection exception documented and risk-accepted.
 
-**Current decision remains NOT READY for general production sign-off.** The security code is prepared in a draft PR; the production database schema, branch governance, owner-side secrets, and deployment approval remain release gates.
+**Current decision remains NOT READY for general production sign-off.** The primary security release is merged and both Render services are live, but branch governance, Cloudflare account MFA/Worker drift, owner-side acceptance, and free Kaggle production secrets remain open.
 
 ---
 

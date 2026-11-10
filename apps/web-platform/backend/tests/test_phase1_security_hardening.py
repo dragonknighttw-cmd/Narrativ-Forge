@@ -93,6 +93,7 @@ def test_cookie_session_rejects_untrusted_origin_but_bearer_auth_is_not_csrf_gat
     assert rejected.status_code == 403
     assert rejected.json()["detail"] == "Request origin is not allowed"
 
+    client.cookies.clear()
     client.headers["Authorization"] = "Bearer invalid-session"
     bearer_request = client.post("/api/v1/auth/switch-workspace", json={"organization_id": "org-1"}, headers={"Origin": "https://attacker.example"})
     assert bearer_request.status_code == 401

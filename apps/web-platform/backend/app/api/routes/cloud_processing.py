@@ -127,6 +127,7 @@ def create_whisper_token(
     now = int(time.time())
     claims = {
         "sub": str(user["id"]),
+        "organization_id": membership.organization_id,
         "episode_id": episode.id,
         "exp": now + settings.cloudflare_whisper_token_ttl_seconds,
         "jti": str(uuid4()),
@@ -135,6 +136,7 @@ def create_whisper_token(
     usage_key = _sign({
         "purpose": "usage",
         "sub": str(user["id"]),
+        "organization_id": membership.organization_id,
         "episode_id": episode.id,
         "exp": claims["exp"],
         "jti": claims["jti"],
@@ -169,10 +171,22 @@ def record_whisper_usage(
     usage_claims = _verify_signed_payload(payload.usage_key)
     if usage_claims.get("sub") != str(user["id"]):
         raise HTTPException(status_code=403, detail="Whisper usage key does not belong to the current user")
+    if usage_claims.get("organization_id") != membership.organization_id:
+        raise HTTPException(status_code=403, detail="Whisper usage key does not belong to the current workspace")
+    episode_id = usage_claims.get("episode_id")
+    episode = db.query(Episode.id).filter(
+        Episode.id == episode_id,
+        Episode.organization_id == membership.organization_id,
+    ).first()
+    if not episode:
+        raise HTTPException(status_code=404, detail="Whisper usage episode not found in this workspace")
     if payload.audio_seconds > int(usage_claims.get("max_audio_seconds", 0)):
         raise HTTPException(status_code=400, detail="Recorded audio exceeds the signed Whisper estimate")
-    key = f"cloud-whisper:{usage_claims['jti']}"
-    existing = db.query(UsageEvent).filter(UsageEvent.idempotency_key == key).first()
+    key = f"{membership.organization_id}:cloud-whisper:{usage_claims['jti']}"
+    existing = db.query(UsageEvent).filter(
+        UsageEvent.organization_id == membership.organization_id,
+        UsageEvent.idempotency_key == key,
+    ).first()
     if existing:
         return {"recorded": False, "usage": _daily_usage(db, membership.organization_id)}
 

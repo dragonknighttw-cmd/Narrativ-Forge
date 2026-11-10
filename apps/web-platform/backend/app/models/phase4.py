@@ -80,13 +80,16 @@ class TagAssignment(Base):
 
 class UsageEvent(Base):
     __tablename__ = "usage_events"
-    __table_args__ = (Index("ix_usage_events_org_period", "organization_id", "period_start"),)
+    __table_args__ = (
+        Index("ix_usage_events_org_period", "organization_id", "period_start"),
+        UniqueConstraint("organization_id", "idempotency_key", name="uq_usage_event_org_idempotency"),
+    )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True, nullable=False)
     metric: Mapped[str] = mapped_column(String(80), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     unit: Mapped[str] = mapped_column(String(30), default="unit", nullable=False)
-    idempotency_key: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
     period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     metadata_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, nullable=False)

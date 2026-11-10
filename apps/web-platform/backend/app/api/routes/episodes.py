@@ -1,3 +1,4 @@
+import html
 from datetime import date, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
@@ -168,6 +169,21 @@ class StoryboardGenerateRequest(BaseModel):
     enhance: bool = True
 
 
+def _voiceover_telegram_details(voice: object, file_size_bytes: int, asset_id: object) -> str:
+    return (
+        f"🎙️ Voice: {html.escape(str(voice))}\n"
+        f"📊 Size: {file_size_bytes} bytes\n"
+        f"🆔 Asset: <code>{html.escape(str(asset_id))}</code>"
+    )
+
+
+def _storyboard_telegram_details(count: int, aspect_ratio: object) -> str:
+    return (
+        f"🎨 Generated {count} {html.escape(str(aspect_ratio))} "
+        "storyboard visuals via FLUX."
+    )
+
+
 @router.post("/{episode_id}/generate-voiceover")
 async def generate_episode_voiceover(
     episode_id: str,
@@ -230,7 +246,7 @@ async def generate_episode_voiceover(
     # Trigger Telegram notification if configured
     await send_notification(
         title=f"Voiceover Generated: {episode.title}",
-        details=f"🎙️ Voice: {result['voice']}\n📊 Size: {result['file_size_bytes']} bytes\n🆔 Asset: <code>{asset.id}</code>",
+        details=_voiceover_telegram_details(result["voice"], result["file_size_bytes"], asset.id),
         status="SUCCESS",
     )
 
@@ -312,7 +328,7 @@ async def generate_episode_storyboards(
     # Trigger Telegram notification
     await send_notification(
         title=f"Storyboards Generated: {episode.title}",
-        details=f"🎨 Generated {len(generated)} {payload.aspect_ratio} storyboard visuals via FLUX.",
+        details=_storyboard_telegram_details(len(generated), payload.aspect_ratio),
         status="SUCCESS",
     )
 

@@ -64,8 +64,18 @@ def test_postgres_concurrent_same_key_creates_one_job():
             race_barrier.wait(timeout=15)
 
     clients = [
-        TestClient(app, base_url="http://localhost", client=("127.0.0.21", 12345)),
-        TestClient(app, base_url="http://localhost", client=("127.0.0.22", 12345)),
+        TestClient(
+            app,
+            base_url="http://localhost",
+            client=("127.0.0.21", 12345),
+            headers={"Origin": "http://localhost:3000"},
+        ),
+        TestClient(
+            app,
+            base_url="http://localhost",
+            client=("127.0.0.22", 12345),
+            headers={"Origin": "http://localhost:3000"},
+        ),
     ]
     for client in clients:
         client.cookies.set("nf_session", issue_session(user_email, "owner"))

@@ -33,6 +33,7 @@ test("authenticated production flow reaches approved mock export", async ({ page
 
   const episodeId = new URL(page.url()).pathname.split("/").filter(Boolean).pop()!;
   const apiBase = process.env.E2E_API_BASE_URL ?? "http://localhost:8000/api/v1";
+  const csrfHeaders = { Origin: process.env.E2E_FRONTEND_ORIGIN ?? "http://localhost:3000" };
   const uploadRequests: { method: string; path: string; idempotencyKey?: string }[] = [];
   page.on("request", request => {
     const url = new URL(request.url());
@@ -76,7 +77,7 @@ test("authenticated production flow reaches approved mock export", async ({ page
   expect(sourceAsset!.file_size_bytes).toBe(sourceBytes.length);
   expect(sourceAsset!.checksum_sha256).toBe(expectedSourceChecksum);
 
-  const job = await api.post(apiBase + "/jobs/mock", { data: { episode_id: episodeId } });
+  const job = await api.post(apiBase + "/jobs/mock", { data: { episode_id: episodeId }, headers: csrfHeaders });
   expect(job.ok()).toBeTruthy();
   const jobJson = await job.json();
   expect(jobJson.status).toBe("completed");
@@ -93,12 +94,14 @@ test("authenticated production flow reaches approved mock export", async ({ page
 
   const subtitle = await api.post(apiBase + "/episodes/" + episodeId + "/subtitles/generate", {
     data: { preset: "burmese_default" },
+    headers: csrfHeaders,
   });
   expect(subtitle.ok()).toBeTruthy();
   const subtitleJson = await subtitle.json();
 
   const editSubtitle = await api.patch(apiBase + "/subtitles/" + subtitleJson.id, {
     data: { cues: [{ start: 0, end: 2, text: "မြန်မာစာ E2E" }] },
+    headers: csrfHeaders,
   });
   expect(editSubtitle.ok()).toBeTruthy();
   const subtitleExport = await api.get(
@@ -107,12 +110,13 @@ test("authenticated production flow reaches approved mock export", async ({ page
   expect(subtitleExport.ok()).toBeTruthy();
   expect(await subtitleExport.text()).toContain("မြန်မာစာ E2E");
 
-  expect((await api.post(apiBase + "/episodes/" + episodeId + "/subtitles/approve")).ok()).toBeTruthy();
+  expect((await api.post(apiBase + "/episodes/" + episodeId + "/subtitles/approve", { headers: csrfHeaders })).ok()).toBeTruthy();
   const episodeState = await api.get(apiBase + "/episodes/" + episodeId);
   expect(episodeState.ok()).toBeTruthy();
   const episodeJson = await episodeState.json();
   expect((await api.patch(apiBase + "/episodes/" + episodeId, {
     data: { status: "needs_approval", expected_row_version: episodeJson.row_version },
+    headers: csrfHeaders,
   })).ok()).toBeTruthy();
 
   const approve = await api.post(apiBase + "/episodes/" + episodeId + "/review/approve", {
@@ -122,10 +126,11 @@ test("authenticated production flow reaches approved mock export", async ({ page
       subtitle_timing_checked: true,
       thumbnail_present: true,
     },
+    headers: csrfHeaders,
   });
   expect(approve.ok()).toBeTruthy();
 
-  const exportResponse = await api.post(apiBase + "/episodes/" + episodeId + "/export/mock-drive");
+  const exportResponse = await api.post(apiBase + "/episodes/" + episodeId + "/export/mock-drive", { headers: csrfHeaders });
   expect(exportResponse.ok()).toBeTruthy();
   expect((await exportResponse.json()).status).toBe("completed");
 

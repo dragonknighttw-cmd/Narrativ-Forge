@@ -459,3 +459,10 @@ def test_telegram_ideas_command_does_not_leak_other_organization_ideas(db_sessio
     assert result["project"] == "Narrativ Forge"
     assert "Owner private idea" in sent[-1][0]
     assert "Other tenant secret idea" not in sent[-1][0]
+
+
+def test_project_topic_mapping_keeps_doka_exclusively_on_topic_18():
+    from app.api.routes.telegram import PROJECT_BY_TOPIC
+
+    assert PROJECT_BY_TOPIC[18] == "Doka"
+    assert set(PROJECT_BY_TOPIC) == {2, 5, 6, 7, 18}

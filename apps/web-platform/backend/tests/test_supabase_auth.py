@@ -1,3 +1,4 @@
+import asyncio
 from types import SimpleNamespace
 
 import pytest
@@ -20,18 +21,38 @@ def configure_owner(monkeypatch):
     monkeypatch.setattr(settings, "supabase_owner_organization_slug", "legacy-workspace")
 
 
+def mock_supabase_user(monkeypatch, status_code, identity):
+    class FakeAsyncClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return False
+
+        async def get(self, *_args, **_kwargs):
+            return SimpleNamespace(status_code=status_code, json=lambda: identity)
+
+    monkeypatch.setattr(auth.httpx, "AsyncClient", lambda **_kwargs: FakeAsyncClient())
+
+
 def test_supabase_login_provisions_only_configured_owner(db_session, monkeypatch):
     configure_owner(monkeypatch)
     db_session.add(Organization(id="org-test", name="Legacy Workspace", slug="legacy-workspace"))
     db_session.commit()
-    monkeypatch.setattr(auth.requests, "get", lambda *args, **kwargs: SimpleNamespace(
-        status_code=200, json=lambda: {
-            "id": OWNER_ID, "email": OWNER_EMAIL, "email_confirmed_at": "2026-10-01T00:00:00Z"
-        }
-    ))
+    mock_supabase_user(monkeypatch, 200, {
+        "id": OWNER_ID,
+        "email": OWNER_EMAIL,
+        "email_confirmed_at": "2026-10-01T00:00:00Z",
+    })
 
     response = Response()
-    result = auth.supabase_login(SupabaseLoginRequest(access_token="x" * 40), response, db_session)
+    result = asyncio.run(
+        auth.supabase_login(
+            SupabaseLoginRequest(access_token="x" * 40),
+            response,
+            db_session,
+        )
+    )
 
     user = db_session.query(User).filter(User.id == OWNER_ID).one()
     membership = db_session.query(OrganizationMembership).filter(OrganizationMembership.user_id == OWNER_ID).one()
@@ -45,23 +66,32 @@ def test_supabase_login_provisions_only_configured_owner(db_session, monkeypatch
 
 def test_supabase_login_rejects_other_unmapped_user(db_session, monkeypatch):
     configure_owner(monkeypatch)
-    monkeypatch.setattr(auth.requests, "get", lambda *args, **kwargs: SimpleNamespace(
-        status_code=200, json=lambda: {
-            "id": "11111111-1111-4111-8111-111111111111",
-            "email": "someone@example.com", "email_confirmed_at": "2026-10-01T00:00:00Z"
-        }
-    ))
+    mock_supabase_user(monkeypatch, 200, {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "email": "someone@example.com",
+        "email_confirmed_at": "2026-10-01T00:00:00Z",
+    })
     with pytest.raises(HTTPException) as exc_info:
-        auth.supabase_login(SupabaseLoginRequest(access_token="x" * 40), Response(), db_session)
+        asyncio.run(
+            auth.supabase_login(
+                SupabaseLoginRequest(access_token="x" * 40),
+                Response(),
+                db_session,
+            )
+        )
     assert exc_info.value.status_code == 403
     assert db_session.query(User).count() == 0
 
 
 def test_supabase_login_rejects_invalid_access_token(db_session, monkeypatch):
     configure_owner(monkeypatch)
-    monkeypatch.setattr(auth.requests, "get", lambda *args, **kwargs: SimpleNamespace(
-        status_code=401, json=lambda: {}
-    ))
+    mock_supabase_user(monkeypatch, 401, {})
     with pytest.raises(HTTPException) as exc_info:
-        auth.supabase_login(SupabaseLoginRequest(access_token="x" * 40), Response(), db_session)
+        asyncio.run(
+            auth.supabase_login(
+                SupabaseLoginRequest(access_token="x" * 40),
+                Response(),
+                db_session,
+            )
+        )
     assert exc_info.value.status_code == 401

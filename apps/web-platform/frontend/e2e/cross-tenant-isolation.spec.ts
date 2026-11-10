@@ -3,6 +3,8 @@ import { test, expect, request as playwrightRequest } from "@playwright/test";
 const apiBase = process.env.E2E_API_BASE_URL ?? "http://localhost:8000/api/v1";
 const ownerEmail = process.env.E2E_EMAIL;
 const ownerPassword = process.env.E2E_PASSWORD;
+const trustedOrigin = process.env.E2E_FRONTEND_ORIGIN ?? "http://localhost:3000";
+const csrfHeaders = { Origin: trustedOrigin };
 
 test.describe("Cross-tenant isolation", () => {
   test.skip(!ownerEmail || !ownerPassword, "Set E2E_EMAIL and E2E_PASSWORD to run authenticated E2E coverage");
@@ -10,6 +12,7 @@ test.describe("Cross-tenant isolation", () => {
   test("workspace resources cannot cross tenant boundaries", async ({ request }) => {
     const ownerLogin = await request.post(`${apiBase}/auth/login`, {
       data: { email: ownerEmail, password: ownerPassword },
+      headers: csrfHeaders,
     });
     expect(ownerLogin.ok()).toBeTruthy();
 
@@ -19,17 +22,19 @@ test.describe("Cross-tenant isolation", () => {
 
     const series = await request.post(`${apiBase}/series`, {
       data: { title: `Tenant A ${suffix}` },
+      headers: csrfHeaders,
     });
     expect(series.ok()).toBeTruthy();
     const seriesId = (await series.json()).id;
 
     const tag = await request.post(`${apiBase}/phase4/tags`, {
       data: { name: `tenant-a-${suffix}` },
+      headers: csrfHeaders,
     });
     expect(tag.ok()).toBeTruthy();
     const tagId = (await tag.json()).id;
 
-    const secondContext = await playwrightRequest.newContext();
+    const secondContext = await playwrightRequest.newContext({ extraHTTPHeaders: { Origin: trustedOrigin } });
     try {
       const secondLogin = await secondContext.post(`${apiBase}/auth/login`, {
         data: { email: secondEmail, password: secondPassword },

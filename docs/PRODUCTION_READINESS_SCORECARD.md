@@ -1,4 +1,108 @@
-# Production Readiness Scorecard — 2026-10-21
+# Production Readiness Scorecard — 2026-11-10
+
+**Current decision: NOT READY FOR GENERAL PRODUCTION RELEASE.** The consolidated security candidate is PR #131. Production Supabase migration `0025_usage_event_org_idempotency` has been applied and verified; no merge to `main` or Render deployment has been performed.
+
+## Current verification addendum — 2026-11-10
+
+### Repository and candidate evidence
+
+- **Current main commit:** 4b97b05e63caf513941c0fde4723ad9f811b34f0.
+- **Candidate PR:** [#131 — Security hardening: production safeguards and free Kaggle worker](https://github.com/dragonknighttw-cmd/Narrativ-Forge/pull/131), draft branch security/phase1-release-candidate-verified-20261110.
+- **Local backend non-integration suite:** 384 passed, 78 deselected.
+- **Focused backend security/unit suite:** 351 passed, 3 skipped, 108 deselected.
+- **Kaggle dispatcher tests:** 8 passed. Frontend TypeScript check, Playwright test discovery, production build, Python compileall, and git diff --check passed locally.
+- **GitHub checks on the exact candidate head `26a3de25cb2b1a1564a3caf2d6696269f3851d35`:** CI backend, backend integration, frontend, Cloudflare Whisper contract tests, and E2E passed; SAST, dependency audit, container scan, CodeQL, Repository Gate, application schema restore, backup/restore, Linux and Windows runtime evidence, Windows portable package, and Production HTTP Smoke passed. Real Worker Evidence run #475 also passed through worker image build, migration test, shared storage checks, retry/DLQ and tenant integration, worker startup, real-media smoke, and redacted evidence collection. A duplicate run was cancelled; the successful exact-head run is #475.
+
+### Render production deployment boundary
+
+- **API service:** Narrativ-Forge, free plan, autoDeploy enabled, latest live deploy commit 4b97b05e63caf513941c0fde4723ad9f811b34f0.
+- **Frontend service:** narrativ-forge-frontend, free plan, autoDeploy enabled, latest live deploy commit 4b97b05e63caf513941c0fde4723ad9f811b34f0.
+- The API start command runs Uvicorn directly; it does not run Alembic migrations. Migration 0025 was therefore applied and verified on the canonical database before any matching API deployment.
+- Merging a PR into main will automatically trigger Render deployments for both services. No deploy was triggered by this review.
+
+### Supabase schema and security boundary
+
+- **Project:** xrhlefglqwquhvpoevsg, active/healthy, PostgreSQL 17.11.
+- **Live Alembic revision:** `0025_usage_event_org_idempotency`, applied and verified on 2026-11-10.
+- **Supabase migration ledger:** entry `20261110083526` (`usage_event_org_idempotency_0025`) is present.
+- **Current usage_events uniqueness:** `uq_usage_event_org_idempotency` enforces `UNIQUE (organization_id, idempotency_key)`; the former global key constraint is absent.
+- **Current usage_events rows:** 0 at migration time; the pre-migration duplicate organization/idempotency-pair check returned 0.
+- **Security advisor:** 44 public tables have RLS enabled but no policies (INFO); prior grant review found no direct anon/authenticated table or function grants. Do not add blanket client policies.
+- **Performance advisor:** 43 unused-index candidates. Do not drop indexes without workload and query-plan evidence.
+- **Leaked Password Protection:** remains excluded from this project's P0 scope per the owner's Free-plan constraint.
+- **Supabase admin default ACL remediation (issue #98) remains open; no privileged ACL changes were attempted.
+
+### Free worker decision
+
+- No paid Render worker or paid resource was created.
+- The selected free path is the opt-in hourly Kaggle one-job worker, not a continuously available worker.
+- The dispatcher pins the exact triggering Git SHA; the kernel verifies that checkout, clones the public repository without a GitHub token, installs pinned real-processing dependencies, checks ffmpeg/ffprobe, and requires durable Cloudinary, B2, or hybrid storage.
+- No production Kaggle dispatch was launched. GitHub Actions variables/secrets and Kaggle kernel Secrets were not verified or changed; owner-side configuration is still required before enabling dispatch.
+
+### Remaining release gates
+
+1. Re-run the required checks after this scorecard-only update, then mark PR #131 ready and merge it; merging to `main` automatically deploys both free Render services.
+2. Enable and verify GitHub `main` branch protection/required checks through an authorized repository administrator; the connected GitHub actions do not expose a branch-protection write operation.
+3. Resolve Supabase `supabase_admin` default ACLs through a supported owner/admin route; do not attempt ownership bypasses or protected-catalog edits.
+4. Complete owner-side Telegram, storage, Google Drive OAuth, and provider smoke tests.
+5. Configure required GitHub Actions variables/secrets and Kaggle kernel Secrets through the owner UI; production Kaggle dispatch remains disabled until verified and explicitly enabled.
+6. Review the prior Cloudflare live Worker drift and account 2FA-enforcement finding through an authorized owner route.
+7. Keep the Free-plan leaked-password-protection exception documented and risk-accepted.
+
+**Current decision remains NOT READY for general production sign-off.** The security code is prepared in a draft PR; the production database schema, branch governance, owner-side secrets, and deployment approval remain release gates.
+
+---
+
+# Historical Production Readiness Scorecard — 2026-11-09
+
+**Current decision: NOT READY FOR GENERAL PRODUCTION SIGN-OFF.** The app deployment and repository CI are green, but security ownership, branch governance, and several live provider acceptance gates remain open.
+
+## Historical verification addendum — 2026-11-09
+
+### Deployment and repository evidence
+
+- **Main commit:** `9067494e7eb56c7aba3e0b582563616453459f31` (PR #120, Character Studio durable registry).
+- **GitHub CI:** all 18 check runs on this exact commit completed successfully, including backend, backend integration, frontend, E2E, dependency audit, SAST, container scan, PostgreSQL backup/restore, application schema restore, real-worker E2E, public frontend/API smoke, and Repository Gate.
+- **Render API:** service `Narrativ-Forge` deploy for the exact commit is `live`; configured health path is `/api/v1/ready`.
+- **Render frontend:** service `narrativ-forge-frontend` deploy for the exact commit is `live`; configured health path is `/api/health`.
+- **Render configuration review:** both services use the expected `apps/web-platform` root. The API runtime/start command and frontend standalone Next.js start script were checked against the repository configuration. No production service settings were changed during this review.
+- **Render log window:** from 2026-11-09 09:00 UTC through approximately 10:02 UTC, the queried API/frontend app error/fatal logs and HTTP 5xx request logs returned no matching entries. This is a bounded log observation, not a load or availability guarantee.
+- **Open PRs:** none were returned by the connected repository query. Open follow-ups are tracked in issues [#98](https://github.com/dragonknighttw-cmd/Narrativ-Forge/issues/98) and [#123](https://github.com/dragonknighttw-cmd/Narrativ-Forge/issues/123).
+
+### Supabase production database and access boundary
+
+- **Canonical project:** `xrhlefglqwquhvpoevsg`.
+- **Alembic revision:** `0024_character_registry`.
+- **Character Studio registry:** `public.character_registry` exists; the current row count is 0, matching the owner's confirmation that no old Character Studio records needed preservation.
+- **Registry security:** RLS is enabled. Direct table grants to `anon` and `authenticated` are absent.
+- **Public schema direct grants:** current queries returned 0 direct `anon`/`authenticated` table grants, 0 function grants, and 0 sequence grants.
+- **RLS advisor:** 44 public tables have RLS enabled and no policies. This is an INFO finding in this backend-mediated architecture; do not add blanket client policies. Continue table-by-table authorization review.
+- **Default ACL residual — OPEN, issue #98:** `postgres` defaults for tables, sequences, and functions are restricted to `postgres` and `service_role`. However, `supabase_admin` defaults still include `anon` and `authenticated` privileges for tables (`r`), sequences (`S`), and functions (`f`). The live session is `postgres`, not a member of `supabase_admin`; no supported owner-role path is available through this connection. Do not attempt ownership bypasses or protected-catalog edits. Obtain Supabase-supported owner/admin remediation or Support guidance, then verify the ACLs and rerun auth/API regression checks.
+- **Leaked Password Protection:** remains excluded from this project's P0 scope per the owner's Free-plan constraint.
+- **Performance advisor:** reports unused-index candidates. Do not drop indexes solely from advisor output; collect representative workload and query-plan evidence first.
+
+### Repository governance — OPEN, issue #123
+
+- GitHub branch metadata reports `main` as unprotected, with required status checks disabled.
+- The connected GitHub integration does not expose a branch-protection write action; the branch-protection API read was denied. No repository settings were changed.
+- An authorized GitHub admin should enable a ruleset for `main`: require PRs, require the successful current CI checks, block force pushes and deletion, and verify the ruleset with a test PR.
+
+### Remaining production acceptance gates
+
+1. Resolve Supabase `supabase_admin` default ACLs through an authorized owner/admin route; verify table, sequence, and function defaults afterward.
+2. Enable and verify GitHub `main` branch protection / required checks through an authorized repository-admin route.
+3. Complete owner-side live Telegram smoke tests: `/start`, `/status`, and `/ai_status` in topics 2, 5, 18, and 7; verify full Narrativ commands and approval callbacks only in topic 6. Automated handler tests and deployment are not a substitute for a real Telegram interaction.
+4. Verify storage provider upload/download, signed URL expiry, access isolation, and deletion behavior with non-sensitive test assets.
+5. Verify authenticated Cloudflare Whisper end-to-end behavior only under an owner-approved, quota-aware test. Do not trigger live inference or paid resources without explicit approval.
+6. Keep background media-worker orchestration outside production guarantees until a persistent worker and a real queued-job acceptance test exist; current Render topology has only API and frontend free services.
+7. Preserve the limitation that AI usage counters are process-local until usage/quota events are durably stored; do not treat those counters as an audit-grade billing ledger.
+8. Complete any required AI failover, OAuth/Drive, SMTP, Stripe, accessibility, load, rollback, and independent security testing before general production sign-off.
+
+**Historical Nov 9 decision:** the app commit recorded in this snapshot was merged and its 18/18 checks were green. General production sign-off remained **NOT READY** until the security, governance, and provider acceptance gates were verified or explicitly risk-accepted.
+
+---
+
+# Production Readiness Scorecard — historical baseline (2026-10-21)
 
 **Current decision: NOT READY FOR GENERAL PRODUCTION SIGN-OFF.** The 2026-10-17 conditional sign-off below is historical and superseded by the current deployment, database, and security evidence recorded here.
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import logging
 from typing import Any
 import httpx
@@ -31,11 +32,11 @@ async def send_telegram_message(
     effective_topic = topic_id if topic_id is not None else settings.telegram_topic_id
 
     if not token or not target_chat_id:
-        logger.info("[Telegram:Narrativ-Forge:DryRun] %s", text.replace("\n", " "))
+        logger.info("[Telegram:Narrativ-Forge:DryRun] message suppressed (chars=%s)", len(text))
         return None
 
     if not settings.telegram_enabled:
-        logger.debug("[Telegram:Narrativ-Forge:Disabled] %s", text.replace("\n", " "))
+        logger.debug("[Telegram:Narrativ-Forge:Disabled] message suppressed (%s chars)", len(text))
         return None
 
     url = f"{TELEGRAM_API_BASE}/bot{token}/sendMessage"
@@ -56,11 +57,11 @@ async def send_telegram_message(
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(url, json=payload)
             if response.status_code != 200:
-                logger.error("Telegram API error (%s): %s", response.status_code, response.text)
+                logger.error("Telegram API request failed with HTTP %s", response.status_code)
                 return None
             return response.json()
     except Exception as exc:
-        logger.warning("Failed to send Telegram message: %s", exc)
+        logger.warning("Failed to send Telegram message (%s)", type(exc).__name__)
         return None
 
 
@@ -90,8 +91,8 @@ async def answer_telegram_callback(
                 logger.error("Telegram callback acknowledgement failed (%s)", response.status_code)
                 return None
             return response.json()
-    except Exception:
-        logger.warning("Failed to acknowledge Telegram callback", exc_info=True)
+    except Exception as exc:
+        logger.warning("Failed to acknowledge Telegram callback (%s)", type(exc).__name__)
         return None
 
 
@@ -113,7 +114,7 @@ async def send_notification(
     status_icon = icon_map.get(status.upper(), "📌")
 
     lines = [
-        f"🎬 <b>[Narrativ-Forge]</b> {status_icon} <b>{title}</b>",
+        f"🎬 <b>[Narrativ-Forge]</b> {status_icon} <b>{html.escape(title)}</b>",
         "",
         details,
     ]
@@ -138,10 +139,10 @@ async def send_notification(
 
 async def notify_script_review(script_id: str, title: str, author: str | None = None) -> None:
     """Notify when a new script is ready for review/approval."""
-    details = f"📝 <b>Script:</b> {title}\n"
+    details = f"📝 <b>Script:</b> {html.escape(title)}\n"
     if author:
-        details += f"👤 <b>Author:</b> {author}\n"
-    details += f"🆔 <code>{script_id}</code>"
+        details += f"👤 <b>Author:</b> {html.escape(author)}\n"
+    details += f"🆔 <code>{html.escape(script_id)}</code>"
 
     actions = [
         ("✅ Approve Script", f"nf_script_appr:{script_id}"),
@@ -152,7 +153,7 @@ async def notify_script_review(script_id: str, title: str, author: str | None = 
 
 async def notify_video_ready(video_id: str, title: str, preview_url: str | None = None) -> None:
     """Notify when video rendering completes."""
-    details = f"🎞️ <b>Video:</b> {title}\n🆔 <code>{video_id}</code>"
+    details = f"🎞️ <b>Video:</b> {html.escape(title)}\n🆔 <code>{html.escape(video_id)}</code>"
     actions: list[tuple[str, str]] = [
         ("👍 Approve Video", f"nf_video_appr:{video_id}"),
         ("🔄 Re-render", f"nf_video_rerun:{video_id}"),
@@ -164,14 +165,14 @@ async def notify_video_ready(video_id: str, title: str, preview_url: str | None 
 
 async def notify_export_complete(title: str, gdrive_url: str) -> None:
     """Notify when Google Drive export completes."""
-    details = f"📁 <b>Asset:</b> {title}\n☁️ Google Drive export is complete."
+    details = f"📁 <b>Asset:</b> {html.escape(title)}\n☁️ Google Drive export is complete."
     actions = [("🔗 Open Google Drive", gdrive_url)]
     await send_notification("Export Complete", details, status="SUCCESS", actions=actions)
 
 
 async def notify_pipeline_error(stage: str, error_message: str, project_id: str | None = None) -> None:
     """Alert team on pipeline failures."""
-    details = f"⚙️ <b>Stage:</b> {stage}\n❌ <b>Error:</b> {error_message}"
+    details = f"⚙️ <b>Stage:</b> {html.escape(stage)}\n❌ <b>Error:</b> {html.escape(error_message)}"
     if project_id:
-        details += f"\n🆔 <code>{project_id}</code>"
+        details += f"\n🆔 <code>{html.escape(project_id)}</code>"
     await send_notification("Pipeline Alert", details, status="ERROR")

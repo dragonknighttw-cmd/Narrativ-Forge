@@ -2,13 +2,14 @@ import base64
 import hashlib
 import hmac
 import json
+import secrets
 import time
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 import httpx
 from cryptography.fernet import Fernet
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from ...core.config import settings
@@ -28,23 +29,32 @@ def _fernet():
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Drive disconnected: invalid OAuth encryption key") from exc
 
+GOOGLE_OAUTH_STATE_COOKIE = "nf_google_oauth_state"
+GOOGLE_OAUTH_STATE_COOKIE_PATH = "/api/v1/drive/google/callback"
+
+
 def _state(email: str, organization_id: str):
-    payload = f"{email}|{organization_id}|{int(time.time())}"
+    nonce = secrets.token_urlsafe(32)
+    payload = f"{email}|{organization_id}|{int(time.time())}|{nonce}"
     key = settings.oauth_encryption_key.encode()
     sig = hmac.new(key, payload.encode(), hashlib.sha256).hexdigest()
-    return base64.urlsafe_b64encode(f"{payload}|{sig}".encode()).decode()
+    value = base64.urlsafe_b64encode(f"{payload}|{sig}".encode()).decode()
+    return value, nonce
+
 
 def _verify_state(value: str):
     try:
         raw = base64.urlsafe_b64decode(value.encode()).decode()
-        email, organization_id, timestamp, signature = raw.rsplit("|", 3)
-        payload = f"{email}|{organization_id}|{timestamp}"
-        if time.time() - int(timestamp) > 600:
-            raise ValueError("expired")
+        email, organization_id, timestamp, nonce, signature = raw.rsplit("|", 4)
+        payload = f"{email}|{organization_id}|{timestamp}|{nonce}"
+        issued_at = int(timestamp)
+        now = int(time.time())
+        if issued_at > now or now - issued_at > 600:
+            raise ValueError("expired or future state")
         expected = hmac.new(settings.oauth_encryption_key.encode(), payload.encode(), hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(signature, expected):
-            raise ValueError("invalid")
-        return email, organization_id
+        if not hmac.compare_digest(signature, expected) or not nonce:
+            raise ValueError("invalid signature or nonce")
+        return email, organization_id, nonce
     except Exception as exc:
         raise HTTPException(status_code=400, detail="Invalid or expired OAuth state") from exc
 
@@ -54,11 +64,21 @@ def google_status(user=Depends(require_roles("owner", "editor")), membership=Dep
     return {"connected": bool(item), "provider": "google_drive", "scope": item.scope if item else None}
 
 @router.get("/start")
-def google_start(user=Depends(require_roles("owner", "editor")), membership=Depends(current_membership)):
+def google_start(response: Response, user=Depends(require_roles("owner", "editor")), membership=Depends(current_membership)):
     if not settings.google_client_id or not settings.google_client_secret:
         raise HTTPException(status_code=503, detail="Drive disconnected: Google OAuth credentials are not configured")
     if not settings.oauth_encryption_key:
         raise HTTPException(status_code=503, detail="Drive disconnected: OAuth encryption key is not configured")
+    state, nonce = _state(user["email"], membership.organization_id)
+    response.set_cookie(
+        key=GOOGLE_OAUTH_STATE_COOKIE,
+        value=nonce,
+        httponly=True,
+        secure=settings.session_cookie_secure,
+        samesite="lax",
+        max_age=600,
+        path=GOOGLE_OAUTH_STATE_COOKIE_PATH,
+    )
     params = {
         "client_id": settings.google_client_id,
         "redirect_uri": settings.google_redirect_uri,
@@ -66,13 +86,28 @@ def google_start(user=Depends(require_roles("owner", "editor")), membership=Depe
         "scope": GOOGLE_SCOPE,
         "access_type": "offline",
         "prompt": "consent",
-        "state": _state(user["email"], membership.organization_id),
+        "state": state,
     }
     return {"authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)}
 
 @router.get("/callback")
-async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
-    email, organization_id = _verify_state(state)
+async def google_callback(
+    code: str,
+    state: str,
+    response: Response,
+    state_cookie: str | None = Cookie(default=None, alias=GOOGLE_OAUTH_STATE_COOKIE),
+    db: Session = Depends(get_db),
+):
+    email, organization_id, nonce = _verify_state(state)
+    if not state_cookie or not hmac.compare_digest(nonce, state_cookie):
+        raise HTTPException(status_code=400, detail="OAuth state is not bound to this browser session")
+    response.delete_cookie(
+        key=GOOGLE_OAUTH_STATE_COOKIE,
+        path=GOOGLE_OAUTH_STATE_COOKIE_PATH,
+        secure=settings.session_cookie_secure,
+        httponly=True,
+        samesite="lax",
+    )
     member = db.query(OrganizationMembership).join(User, User.id == OrganizationMembership.user_id).filter(
         User.email == email, OrganizationMembership.organization_id == organization_id
     ).first()

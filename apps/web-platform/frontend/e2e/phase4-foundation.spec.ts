@@ -3,29 +3,33 @@ import { test, expect } from "@playwright/test";
 const apiBase = process.env.E2E_API_BASE_URL ?? "http://localhost:8000/api/v1";
 const email = process.env.E2E_EMAIL;
 const password = process.env.E2E_PASSWORD;
+const csrfHeaders = { Origin: process.env.E2E_FRONTEND_ORIGIN ?? "http://localhost:3000" };
 
 test.describe("Phase 4 foundation", () => {
   test.skip(!email || !password, "Set E2E_EMAIL and E2E_PASSWORD to run authenticated E2E coverage");
 
   test("login → tenant workspace → tags → usage → billing → webhook", async ({ request }) => {
-    const login = await request.post(`${apiBase}/auth/login`, { data: { email, password } });
+    const login = await request.post(`${apiBase}/auth/login`, { data: { email, password }, headers: csrfHeaders });
     expect(login.ok()).toBeTruthy();
     const workspace = await request.get(`${apiBase}/phase4/workspace`);
     expect(workspace.ok()).toBeTruthy();
     const workspaceBody = await workspace.json();
     expect(workspaceBody.id).toBeTruthy();
 
-    const tag = await request.post(`${apiBase}/phase4/tags`, { data: { name: `e2e-${Date.now()}` } });
+    const tag = await request.post(`${apiBase}/phase4/tags`, { data: { name: `e2e-${Date.now()}` }, headers: csrfHeaders });
     expect(tag.ok()).toBeTruthy();
     expect((await tag.json()).id).toBeTruthy();
 
     const usage = await request.post(`${apiBase}/phase4/usage`, {
       data: { metric: "e2e_processing_minutes", quantity: 1, unit: "minute", idempotency_key: `e2e-${Date.now()}` },
+      headers: csrfHeaders,
     });
-    expect(usage.ok()).toBeTruthy();
+    // Client-submitted usage is intentionally disabled; only trusted server-side
+    // processing may create billable usage events.
+    expect(usage.status()).toBe(410);
     const summary = await request.get(`${apiBase}/phase4/usage`);
     expect(summary.ok()).toBeTruthy();
-    expect((await summary.json()).totals.e2e_processing_minutes).toBeGreaterThanOrEqual(1);
+    expect(Number((await summary.json()).totals.e2e_processing_minutes ?? 0)).toBe(0);
 
     const billing = await request.get(`${apiBase}/phase4/billing`);
     expect(billing.ok()).toBeTruthy();
@@ -33,6 +37,7 @@ test.describe("Phase 4 foundation", () => {
 
     const webhook = await request.post(`${apiBase}/phase4/webhooks`, {
       data: { url: "https://example.invalid/narrativ-forge", events: ["e2e.test"] },
+      headers: csrfHeaders,
     });
     expect(webhook.ok()).toBeTruthy();
     expect((await webhook.json()).secret).toBeTruthy();

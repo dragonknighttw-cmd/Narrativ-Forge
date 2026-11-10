@@ -1,3 +1,4 @@
+import html
 from datetime import date, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
@@ -230,7 +231,7 @@ async def generate_episode_voiceover(
     # Trigger Telegram notification if configured
     await send_notification(
         title=f"Voiceover Generated: {episode.title}",
-        details=f"🎙️ Voice: {result['voice']}\n📊 Size: {result['file_size_bytes']} bytes\n🆔 Asset: <code>{asset.id}</code>",
+        details=f"🎙️ Voice: {html.escape(str(result['voice']))}\n📊 Size: {result['file_size_bytes']} bytes\n🆔 Asset: <code>{asset.id}</code>",
         status="SUCCESS",
     )
 

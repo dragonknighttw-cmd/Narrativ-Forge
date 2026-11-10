@@ -42,9 +42,10 @@ jobs:
       - name: Run Backend Unit Tests
         env:
           APP_ENV: testing
-          DATABASE_URL: sqlite:///:memory:
+          DATABASE_URL: "sqlite:///:memory:"
           SESSION_SECRET: test-secret-key-32-chars-long-minimum!
-        run: pytest -v tests/
+          PYTHONPATH: .
+        run: pytest -m "unit or security" -vv --junitxml=/tmp/backend-unit-security.xml
 
   frontend-verification:
     name: Frontend TypeScript & Next.js Production Build

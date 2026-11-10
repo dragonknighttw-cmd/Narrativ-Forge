@@ -17,16 +17,16 @@ router = APIRouter(prefix="/recap", tags=["Movie Recap & Auto Editing"])
 
 
 class GenerateScriptRequest(BaseModel):
-    title: str = Field(..., min_length=1, max_length=200, example="Parasite (2019)")
-    synopsis: Optional[str] = Field(default="", max_length=5000, example="A poor family schemes to become employed by a wealthy family.")
-    template_id: str = Field(default="thriller_suspense", example="thriller_suspense")
-    duration_seconds: int = Field(default=90, ge=30, le=600, example=90)
+    title: str = Field(..., min_length=1, max_length=200, json_schema_extra={"example": "Parasite (2019)"})
+    synopsis: Optional[str] = Field(default="", max_length=5000, json_schema_extra={"example": "A poor family schemes to become employed by a wealthy family."})
+    template_id: str = Field(default="thriller_suspense", json_schema_extra={"example": "thriller_suspense"})
+    duration_seconds: int = Field(default=90, ge=30, le=600, json_schema_extra={"example": 90})
 
 
 class AutoEditRequest(BaseModel):
     recap_script: Dict[str, Any]
-    aspect_ratio: str = Field(default="9:16", example="9:16")
-    subtitle_style: str = Field(default="tiktok_yellow", example="tiktok_yellow")
+    aspect_ratio: str = Field(default="9:16", json_schema_extra={"example": "9:16"})
+    subtitle_style: str = Field(default="tiktok_yellow", json_schema_extra={"example": "tiktok_yellow"})
 
 
 @router.get("/templates")

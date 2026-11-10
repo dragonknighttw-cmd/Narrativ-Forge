@@ -54,10 +54,11 @@ jobs:
           status="$(curl --retry 3 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 45 -sS -o "$ready" -w '%{http_code}' https://narrativ-forge.onrender.com/api/v1/ready)"
           test "$status" = "200"
           python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d.get("status") == "ready", d; c=d.get("checks", {}); assert c.get("database") == "ok", d; assert c.get("redis") == "ok", d' "$ready"
-      - name: Check AI usage endpoint
+      - name: Verify AI usage endpoint rejects anonymous access
         run: |
           set -euo pipefail
           body="$(mktemp)"
           status="$(curl --retry 3 --retry-all-errors --retry-delay 5 --connect-timeout 10 --max-time 45 -sS -o "$body" -w '%{http_code}' https://narrativ-forge.onrender.com/api/v1/ai/usage)"
-          test "$status" = "200"
-          python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert isinstance(d.get("providers"), dict), d; assert "total_calls_today" in d, d' "$body"
+          echo "Anonymous AI usage endpoint HTTP status: $status"
+          test "$status" = "401"
+          python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d.get("detail") == "Authentication required", d; assert "providers" not in d and "total_calls_today" not in d, d' "$body"

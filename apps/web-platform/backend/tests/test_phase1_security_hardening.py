@@ -175,6 +175,46 @@ def test_telegram_domain_notification_fields_escape_html(monkeypatch):
     assert "project&lt;id&gt;" in captured[1][1]
 
 
+def test_episode_telegram_notification_details_escape_all_dynamic_values():
+    from app.api.routes.episodes import (
+        _storyboard_telegram_details,
+        _voiceover_telegram_details,
+    )
+
+    voiceover = _voiceover_telegram_details(
+        "<script>alert(1)</script>", 123, "asset<private>"
+    )
+    storyboard = _storyboard_telegram_details(2, "<b>wide</b>")
+
+    assert "<script>" not in voiceover
+    assert "&lt;script&gt;" in voiceover
+    assert "asset&lt;private&gt;" in voiceover
+    assert "<b>wide</b>" not in storyboard
+    assert "&lt;b&gt;wide&lt;/b&gt;" in storyboard
+
+
+def test_ai_quota_alert_does_not_forward_raw_provider_error(monkeypatch):
+    from app.services import ai_usage_tracker
+
+    captured = []
+    monkeypatch.setattr(ai_usage_tracker, "_EXHAUSTED_PROVIDERS", set())
+    monkeypatch.setattr(
+        ai_usage_tracker,
+        "_dispatch_quota_alert",
+        lambda project, provider, reason: captured.append(reason),
+    )
+
+    ai_usage_tracker.record_ai_usage(
+        "openrouter",
+        success=False,
+        error="429 unauthorized; bearer sk-live-secret-provider-response",
+    )
+
+    assert captured == ["HTTP 429 / quota or rate limit"]
+    assert "sk-live-secret" not in captured[0]
+
+
+
 def test_cookie_session_rejects_untrusted_origin_but_bearer_auth_is_not_csrf_gated():
     from app.main import app
     from app.core.config import settings

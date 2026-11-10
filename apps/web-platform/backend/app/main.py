@@ -1,8 +1,10 @@
 import os
 from collections import defaultdict, deque
+import html
 import logging
 from contextlib import asynccontextmanager
 from time import monotonic, perf_counter
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -123,6 +125,24 @@ app.add_middleware(
 
 
 @app.middleware("http")
+async def cookie_csrf_guard(request: Request, call_next):
+    if request.method not in {"GET", "HEAD", "OPTIONS", "TRACE"} and request.cookies.get(settings.session_cookie_name):
+        supplied_origin = request.headers.get("origin")
+        if not supplied_origin:
+            referer = request.headers.get("referer", "")
+            parsed = urlsplit(referer)
+            supplied_origin = f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else ""
+        allowed = {origin.rstrip("/") for origin in settings.cors_origin_list}
+        if not supplied_origin or supplied_origin.rstrip("/") not in allowed:
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Request origin is not allowed"},
+            )
+    return await call_next(request)
+
+
+@app.middleware("http")
 async def baseline_rate_limit(request: Request, call_next):
     path = request.url.path
     if path.endswith("/auth/login") or path.endswith("/auth/supabase-login"):
@@ -182,11 +202,10 @@ def root() -> dict[str, str]:
 # =============================================================================
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    import logging
     _logger = logging.getLogger("narrativ.error")
     path = str(request.url.path)[:200] if hasattr(request, "url") else "unknown"
     error_type = type(exc).__name__
-    _logger.error("Unhandled error: %s %s — %s", path, error_type, str(exc)[:500])
+    _logger.error("Unhandled error: %s %s", path, error_type)
     try:
         import asyncio
         async def _alert():
@@ -196,9 +215,8 @@ async def global_exception_handler(request, exc):
                 topic_id = int(os.getenv("TELEGRAM_TOPIC_ID", "0")) or None
                 alert = (
                     "🚨 <b>Narrativ Forge Error</b>\n\n"
-                    f"📍 Path: <code>{path[:100]}</code>\n"
-                    f"❌ Error: <code>{error_type}</code>\n"
-                    f"📝 {str(exc)[:300]}"
+                    f"📍 Path: <code>{html.escape(path[:100])}</code>\n"
+                    f"❌ Error: <code>{error_type}</code>"
                 )
                 await send_telegram_message(alert, topic_id=topic_id)
             except Exception:

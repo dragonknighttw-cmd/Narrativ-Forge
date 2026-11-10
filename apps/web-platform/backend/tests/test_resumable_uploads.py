@@ -18,7 +18,7 @@ from app.api.routes import uploads
 from app.core.config import settings
 from app.db import Base, get_db
 from app.main import app
-from app.models import Asset, Episode, IdempotencyRecord, ProcessingJob, Scene, Series, UploadPart, UploadSession, User
+from app.models import Asset, Episode, IdempotencyRecord, Organization, OrganizationMembership, ProcessingJob, Scene, Series, UploadPart, UploadSession, User
 from app.services.storage import (
     B2StorageProvider,
     LocalStorageProvider,
@@ -58,16 +58,29 @@ def upload_env(tmp_path, monkeypatch):
             password_hash=hash_password("test-password-123"),
             is_active=True,
         )
-        series = Series(title=f"Uploads {uuid4()}")
-        db.add_all([owner, other, viewer, series])
+        owner_org = Organization(
+            name=f"Owner workspace {uuid4()}",
+            slug=f"owner-workspace-{uuid4()}",
+        )
+        db.add_all([owner, other, viewer, owner_org])
+        db.flush()
+        db.add_all([
+            OrganizationMembership(organization_id=owner_org.id, user_id=owner.id, role="owner"),
+            OrganizationMembership(organization_id=owner_org.id, user_id=viewer.id, role="viewer"),
+            OrganizationMembership(organization_id=owner_org.id, user_id=other.id, role="owner"),
+        ])
+        series = Series(organization_id=owner_org.id, title=f"Uploads {uuid4()}")
+        db.add(series)
         db.flush()
         episode = Episode(
+            organization_id=owner_org.id,
             public_id=f"UP-{uuid4()}",
             series_id=series.id,
             episode_number=1,
             title="Upload episode",
         )
         other_episode = Episode(
+            organization_id=owner_org.id,
             public_id=f"UP-{uuid4()}",
             series_id=series.id,
             episode_number=2,
@@ -107,7 +120,12 @@ def upload_env(tmp_path, monkeypatch):
 
     def client_for(email=None, role="owner"):
         host = f"127.0.0.{(uuid4().int % 253) + 1}"
-        client = TestClient(app, base_url="http://localhost", client=(host, 12345))
+        client = TestClient(
+            app,
+            base_url="http://localhost",
+            client=(host, 12345),
+            headers={"Origin": "http://localhost:3000"},
+        )
         clients.append(client)
         if email:
             client.cookies.set("nf_session", issue_session(email, role))

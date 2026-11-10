@@ -44,6 +44,7 @@ jobs:
           APP_ENV: testing
           DATABASE_URL: "sqlite:///:memory:"
           SESSION_SECRET: test-secret-key-32-chars-long-minimum!
+          PYTHONPATH: .
         run: pytest -v tests/
 
   frontend-verification:

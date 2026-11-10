@@ -465,4 +465,4 @@ def test_project_topic_mapping_keeps_doka_exclusively_on_topic_18():
     from app.api.routes.telegram import PROJECT_BY_TOPIC
 
     assert PROJECT_BY_TOPIC[18] == "Doka"
-    assert 8 not in PROJECT_BY_TOPIC
+    assert set(PROJECT_BY_TOPIC) == {2, 5, 6, 7, 18}

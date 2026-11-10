@@ -80,3 +80,19 @@ def test_whisper_usage_claims_include_workspace_binding(monkeypatch):
     claims = _verify_signed_payload(token)
     assert claims["organization_id"] == "org-1"
     assert claims["episode_id"] == "episode-1"
+
+
+def test_cookie_session_rejects_untrusted_origin_but_bearer_auth_is_not_csrf_gated():
+    from app.main import app
+    from app.core.config import settings
+    from client_utils import create_test_client
+
+    client = create_test_client(app)
+    client.cookies.set(settings.session_cookie_name, "invalid-session")
+    rejected = client.post("/api/v1/auth/switch-workspace", json={"organization_id": "org-1"}, headers={"Origin": "https://attacker.example"})
+    assert rejected.status_code == 403
+    assert rejected.json()["detail"] == "Request origin is not allowed"
+
+    client.headers["Authorization"] = "Bearer invalid-session"
+    bearer_request = client.post("/api/v1/auth/switch-workspace", json={"organization_id": "org-1"}, headers={"Origin": "https://attacker.example"})
+    assert bearer_request.status_code == 401

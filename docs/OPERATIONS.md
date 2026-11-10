@@ -125,3 +125,8 @@ After changing settings, a workflow run only proves the settings are present if 
 ### Quota and production boundaries
 
 The scheduled workflow runs hourly and may launch Kaggle compute when due work is queued. The dispatcher injects the exact triggering GitHub commit SHA into the pushed kernel; the Kaggle bootstrap fetches and verifies that SHA before installing the pinned requirements-real-processing set and running one job. Inspect logs and queue state before manually rerunning it. Do not use production media for a diagnostic run. A successful push is not proof of worker completion or end-to-end media processing; verify job state, worker logs, and output separately. No production-ready claim is allowed without linked live evidence.
+
+
+### Kaggle kernel secrets
+
+The Kaggle kernel itself uses Kaggle Secrets, separate from GitHub Actions. DATABASE_URL is required for worker database operations. Add REDIS_URL and the selected durable STORAGE_PROVIDER credentials (Cloudinary, B2, or Supabase) as required by the configured storage backend. Add the Cloudflare Whisper URL/shared secret only if that path is enabled. The repository is public, so the worker clones the exact pinned SHA without a GitHub token; do not create a Kaggle GITHUB_TOKEN secret for this workflow.

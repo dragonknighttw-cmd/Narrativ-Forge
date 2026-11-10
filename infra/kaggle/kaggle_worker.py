@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import stat
 import subprocess
 from pathlib import Path
 
@@ -20,28 +19,34 @@ def secret(name: str, *, required: bool = True) -> str:
     return value or ""
 
 def main() -> None:
-    token = secret("GITHUB_TOKEN")
     database_url = secret("DATABASE_URL")
     if not TARGET_GIT_SHA or len(TARGET_GIT_SHA) != 40 or any(c not in "0123456789abcdef" for c in TARGET_GIT_SHA):
         raise RuntimeError("Kaggle dispatch did not provide a valid pinned Git commit SHA.")
     if ROOT.exists():
         subprocess.run(["rm", "-rf", str(ROOT)], check=True)
-    askpass = Path("/kaggle/working/git-askpass.sh")
-    askpass.write_text("#!/bin/sh\ncase \"$1\" in\n*Username*) echo x-access-token ;;\n*) echo \"$GIT_PASSWORD\" ;;\nesac\n", encoding="utf-8")
-    askpass.chmod(askpass.stat().st_mode | stat.S_IXUSR)
-    clone_env = os.environ.copy()
-    clone_env["GIT_ASKPASS"] = str(askpass)
-    clone_env["GIT_PASSWORD"] = token
-    clone_env["GIT_TERMINAL_PROMPT"] = "0"
-    try:
-        subprocess.run(["git", "clone", "--no-checkout", "--depth", "1", f"https://github.com/{REPO}.git", str(ROOT)], check=True, stdout=subprocess.DEVNULL, env=clone_env)
-        subprocess.run(["git", "-C", str(ROOT), "fetch", "--depth", "1", "origin", TARGET_GIT_SHA], check=True, stdout=subprocess.DEVNULL, env=clone_env)
-        subprocess.run(["git", "-C", str(ROOT), "checkout", "--detach", TARGET_GIT_SHA], check=True, stdout=subprocess.DEVNULL, env=clone_env)
-        actual_sha = subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip()
-        if actual_sha != TARGET_GIT_SHA:
-            raise RuntimeError("Kaggle worker checkout did not match the requested commit SHA.")
-    finally:
-        askpass.unlink(missing_ok=True)
+    git_env = os.environ.copy()
+    git_env["GIT_TERMINAL_PROMPT"] = "0"
+    subprocess.run(
+        ["git", "clone", "--no-checkout", "--depth", "1", f"https://github.com/{REPO}.git", str(ROOT)],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        env=git_env,
+    )
+    subprocess.run(
+        ["git", "-C", str(ROOT), "fetch", "--depth", "1", "origin", TARGET_GIT_SHA],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        env=git_env,
+    )
+    subprocess.run(
+        ["git", "-C", str(ROOT), "checkout", "--detach", TARGET_GIT_SHA],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        env=git_env,
+    )
+    actual_sha = subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip()
+    if actual_sha != TARGET_GIT_SHA:
+        raise RuntimeError("Kaggle worker checkout did not match the requested commit SHA.")
     backend = ROOT / "apps/web-platform" / "backend"
     env = os.environ.copy()
     env["DATABASE_URL"] = database_url

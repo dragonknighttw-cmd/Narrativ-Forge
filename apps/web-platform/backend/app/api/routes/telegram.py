@@ -43,7 +43,6 @@ PROJECT_BY_TOPIC = {
     5: "Logixa Flow",
     18: "Doka",
     7: "Cognix",
-    215: "AuraCraft Studio",
 }
 
 
@@ -241,7 +240,7 @@ async def telegram_webhook(
                         "ဒီ command ကို Narrativ Forge ရဲ့ topic ထဲမှာ ပို့ထားကြောင်း စစ်ပါ။ "
                         "မမှန်သေးရင် ဒီ ID ကို support အတွက် အသုံးပြုနိုင်ပါတယ်။\n"
                         "Configured topics: Narrativ Forge (6), A Little World With Us (2), "
-                        "Logixa Flow (5), Doka (18), Cognix (7), AuraCraft Studio (215)."
+                        "Logixa Flow (5), Doka (18), Cognix (7)."
                     )
                 elif command in {"/start", "/help", "/commands"}:
                     if topic_id == 6:

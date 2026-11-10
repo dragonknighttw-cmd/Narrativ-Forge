@@ -11,6 +11,7 @@ import psycopg2
 ROOT = Path(__file__).resolve().parent
 META = ROOT / "kernel-metadata.json"
 KERNEL_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+/[A-Za-z0-9_-]+$")
+GIT_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 ACTIVE_KERNEL_STATES = {
     "QUEUED",
     "RUNNING",
@@ -29,6 +30,21 @@ def validate_kernel_id(value: str | None) -> str:
             "(for example: thuwon/narrativ-forge); value was not printed."
         )
     return candidate
+
+
+def validate_git_sha(value: str | None) -> str:
+    candidate = (value or "").strip().lower()
+    if not GIT_SHA_PATTERN.fullmatch(candidate):
+        raise ValueError("GITHUB_SHA must be a full 40-character commit SHA; value was not printed.")
+    return candidate
+
+
+def render_worker_source(source: str, target_sha: str) -> str:
+    sha = validate_git_sha(target_sha)
+    marker = "TARGET_GIT_SHA = None"
+    if source.count(marker) != 1:
+        raise ValueError("Kaggle worker source does not contain exactly one SHA marker.")
+    return source.replace(marker, f'TARGET_GIT_SHA = "{sha}"', 1)
 
 
 def queued_job_exists(database_url: str) -> bool:
@@ -84,6 +100,7 @@ def kernel_status(kernel_id: str) -> str:
 
 def main() -> int:
     kernel_id = validate_kernel_id(os.environ.get("KAGGLE_KERNEL_ID"))
+    target_sha = validate_git_sha(os.environ.get("GITHUB_SHA"))
     database_url = os.environ.get("DATABASE_URL", "").strip()
     if not database_url:
         raise ValueError(
@@ -109,12 +126,17 @@ def main() -> int:
     metadata = json.loads(META.read_text(encoding="utf-8"))
     metadata["id"] = kernel_id
     META.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+    worker_source = ROOT / "kaggle_worker.py"
+    worker_source.write_text(
+        render_worker_source(worker_source.read_text(encoding="utf-8"), target_sha),
+        encoding="utf-8",
+    )
     subprocess.run(
         ["kaggle", "kernels", "push", "-p", str(ROOT), "--timeout", "3600"],
         check=True,
         timeout=180,
     )
-    print("Kaggle ephemeral worker push submitted.")
+    print(f"Kaggle ephemeral worker push submitted for commit {target_sha}.")
     return 0
 
 

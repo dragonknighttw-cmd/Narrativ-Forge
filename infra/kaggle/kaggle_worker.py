@@ -11,6 +11,7 @@ from kaggle_secrets import UserSecretsClient
 
 REPO = "dragonknighttw-cmd/Narrativ-Forge"
 ROOT = Path("/kaggle/working/Narrativ-Forge")
+TARGET_GIT_SHA = None  # Injected by dispatch.py before the kernel is pushed.
 
 def secret(name: str, *, required: bool = True) -> str:
     value = UserSecretsClient().get_secret(name)
@@ -21,6 +22,8 @@ def secret(name: str, *, required: bool = True) -> str:
 def main() -> None:
     token = secret("GITHUB_TOKEN")
     database_url = secret("DATABASE_URL")
+    if not TARGET_GIT_SHA or len(TARGET_GIT_SHA) != 40 or any(c not in "0123456789abcdef" for c in TARGET_GIT_SHA):
+        raise RuntimeError("Kaggle dispatch did not provide a valid pinned Git commit SHA.")
     if ROOT.exists():
         subprocess.run(["rm", "-rf", str(ROOT)], check=True)
     askpass = Path("/kaggle/working/git-askpass.sh")
@@ -31,7 +34,12 @@ def main() -> None:
     clone_env["GIT_PASSWORD"] = token
     clone_env["GIT_TERMINAL_PROMPT"] = "0"
     try:
-        subprocess.run(["git", "clone", "--depth", "1", f"https://github.com/{REPO}.git", str(ROOT)], check=True, stdout=subprocess.DEVNULL, env=clone_env)
+        subprocess.run(["git", "clone", "--no-checkout", "--depth", "1", f"https://github.com/{REPO}.git", str(ROOT)], check=True, stdout=subprocess.DEVNULL, env=clone_env)
+        subprocess.run(["git", "-C", str(ROOT), "fetch", "--depth", "1", "origin", TARGET_GIT_SHA], check=True, stdout=subprocess.DEVNULL, env=clone_env)
+        subprocess.run(["git", "-C", str(ROOT), "checkout", "--detach", TARGET_GIT_SHA], check=True, stdout=subprocess.DEVNULL, env=clone_env)
+        actual_sha = subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip()
+        if actual_sha != TARGET_GIT_SHA:
+            raise RuntimeError("Kaggle worker checkout did not match the requested commit SHA.")
     finally:
         askpass.unlink(missing_ok=True)
     backend = ROOT / "apps/web-platform" / "backend"
@@ -51,7 +59,13 @@ def main() -> None:
         value = secret(name, required=False)
         if value:
             env[name] = value
-    subprocess.run(["python", "-m", "pip", "install", "-r", str(backend / "requirements.txt")], check=True, env=env)
+    worker_requirements = backend / "requirements-real-processing.txt"
+    subprocess.run([
+        "python", "-m", "pip", "install", "--disable-pip-version-check",
+        "--no-cache-dir", "-r", str(worker_requirements),
+    ], check=True, env=env)
+    subprocess.run(["ffmpeg", "-version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    print(f"Narrativ Forge Kaggle worker pinned to {TARGET_GIT_SHA}")
     subprocess.run(["python", "-m", "app.workers.kaggle_job_runner"], check=True, cwd=backend, env=env)
 
 if __name__ == "__main__":

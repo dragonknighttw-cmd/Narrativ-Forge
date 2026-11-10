@@ -22,6 +22,23 @@ class ValidateKernelIdTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     dispatch.validate_kernel_id(value)
 
+    def test_validates_full_git_sha(self) -> None:
+        self.assertEqual(dispatch.validate_git_sha("a" * 40), "a" * 40)
+        for value in (None, "", "a" * 39, "g" * 40, "a" * 41):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    dispatch.validate_git_sha(value)
+
+    def test_injects_exact_sha_into_worker_source(self) -> None:
+        source = 'TARGET_GIT_SHA = None\nprint("worker")\n'
+        rendered = dispatch.render_worker_source(source, "b" * 40)
+        self.assertIn('TARGET_GIT_SHA = "' + ("b" * 40) + '"', rendered)
+        self.assertNotIn("TARGET_GIT_SHA = None", rendered)
+
+    def test_rejects_missing_sha_marker(self) -> None:
+        with self.assertRaisesRegex(ValueError, "exactly one SHA marker"):
+            dispatch.render_worker_source('print("worker")\n', "c" * 40)
+
 
 class KernelStatusTests(unittest.TestCase):
     @patch("dispatch.subprocess.run")

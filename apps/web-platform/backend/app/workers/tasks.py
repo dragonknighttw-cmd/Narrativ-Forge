@@ -309,6 +309,8 @@ def _resolve_webhook_destination(url: str):
         raise ValueError("Webhook URL must not contain a fragment")
     host = parsed.hostname.strip().lower().rstrip(".").encode("idna").decode("ascii")
     port = port or 443
+    if port not in {443, 8443}:
+        raise ValueError("Webhook URL uses a disallowed port")
     try:
         literal = ipaddress.ip_address(host)
         addresses = [literal]

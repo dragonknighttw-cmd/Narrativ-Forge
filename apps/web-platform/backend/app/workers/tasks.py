@@ -8,6 +8,8 @@ import subprocess
 import tempfile
 import ipaddress
 import socket
+import http.client
+import ssl
 import redis
 import secrets
 from urllib.parse import urlparse
@@ -287,7 +289,13 @@ def _send_email(to_email: str, subject: str, body: str) -> None:
 
 
 
-def _validate_webhook_destination(url: str) -> None:
+def _resolve_webhook_destination(url: str):
+    """Resolve and validate a public HTTPS destination exactly once per delivery.
+
+    The returned IP is used by the socket connection directly, while TLS SNI and
+    certificate verification continue to use the original hostname. This closes
+    the validate-then-re-resolve DNS rebinding window in ordinary HTTP clients.
+    """
     try:
         parsed = urlparse(url)
         port = parsed.port
@@ -297,21 +305,64 @@ def _validate_webhook_destination(url: str) -> None:
         raise ValueError("Webhook URL must use HTTPS")
     if parsed.username is not None or parsed.password is not None:
         raise ValueError("Webhook URL must not contain embedded credentials")
-    host = parsed.hostname.strip().lower().rstrip(".")
+    if parsed.fragment:
+        raise ValueError("Webhook URL must not contain a fragment")
+    host = parsed.hostname.strip().lower().rstrip(".").encode("idna").decode("ascii")
+    port = port or 443
     try:
         literal = ipaddress.ip_address(host)
         addresses = [literal]
     except ValueError:
         try:
-            infos = socket.getaddrinfo(host, port or 443, type=socket.SOCK_STREAM)
+            infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
         except socket.gaierror as exc:
             raise ValueError("Webhook host could not be resolved") from exc
-        addresses = {ipaddress.ip_address(info[4][0]) for info in infos}
+        addresses = sorted({ipaddress.ip_address(info[4][0]) for info in infos}, key=lambda item: (item.version, int(item)))
     if not addresses:
         raise ValueError("Webhook host did not resolve to a public address")
     for address in addresses:
         if not address.is_global:
             raise ValueError("Webhook URL resolves to a non-public address")
+    return parsed, host, port, str(addresses[0])
+
+
+def _validate_webhook_destination(url: str) -> None:
+    # Retained as a small validation API for callers and regression tests.
+    _resolve_webhook_destination(url)
+
+
+class _PinnedHTTPSConnection(http.client.HTTPSConnection):
+    def __init__(self, host: str, port: int, pinned_ip: str, timeout: float):
+        super().__init__(host, port=port, timeout=timeout, context=ssl.create_default_context())
+        self.pinned_ip = pinned_ip
+
+    def connect(self):
+        raw_socket = socket.create_connection((self.pinned_ip, self.port), self.timeout)
+        self.sock = self._context.wrap_socket(raw_socket, server_hostname=self.host)
+
+
+def _post_webhook(url: str, payload: bytes, headers: dict[str, str], timeout: float = 10.0) -> int:
+    parsed, host, port, pinned_ip = _resolve_webhook_destination(url)
+    connection = _PinnedHTTPSConnection(host, port, pinned_ip, timeout)
+    request_target = parsed.path or "/"
+    if parsed.query:
+        request_target += "?" + parsed.query
+    host_header = f"[{host}]" if ":" in host else host
+    if port != 443:
+        host_header = f"{host_header}:{port}"
+    request_headers = dict(headers)
+    request_headers["Host"] = host_header
+    request_headers["Connection"] = "close"
+    try:
+        connection.request("POST", request_target, body=payload, headers=request_headers)
+        response = connection.getresponse()
+        # Bound response reads; webhook responses are not application payloads.
+        response.read(65536)
+        if not 200 <= response.status < 300:
+            raise RuntimeError(f"Webhook receiver returned HTTP {response.status}")
+        return response.status
+    finally:
+        connection.close()
 
 
 def register_tasks(celery_app):
@@ -336,7 +387,6 @@ def register_tasks(celery_app):
         retry_kwargs={"max_retries": 5},
     )
     def deliver_notification_task(self, notification_id: str) -> str:
-        import httpx
         db = app_db.SessionLocal()
         try:
             event = db.get(NotificationEvent, notification_id)
@@ -358,10 +408,9 @@ def register_tasks(celery_app):
                 secret = (Fernet(settings.oauth_encryption_key.encode()).decrypt(endpoint.secret_encrypted.encode()) if endpoint.secret_encrypted and settings.oauth_encryption_key else bytes.fromhex(endpoint.secret_hash))
                 signature = hmac.new(secret, payload, hashlib.sha256).hexdigest()
                 try:
-                    _validate_webhook_destination(endpoint.url)
-                    response = httpx.post(
+                    _post_webhook(
                         endpoint.url,
-                        content=payload,
+                        payload,
                         headers={
                             "Content-Type": "application/json",
                             "X-Narrativ-Event": event.event_type,
@@ -371,10 +420,11 @@ def register_tasks(celery_app):
                         },
                         timeout=10.0,
                     )
-                    response.raise_for_status()
                 except Exception as exc:
                     failed_deliveries += 1
-                    last_error = str(exc)[:4000]
+                    # Never persist receiver URLs, query strings, or arbitrary remote
+                    # response bodies in the notification event error field.
+                    last_error = f"Webhook delivery failed ({type(exc).__name__})"
             event.attempts = self.request.retries + 1
             event.last_error = last_error
             event.status = "delivered" if eligible_endpoints > 0 and failed_deliveries == 0 else "failed"
@@ -387,7 +437,7 @@ def register_tasks(celery_app):
             # subscribed endpoint failed. Celery retries the event; successful
             # receivers should use the stable X-Narrativ-Delivery ID to dedupe.
             if failed_deliveries:
-                raise RuntimeError(last_error or "Webhook delivery failed")
+                raise RuntimeError("Webhook delivery failed")
             return notification_id
         finally:
             db.close()

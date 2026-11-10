@@ -126,7 +126,15 @@ app.add_middleware(
 
 @app.middleware("http")
 async def cookie_csrf_guard(request: Request, call_next):
-    if request.method not in {"GET", "HEAD", "OPTIONS", "TRACE"} and request.cookies.get(settings.session_cookie_name):
+    authorization = request.headers.get("authorization", "")
+    cookie_session = request.cookies.get(settings.session_cookie_name)
+    # Explicit Bearer credentials are not ambient browser credentials, so CSRF
+    # protection is needed only when the cookie is the authentication mechanism.
+    if (
+        request.method not in {"GET", "HEAD", "OPTIONS", "TRACE"}
+        and cookie_session
+        and not authorization.lower().startswith("bearer ")
+    ):
         supplied_origin = request.headers.get("origin")
         if not supplied_origin:
             referer = request.headers.get("referer", "")

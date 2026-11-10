@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Response, Request
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -165,11 +165,20 @@ class TagAssign(BaseModel):
 
 
 class UsageRecord(BaseModel):
-    metric: str
-    quantity: int = 1
-    unit: str = "unit"
-    idempotency_key: str | None = None
-    metadata: dict = {}
+    metric: str = Field(min_length=1, max_length=80)
+
+    @field_validator("metric")
+    @classmethod
+    def clean_metric(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Usage metric is required")
+        return value
+
+    quantity: int = Field(default=1, ge=1, le=100000)
+    unit: str = Field(default="unit", min_length=1, max_length=30)
+    idempotency_key: str | None = Field(default=None, min_length=1, max_length=200)
+    metadata: dict = Field(default_factory=dict)
 
 
 @router.get("/workspace")
@@ -414,13 +423,20 @@ def record_usage(payload: UsageRecord, membership=Depends(current_membership), d
     if payload.quantity <= 0 or len(payload.metric.strip()) > 80:
         raise HTTPException(status_code=422, detail="Invalid usage")
     period = _now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    if payload.idempotency_key:
-        existing = db.query(UsageEvent).filter(UsageEvent.idempotency_key == payload.idempotency_key).first()
+    scoped_idempotency_key = (
+        f"{membership.organization_id}:{payload.idempotency_key}"
+        if payload.idempotency_key else None
+    )
+    if scoped_idempotency_key:
+        existing = db.query(UsageEvent).filter(
+            UsageEvent.organization_id == membership.organization_id,
+            UsageEvent.idempotency_key == scoped_idempotency_key,
+        ).first()
         if existing:
             return existing
     event = UsageEvent(
         organization_id=membership.organization_id, metric=payload.metric.strip(),
-        quantity=payload.quantity, unit=payload.unit, idempotency_key=payload.idempotency_key,
+        quantity=payload.quantity, unit=payload.unit, idempotency_key=scoped_idempotency_key,
         period_start=period, metadata_json=json.dumps(payload.metadata, separators=(",", ":")),
     )
     db.add(event)
@@ -449,21 +465,24 @@ def billing(membership=Depends(current_membership), db: Session = Depends(get_db
 
 @router.post("/billing/plan")
 def set_plan(plan: str, membership=Depends(current_membership), user=Depends(require_roles("owner")), db: Session = Depends(get_db)):
-    allowed = {"trial", "free", "pro", "business"}
-    if plan not in allowed:
-        raise HTTPException(status_code=422, detail="Invalid plan")
-    sub = db.query(BillingSubscription).filter(BillingSubscription.organization_id == membership.organization_id).first()
-    sub.plan = plan
-    sub.status = "active" if plan != "trial" else "trialing"
-    org = db.get(Organization, membership.organization_id)
-    org.plan = plan
-    db.commit()
-    return sub
+    # Paid entitlements are authoritative only after verified Stripe webhooks.
+    raise HTTPException(
+        status_code=410,
+        detail="Plan changes are managed through verified billing checkout and Stripe webhooks.",
+    )
 
 
 class WebhookCreate(BaseModel):
     url: str
-    events: list[str] = []
+    events: list[str] = Field(min_length=1, max_length=50)
+
+    @field_validator("events")
+    @classmethod
+    def explicit_events_only(cls, values: list[str]) -> list[str]:
+        cleaned = sorted({value.strip() for value in values if isinstance(value, str) and value.strip()})
+        if not cleaned or any(not re.fullmatch(r"[a-z][a-z0-9_.-]{0,99}", value) for value in cleaned):
+            raise ValueError("At least one valid explicit event type is required")
+        return cleaned
 
     @field_validator("url")
     @classmethod
@@ -482,7 +501,12 @@ class NotificationCreate(BaseModel):
     payload: dict = {}
 
 @router.post("/webhooks")
-def create_webhook(payload: WebhookCreate, membership=Depends(current_membership), db: Session = Depends(get_db)):
+def create_webhook(
+    payload: WebhookCreate,
+    membership=Depends(current_membership),
+    user=Depends(require_roles("owner")),
+    db: Session = Depends(get_db),
+):
     secret = secrets.token_urlsafe(32)
     if not settings.oauth_encryption_key:
         raise HTTPException(status_code=503, detail="Webhook secret encryption is not configured")

@@ -352,7 +352,7 @@ def register_tasks(celery_app):
             last_error = None
             for endpoint in endpoints:
                 events = json.loads(endpoint.events_json or "[]")
-                if events and event.event_type not in events:
+                if event.event_type not in events:
                     continue
                 eligible_endpoints += 1
                 secret = (Fernet(settings.oauth_encryption_key.encode()).decrypt(endpoint.secret_encrypted.encode()) if endpoint.secret_encrypted and settings.oauth_encryption_key else bytes.fromhex(endpoint.secret_hash))

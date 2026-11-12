@@ -25,14 +25,14 @@
 ### Telegram
 - PR #135 is merged. The Telegram webhook route is permanently bound to Narrativ Forge topic 6; the multi-project routing table and retired project names were removed from the route, regression tests, integration guide, and project overview.
 - The bot ignores unconfigured topics before authorization, command handling, callback handling, or project-data access.
-- Render API environment was updated to the Narrativ group chat and topic 6 only. Production deploy is in progress.
+- Render API environment is set to the Narrativ group chat and topic 6 only. After rollout, startup logs confirm the Telegram webhook and command menu were configured successfully for the Narrativ Forge group.
 - Telegram forum topics and historical messages in the group were not deleted; only Narrativ Forge bot routing/configuration was removed.
 
 ### Render
-- API and frontend services are both Free plan, one instance each, with PR #135's commit live and the PR #137 commit currently deploying.
-- API health check /api/v1/ready returned HTTP 200 during the rollout. The protected /api/v1/ai/usage endpoint returned 401 without authentication in the prior production smoke.
+- API and frontend services are both Free plan, one instance each, and are live on main commit 121723812b1df06a1ff31cec621be16db0192e4f.
+- API /api/v1/ready and /api/v1/health returned HTTP 200 after rollout. The protected /api/v1/ai/usage endpoint returned 401 without authentication.
 - No error/fatal application logs were observed in the reviewed rollout window.
-- API environment was updated with production Google OAuth callback, frontend base URL, frontend CORS origin, and conservative Free-only AI provider flags. The current main-commit deployment is still completing; verify once it is live.
+- API environment was updated with the production Google OAuth callback, frontend base URL, frontend CORS origin, Telegram group/topic 6 settings, and conservative Free-only AI provider flags.
 
 ### Storage, Google Drive, Redis, and AI
 - Cloudinary is on Free: 64 listed objects, approximately 177.5 MB storage, and 0.17 of 25 credits used. The returned existing assets were Cloudinary sample/demo assets; none of the listed assets used the app's episodes/... key namespace.

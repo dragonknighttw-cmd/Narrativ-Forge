@@ -37,8 +37,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
 REVIEW_CHECK_KEYS = ("video_watched", "audio_checked", "subtitle_timing_checked", "thumbnail_present")
-# This dedicated bot is intentionally bound to Narrativ Forge topic 6 only.
-PROJECT_BY_TOPIC = {6: "Narrativ Forge"}
+# This dedicated bot is permanently scoped to the Narrativ Forge forum topic.
+NARRATIV_FORGE_TOPIC_ID = 6
 
 
 def _dashboard_keyboard() -> list[list[dict[str, str]]] | None:
@@ -161,10 +161,9 @@ async def telegram_webhook(
             if separator and addressed_username.casefold() != configured_username:
                 return {"status": "ignored", "reason": "command_addressed_to_another_bot"}
             topic_id = incoming.get("message_thread_id")
-            # This bot serves Narrativ Forge only. All other forum topics are ignored
-            # and cannot receive commands or invoke Narrativ Forge actions.
-            project_by_topic = PROJECT_BY_TOPIC
-            if str(chat.get("id")) != settings.telegram_chat_id or not isinstance(topic_id, int) or topic_id not in project_by_topic:
+            # This bot serves Narrativ Forge only. Every other topic is ignored
+            # before authorization, command handling, or data access.
+            if str(chat.get("id")) != settings.telegram_chat_id or not isinstance(topic_id, int) or topic_id != NARRATIV_FORGE_TOPIC_ID:
                 return {"status": "ignored", "reason": "unrecognized_chat_or_topic"}
             if command in {"/start", "/help", "/commands", "/status", "/ai_status", "/ai_test", "/idea", "/drafts", "/ideas", "/episodes", "/pipeline", "/assets", "/reviews", "/metrics", "/manga", "/clip"}:
                 # Diagnostic is deliberately scoped to Narrativ Forge's own
@@ -216,53 +215,27 @@ async def telegram_webhook(
                         return {"status": "rejected", "reason": 403}
                     raise
 
-                project_name = project_by_topic.get(topic_id) if isinstance(topic_id, int) else None
-                if project_name is None:
-                    logger.warning(
-                        "Telegram project topic not recognized: chat_id=%s topic_id=%s topic_type=%s command=%s",
-                        chat.get("id"),
-                        topic_id,
-                        type(topic_id).__name__,
-                        command,
-                    )
-                    detected_topic = (
-                        str(topic_id) if isinstance(topic_id, int) else "မတွေ့ပါ (General topic သို့မဟုတ် topic metadata မပါ)"
-                    )
+                project_name = "Narrativ Forge"
+                if command in {"/start", "/help", "/commands"}:
                     reply = (
-                        "⚠️ <b>Project topic ကို မသိရှိနိုင်ပါ။</b>\n"
-                        f"Telegram က လက်ခံရရှိတဲ့ message_thread_id: <code>{html.escape(detected_topic)}</code>\n"
-                        "ဒီ command ကို Narrativ Forge ရဲ့ topic ထဲမှာ ပို့ထားကြောင်း စစ်ပါ။ "
-                        "မမှန်သေးရင် ဒီ ID ကို support အတွက် အသုံးပြုနိုင်ပါတယ်။\n"
-                        "Configured topic: Narrativ Forge (6)."
+                        f"🤖 <b>{html.escape(project_name)} — connected to this topic.</b>\n\n"
+                        "Commands:\n/start — connect to this project's topic\n"
+                        "/commands — list available commands\n"
+                        "/status or /ai_status — check configured AI providers\n"
+                        "/ai_test — send a test request to OpenRouter\n"
+                        "/idea <text> — save an idea to Narrativ Forge\n"
+                        "/drafts — view active script drafts\n"
+                        "/ideas — view recent ideas\n"
+                        "/episodes — view recent episodes\n"
+                        "/pipeline — view active processing jobs\n"
+                        "/assets — view recent assets\n"
+                        "/reviews — view recent reviews\n"
+                        "/metrics — content production metrics\n"
+                        "/manga and /clip — create storyboard/clip records\n"
+                        "This command reply is scoped to the current topic."
                     )
-                elif command in {"/start", "/help", "/commands"}:
-                    if topic_id == 6:
-                        reply = (
-                            f"🤖 <b>{html.escape(project_name)} — connected to this topic.</b>\n\n"
-                            "Commands:\n/start — connect to this project's topic\n"
-                            "/commands — list available commands\n"
-                            "/status or /ai_status — check configured AI providers\n"
-                            "/ai_test — send a test request to OpenRouter\n"
-                            "/idea <text> — save an idea to Narrativ Forge\n"
-                            "/drafts — view active script drafts\n"
-                            "/ideas — view recent ideas\n"
-                            "/episodes — view recent episodes\n"
-                            "/pipeline — view active processing jobs\n"
-                            "/assets — view recent assets\n"
-                            "/reviews — view recent reviews\n"
-                            "/metrics — content production metrics\n"
-                            "/manga and /clip — create storyboard/clip records\n"
-                            "This command reply is scoped to the current topic."
-                        )
-                    else:
-                        reply = (
-                            f"🤖 <b>{html.escape(project_name)} — connected to this topic.</b>\n\n"
-                            "Available commands: /start, /status, /ai_status.\n"
-                            "This topic is isolated from Narrativ Forge project data; its own AI/workflow "
-                            "integrations are not connected to this backend."
-                        )
                 elif command == "/ai_test":
-                    if topic_id != 6:
+                    if topic_id != NARRATIV_FORGE_TOPIC_ID:
                         reply = "⛔ /ai_test is available only in the Narrativ Forge topic (6)."
                     elif not settings.openrouter_api_key:
                         reply = "⚠️ OpenRouter API key is not configured on the backend."
@@ -299,7 +272,7 @@ async def telegram_webhook(
                                 logger.warning("OpenRouter Telegram test request failed (%s)", type(exc).__name__)
                                 reply = "⚠️ OpenRouter request failed. Check backend logs and provider connectivity."
                 elif command == "/idea":
-                    if topic_id != 6:
+                    if topic_id != NARRATIV_FORGE_TOPIC_ID:
                         reply = "⛔ /idea is available only in the Narrativ Forge topic (6)."
                     else:
                         idea_text = text.strip().partition(" ")[2].strip()
@@ -324,7 +297,7 @@ async def telegram_webhook(
                             )
                             return {"status": "ok", "action": "idea_capture", "result": result.get("status")}
                 elif command == "/drafts":
-                    if topic_id != 6:
+                    if topic_id != NARRATIV_FORGE_TOPIC_ID:
                         reply = "⛔ /drafts is available only in the Narrativ Forge topic (6)."
                     else:
                         try:
@@ -352,7 +325,7 @@ async def telegram_webhook(
                             reply = "⚠️ Could not fetch drafts. Database may be unavailable."
 
                 elif command == "/ideas":
-                    if topic_id != 6:
+                    if topic_id != NARRATIV_FORGE_TOPIC_ID:
                         reply = "⛔ /ideas is available only in the Narrativ Forge topic (6)."
                     else:
                         try:
@@ -378,7 +351,7 @@ async def telegram_webhook(
                             reply = "⚠️ Could not fetch ideas. Database may be unavailable."
 
                 elif command == "/episodes":
-                    if topic_id != 6:
+                    if topic_id != NARRATIV_FORGE_TOPIC_ID:
                         reply = "⛔ /episodes is available only in the Narrativ Forge topic (6)."
                     else:
                         try:
@@ -404,7 +377,7 @@ async def telegram_webhook(
                             reply = "⚠️ Could not fetch episodes. Database may be unavailable."
 
                 elif command == "/pipeline":
-                    if topic_id != 6:
+                    if topic_id != NARRATIV_FORGE_TOPIC_ID:
                         reply = "⛔ /pipeline is available only in the Narrativ Forge topic (6)."
                     else:
                         try:
@@ -432,7 +405,7 @@ async def telegram_webhook(
                             reply = "⚠️ Could not fetch pipeline jobs. Database may be unavailable."
 
                 elif command == "/assets":
-                    if topic_id != 6:
+                    if topic_id != NARRATIV_FORGE_TOPIC_ID:
                         reply = "⛔ /assets is available only in the Narrativ Forge topic (6)."
                     else:
                         try:
@@ -459,7 +432,7 @@ async def telegram_webhook(
                             reply = "⚠️ Could not fetch assets. Database may be unavailable."
 
                 elif command == "/reviews":
-                    if topic_id != 6:
+                    if topic_id != NARRATIV_FORGE_TOPIC_ID:
                         reply = "⛔ /reviews is available only in the Narrativ Forge topic (6)."
                     else:
                         try:
@@ -485,7 +458,7 @@ async def telegram_webhook(
                             reply = "⚠️ Could not fetch reviews. Database may be unavailable."
 
                 elif command == "/metrics":
-                    if topic_id != 6:
+                    if topic_id != NARRATIV_FORGE_TOPIC_ID:
                         reply = "⛔ /metrics is available only in the Narrativ Forge topic (6)."
                     else:
                         try:
@@ -524,7 +497,7 @@ async def telegram_webhook(
                             logger.warning("Telegram /metrics failed (%s)", type(exc).__name__)
                             reply = "⚠️ Could not fetch metrics. Database may be unavailable."
                 elif command == "/manga":
-                    if topic_id != 6:
+                    if topic_id != NARRATIV_FORGE_TOPIC_ID:
                         reply = "⛔ /manga is available only in the Narrativ Forge topic (6)."
                     else:
                         manga_prompt = text.strip().partition(" ")[2].strip()
@@ -552,7 +525,7 @@ async def telegram_webhook(
                                 reply = "⚠️ Could not generate manga layout. Check backend logs."
 
                 elif command == "/clip":
-                    if topic_id != 6:
+                    if topic_id != NARRATIV_FORGE_TOPIC_ID:
                         reply = "⛔ /clip is available only in the Narrativ Forge topic (6)."
                     else:
                         clip_args = text.strip().partition(" ")[2].strip().split(" ", 1)
@@ -580,7 +553,7 @@ async def telegram_webhook(
                                 reply = "⚠️ Could not register video clip. Check backend logs."
 
 
-                elif topic_id == 6:
+                elif topic_id == NARRATIV_FORGE_TOPIC_ID:
                     ai_providers = [
                         name for name, enabled in (
                             ("OpenRouter", bool(settings.openrouter_api_key)),

@@ -1,4 +1,45 @@
-# Production Readiness Scorecard — 2026-11-10
+# Production Readiness Scorecard — 2026-11-12
+
+**Current decision: NOT READY FOR GENERAL PRODUCTION RELEASE.** Current checks confirm the Supabase public-schema access posture is restrictive and the Telegram topic-6-only change is awaiting CI. GitHub branch protection, Cloudflare account MFA, live Render deployment/config verification, and owner-side Google Drive/provider acceptance remain open.
+
+## Current verification addendum — 2026-11-12
+
+### Supabase database security — verified posture
+
+- Canonical project `xrhlefglqwquhvpoevsg` is ACTIVE_HEALTHY on PostgreSQL 17.11.
+- Direct grants to `anon` and `authenticated` on public tables: **0**.
+- Public schema objects observed: 44 tables, 2 sequences, and 1 function; all are owned by `postgres`. No current public object is owned by `supabase_admin`.
+- All 44 public tables have RLS enabled. No public RLS policies exist. This is intentionally deny-by-default for Data API roles in the backend-mediated architecture; do not add blanket policies.
+- `postgres` default ACLs in `public` restrict future tables, sequences, and functions to `postgres` and `service_role`.
+- `supabase_admin` default ACL entries still include Data API roles. Supabase documents these as reserved platform defaults that cannot be changed by the project `postgres` role; they apply to objects created by `supabase_admin`, not objects created by the project's `postgres` role. Supabase states its services do not create user tables/views/functions in `public` as `supabase_admin`. Current public objects are all postgres-owned. Treat this as vendor-managed platform behavior, not an actionable project ACL change. Reference: https://supabase.com/kb/troubleshooting/cant-change-the-default-privileges-of-supabase_admin-in-the-public-schema-448af9
+- Supabase Storage bucket `narrativ-forge` exists and is private, with a 50 MiB file-size limit. No Storage policies were found; this remains deny-by-default for direct client access. Backend service-role access must continue to be used for private objects.
+- Google Drive connection rows: **0**. OAuth implementation exists, but no account is currently connected.
+- Leaked Password Protection remains excluded per the owner's Free-plan constraint.
+
+### Cloudflare security — verified account and worker state
+
+- Account-level `enforce_twofactor` is false; the sole account member currently has 2FA disabled. Do not enable account enforcement until the owner enables 2FA on the account first.
+- `narrativ-forge-whisper` has the AI binding, an encrypted secret binding, and live `ALLOWED_ORIGIN=https://narrativ-forge-frontend.onrender.com`. Its deployed CORS check is exact-origin allowlist based.
+- `narrativ-forge-edge` is workers.dev-enabled with previews enabled. Its deployed source hard-codes the production API origin and reflects arbitrary Origin values on OPTIONS; repository Wrangler config still contains a placeholder API origin. No custom Worker routes were returned. This worker needs a controlled source/config reconciliation and a verified usage check before disabling workers.dev or changing its endpoint.
+- Workers AI has a Free allocation of 10,000 Neurons/day; do not enable paid overage or upgrade. See https://developers.cloudflare.com/workers-ai/platform/pricing/
+
+### Telegram — pending release
+
+- PR #135 restricts the Narrativ Forge bot to topic 6 only, ignores former topic mappings 2, 5, 7, and 18, adds regression tests, and updates the integration guide.
+- PR #135 is not merged; CI is still running. The Telegram forum topics and their history are not deleted.
+
+### Remaining release gates
+
+1. Enable and verify GitHub `main` branch protection/required checks through an authorized repository administrator. The connected GitHub integration cannot write branch protection.
+2. Complete Cloudflare owner MFA enrollment, then enable account-level two-factor enforcement. Review the edge Worker before any production deployment/endpoint disablement.
+3. Select the Render workspace and verify both production services, live deploy SHAs, environment-variable presence (without exposing secrets), logs, health, and Google Drive/AI configuration.
+4. Complete owner-side Google Drive OAuth connection and free-provider live acceptance where credentials/consent are required.
+5. Merge PR #135 only after CI passes; then verify topic 6 commands and callback actions on the live Telegram bot.
+6. Keep the Free-plan leaked-password-protection exception documented.
+
+---
+
+# Historical Production Readiness Scorecard — 2026-11-10
 
 **Current decision: NOT READY FOR GENERAL PRODUCTION RELEASE.** PR #131 was merged to `main` as `498560ed04b3c5ea9fa30d049079b7444e4c889c`. Both free Render services are live on that commit. The post-deploy smoke check was corrected and passed in PR #134; final CI on PR #134 is pending.
 

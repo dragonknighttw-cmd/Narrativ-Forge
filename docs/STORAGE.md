@@ -2,7 +2,7 @@
 
 > Owner: Storage/platform maintainers  
 > Update when: provider routing, lifecycle, retention, or recovery rules change  
-> Last Updated: 2026-10-08  
+> Last Updated: 2026-11-12  
 > Do NOT put here: credentials
 
 ## Routing
@@ -30,6 +30,11 @@ Default operational targets:
 - required metadata/subtitles: preserve according to product policy.
 
 These are policy defaults, not permission for blind deletion.
+
+## Security
+
+- Cloudinary assets uploaded by the application must use the `authenticated` delivery type, not public `upload` delivery. Downloads use signed authenticated URLs. Existing Cloudinary sample assets are not part of Narrativ Forge and must not be bulk-migrated.
+- Supabase Storage uses a private bucket and backend service-role access; do not add public bucket policies.
 
 ## Safety
 

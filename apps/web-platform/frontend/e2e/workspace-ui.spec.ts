@@ -38,7 +38,7 @@ test("authenticated workspace UI routes use real API data and accessible mobile 
   await expect(page.getByText(/Unexpected token/i)).toHaveCount(0);
 
   const analyticsResponsePromise = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith("/analytics")
+    new URL(response.url()).pathname.endsWith("/api/v1/analytics")
     && response.request().method() === "GET",
   );
   await page.goto("/analytics");

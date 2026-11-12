@@ -3,4 +3,5 @@ main = "src/index.ts"
 compatibility_date = "2026-10-02"
 
 [vars]
-API_ORIGIN = "https://api.example.com"
+API_ORIGIN = "https://narrativ-forge.onrender.com"
+ALLOWED_ORIGIN = "https://narrativ-forge-frontend.onrender.com"

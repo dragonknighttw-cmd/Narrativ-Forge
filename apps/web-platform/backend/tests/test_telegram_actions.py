@@ -198,10 +198,6 @@ def test_telegram_webhook_dispatches_callback_to_action_handler(monkeypatch):
     ("topic_id", "project_name"),
     [
         (6, "Narrativ Forge"),
-        (2, "A Little World With Us"),
-        (5, "Logixa Flow"),
-        (18, "Doka"),
-        (7, "Cognix"),
     ],
 )
 def test_telegram_commands_are_scoped_to_project_topic(monkeypatch, topic_id, project_name):
@@ -466,3 +462,37 @@ def test_project_topic_mapping_keeps_doka_exclusively_on_topic_18():
 
     assert PROJECT_BY_TOPIC[18] == "Doka"
     assert set(PROJECT_BY_TOPIC) == {2, 5, 6, 7, 18}
+
+
+@pytest.mark.parametrize("topic_id", [2, 5, 7, 18])
+def test_telegram_ignores_removed_project_topics(monkeypatch, topic_id):
+    import asyncio
+    from app.api.routes import telegram
+
+    monkeypatch.setattr(telegram.settings, "telegram_gateway_secret", "s" * 40)
+    monkeypatch.setattr(telegram.settings, "telegram_allowed_user_ids", "12345")
+    monkeypatch.setattr(telegram.settings, "telegram_chat_id", "-100123")
+    monkeypatch.setattr(telegram.settings, "telegram_topic_id", 6)
+    sent = []
+
+    async def fake_send(text, **kwargs):
+        sent.append((text, kwargs))
+        return {"ok": True}
+
+    monkeypatch.setattr(telegram, "send_telegram_message", fake_send)
+    result = asyncio.run(telegram.telegram_webhook(
+        {
+            "update_id": topic_id,
+            "message": {
+                "text": "/start",
+                "from": {"id": 12345},
+                "chat": {"id": -100123, "type": "supergroup"},
+                "message_thread_id": topic_id,
+            },
+        },
+        x_telegram_bot_api_secret_token="s" * 40,
+        db=None,
+    ))
+
+    assert result == {"status": "ignored", "reason": "unrecognized_chat_or_topic"}
+    assert sent == []

@@ -19,7 +19,6 @@ The application database is the workflow/version/subtitle/approval/analytics/aud
 
 - Private/invite-only.
 - No public registration, public profiles, public browsing/comments.
-- No Logixa Flow or Aether Bridge.
 - No direct TikTok/YouTube/Facebook/Instagram publishing.
 - Publishing preparation, captions, hashtags, schedule metadata, format checks, manual publication records, and analytics are allowed.
 - Human approval remains mandatory before final export.

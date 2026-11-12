@@ -50,6 +50,41 @@ export type ManualProductionLog = {
   notes?: string | null;
   created_at: string;
 };
+
+export type RecapScene = {
+  scene_number: number;
+  start_time: string;
+  end_time: string;
+  visual_description: string;
+  burmese_narration: string;
+  pacing: string;
+  action_required: string;
+};
+export type RecapScript = {
+  job_id: string;
+  title: string;
+  template: { id: string; name: string; tone: string; hook_style: string; bgm_style: string; description: string; sample_hook: string };
+  target_duration_seconds: number;
+  total_scenes: number;
+  full_script_burmese: string;
+  scenes: RecapScene[];
+  recommended_aspect_ratio: string;
+  bgm_recommendation: string;
+  voice_preset: string;
+};
+export type RecapEditSimulation = {
+  render_job_id: string;
+  status: string;
+  video_title: string;
+  aspect_ratio: string;
+  resolution: string;
+  duration_seconds: number;
+  subtitle_language: string;
+  subtitle_style: string;
+  output_format: string;
+  scenes_processed: Array<{ scene_number: number; duration: string; applied_filter: string; subtitle_text: string; transition: string; status: string }>;
+};
+
 export type AnalyticsSummary = {
   manual_logs: number;
   published_logs: number;
@@ -122,6 +157,8 @@ export const api = {
   listProductionLogs: () => request<ManualProductionLog[]>("/manual-production-logs"),
   createProductionLog: (data: { topic: string; production_time_seconds?: number | null }) => request<ManualProductionLog>("/manual-production-logs", { method: "POST", body: JSON.stringify(data) }),
   analyticsSummary: () => request<AnalyticsSummary>("/analytics"),
+  generateRecapScript: (data: { title: string; synopsis: string; template_id: string; duration_seconds: number }) => request<RecapScript>("/recap/generate-script", { method: "POST", body: JSON.stringify(data) }),
+  previewRecapEdit: (data: { recap_script: RecapScript; aspect_ratio: string; subtitle_style: string }) => request<RecapEditSimulation>("/recap/auto-edit", { method: "POST", body: JSON.stringify(data) }),
   createHook: (data: { hook_text: string; hook_type?: string; topic?: string; emotion?: string }) => request("/hooks", { method: "POST", body: JSON.stringify(data) }),
   setPlan: (plan: string) => request("/phase4/billing/plan?plan=" + encodeURIComponent(plan), { method: "POST" }),
   createWebhook: (url: string, events: string[]) => request<{ id: string; url: string; events: string[]; secret: string }>("/phase4/webhooks", { method: "POST", body: JSON.stringify({ url, events }) }),

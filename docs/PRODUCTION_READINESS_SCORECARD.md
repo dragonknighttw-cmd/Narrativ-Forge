@@ -18,6 +18,10 @@
 
 ## Render production services
 
+**Free-tier production limitation (important):** Render's official Free plan documentation explicitly says not to use Free instances for production applications. Free web services spin down after 15 minutes without inbound traffic and take about one minute to spin back up; their filesystems are ephemeral, so local changes are lost on redeploy, restart, or spin-down. Free services also cannot use persistent disks, scale beyond one instance, or run one-off jobs. The workspace has 750 free instance-hours per calendar month. See [Render Free instance limitations](https://render.com/docs/free).
+
+Therefore, the two services below are publicly deployed and healthy when running, but **cannot be certified as always-on or production-SLA services while the Free-only constraint remains**. No keep-alive traffic workaround or paid upgrade has been applied. Continue storing durable data outside Render's filesystem and treat cold starts, free-hour exhaustion, and lack of a persistent background worker as release limitations.
+
 - API `Narrativ-Forge`: service `srv-davrqtu7bikc73f7isbg`, Free plan, one instance, auto-deploy on `main`, latest live application commit `ced3cb8e05bf88159995a2c40470db032b86bb26`.
 - Frontend `narrativ-forge-frontend`: service `srv-db74h5rl550s73ao9ts0`, Free plan, one instance, auto-deploy on `main`, latest live application commit `ced3cb8e05bf88159995a2c40470db032b86bb26`.
 - PR #142 changes only the GitHub evidence workflow, not application runtime source; no Render redeploy was needed for that documentation/workflow-only merge.

@@ -1,5 +1,38 @@
 # Production Readiness Scorecard — 2026-11-12
 
+## Final status update — 2026-11-12
+
+### Completed and live
+- GitHub branch protection remains intentionally skipped per owner instruction; issue #123 is closed as not planned.
+- Supabase project-owned database security review is complete: zero direct anon/authenticated public table grants, all 44 public tables RLS-enabled and postgres-owned, postgres default ACLs restricted, private Storage bucket. The 44 no-policy advisor findings are intentional deny-by-default; leaked-password protection remains the documented Free-plan exception; supabase_admin default ACLs are vendor-managed.
+- Telegram PR #135 is merged. The current Telegram integration, tests, docs, and project overview contain only the Narrativ Forge topic route. Render API env is set to the configured group and topic 6. Startup logs confirm the Telegram webhook, command menu, and menu button were configured successfully.
+- Cloudflare Edge Worker is live with strict HTTPS origin allowlisting, credentialed CORS, the frontend's Idempotency-Key header, security response headers, and explicit Render API/frontend bindings. Preview URLs are disabled for both Workers; workers.dev production endpoints remain enabled.
+- Render API and frontend services are both Free plan and live on commit 4da425cf36ee987e63fcb863993d9b56634b285c. API /api/v1/ready and /api/v1/health returned HTTP 200; unauthenticated /api/v1/ai/usage returned 401. No error/fatal application logs were observed after rollout.
+- Render API environment was updated with the production Google OAuth callback, frontend base URL, frontend CORS origin, Telegram group/topic 6 settings, and Free-only AI provider flags.
+- Cloudinary PR #138 is merged and live on the API service. Future app assets use authenticated delivery and signed URLs, with correct image/video/raw resource types. A temporary authenticated upload test succeeded on the Cloudinary Free account and was deleted.
+- Upstash Redis Narrativ database is Free, active in ap-southeast-1, TLS and ACL enabled, auto-upgrade disabled; PING returned PONG and DBSIZE returned 0.
+- One Cloudflare Workers AI free-tier smoke succeeded using 0.2776 Neurons. Cloudflare's Free allocation is 10,000 Neurons/day; daily limit exhaustion on Workers Free returns a rate-limit error rather than silently upgrading to paid usage.
+
+### Pending owner-gated work
+- Cloudflare account-level 2FA enforcement remains off because the sole member has not enrolled 2FA. Owner must enable authenticator/security-key 2FA first.
+- Whisper Worker source/tests/config are merged, but live redeployment is withheld until the owner confirms the Render and GitHub production shared secrets match. The manual workflow requires that explicit confirmation.
+- Google Drive connection table contains 0 connected accounts. Render callback is configured as https://narrativ-forge.onrender.com/api/v1/drive/google/callback; owner must register that exact URI in Google Cloud Console and complete OAuth connection.
+- B2 upload/download/checksum/restore lifecycle has not been live-verified. Render environment values are not exposed through the connected Render tools, so do not claim B2 credentials or Render-to-Upstash wiring are verified.
+- Chat-provider flags for Groq, Gemini, Mistral, Cohere, NVIDIA, and Cloudflare AI are disabled until account-level Free eligibility is verified. OpenRouter remains the configured provider with the application's free-model allowlist; an authenticated app-level /ai_test is still required.
+- PR #140 is open and its live Edge Worker change is already deployed. It adds the Idempotency-Key and credentialed CORS contract to source and regression tests; merge only after all required checks pass.
+- Telegram forum topics and their historical messages were not deleted. The Narrativ bot ignores all topics except topic 6. Telegram command-menu scopes are group-level rather than per forum topic, so the Narrativ command menu may remain visible in other topics even though commands there are ignored.
+
+### Remaining release actions
+1. Owner enables Cloudflare member 2FA; then account enforcement can be enabled.
+2. Owner confirms Render and GitHub Whisper shared secrets match; then the protected Whisper deployment can proceed.
+3. Owner registers the Google OAuth redirect URI and connects Drive.
+4. Owner tests /start, /ai_status, and /ai_test in Telegram topic 6; commands outside topic 6 must be ignored.
+5. Merge PR #140 after all checks pass.
+6. Complete a live B2 lifecycle and backup/restore test, plus authenticated app-level Cloudinary upload/download verification.
+7. Keep GitHub branch protection skipped and do not upgrade any service to a paid plan.
+
+---
+
 ## Live verification addendum — after topic and Cloudflare hardening
 
 ### GitHub

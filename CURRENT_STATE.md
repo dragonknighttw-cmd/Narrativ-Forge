@@ -1,3 +1,16 @@
+# UI refresh checkpoint — 2026-11-12 UTC
+
+- **Repository implementation:** the shared Next.js application shell, global visual tokens, and Studio Overview dashboard were refreshed directly on `main`. Relevant commits: `507ebec` (grouped icon navigation, active route, keyboard-close mobile drawer, workspace header), `ad580ac` (shared responsive visual tokens and layout), `19a54b3` (API-backed dashboard metrics and qualified provider/Telegram status), `c484a64` (dashboard composition and responsive styles), and `e66dd5b` (design-system documentation).
+- **UI changes:** desktop sidebar now has grouped navigation and current-route highlighting; mobile navigation is an accessible overlay drawer with Escape/close behavior; visual tokens align with the documented lime-accent cinematic dark theme; dashboard episode count and AI provider priority now come from API data rather than hard-coded counts/provider lists.
+- **Status wording:** dashboard now distinguishes configured Telegram topic routing from a live callback test, and explicitly notes that configured AI routing is not proof of successful inference. Whisper is presented as a route requiring real-audio verification.
+- **Validation:** GitHub Actions for the UI code commit were queued/pending at the time of this checkpoint. Typecheck, production build, E2E, authenticated desktop/mobile browser QA, and screen-by-screen WCAG review remain **VERIFY** until fresh results are available.
+- **Deployment:** no Render deployment was initiated by this UI change. Keep the existing live release state separate from repository implementation until exact-SHA checks pass and the deployed commit is confirmed.
+- **Data safety:** no production records, settings, database schema, provider secrets, Telegram messages, approvals, or media assets were changed.
+
+This checkpoint records repository implementation only; it does not change the overall production-readiness decision or close external worker, media-quality, OAuth/Drive, backup/restore, accessibility, legal, or security acceptance gates.
+
+---
+
 # Current verified checkpoint — 2026-11-09 UTC
 
 - **Latest main commit:** `a3f282094ea65c12c66c4c8fc0151b95e82e83f2` (documentation-only); **latest deployed application-code commit:** `eaa29c73e968a64601ef0ed4134da494a202289b`.

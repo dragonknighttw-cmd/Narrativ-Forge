@@ -13,7 +13,7 @@
   - CodeQL: [43182865026](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/43182865026)
   - Security (SAST, dependency audit, container scan): [43182865308](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/43182865308)
   - Repository Gate: [43182865126](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/43182865126)
-- PR #132 (`security/phase1-production-release-20261110`) is closed without merging because it was conflicted and reintroduced unrelated Telegram topic routing. PR #142 is merged. There are no open PRs. A merged/closed branch may remain because the connected GitHub tools do not expose branch deletion.
+- PR #132 (`security/phase1-production-release-20261110`) is closed without merging because it was conflicted and reintroduced unrelated Telegram topic routing. PR #142 is merged. No application-code PRs are open; documentation refresh PR #143 is in progress. A merged/closed branch may remain because the connected GitHub tools do not expose branch deletion.
 - GitHub branch protection remains intentionally skipped per owner instruction.
 
 ## Render production services

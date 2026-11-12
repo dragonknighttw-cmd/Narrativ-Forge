@@ -4,5 +4,5 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-10-05",
   "ai": { "binding": "AI" },
-  "vars": { "ALLOWED_ORIGIN": "https://harmonious-nasturtium-53a1d6.netlify.app" }
+  "vars": { "ALLOWED_ORIGIN": "https://narrativ-forge-frontend.onrender.com" }
 }

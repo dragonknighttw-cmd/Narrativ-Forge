@@ -145,8 +145,8 @@ jobs:
           }
           try:
               req = urllib.request.Request(url, data=audio, method="POST", headers={
-                  "User-Agent": "Narrativ-Forge-Whisper-Live-Evidence/1.0",
-        "Content-Type": "audio/wav",
+                "User-Agent": "Narrativ-Forge-Whisper-Live-Evidence/1.0",
+                "Content-Type": "audio/wav",
                   "X-Narrativ-Episode": episode_id,
                   "Origin": allowed_origin,
               })
@@ -183,8 +183,8 @@ jobs:
               token = encoded + "." + base64.urlsafe_b64encode(signature).decode().rstrip("=")
               req = urllib.request.Request(url, data=audio, method="POST", headers={
                   "Authorization": "Bearer " + token,
-                  "User-Agent": "Narrativ-Forge-Whisper-Live-Evidence/1.0",
-        "Content-Type": "audio/wav",
+                "User-Agent": "Narrativ-Forge-Whisper-Live-Evidence/1.0",
+                "Content-Type": "audio/wav",
                   "X-Narrativ-Episode": episode_id,
                   "Origin": allowed_origin,
               })

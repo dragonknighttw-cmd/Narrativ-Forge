@@ -901,7 +901,7 @@ class CloudinaryStorageProvider:
         return _safe_object_key(object_key).rsplit(".", 1)[0]
     def upload_file(self, source: Path, object_key: str, content_type: str) -> StoredObject:
         key = _safe_object_key(object_key)
-        kwargs = {"resource_type": self._resource_type(key), "public_id": self._public_id(key), "overwrite": True, "invalidate": True}
+        kwargs = {"resource_type": self._resource_type(key), "public_id": self._public_id(key), "overwrite": True, "invalidate": True, "type": "authenticated"}
         try:
             self.uploader.upload_large(str(source), chunk_size=settings.cloudinary_chunk_size_bytes, **kwargs) if source.stat().st_size > 100 * 1024 * 1024 else self.uploader.upload(str(source), **kwargs)
         except Exception as exc:
@@ -924,20 +924,20 @@ class CloudinaryStorageProvider:
     def delete(self, object_key: str) -> None:
         key = _safe_object_key(object_key)
         try:
-            self.uploader.destroy(self._public_id(key), resource_type=self._resource_type(key), type="upload", invalidate=True)
+            self.uploader.destroy(self._public_id(key), resource_type=self._resource_type(key), type="authenticated", invalidate=True)
         except Exception as exc:
             raise StorageError("Cloudinary delete failed") from exc
     def exists(self, object_key: str) -> bool:
         key = _safe_object_key(object_key)
         try:
-            self.cloudinary.api.resource(self._public_id(key), resource_type=self._resource_type(key), type="upload")
+            self.cloudinary.api.resource(self._public_id(key), resource_type=self._resource_type(key), type="authenticated")
             return True
         except Exception:
             return False
     def download_url(self, object_key: str) -> str | None:
         key = _safe_object_key(object_key)
         try:
-            url, _ = self.utils.cloudinary_url(self._public_id(key), resource_type=self._resource_type(key), type="upload", secure=True, sign_url=True)
+            url, _ = self.utils.cloudinary_url(self._public_id(key), resource_type=self._resource_type(key), type="authenticated", secure=True, sign_url=True)
             return url
         except Exception as exc:
             raise StorageError("Cloudinary URL generation failed") from exc

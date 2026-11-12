@@ -36,9 +36,9 @@ async function verifyToken(token: string, secret: string): Promise<TokenPayload 
     return payload.exp > Math.floor(Date.now() / 1000) && payload.sub && payload.episode_id ? payload : null;
   } catch { return null; }
 }
-function corsHeaders(origin: string, allowedOrigin: string): HeadersInit {
+function corsHeaders(allowedOrigin: string): HeadersInit {
   return {
-    "Access-Control-Allow-Origin": origin === allowedOrigin ? origin : allowedOrigin,
+    "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Narrativ-Episode",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Vary": "Origin",
@@ -77,9 +77,18 @@ async function readBodyWithinLimit(request: Request, maxBytes: number): Promise<
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get("Origin") ?? "";
-    const headers = corsHeaders(origin, env.ALLOWED_ORIGIN);
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
-    if (origin && origin !== env.ALLOWED_ORIGIN) {
+    const allowedOrigin = env.ALLOWED_ORIGIN.trim();
+    if (!allowedOrigin.startsWith("https://")) {
+      return Response.json({ error: "CORS is not configured" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    }
+    const headers = corsHeaders(allowedOrigin);
+    if (request.method === "OPTIONS") {
+      if (!origin || origin !== allowedOrigin) {
+        return new Response(null, { status: 403, headers: { "Vary": "Origin" } });
+      }
+      return new Response(null, { status: 204, headers });
+    }
+    if (origin && origin !== allowedOrigin) {
       return Response.json({ error: "Origin not allowed" }, { status: 403, headers });
     }
     if (request.method !== "POST") return Response.json({ error: "Method not allowed" }, { status: 405, headers });

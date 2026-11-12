@@ -37,13 +37,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
 REVIEW_CHECK_KEYS = ("video_watched", "audio_checked", "subtitle_timing_checked", "thumbnail_present")
-PROJECT_BY_TOPIC = {
-    6: "Narrativ Forge",
-    2: "A Little World With Us",
-    5: "Logixa Flow",
-    18: "Doka",
-    7: "Cognix",
-}
+# This dedicated bot is intentionally bound to Narrativ Forge topic 6 only.
+PROJECT_BY_TOPIC = {6: "Narrativ Forge"}
 
 
 def _dashboard_keyboard() -> list[list[dict[str, str]]] | None:
@@ -166,9 +161,8 @@ async def telegram_webhook(
             if separator and addressed_username.casefold() != configured_username:
                 return {"status": "ignored", "reason": "command_addressed_to_another_bot"}
             topic_id = incoming.get("message_thread_id")
-            # One bot serves the shared forum, but only Narrativ Forge topic 6
-            # is connected to this backend's project data and approval actions.
-            # Other topics receive only isolated connection/status replies.
+            # This bot serves Narrativ Forge only. All other forum topics are ignored
+            # and cannot receive commands or invoke Narrativ Forge actions.
             project_by_topic = PROJECT_BY_TOPIC
             if str(chat.get("id")) != settings.telegram_chat_id or not isinstance(topic_id, int) or topic_id not in project_by_topic:
                 return {"status": "ignored", "reason": "unrecognized_chat_or_topic"}
@@ -239,8 +233,7 @@ async def telegram_webhook(
                         f"Telegram က လက်ခံရရှိတဲ့ message_thread_id: <code>{html.escape(detected_topic)}</code>\n"
                         "ဒီ command ကို Narrativ Forge ရဲ့ topic ထဲမှာ ပို့ထားကြောင်း စစ်ပါ။ "
                         "မမှန်သေးရင် ဒီ ID ကို support အတွက် အသုံးပြုနိုင်ပါတယ်။\n"
-                        "Configured topics: Narrativ Forge (6), A Little World With Us (2), "
-                        "Logixa Flow (5), Doka (18), Cognix (7)."
+                        "Configured topic: Narrativ Forge (6)."
                     )
                 elif command in {"/start", "/help", "/commands"}:
                     if topic_id == 6:

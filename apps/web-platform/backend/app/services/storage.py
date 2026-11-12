@@ -895,7 +895,12 @@ class CloudinaryStorageProvider:
         self.multipart_root.mkdir(parents=True, exist_ok=True)
     @staticmethod
     def _resource_type(object_key: str) -> str:
-        return "video" if Path(object_key).suffix.lower() in {".mp4", ".webm", ".mov", ".mp3", ".wav", ".m4a"} else "raw"
+        suffix = Path(object_key).suffix.lower()
+        if suffix in {".mp4", ".webm", ".mov", ".mkv", ".avi", ".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}:
+            return "video"
+        if suffix in {".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif", ".svg", ".bmp", ".tif", ".tiff"}:
+            return "image"
+        return "raw"
     @staticmethod
     def _public_id(object_key: str) -> str:
         return _safe_object_key(object_key).rsplit(".", 1)[0]

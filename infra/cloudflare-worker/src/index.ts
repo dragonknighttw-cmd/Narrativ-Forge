@@ -34,6 +34,7 @@ export default {
         "Access-Control-Allow-Origin": allowedOrigin,
         "Access-Control-Allow-Methods": "GET,POST,PATCH,PUT,DELETE,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type,Authorization,Idempotency-Key",
+        "Access-Control-Allow-Credentials": "true",
         "Access-Control-Max-Age": "600",
         "Vary": "Origin",
       }});

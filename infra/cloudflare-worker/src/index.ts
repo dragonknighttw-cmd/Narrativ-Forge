@@ -12,20 +12,19 @@ const HOP_BY_HOP = new Set([
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const incoming = new URL(request.url);
-    const origin = env.API_ORIGIN.replace(/\/$/, "");
-    const target = new URL(origin + incoming.pathname + incoming.search);
-
-    const requestOrigin = request.headers.get("Origin") ?? "";
+    const apiOrigin = env.API_ORIGIN.trim();
     const allowedOrigin = env.ALLOWED_ORIGIN.trim();
+    const requestOrigin = request.headers.get("Origin") ?? "";
 
-    // Fail closed if the allowlist is missing or malformed. Never reflect an
-    // arbitrary Origin header from the public internet.
-    if (!allowedOrigin.startsWith("https://")) {
+    // Fail closed unless both production HTTPS origins are explicitly configured.
+    if (!apiOrigin.startsWith("https://") || !allowedOrigin.startsWith("https://")) {
       return new Response(JSON.stringify({ detail: "Edge CORS is not configured" }), {
         status: 503,
         headers: { "content-type": "application/json", "cache-control": "no-store" },
       });
     }
+
+    const target = new URL(apiOrigin.replace(/\/$/, "") + incoming.pathname + incoming.search);
 
     if (request.method === "OPTIONS") {
       if (!requestOrigin || requestOrigin !== allowedOrigin) {

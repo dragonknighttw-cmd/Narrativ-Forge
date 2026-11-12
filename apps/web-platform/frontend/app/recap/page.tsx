@@ -98,8 +98,6 @@ export default function MovieRecapStudio() {
     }
   }
 
-  const template = TEMPLATES.find((item) => item.id === selectedTemplate) ?? TEMPLATES[0];
-
   return (
     <AppShell title="Movie Recap Studio">
       <section className="recap-hero">
@@ -118,7 +116,7 @@ export default function MovieRecapStudio() {
             <div className="recap-step-heading"><span>01</span><div><div className="eyebrow">STORY INPUT</div><h3>Movie & synopsis</h3></div></div>
             <div className="recap-form-grid">
               <label className="recap-field recap-field-full"><span>Movie title / ရုပ်ရှင်အမည်</span><input value={movieTitle} onChange={(event) => setMovieTitle(event.target.value)} maxLength={200} placeholder="ဥပမာ — Parasite (2019)" required /></label>
-              <label className="recap-field recap-field-full"><span>Synopsis / ဇာတ်လမ်းအကျဉ်း</span><textarea value={synopsis} onChange={(event) => setSynopsis(event.target.value)} rows={5} maxLength={5000} placeholder="ဇာတ်လမ်းအကျဉ်း၊ scene highlights သို့မဟုတ် သင်ပိုင်ဆိုင်ခွင့်ရှိတဲ့ transcript ကို ထည့်ပါ…" /></label>
+              <label className="recap-field recap-field-full"><span>Synopsis / source notes (reference only)</span><textarea value={synopsis} onChange={(event) => setSynopsis(event.target.value)} rows={5} maxLength={5000} placeholder="သင့်ကိုယ်ပိုင် reference notes ကို ဒီမှာ ထည့်နိုင်ပါတယ်…" /><small className="settings-note">လက်ရှိ template engine က movie title နဲ့ tone ကိုသာ အသုံးပြုပါတယ်။ Synopsis ကို အလိုအလျောက် အဓိပ္ပာယ်ဖော်ခြင်း မလုပ်သေးပါ။</small></label>
             </div>
             <div className="recap-field-label">Storytelling tone</div>
             <div className="recap-template-grid">

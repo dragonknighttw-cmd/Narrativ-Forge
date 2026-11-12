@@ -26,7 +26,7 @@ export default function SettingsPage() {
     setError("");
     const results = await Promise.allSettled([
       api.me(), api.getWorkspace(), api.health(), api.getGoogleDriveStatus(),
-    ]);
+    ] as const);
     if (results[0].status === "fulfilled") setAccount(results[0].value);
     if (results[1].status === "fulfilled") setWorkspace(results[1].value);
     if (results[2].status === "fulfilled") setHealth(results[2].value);

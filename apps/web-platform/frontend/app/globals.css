@@ -597,3 +597,72 @@ table td { color: #d4dce1; font-size: 12px; }
   .analytics-metric strong { font-size:22px; }
   .subtitle-preview-summary { grid-template-columns:1fr; }
 }
+
+
+/* Movie recap: honest draft-to-plan workflow */
+.recap-hero { padding:clamp(22px,3.5vw,38px); border:1px solid rgba(216,255,79,.2); border-radius:18px; background:radial-gradient(ellipse at 82% 20%,rgba(216,255,79,.1),transparent 32%),linear-gradient(125deg,#172229,#10171d 70%); }
+.recap-hero h2 { max-width:700px; margin:12px 0 10px; color:#f1f5ef; font-size:clamp(25px,3.5vw,36px); line-height:1.15; letter-spacing:-.05em; }
+.recap-hero > p { max-width:800px; margin:0; color:#aab6bb; font-size:12px; line-height:1.85; }
+.recap-capability-note { display:flex; align-items:flex-start; gap:10px; max-width:920px; margin-top:18px; padding:12px 14px; border:1px solid #49523c; border-radius:10px; background:rgba(216,255,79,.045); color:#bac4af; font-size:10px; line-height:1.7; }
+.recap-capability-note > span:first-child { display:grid; place-items:center; width:18px; height:18px; flex:0 0 18px; border-radius:50%; background:var(--accent); color:#11170a; font-size:11px; font-weight:900; }
+.recap-workspace { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(290px,.75fr); align-items:start; gap:16px; margin-top:18px; }
+.recap-main-column, .recap-side-column { display:grid; align-content:start; gap:16px; min-width:0; }
+.recap-section { margin-top:0; padding:20px; }
+.recap-step-heading { display:flex; align-items:center; gap:12px; margin-bottom:17px; }
+.recap-step-heading > span:first-child { display:grid; place-items:center; width:36px; height:36px; flex:0 0 36px; border:1px solid rgba(216,255,79,.3); border-radius:11px; background:rgba(216,255,79,.07); color:var(--accent); font-size:11px; font-weight:900; }
+.recap-step-heading .eyebrow { padding:0; }
+.recap-step-heading h3 { margin:3px 0 0; color:#edf2ee; font-size:17px; letter-spacing:-.025em; }
+.recap-step-heading > .ds-badge { margin-left:auto; }
+.recap-form-grid { display:grid; grid-template-columns:1fr; gap:13px; }
+.recap-field { display:grid; gap:7px; min-width:0; color:#b8c4c9; font-size:11px; font-weight:700; }
+.recap-field-full { grid-column:1 / -1; }
+.recap-field input, .recap-field textarea, .recap-field select { width:100%; }
+.recap-field textarea { min-height:120px; line-height:1.75; }
+.recap-field-label { margin:18px 0 9px; color:#b8c4c9; font-size:11px; font-weight:750; }
+.recap-template-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.recap-template-card { display:grid; justify-items:start; gap:6px; min-height:132px; padding:13px; border:1px solid #2d3a43; border-radius:11px; background:#111a21; color:#edf2ee; text-align:left; cursor:pointer; }
+.recap-template-card:hover { border-color:#66794b; }
+.recap-template-card.is-selected { border-color:rgba(216,255,79,.55); background:linear-gradient(145deg,rgba(216,255,79,.08),#111a21); box-shadow:inset 0 0 0 1px rgba(216,255,79,.08); }
+.recap-template-card strong { font-size:12px; }
+.recap-template-card > span { color:var(--accent); font-size:10px; }
+.recap-template-card small { color:#8e9ca4; font-size:10px; line-height:1.55; }
+.recap-template-card em { color:#a8b3b8; font-size:9px; font-style:normal; font-weight:750; letter-spacing:.04em; }
+.recap-bottom-controls { display:grid; grid-template-columns:minmax(140px,.7fr) auto; align-items:end; gap:12px; margin-top:18px; }
+.recap-bottom-controls .primary { min-height:44px; padding:0 16px; }
+.recap-script-summary { display:flex; flex-wrap:wrap; gap:7px; margin:-3px 0 14px; }
+.recap-script-summary span { padding:5px 8px; border:1px solid #34424b; border-radius:6px; color:#9eabb1; font-size:9px; }
+.recap-full-script { padding:14px; border:1px solid #334039; border-radius:11px; background:rgba(216,255,79,.035); }
+.recap-full-script p { margin:8px 0 0; color:#e5ece5; font-size:12px; line-height:1.9; }
+.recap-scenes-list { display:grid; gap:10px; margin-top:13px; }
+.recap-scene-card { padding:14px; border:1px solid #293640; border-radius:11px; background:#111a21; }
+.recap-scene-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; color:#8e9ca4; font-size:9px; }
+.recap-scene-meta strong { color:var(--accent); font-size:9px; letter-spacing:.1em; }
+.recap-scene-card > p { margin:10px 0; color:#e7eeea; font-size:12px; line-height:1.85; }
+.recap-scene-direction { display:grid; gap:3px; padding-top:8px; border-top:1px solid #26323a; color:#a4b0b5; font-size:10px; line-height:1.6; }
+.recap-scene-direction + .recap-scene-direction { margin-top:7px; }
+.recap-scene-direction span { color:#71818b; font-size:8px; font-weight:850; letter-spacing:.14em; }
+.recap-edit-settings .recap-field + .recap-field { margin-top:13px; }
+.recap-selected-template { display:grid; gap:5px; margin-top:16px; padding:12px; border:1px solid #344039; border-radius:10px; background:rgba(216,255,79,.035); }
+.recap-selected-template span { color:#8e9b8a; font-size:8px; font-weight:850; letter-spacing:.14em; }
+.recap-selected-template strong { color:#e5ece5; font-size:12px; }
+.recap-selected-template small { color:#9aa7a3; font-size:10px; }
+.recap-preview-button { width:100%; margin-top:15px; }
+.recap-simulation-card { display:grid; gap:12px; }
+.recap-simulation-meta { display:grid; gap:0; }
+.recap-simulation-meta div { display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid #26323a; }
+.recap-simulation-meta span { color:#8997a0; font-size:10px; }
+.recap-simulation-meta strong { color:#e7eee8; font-size:10px; text-align:right; overflow-wrap:anywhere; }
+.recap-simulation-disclaimer { margin:0; padding:11px; border:1px solid #4a4431; border-radius:9px; background:rgba(245,193,78,.045); color:#c6b995; font-size:10px; line-height:1.7; }
+@media (max-width: 900px) {
+  .recap-workspace { grid-template-columns:1fr; }
+  .recap-side-column { grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; }
+}
+@media (max-width: 620px) {
+  .recap-section { padding:15px; }
+  .recap-template-grid { grid-template-columns:1fr; }
+  .recap-bottom-controls { grid-template-columns:1fr; }
+  .recap-bottom-controls .primary { width:100%; }
+  .recap-side-column { grid-template-columns:1fr; }
+  .recap-simulation-meta div { align-items:flex-start; flex-direction:column; gap:4px; }
+  .recap-simulation-meta strong { text-align:left; }
+}

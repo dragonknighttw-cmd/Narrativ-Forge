@@ -34,6 +34,36 @@ async function idempotentRequest<T>(storageKey: string, path: string, init: Requ
 
 export type Idea = { id: string; title: string; concept?: string | null; category?: string | null; hook?: string | null; content_warning?: string | null; status: string; created_at: string };
 export type Series = { id: string; title: string; description?: string | null; status: string; created_at: string };
+
+export type ManualProductionLog = {
+  id: string;
+  episode_id?: string | null;
+  topic: string;
+  category?: string | null;
+  hook?: string | null;
+  hook_type?: string | null;
+  production_time_seconds?: number | null;
+  published: boolean;
+  views?: number | null;
+  shares?: number | null;
+  saves?: number | null;
+  notes?: string | null;
+  created_at: string;
+};
+export type AnalyticsSummary = {
+  manual_logs: number;
+  published_logs: number;
+  social_records: number;
+  views: number;
+  watch_time_seconds: number;
+  shares: number;
+  saves: number;
+  comments: number;
+  average_completion_rate: number;
+  by_platform: Array<{ platform: string; records: number; views: number; shares: number; saves: number }>;
+  by_hook_type: Array<{ hook_type: string; logs: number; views: number }>;
+};
+
 export type SeriesBibleCharacter = { id: string; name: string; role: "protagonist" | "antagonist" | "mentor" | "sidekick"; tone: string; catchphrase: string; traits: string };
 export type SeriesBible = { series_id: string; characters: SeriesBibleCharacter[]; updated_at?: string | null };
 export type Season = { id: string; series_id: string; season_number: number; title?: string | null; created_at: string };
@@ -89,6 +119,9 @@ export const api = {
   getGoogleDriveStatus: () => request<{ connected: boolean; provider: string; scope?: string | null }>("/drive/google/status"),
   getGoogleDriveStartUrl: () => request<{ authorization_url: string }>("/drive/google/start"),
   listHooks: (q?: string) => request<Array<{ id: string; hook_text: string; hook_type: string; topic?: string; emotion?: string; used_count: number; performance_score?: number }>>("/hooks" + (q ? "?q=" + encodeURIComponent(q) : "")),
+  listProductionLogs: () => request<ManualProductionLog[]>("/manual-production-logs"),
+  createProductionLog: (data: { topic: string; production_time_seconds?: number | null }) => request<ManualProductionLog>("/manual-production-logs", { method: "POST", body: JSON.stringify(data) }),
+  analyticsSummary: () => request<AnalyticsSummary>("/analytics"),
   createHook: (data: { hook_text: string; hook_type?: string; topic?: string; emotion?: string }) => request("/hooks", { method: "POST", body: JSON.stringify(data) }),
   setPlan: (plan: string) => request("/phase4/billing/plan?plan=" + encodeURIComponent(plan), { method: "POST" }),
   createWebhook: (url: string, events: string[]) => request<{ id: string; url: string; events: string[]; secret: string }>("/phase4/webhooks", { method: "POST", body: JSON.stringify({ url, events }) }),

@@ -1,5 +1,6 @@
 interface Env {
   API_ORIGIN: string;
+  ALLOWED_ORIGIN: string;
   EDGE_SHARED_SECRET?: string;
 }
 
@@ -14,13 +15,36 @@ export default {
     const origin = env.API_ORIGIN.replace(/\/$/, "");
     const target = new URL(origin + incoming.pathname + incoming.search);
 
+    const requestOrigin = request.headers.get("Origin") ?? "";
+    const allowedOrigin = env.ALLOWED_ORIGIN.trim();
+
+    // Fail closed if the allowlist is missing or malformed. Never reflect an
+    // arbitrary Origin header from the public internet.
+    if (!allowedOrigin.startsWith("https://")) {
+      return new Response(JSON.stringify({ detail: "Edge CORS is not configured" }), {
+        status: 503,
+        headers: { "content-type": "application/json", "cache-control": "no-store" },
+      });
+    }
+
     if (request.method === "OPTIONS") {
+      if (!requestOrigin || requestOrigin !== allowedOrigin) {
+        return new Response(null, { status: 403, headers: { "Vary": "Origin" } });
+      }
       return new Response(null, { status: 204, headers: {
-        "Access-Control-Allow-Origin": request.headers.get("Origin") ?? "",
+        "Access-Control-Allow-Origin": allowedOrigin,
         "Access-Control-Allow-Methods": "GET,POST,PATCH,PUT,DELETE,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type,Authorization",
         "Access-Control-Max-Age": "600",
+        "Vary": "Origin",
       }});
+    }
+
+    if (requestOrigin && requestOrigin !== allowedOrigin) {
+      return new Response(JSON.stringify({ detail: "Origin not allowed" }), {
+        status: 403,
+        headers: { "content-type": "application/json", "cache-control": "no-store", "Vary": "Origin" },
+      });
     }
 
     const headers = new Headers(request.headers);

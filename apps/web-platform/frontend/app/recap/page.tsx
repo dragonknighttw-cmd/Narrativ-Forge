@@ -53,6 +53,8 @@ export default function MovieRecapStudio() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  const selectedTemplateConfig = TEMPLATES.find((item) => item.id === selectedTemplate) ?? TEMPLATES[0];
+
   async function generateScript() {
     if (!movieTitle.trim()) {
       setError("Movie title is required.");
@@ -156,7 +158,7 @@ export default function MovieRecapStudio() {
             <div className="recap-step-heading"><span>03</span><div><div className="eyebrow">EDIT PLAN</div><h3>Preview settings</h3></div></div>
             <label className="recap-field"><span>Aspect ratio</span><select value={aspectRatio} onChange={(event) => setAspectRatio(event.target.value)}><option value="9:16">9:16 · Vertical</option><option value="16:9">16:9 · Landscape</option></select></label>
             <label className="recap-field"><span>Subtitle style</span><select value={subtitleStyle} onChange={(event) => setSubtitleStyle(event.target.value)}><option value="tiktok_yellow">Yellow pop</option><option value="cinema_white">Clean white</option><option value="neon_glow">Neon glow</option></select></label>
-            <div className="recap-selected-template"><span>SELECTED TONE</span><strong>{template.name}</strong><small>{template.tone} · {template.hook}</small></div>
+            <div className="recap-selected-template"><span>SELECTED TONE</span><strong>{selectedTemplateConfig.name}</strong><small>{selectedTemplateConfig.tone} · {selectedTemplateConfig.hook}</small></div>
             <button className="primary recap-preview-button" type="button" onClick={previewEditPlan} disabled={!scriptData || previewing}>{previewing ? "Preparing preview…" : "Preview edit plan"}</button>
             <p className="settings-note">Simulation only. This action does not render media, consume provider inference quota, or send external messages.</p>
           </section>

@@ -6,17 +6,19 @@ import { useEffect, useState } from "react";
 
 // ─── Brain Soul mini-status ───────────────────────────────────────
 const BC = {
-  lav: "#b4a4cc",
+  lav: "#d8ff4f",
   green: "#7ec4a0",
-  blue: "#7eb8d4",
-  amber: "#c9a96a",
+  blue: "#80c9ff",
   border: "rgba(255,255,255,0.08)",
-  dim: "rgba(255,255,255,0.3)",
+  dim: "#82919b",
 };
 
 function fmtD(iso: string | null) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 interface BrainSoulStatus {
@@ -28,63 +30,61 @@ interface BrainSoulStatus {
 
 function BrainSoulMini() {
   const [data, setData] = useState<BrainSoulStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    api.brainSoulStatus()
-      .then((data) => setData(data))
-      .catch(() => {});
-  }, []);
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      setData(await api.brainSoulStatus());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load Brain Soul status");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void load(); }, []);
+
+  async function synthesize() {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await api.brainSoulSynthesize();
+      setMessage(result.reason || result.status || "Synthesis request completed.");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Synthesis request failed");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <section
-      style={{
-        background: "rgba(22,25,34,0.85)",
-        border: `1px solid ${BC.border}`,
-        borderRadius: 12,
-        padding: "18px 22px",
-        marginTop: 18,
-        display: "grid",
-        gridTemplateColumns: "1fr auto",
-        gap: 16,
-        alignItems: "center",
-      }}
-    >
-      <style>{`@keyframes breathe{0%,100%{opacity:.4}50%{opacity:1}}`}</style>
-      <div>
-        <div style={{ fontSize: 11, letterSpacing: ".8px", textTransform: "uppercase", color: BC.lav, marginBottom: 6 }}>
-          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: BC.lav, marginRight: 6, animation: "breathe 4s ease-in-out infinite" }} />
-          Brain Soul Layer
+    <section className="brain-soul-panel" aria-labelledby="brain-soul-title">
+      <div className="brain-soul-main">
+        <div className="brain-soul-kicker">
+          <span className="brain-soul-indicator" aria-hidden="true" />
+          <span id="brain-soul-title">Brain Soul Layer</span>
+          <span className="brain-soul-tag">MEMORY ENGINE</span>
         </div>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-          <div>
-            <div style={{ fontSize: 10, color: BC.dim }}>Syntheses</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: BC.green }}>{data?.total_syntheses ?? "—"}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 10, color: BC.dim }}>Soul Entries</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: BC.blue }}>{data?.active_context_entries ?? "—"}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 10, color: BC.dim }}>Last Period</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: BC.lav, marginTop: 2 }}>{data ? (data.tables_ready ? "Ready" : "Unavailable") : "—"}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 10, color: BC.dim }}>Last Synth</div>
-            <div style={{ fontSize: 12, color: BC.dim, marginTop: 2 }}>{fmtD(data?.latest_synthesis_at ?? null)}</div>
-          </div>
+        <div className="brain-soul-stats">
+          <div><span>Syntheses</span><strong>{loading ? "…" : data?.total_syntheses ?? "—"}</strong></div>
+          <div><span>Soul Entries</span><strong>{loading ? "…" : data?.active_context_entries ?? "—"}</strong></div>
+          <div><span>System</span><strong className="brain-soul-state">{loading ? "Checking" : data?.tables_ready ? "Ready" : data ? "Unavailable" : "Unknown"}</strong></div>
+          <div><span>Last Synthesis</span><strong className="brain-soul-date">{fmtD(data?.latest_synthesis_at ?? null)}</strong></div>
         </div>
+        {error && <p className="dashboard-inline-error" role="alert">{error}</p>}
+        {message && <p className="dashboard-inline-success" role="status">{message}</p>}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-        <Link href="/hooks" className="primary" style={{ padding: "6px 14px", fontSize: 12, whiteSpace: "nowrap" }}>
-          SEO Hook Generator
-        </Link>
-        <button
-          onClick={async () => {
-            await api.brainSoulSynthesize();
-          }}
-          style={{ fontSize: 11, color: BC.green, cursor: "pointer", background: "transparent", border: "none", padding: "4px 0" }}
-        >
-          Synthesize Now
+      <div className="brain-soul-actions">
+        <Link href="/hooks" className="primary brain-soul-primary">SEO Hook Generator</Link>
+        <button type="button" className="brain-soul-secondary" onClick={synthesize} disabled={busy || loading || !data?.tables_ready}>
+          {busy ? "Working…" : "Synthesize Now"}
         </button>
       </div>
     </section>
@@ -92,87 +92,128 @@ function BrainSoulMini() {
 }
 
 export default function DashboardPage() {
+  const [episodeCount, setEpisodeCount] = useState<number | null>(null);
+  const [episodesLoading, setEpisodesLoading] = useState(true);
+  const [episodesError, setEpisodesError] = useState(false);
+  const [usage, setUsage] = useState<Awaited<ReturnType<typeof api.aiUsage>> | null>(null);
+  const [usageLoading, setUsageLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    api.listEpisodes()
+      .then((episodes) => { if (mounted) setEpisodeCount(episodes.length); })
+      .catch(() => { if (mounted) setEpisodesError(true); })
+      .finally(() => { if (mounted) setEpisodesLoading(false); });
+    api.aiUsage()
+      .then((result) => { if (mounted) setUsage(result); })
+      .catch(() => {})
+      .finally(() => { if (mounted) setUsageLoading(false); });
+    return () => { mounted = false; };
+  }, []);
+
+  const providers = usage?.providers ? Object.entries(usage.providers) : [];
+  const activeProviders = providers.filter(([, provider]) => provider.status === "active").length;
+  const chatChain = usage?.active_chains.chat_priority ?? [];
+  const ragChain = usage?.active_chains.rag_priority ?? [];
+
   return (
     <AppShell title="Studio Overview">
-      {/* Top Banner */}
-      <section className="card" style={{ background: "linear-gradient(135deg, rgba(15, 22, 38, 0.95), rgba(22, 32, 52, 0.6))", border: "1px solid var(--border)", padding: "26px" }}>
-        <div className="eyebrow" style={{ color: "#38bdf8" }}>PRODUCTION COMMAND CENTER</div>
-        <h2 style={{ fontSize: "24px", fontWeight: "700", marginTop: "6px", marginBottom: "8px" }}>Burmese Short-Form Video Studio</h2>
-        <p className="muted" style={{ maxWidth: "780px" }}>
-          Production pipeline from concept ideation to Gemini Burmese scripting, Groq scene hooks, Groq Whisper subtitle generation, and automated Google Drive master exports.
-        </p>
+      <section className="dashboard-hero">
+        <div className="dashboard-hero-copy">
+          <div className="dashboard-kicker"><span className="dashboard-kicker-line" /> PRODUCTION COMMAND CENTER</div>
+          <h2>Your stories, from first spark to final cut.</h2>
+          <p>
+            A focused production workspace for Burmese short-form stories — plan ideas, shape scripts,
+            build scenes, prepare subtitles, review every cut, and export approved masters.
+          </p>
+          <div className="dashboard-hero-actions">
+            <Link href="/ideas" className="primary">Start with an idea <span aria-hidden="true">↗</span></Link>
+            <Link href="/episodes" className="dashboard-secondary-link">View production queue</Link>
+          </div>
+        </div>
+        <div className="dashboard-hero-art" aria-hidden="true">
+          <div className="hero-art-orbit hero-art-orbit-one" />
+          <div className="hero-art-orbit hero-art-orbit-two" />
+          <div className="hero-art-core"><span>NF</span><small>STORY<br />ENGINE</small></div>
+          <div className="hero-art-caption">IDEA → FRAME → STORY</div>
+        </div>
       </section>
 
-      {/* Brain Soul Mini Status */}
       <BrainSoulMini />
 
-      {/* KPI Stats Grid */}
-      <div className="grid" style={{ marginTop: "18px" }}>
-        <div className="card" style={{ padding: "18px" }}>
-          <div className="eyebrow">ACTIVE WORKFLOWS</div>
-          <div className="metric" style={{ fontSize: "28px", color: "#f8fafc" }}>12</div>
-          <div className="muted" style={{ fontSize: "12px" }}>Episodes in production queue</div>
+      <section className="dashboard-section" aria-labelledby="workspace-health-title">
+        <div className="dashboard-section-heading">
+          <div><div className="dashboard-kicker">WORKSPACE SNAPSHOT</div><h2 id="workspace-health-title">Production at a glance</h2></div>
+          <span className="dashboard-updated-label">Live data where available</span>
         </div>
-        <div className="card" style={{ padding: "18px" }}>
-          <div className="eyebrow">AI SCRIPT ENGINE</div>
-          <div className="status" style={{ fontSize: "16px", color: "#38bdf8" }}>Gemini 2.5/3.5</div>
-          <div className="muted" style={{ fontSize: "12px" }}>Fallback: Groq Qwen-3.8-27b</div>
+        <div className="dashboard-metrics">
+          <article className="dashboard-metric-card">
+            <span className="dashboard-metric-icon">▤</span>
+            <span className="dashboard-metric-label">EPISODES</span>
+            <strong>{episodesLoading ? "…" : episodesError ? "—" : (episodeCount ?? 0).toLocaleString()}</strong>
+            <small>{episodesError ? "Could not load episode count" : "Records in your workspace"}</small>
+          </article>
+          <article className="dashboard-metric-card">
+            <span className="dashboard-metric-icon">✳</span>
+            <span className="dashboard-metric-label">AI PROVIDERS</span>
+            <strong>{usageLoading ? "…" : usage ? `${activeProviders} / ${providers.length}` : "—"}</strong>
+            <small>{usage ? "Provider status reported by API" : "Usage status unavailable"}</small>
+          </article>
+          <article className="dashboard-metric-card">
+            <span className="dashboard-metric-icon">▧</span>
+            <span className="dashboard-metric-label">SUBTITLE ROUTE</span>
+            <strong className="dashboard-metric-word">Whisper</strong>
+            <small>Cloudflare / Groq fallback path · verify on a real audio job</small>
+          </article>
+          <article className="dashboard-metric-card">
+            <span className="dashboard-metric-icon">◎</span>
+            <span className="dashboard-metric-label">TELEGRAM ROUTE</span>
+            <strong className="dashboard-metric-word">Topic 6</strong>
+            <small>Configured for Narrativ Forge · callback test pending</small>
+          </article>
         </div>
-        <div className="card" style={{ padding: "18px" }}>
-          <div className="eyebrow">SUBTITLE STT</div>
-          <div className="status" style={{ fontSize: "16px", color: "#10b981" }}>Groq Whisper</div>
-          <div className="muted" style={{ fontSize: "12px" }}>&lt; 2s transcription latency</div>
-        </div>
-        <div className="card" style={{ padding: "18px" }}>
-          <div className="eyebrow">TELEGRAM REVIEW</div>
-          <div className="status" style={{ fontSize: "16px", color: "#10b981" }}>Active &amp; Ready</div>
-          <div className="muted" style={{ fontSize: "12px" }}>Direct Supergroup dispatch</div>
-        </div>
-      </div>
+      </section>
 
-      {/* Studio Quick Actions & Fallback Health */}
-      <div className="split-grid">
-        <section className="card" style={{ padding: "22px" }}>
-          <div className="eyebrow">END-TO-END PIPELINE</div>
-          <h3 style={{ fontSize: "18px", fontWeight: "600", margin: "8px 0 16px 0" }}>Pipeline Stages &amp; Quick Access</h3>
-          <div style={{ display: "grid", gap: "12px" }}>
+      <div className="dashboard-lower-grid">
+        <section className="dashboard-panel" aria-labelledby="pipeline-title">
+          <div className="dashboard-panel-heading">
+            <div><div className="dashboard-kicker">THE CREATION FLOW</div><h2 id="pipeline-title">From concept to approved master</h2></div>
+            <span className="dashboard-panel-count">04 STAGES</span>
+          </div>
+          <div className="pipeline-list">
             {[
-              { step: "1. Ideas & Hook Generation", desc: "Viral opening lines & content angles", href: "/ideas", label: "Open Ideas" },
-              { step: "2. Burmese Script Studio", desc: "AI dialogue writing with scene-by-scene timing", href: "/episodes", label: "Open Episodes" },
-              { step: "3. Subtitle Studio & Audio Transcribe", desc: "Burmese syllable normalization & Whisper VTT", href: "/subtitles", label: "Open Subtitles" },
-              { step: "4. Production Review & Telegram Approval", desc: "Producer review, quality check, and cloud export", href: "/review", label: "Open Review" },
-            ].map(({ step, desc, href, label }) => (
-              <div key={step} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "var(--color-bg-inset)", border: "1px solid var(--border)", borderRadius: "8px" }}>
-                <div>
-                  <strong style={{ fontSize: "14px", display: "block" }}>{step}</strong>
-                  <span className="muted" style={{ fontSize: "12px" }}>{desc}</span>
-                </div>
-                <Link href={href} className="primary" style={{ padding: "6px 14px", fontSize: "12px" }}>{label}</Link>
+              { number: "01", title: "Ideas & hook generation", desc: "Find the angle. Shape the opening.", href: "/ideas", action: "Explore ideas" },
+              { number: "02", title: "Script & scene planning", desc: "Build a clear narrative with scene timing.", href: "/episodes", action: "Open episodes" },
+              { number: "03", title: "Subtitles & media", desc: "Prepare Burmese captions and production assets.", href: "/subtitles", action: "Open subtitles" },
+              { number: "04", title: "Review & approval", desc: "Keep human approval before final export.", href: "/review", action: "Review work" },
+            ].map((stage) => (
+              <div className="pipeline-item" key={stage.number}>
+                <span className="pipeline-number">{stage.number}</span>
+                <div className="pipeline-copy"><strong>{stage.title}</strong><span>{stage.desc}</span></div>
+                <Link href={stage.href} className="pipeline-action" aria-label={stage.action}>{stage.action}<span aria-hidden="true">→</span></Link>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="card" style={{ padding: "22px" }}>
-          <div className="eyebrow">AI RESILIENCE CHAIN</div>
-          <h3 style={{ fontSize: "18px", fontWeight: "600", margin: "8px 0 16px 0" }}>Active Fallback Chain</h3>
-          <div style={{ display: "grid", gap: "10px", fontSize: "13px" }}>
-            {[
-              { label: "Chat 1:", value: "Gemini 2.5/3.5-flash", color: "#38bdf8" },
-              { label: "Chat 2 (Fallback):", value: "Groq Qwen-3.8-27b", color: "#f8fafc" },
-              { label: "Chat 3 (Free):", value: "Cloudflare Llama-3.1", color: "#f8fafc" },
-              { label: "RAG Vector 1:", value: "Voyage AI (512-D)", color: "#10b981" },
-              { label: "RAG Vector 2:", value: "Cohere embed-v4.0", color: "#f8fafc" },
-            ].map(({ label, value, color }, i, arr) => (
-              <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: "10px", flexWrap: "wrap", padding: "10px 0", borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none" }}>
-                <span className="muted">{label}</span>
-                <span style={{ color, fontWeight: color === "#f8fafc" ? 500 : 600 }}>{value}</span>
-              </div>
-            ))}
+        <section className="dashboard-panel" aria-labelledby="resilience-title">
+          <div className="dashboard-panel-heading">
+            <div><div className="dashboard-kicker">AI ROUTING</div><h2 id="resilience-title">Provider priority</h2></div>
+            <Link href="/usage" className="dashboard-panel-link">View health →</Link>
           </div>
-          <div style={{ marginTop: "20px", padding: "12px", background: "rgba(56, 189, 248, 0.06)", border: "1px solid rgba(56, 189, 248, 0.2)", borderRadius: "8px", fontSize: "12px", color: "#94a3b8" }}>
-            Telegram မှ <code>/ai_status</code> ရိုက်ပို့၍ live usage စစ်ဆေးနိုင်ပါသည်။
+          <div className="provider-chain-block">
+            <div className="provider-chain-label">CHAT & SCRIPT</div>
+            {chatChain.length ? chatChain.map((name, index) => (
+              <div className="provider-chain-row" key={name}><span className="provider-chain-index">{index + 1}</span><span>{name}</span>{index === 0 ? <span className="provider-chain-first">PRIMARY</span> : null}</div>
+            )) : <p className="provider-chain-empty">{usageLoading ? "Loading provider priority…" : "Provider priority is unavailable."}</p>}
           </div>
+          <div className="provider-chain-block">
+            <div className="provider-chain-label">KNOWLEDGE & EMBEDDINGS</div>
+            {ragChain.length ? ragChain.map((name, index) => (
+              <div className="provider-chain-row" key={name}><span className="provider-chain-index">{index + 1}</span><span>{name}</span>{index === 0 ? <span className="provider-chain-first">PRIMARY</span> : null}</div>
+            )) : <p className="provider-chain-empty">{usageLoading ? "Loading embedding priority…" : "Embedding priority is unavailable."}</p>}
+          </div>
+          <p className="dashboard-disclaimer">Configured routing is not the same as a successful live inference. Check usage details and run a controlled test before production work.</p>
         </section>
       </div>
     </AppShell>

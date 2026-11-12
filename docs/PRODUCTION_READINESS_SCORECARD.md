@@ -1,3 +1,63 @@
+# Current release decision — 2026-11-12 (supersedes historical sections below)
+
+**Decision: NOT READY FOR GENERAL PRODUCTION RELEASE.** The production API and frontend are live on Render Free, and the current main-branch verification suite is green. Several owner-gated provider integrations and real production workflows still lack end-to-end evidence. Do not describe them as complete until the evidence listed below is obtained.
+
+## Current main and verification
+
+- Main commit: `22d5198b3ffe582fe6ead1ce59fc5d07d88ce8ab` (PR #142, squash-merged).
+- PR #142 fixes the Cloudflare Whisper live-evidence client by adding a descriptive application User-Agent to both POST requests. Cloudflare documents that the default Python urllib User-Agent is blocked by Browser Integrity Check on `workers.dev`; the application-specific User-Agent is the documented remediation.
+- Main-commit GitHub runs all passed:
+  - CI: [43182865101](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/43182865101)
+  - Production Quality & Verification Pipeline: [43182864931](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/43182864931)
+  - Production HTTP Smoke: [43182865187](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/43182865187)
+  - CodeQL: [43182865026](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/43182865026)
+  - Security (SAST, dependency audit, container scan): [43182865308](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/43182865308)
+  - Repository Gate: [43182865126](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/43182865126)
+- PR #132 (`security/phase1-production-release-20261110`) is closed without merging because it was conflicted and reintroduced unrelated Telegram topic routing. PR #142 is merged. No application-code PRs are open. This document is a documentation-only refresh. A merged/closed branch may remain because the connected GitHub tools do not expose branch deletion.
+- GitHub branch protection remains intentionally skipped per owner instruction.
+
+## Render production services
+
+- API `Narrativ-Forge`: service `srv-davrqtu7bikc73f7isbg`, Free plan, one instance, auto-deploy on `main`, latest live application commit `ced3cb8e05bf88159995a2c40470db032b86bb26`.
+- Frontend `narrativ-forge-frontend`: service `srv-db74h5rl550s73ao9ts0`, Free plan, one instance, auto-deploy on `main`, latest live application commit `ced3cb8e05bf88159995a2c40470db032b86bb26`.
+- PR #142 changes only the GitHub evidence workflow, not application runtime source; no Render redeploy was needed for that documentation/workflow-only merge.
+- API Render logs repeatedly show `GET /api/v1/ready` returning HTTP 200. Frontend build and Next.js server startup completed successfully. Production HTTP Smoke on main commit 22d5198 passed.
+- Render connector does not expose service environment-variable values. Do not claim secret values are verified from the connector; verify presence privately in the Render Dashboard.
+
+## Current provider and database posture
+
+- Supabase project `xrhlefglqwquhvpoevsg`: Health Advisor has 0 findings. Security Advisor has 44 informational RLS-enabled/no-policy findings and the accepted Free-plan leaked-password-protection warning. Performance Advisor has 42 unused-index suggestions. All 44 public tables have RLS enabled; prior direct-grant audit found zero direct anon/authenticated public table grants. Keep the no-policy posture deny-by-default; do not add blanket policies or drop unused-index candidates without workload evidence.
+- Upstash Redis `Narrativ`: Free, active in `ap-southeast-1`, TLS enabled, ACL enabled, auto-upgrade disabled; live `PING` returned `PONG`.
+- Cloudinary: Free plan; 64 resources, approximately 177.5 MB storage, 0.17 of 25 credits used (0.68%). The prior temporary authenticated-upload test was deleted. Future app-managed assets use authenticated delivery and signed URLs.
+- Cloudflare `narrativ-forge-edge`: latest deployment 2026-11-12 05:55 UTC; exact frontend `ALLOWED_ORIGIN` and API `API_ORIGIN` bindings; preview URLs disabled.
+- Cloudflare `narrativ-forge-whisper`: AI binding, encrypted `NARRATIV_SHARED_SECRET` binding, exact frontend origin, preview URLs disabled. Its latest live deployment is still version 17 from 2026-10-17; the source has not been redeployed through the protected workflow.
+- The non-billable Whisper preflight run [43179737455](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/runs/43179737455) succeeded previously and reached the Worker handler. This is not proof of authenticated inference.
+- The updated live-inference workflow has not been run. It requires a manual `confirm_live_inference=true` input and consumes a small amount of Workers AI Free quota. The protected deployment workflow separately requires `confirm_render_secret_synced=true`. The GitHub connector cannot inspect GitHub Environment secret values, and Render environment values are not readable through the Render connector. Owner must privately verify the production GitHub secret presence/value alignment before dispatching the deployment workflow.
+- Cloudflare account-level 2FA enforcement remains deferred per owner instruction.
+
+## Telegram and AI
+
+- Narrativ Forge Telegram routing remains restricted to chat `-1003992125718`, topic `6`; do not add the other projects' topics.
+- `/start` and `/ai_status` were previously verified live in topic 6. Unit/integration tests for webhook authorization, topic isolation, callback idempotency, and script approval passed in current CI.
+- Live `/ai_test`, Approve/Reject callback execution, and cross-account Telegram authorization still require an actual topic-6 bot interaction; do not claim these are live-verified.
+- OpenRouter remains the configured AI provider with the application's Free-model allowlist. An authenticated app-level `/ai_test` remains pending. Do not enable paid fallbacks or paid overage.
+
+## Remaining owner-gated release work
+
+1. Verify the GitHub `production` environment contains `CLOUDFLARE_WHISPER_WORKER_URL` and `CLOUDFLARE_WHISPER_SHARED_SECRET`, and that the shared secret matches the existing Render and Cloudflare values. Then manually dispatch the protected Cloudflare Whisper deployment workflow with `confirm_render_secret_synced=true`.
+2. Manually dispatch Cloudflare Whisper Live Evidence with `confirm_live_inference=true` only when ready to consume one small Free Workers AI request. Confirm the artifact records unauthenticated HTTP 401 and authenticated HTTP 200 with matching episode identity. Until then, authenticated Whisper remains unverified.
+3. Register `https://narrativ-forge.onrender.com/api/v1/drive/google/callback` in Google Cloud Console and complete OAuth. Current `google_drive_connections` count is 0.
+4. Supply B2 credentials privately if B2 is intended, then complete upload/download/checksum/restore tests. Current `storage_replicas` count is 0; do not claim B2 lifecycle acceptance.
+5. In Telegram topic 6, live-test `/ai_test` and one Approve/Reject callback. Keep all other topics ignored.
+6. Complete an authenticated app-level OpenRouter Free-model smoke. Do not enable paid providers.
+7. Keep Cloudflare 2FA deferred and GitHub branch protection disabled as explicitly requested. Keep the Supabase Free-plan leaked-password-protection warning documented.
+
+## Release boundary
+
+CI, static analysis, security scans, production HTTP smoke, Render Free service health, Supabase health, Upstash PING, and Cloudinary Free usage are verified. Full production acceptance is still blocked by owner-controlled OAuth/secret configuration and live provider workflows. The application should not be advertised as fully production-ready until those gates have current evidence.
+
+---
+
 # Production Readiness Scorecard — 2026-11-12
 
 ## Final status update — 2026-11-12

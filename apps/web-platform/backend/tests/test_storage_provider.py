@@ -63,6 +63,9 @@ def test_cloudinary_assets_use_authenticated_delivery(monkeypatch, tmp_path):
     provider.upload_file(source, "episodes/test/assets/thumbnail.png", "image/png")
 
     assert uploader.upload.call_args.kwargs["type"] == "authenticated"
+    assert uploader.upload.call_args.kwargs["resource_type"] == "image"
+    assert CloudinaryStorageProvider._resource_type("episodes/test/assets/video.mp4") == "video"
+    assert CloudinaryStorageProvider._resource_type("episodes/test/assets/manifest.json") == "raw"
     assert provider.download_url("episodes/test/assets/thumbnail.png").startswith("https://")
     assert utils.cloudinary_url.call_args.kwargs["type"] == "authenticated"
     assert provider.exists("episodes/test/assets/thumbnail.png") is True

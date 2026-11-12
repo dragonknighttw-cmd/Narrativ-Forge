@@ -73,6 +73,12 @@ export default {
     }
 
     const out = new Response(response.body, response);
+    if (requestOrigin === allowedOrigin) {
+      out.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+      out.headers.set("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,DELETE,OPTIONS");
+      out.headers.set("Access-Control-Allow-Headers", "Content-Type,Authorization");
+      out.headers.append("Vary", "Origin");
+    }
     out.headers.set("cache-control", "no-store");
     out.headers.set("X-Content-Type-Options", "nosniff");
     out.headers.set("X-Frame-Options", "DENY");

@@ -24,7 +24,7 @@ async function signedToken(payload) {
 function env(aiRun) {
   return {
     NARRATIV_SHARED_SECRET: secret,
-    ALLOWED_ORIGIN: "https://harmonious-nasturtium-53a1d6.netlify.app",
+    ALLOWED_ORIGIN: "https://narrativ-forge-frontend.onrender.com",
     AI: { run: aiRun },
   };
 }
@@ -43,7 +43,7 @@ test("provider diagnostics are not returned to callers on inference failure", as
       Authorization: "Bearer " + token,
       "Content-Type": "audio/wav",
       "X-Narrativ-Episode": "episode-test",
-      Origin: "https://harmonious-nasturtium-53a1d6.netlify.app",
+      Origin: "https://narrativ-forge-frontend.onrender.com",
     },
     body: new Uint8Array(44),
   });
@@ -67,7 +67,7 @@ test("invalid processing tokens are rejected before inference", async () => {
       Authorization: "Bearer invalid",
       "Content-Type": "audio/wav",
       "X-Narrativ-Episode": "episode-test",
-      Origin: "https://harmonious-nasturtium-53a1d6.netlify.app",
+      Origin: "https://narrativ-forge-frontend.onrender.com",
     },
     body: new Uint8Array(44),
   });
@@ -97,7 +97,7 @@ test("oversized declared audio is rejected before the request body is read", asy
       "Content-Type": "audio/wav",
       "Content-Length": String(50 * 1024 * 1024 + 1),
       "X-Narrativ-Episode": "episode-test",
-      Origin: "https://harmonious-nasturtium-53a1d6.netlify.app",
+      Origin: "https://narrativ-forge-frontend.onrender.com",
     },
     body: new ReadableStream({
       pull(controller) {
@@ -134,7 +134,7 @@ test("chunked audio exceeding the byte cap is rejected before inference", async 
       Authorization: "Bearer " + token,
       "Content-Type": "audio/wav",
       "X-Narrativ-Episode": "episode-test",
-      Origin: "https://harmonious-nasturtium-53a1d6.netlify.app",
+      Origin: "https://narrativ-forge-frontend.onrender.com",
     },
     body: new ReadableStream({
       start(controller) {
@@ -170,7 +170,7 @@ test("provider language metadata is preserved when available", async () => {
       Authorization: "Bearer " + token,
       "Content-Type": "audio/wav",
       "X-Narrativ-Episode": "episode-language",
-      Origin: "https://harmonious-nasturtium-53a1d6.netlify.app",
+      Origin: "https://narrativ-forge-frontend.onrender.com",
     },
     body: new Uint8Array(44),
   });
@@ -192,4 +192,36 @@ test("provider language metadata is preserved when available", async () => {
     language: "my",
     language_probability: 0.98,
   });
+});
+
+
+test("preflight accepts only the configured HTTPS frontend origin", async () => {
+  const allowed = await worker.fetch(new Request("https://worker.test/", {
+    method: "OPTIONS",
+    headers: { Origin: "https://narrativ-forge-frontend.onrender.com" },
+  }), env(async () => ({ text: "" })));
+  assert.equal(allowed.status, 204);
+  assert.equal(allowed.headers.get("Access-Control-Allow-Origin"), "https://narrativ-forge-frontend.onrender.com");
+
+  const rejected = await worker.fetch(new Request("https://worker.test/", {
+    method: "OPTIONS",
+    headers: { Origin: "https://untrusted.example" },
+  }), env(async () => ({ text: "" })));
+  assert.equal(rejected.status, 403);
+  assert.equal(rejected.headers.get("Access-Control-Allow-Origin"), null);
+});
+
+test("disallowed origins are rejected before Whisper inference", async () => {
+  let inferenceCalled = false;
+  const request = new Request("https://worker.test/", {
+    method: "POST",
+    headers: { Origin: "https://untrusted.example", "Content-Type": "audio/wav" },
+    body: new Uint8Array(44),
+  });
+  const response = await worker.fetch(request, env(async () => {
+    inferenceCalled = true;
+    return { text: "unexpected" };
+  }));
+  assert.equal(response.status, 403);
+  assert.equal(inferenceCalled, false);
 });

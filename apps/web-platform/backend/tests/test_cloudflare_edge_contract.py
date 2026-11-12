@@ -8,4 +8,5 @@ def test_cloudflare_edge_cors_allows_frontend_idempotency_requests():
     assert 'requestOrigin !== allowedOrigin' in source
     assert '"Access-Control-Allow-Origin": allowedOrigin' in source
     assert '"Access-Control-Allow-Headers": "Content-Type,Authorization,Idempotency-Key"' in source
+    assert '"Access-Control-Allow-Credentials": "true"' in source
     assert 'request.headers.get("Origin") ?? ""' in source

@@ -26,15 +26,10 @@ The shared Telegram supergroup uses one bot and these forum-topic IDs:
 | Topic ID | Project | Supported bot behavior |
 |---:|---|---|
 | `6` | Narrativ Forge | Full Narrativ commands and review callbacks |
-| `2` | A Little World With Us | `/start`, `/status`, `/ai_status` topic acknowledgement only |
-| `5` | Logixa Flow | `/start`, `/status`, `/ai_status` topic acknowledgement only |
-| `8` | Doka | `/start`, `/status`, `/ai_status` topic acknowledgement only |
-| `7` | Cognix | `/start`, `/status`, `/ai_status` topic acknowledgement only |
-| `215` | AuraCraft Studio | `/start`, `/status`, `/ai_status` topic acknowledgement only |
 
 The bot validates both the configured supergroup chat ID and the incoming Telegram `message_thread_id`.
-Only topic 6 is connected to this backend's Narrativ data and approve/reject actions.
-The other five topics are acknowledged independently and must not read or mutate Narrativ data.
+This dedicated Narrativ Forge bot accepts commands and approval callbacks only in topic 6.
+All other forum topics are ignored by this integration; their Telegram topics and message history are not deleted.
 
 ---
 

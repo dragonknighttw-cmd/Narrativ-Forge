@@ -2,6 +2,15 @@ name: Cloudflare Whisper Preflight
 
 # Non-billable diagnostic: GET only, no credentials, no audio, no Workers AI inference.
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cloudflare-whisper-preflight.yml"
+      - "apps/web-platform/cloudflare/whisper-worker/**"
+  pull_request:
+    paths:
+      - ".github/workflows/cloudflare-whisper-preflight.yml"
+      - "apps/web-platform/cloudflare/whisper-worker/**"
   workflow_dispatch:
 
 permissions:

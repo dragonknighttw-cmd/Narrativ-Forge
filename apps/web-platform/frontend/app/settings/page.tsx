@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppShell } from "../../../components/app-shell";
-import { ErrorState } from "../../../components/domain-forms";
-import { api } from "../../../lib/api";
+import { AppShell } from "../../components/app-shell";
+import { ErrorState } from "../../components/domain-forms";
+import { api } from "../../lib/api";
 
 type Account = Awaited<ReturnType<typeof api.me>>;
 type Workspace = Awaited<ReturnType<typeof api.getWorkspace>>;

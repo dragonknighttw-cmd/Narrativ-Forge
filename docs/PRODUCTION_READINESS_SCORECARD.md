@@ -1,6 +1,6 @@
 # Production Readiness Scorecard — 2026-11-12
 
-**Current decision: NOT READY FOR GENERAL PRODUCTION RELEASE.** Current checks confirm the Supabase public-schema access posture is restrictive and the Telegram topic-6-only change is awaiting CI. GitHub branch protection, Cloudflare account MFA, live Render deployment/config verification, and owner-side Google Drive/provider acceptance remain open.
+**Current decision: NOT READY FOR GENERAL PRODUCTION RELEASE.** Supabase public-schema access is restrictive. Telegram is being reduced to the single Narrativ Forge topic. Both Render services are live on the latest main commit and remain on Free plans. Cloudflare edge CORS and preview exposure have been hardened; account MFA and owner-side Google Drive/provider acceptance remain open. GitHub branch protection is intentionally skipped at the owner's request.
 
 ## Current verification addendum — 2026-11-12
 
@@ -19,22 +19,23 @@
 ### Cloudflare security — verified account and worker state
 
 - Account-level `enforce_twofactor` is false; the sole account member currently has 2FA disabled. Do not enable account enforcement until the owner enables 2FA on the account first.
-- `narrativ-forge-whisper` has the AI binding, an encrypted secret binding, and live `ALLOWED_ORIGIN=https://narrativ-forge-frontend.onrender.com`. Its deployed CORS check is exact-origin allowlist based.
-- `narrativ-forge-edge` is workers.dev-enabled with previews enabled. Its deployed source hard-codes the production API origin and reflects arbitrary Origin values on OPTIONS; repository Wrangler config still contains a placeholder API origin. No custom Worker routes were returned. This worker needs a controlled source/config reconciliation and a verified usage check before disabling workers.dev or changing its endpoint.
+- `narrativ-forge-whisper` has the AI binding, an encrypted secret binding, and the exact Render frontend origin in `ALLOWED_ORIGIN`. Preview URLs are disabled.
+- `narrativ-forge-edge` was redeployed on 2026-11-12 with explicit HTTPS API and frontend origin bindings. It rejects non-allowlisted browser Origins, handles preflight only for the exact frontend origin, and emits allowlisted CORS headers on actual responses. Preview URLs are disabled. The workers.dev endpoint remains enabled because no custom Worker route was found; disabling it could break the live gateway.
+- Cloudflare account-level two-factor enforcement remains off because the sole account member has not yet enabled 2FA. The owner must enroll an authenticator/security key before account enforcement can be safely enabled.
 - Workers AI has a Free allocation of 10,000 Neurons/day; do not enable paid overage or upgrade. See https://developers.cloudflare.com/workers-ai/platform/pricing/
 
 ### Telegram — pending release
 
-- PR #135 restricts the Narrativ Forge bot to topic 6 only, ignores former topic mappings 2, 5, 7, and 18, adds regression tests, and updates the integration guide.
-- PR #135 is not merged; CI is still running. The Telegram forum topics and their history are not deleted.
+- PR #135 is being hardened so the bot is permanently bound to the Narrativ Forge topic only. Retired project names and multi-topic routing are removed from the Telegram route, tests, integration guide, and project overview. A generic unconfigured-topic regression test remains.
+- PR #135 is not merged; CI is still running. Telegram forum topics and their historical messages are not deleted.
 
 ### Remaining release gates
 
-1. Enable and verify GitHub `main` branch protection/required checks through an authorized repository administrator. The connected GitHub integration cannot write branch protection.
-2. Complete Cloudflare owner MFA enrollment, then enable account-level two-factor enforcement. Review the edge Worker before any production deployment/endpoint disablement.
-3. Select the Render workspace and verify both production services, live deploy SHAs, environment-variable presence (without exposing secrets), logs, health, and Google Drive/AI configuration.
+1. GitHub branch protection is intentionally skipped per the owner's explicit instruction and is not part of this release work.
+2. Complete Cloudflare owner MFA enrollment, then enable account-level two-factor enforcement.
+3. Verify both Render services' health endpoints and current error logs, then verify secret environment-variable presence from the Render Dashboard (values must not be copied into source or chat).
 4. Complete owner-side Google Drive OAuth connection and free-provider live acceptance where credentials/consent are required.
-5. Merge PR #135 only after CI passes; then verify topic 6 commands and callback actions on the live Telegram bot.
+5. Merge PR #135 only after CI passes; then verify the single-topic commands and callback actions on the live Telegram bot.
 6. Keep the Free-plan leaked-password-protection exception documented.
 
 ---

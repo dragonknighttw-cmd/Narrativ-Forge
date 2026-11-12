@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { AppShell } from "../../components/app-shell";
-import { ErrorState } from "../../components/domain-forms";
 import { api, RecapEditSimulation, RecapScript } from "../../lib/api";
 
 const TEMPLATES = [
@@ -110,7 +109,7 @@ export default function MovieRecapStudio() {
         <div className="recap-capability-note"><span aria-hidden="true">i</span><span>လက်ရှိအဆင့်မှာ template-based script draft နဲ့ edit-plan simulation ကိုသာ ပံ့ပိုးထားပါတယ်။ Live AI inference, FFmpeg render, Whisper transcription, MP4 download နဲ့ Drive export မလုပ်ဆောင်သေးပါ။</span></div>
       </section>
 
-      {error && <ErrorState message={error} retry={() => setError("")} />}
+      {error && <div className="error recap-error" role="alert"><span>{error}</span><button type="button" className="text-button" onClick={() => setError("")}>Dismiss</button></div>}
       {notice && <p className="dashboard-inline-success" role="status">{notice}</p>}
 
       <div className="recap-workspace">
@@ -138,7 +137,7 @@ export default function MovieRecapStudio() {
           {scriptData && (
             <section className="card recap-section">
               <div className="recap-step-heading"><span>02</span><div><div className="eyebrow">SCRIPT DRAFT · HUMAN REVIEW REQUIRED</div><h3>{scriptData.title}</h3></div><span className="ds-badge">{scriptData.total_scenes} scenes</span></div>
-              <div className="recap-script-summary"><span>{template.name}</span><span>{scriptData.target_duration_seconds}s target</span><span>{scriptData.job_id}</span></div>
+              <div className="recap-script-summary"><span>{scriptData.template.name}</span><span>{scriptData.target_duration_seconds}s target</span><span>{scriptData.job_id}</span></div>
               <div className="recap-full-script"><div className="eyebrow">FULL NARRATION DRAFT</div><p className="burmese-text">{scriptData.full_script_burmese}</p></div>
               <div className="recap-scenes-list">
                 {scriptData.scenes.map((scene) => (

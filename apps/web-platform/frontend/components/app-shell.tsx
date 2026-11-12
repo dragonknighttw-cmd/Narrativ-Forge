@@ -53,7 +53,14 @@ function Navigation({ onNavigate, pathname }: { onNavigate?: () => void; pathnam
           <h2 className="nav-label" id={`nav-${section.label.toLowerCase()}`}>{section.label}</h2>
           <div className="nav-items">
             {section.items.map(({ label, href, icon: Icon }) => {
-              const active = pathname === href || pathname.startsWith(`${href}/`);
+              const episodeSubroute = pathname.match(/^\/episodes\/[^/]+\/(script|manga|composer|scenes|assets|subtitle|review|export)(?:\/|$)/)?.[1];
+              const episodeRouteTarget: Record<string, string> = {
+                script: "/script-studio", manga: "/manga-studio", composer: "/video-composer",
+                scenes: "/scene-breakdown", assets: "/assets", subtitle: "/subtitles",
+                review: "/review", export: "/export",
+              };
+              const active = pathname === href || pathname.startsWith(`${href}/`)
+                || (episodeSubroute ? episodeRouteTarget[episodeSubroute] === href : false);
               return (
                 <Link
                   className={`nav-link${active ? " is-active" : ""}`}

@@ -28,3 +28,8 @@ apps/web-platform/backend/tmp/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Nexus Suite Inspector - never commit these
+inspector_credentials.env
+auth_sessions/
+*.session.json

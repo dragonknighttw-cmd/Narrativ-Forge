@@ -186,23 +186,7 @@ services:
       - key: AI_PROVIDER_TIMEOUT_SECONDS
         value: "45"
 
-  - type: web
-    name: narrativ-forge-frontend
-    runtime: node
-    rootDir: apps/web-platform
-    buildCommand: cd frontend && npm ci && npm run build
-    healthCheckPath: /api/health
-    startCommand: cd frontend && npm run start
-    envVars:
-      # Next.js standalone must bind to all interfaces on Render.
-      - key: HOSTNAME
-        value: 0.0.0.0
-      - key: NEXT_PUBLIC_API_BASE_URL
-        value: https://narrativ-forge.onrender.com/api/v1
-      - key: NEXT_PUBLIC_SUPABASE_URL
-        sync: false
-      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
-        sync: false
+# Frontend migrated to Vercel (https://narrativ-forge.vercel.app)
 
 # Long-running Celery/FFmpeg/Whisper workers are intentionally not declared here.
 # Render does not provide free Background Workers. Keep worker runtime files in

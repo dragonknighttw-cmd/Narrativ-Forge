@@ -2,9 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Package the existing UI as a portable Node server; the local API URL is
-  // injected at build time by the Windows portable-runtime workflow.
-  output: "standalone",
+  // Package as standalone for portable / Render node server; Vercel handles its own output
+  output: process.env.VERCEL ? undefined : "standalone",
 };
 
 export default nextConfig;

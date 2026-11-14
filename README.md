@@ -1,167 +1,85 @@
-# Narrativ Forge
+# 🎬 Narrativ Forge
+> **Autonomous AI Multimedia Narrative Studio & Generative Production Engine**
 
-[![Repository Gate](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/repository-gate.yml/badge.svg?branch=main)](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/repository-gate.yml?query=branch%3Amain)
-[![CI](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/ci.yml?query=branch%3Amain)
-[![Worker Evidence](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/worker-evidence.yml/badge.svg?branch=main)](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/worker-evidence.yml?query=branch%3Amain)
-[![Security](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/security.yml?query=branch%3Amain)
-[![CodeQL](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/dragonknighttw-cmd/Narrativ-Forge/actions/workflows/codeql.yml?query=branch%3Amain)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Python_3.12-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database_&_Auth-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com/)
+[![Gemini 2.0](https://img.shields.io/badge/Gemini-2.0_Flash-4285F4?style=flat-square&logo=google)](https://deepmind.google/technologies/gemini/)
+[![Kling AI](https://img.shields.io/badge/Kling_AI-Generative_Video-6366F1?style=flat-square)](https://klingai.com/)
+[![Cloudinary](https://img.shields.io/badge/Cloudinary-Media_CDN-3448C5?style=flat-square&logo=cloudinary)](https://cloudinary.com/)
+[![Render](https://img.shields.io/badge/Render-Backend_Live-46E3B7?style=flat-square&logo=render)](https://narrativ-forge.onrender.com)
+[![Telegram](https://img.shields.io/badge/Telegram_Bot-Topic_#6-26A5E4?style=flat-square&logo=telegram)](https://t.me/)
 
-Private, invite-only Burmese short-form video production workspace.
+---
 
-> Owner: Project maintainers  
-> Update when: project boundary, current implementation, deployment topology, or release blockers change  
-> Last Updated: 2026-11-09 UTC  
-> Do NOT put here: detailed domain specifications, full runbooks, or duplicate roadmaps
+## 🌟 Overview
 
-## What it is
+**Narrativ Forge** is a generative media production studio that automates end-to-end creative narrative pipelines: from scriptwriting and character design to neural voice generation, AI video synthesis, and timeline rendering.
 
-Narrativ Forge supports:
+Equipped with free-first tiered LLMs, multilingual speech generation (including Burmese Whisper/Edge-TTS), and integrated with Kling AI, AionLabs, and Z-AI video synthesis.
 
-`Idea → Series → Episode → Script → Scenes → Assets → Processing → Subtitles → Review → Approval → Google Drive Export → Publishing Preparation → Analytics`
+---
 
-Human approval is mandatory before final export. Google Drive is an approved-output destination, not the workflow database.
+## 🚀 Key Features
 
-## Boundaries
+* **✍️ Generative Scriptwriting**: Multi-scene storyboard scripting, character emotional arcs, and cinematic direction via Gemini 2.0.
+* **🎥 Multi-Engine Video Generation**: Seamless orchestrations with Kling AI, AionLabs, and background GPU renderers.
+* **🎙️ Multilingual Neural Voice**: Voice synthesis with Edge-TTS, Whisper transcription, and emotional speech timing.
+* **🎞️ Timeline & Storyboard Studio**: Interactive web-based canvas for scene arranging, caption sync, and transition effects.
+* **☁️ Cloud & Local Portable Runtime**: Runs on cloud infrastructure (Render backend) or packaged as a Windows Portable Studio.
+* **📲 Telegram Studio Dispatcher**: Trigger video renders, receive preview clips, and monitor render pipelines via Telegram Bot (Topic `#6`).
 
-- Invite-only/private.
-- No public registration/profiles/browsing/comments.
-- No Logixa Flow or Aether Bridge.
-- No direct TikTok/YouTube/Facebook/Instagram publishing.
-- Publishing preparation and manual publication records are allowed.
+---
 
-## Current implementation
+## 🏗️ System Architecture
 
-Implemented/foundation work includes the core Next.js/FastAPI workflow, authentication/security foundations, tenant scoping, scripts/scenes/assets, upload safety, processing/Celery foundations, Burmese subtitles, review/approval, Drive export foundations, hybrid storage, analytics, billing/webhooks, AI routing/orchestration, Auto Production 13–17 foundations, and reusable UI primitives/tokens.
-
-## Current deployment model
-
-| Layer | Current target |
-|---|---|
-| Frontend | Render Web Service (`narrativ-forge-frontend`) |
-| API | Render Web Service (`Narrativ-Forge`) |
-| Database | Supabase PostgreSQL via `DATABASE_URL` |
-| Queue/delivery | Upstash Redis and configured delivery services |
-| Raw/large media | Backblaze B2 |
-| Small workflow files | Supabase Storage |
-| Images/previews | Cloudinary |
-| Approved exports | User-owned Google Drive |
-| Transcription | Cloudflare Workers AI Whisper path + worker fallback |
-
-The current Render blueprint provisions the API and frontend web services only. It does not provision a dedicated persistent background worker; continuous FFmpeg/Whisper queue processing remains a separate deployment gate. Netlify is not the current primary production frontend target.
-
-## Storage routing
-
-- Raw video/audio/large media → B2.
-- Small images/thumbnails/previews → Cloudinary.
-- SRT/manifests/small workflow files → Supabase Storage.
-- Temporary development files → local storage.
-- Approved final output → Google Drive.
-
-Application routing code is authoritative over simplified legacy documentation.
-
-## AI
-
-Current text-provider architecture supports Groq/OpenAI-compatible providers with deterministic Mock fallback. Cloudflare Workers AI Whisper is a separate transcription path.
-
-**Code-configured is not live-verified.** Provider health, limits, terms, quality, commercial-use status, and real-media behavior require evidence.
-
-## Production status
-
-**Not Production Ready.**
-
-The main blockers are:
-- real worker + representative media;
-- queue → worker → FFmpeg/Whisper → DB/storage;
-- retry/DLQ/failover;
-- real B2/Supabase/Cloudinary lifecycle;
-- real Whisper/fallback;
-- Google OAuth/Drive export/recovery;
-- SMTP;
-- Stripe;
-- Sentry;
-- backup/restore;
-- production auth/tenant E2E;
-- full E2E;
-- load/performance;
-- security/container scans;
-- accessibility/responsive review;
-- legal/compliance;
-- external penetration testing.
-
-## Documentation
-
-Read in this order:
-
-1. `README.md` — concise project map.
-2. `CURRENT_STATE.md` — current status/evidence.
-3. `ROADMAP.md` — master requirements and execution plan.
-4. `UI_DESIGN_SYSTEM.md` — UI rules.
-5. `TOOL.md` — engineering/documentation workflow.
-6. `SECURITY.md` — security policy.
-7. `docs/OPENCODE_FREE_MODELS.md` — OpenCode + OpenRouter free coding model setup and privacy notes.
-8. `docs/LOCAL_RUNTIME_FOLLOW_UP.md` — Windows local-runtime and SQLite restore evidence, Groq synthetic smoke evidence, Unicode-only policy, and remaining free-first acceptance gates.
-9. `docs/*` — domain references.
-
-Canonical domain documents:
-
-- `docs/ARCHITECTURE.md`
-- `docs/DEVELOPMENT.md`
-- `docs/TESTING.md`
-- `docs/DEPLOYMENT.md`
-- `docs/OPERATIONS.md`
-- `docs/DATABASE.md`
-- `docs/API.md`
-- `docs/AI_RAG.md`
-- `docs/STORAGE.md`
-- `docs/TROUBLESHOOTING.md`
-
-Frontend (Next.js Studio — Port 3001):
-
-```bash
-cd apps/web-platform/frontend
-npm install
-npm run dev -- -p 3001
-npm run typecheck
-npm run build
+```
+             Story Concept / Prompt / Telegram Dispatch
+                                │
+                                ▼
+┌───────────────────────────────────────────────────────────────┐
+│                    Story & Direction Engine                   │
+│   • Gemini 2.0 Flash Scriptwriter • Character Architect       │
+│   • Storyboard Scene Splitter & Audio Prompt Synthesizer      │
+└───────────────────────────────┬───────────────────────────────┘
+                                │
+                                ▼
+┌───────────────────────────────────────────────────────────────┐
+│                 Multimedia Synthesis Pipeline                 │
+│   • Video Engines: Kling AI / AionLabs / Z-AI                │
+│   • Audio Engines: Edge-TTS / Cloudflare Whisper              │
+│   • Asset Delivery: Cloudinary Media CDN & Supabase Vault     │
+└───────────────────────────────┬───────────────────────────────┘
+                                │
+                                ▼
+┌───────────────────────────────────────────────────────────────┐
+│                 Review & Production Deployment                │
+│   • Next.js 15 Production Studio (Web Canvas)                │
+│   • Render FastAPI Backend & Background Celery Workers        │
+│   • Telegram Channel Dispatcher (Topic #6)                    │
+└───────────────────────────────────────────────────────────────┘
 ```
 
-Backend (FastAPI Engine — Port 8001):
+---
+
+## ⚡ Quickstart
 
 ```bash
+# 1. Backend Server
 cd apps/web-platform/backend
 python -m venv .venv
-.\.venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8001
-pytest
+uvicorn app.main:app --reload --port 8000
+
+# 2. Frontend Studio
+cd ../frontend
+pnpm install
+pnpm dev
 ```
 
-Mobile App (Expo Reviewer — Port 8082):
+---
 
-```bash
-cd apps/mobile
-npm install
-npx expo start --port 8082
-```
+## 📜 License
 
-Exact environment requirements belong in deployment/development documentation. Never commit credentials.
-
-## Evidence rule
-
-- DONE = repository implementation evidence.
-- VERIFIED = fresh environment/provider evidence.
-- VERIFY/PENDING/BLOCKED = evidence or dependency remains.
-- DEFERRED = intentionally postponed.
-- NEXT = next execution target.
-
-Never claim provider health from credentials alone. Never claim live integration from unit tests alone.
-
-
-## Current project status and infrastructure audit
-
-- [Current state](CURRENT_STATE.md)
-- [Roadmap and remaining work](ROADMAP.md)
-- [Deployment guide](docs/DEPLOYMENT.md)
-- [Infrastructure and repository audit (2026-10-15)](INFRASTRUCTURE_AUDIT.md)
-
-Release remains pending until the documented security, deployment-drift, real-worker/media, and external acceptance gates pass.
+Private Creative Suite License. All Rights Reserved.

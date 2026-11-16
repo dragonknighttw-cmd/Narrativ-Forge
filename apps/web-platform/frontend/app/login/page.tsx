@@ -41,16 +41,21 @@ export default function LoginPage() {
       const authResponse = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
         method: "POST",
         headers: { apikey: supabaseKey, "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ email: email.trim(), password: password.trim() }),
       });
       if (!authResponse.ok) {
+        let errDesc = "";
+        try {
+          const body = await authResponse.json();
+          errDesc = body.msg || body.error_description || body.error || "";
+        } catch {}
         if (authResponse.status === 400 || authResponse.status === 401) {
-          throw new Error("Invalid email or password.");
+          throw new Error(errDesc ? `Invalid email or password: ${errDesc}` : "Invalid email or password.");
         }
         if (authResponse.status === 429) {
           throw new Error("Too many sign-in attempts. Wait a moment and try again.");
         }
-        throw new Error("Supabase Auth service is unavailable or misconfigured.");
+        throw new Error(errDesc ? `Supabase Auth error: ${errDesc}` : "Supabase Auth service is unavailable or misconfigured.");
       }
       const authSession = await authResponse.json() as { access_token?: string };
       if (!authSession.access_token) throw new Error("Supabase did not return a login session.");
@@ -63,8 +68,8 @@ export default function LoginPage() {
           message === "Supabase Auth is not configured" ||
           message === "Initial Owner identity is not configured") {
         setError("Login configuration မပြည့်စုံသေးပါ။ Render ရဲ့ frontend/backend environment settings ကို စစ်ဆေးရန်လိုပါတယ်။");
-      } else if (message === "Invalid email or password.") {
-        setError("Email သို့မဟုတ် password မှားနေပါတယ်။ Supabase Auth မှာ အတည်ပြုထားတဲ့ account ကို သုံးပါ။");
+      } else if (message.startsWith("Invalid email or password")) {
+        setError(`${message}. Supabase Auth မှာ အတည်ပြုထားတဲ့ account ကို သုံးပါ။`);
       } else if (message === "Workspace membership required" ||
                  message === "Configured Owner workspace was not found" ||
                  message === "Owner account could not be provisioned safely" ||

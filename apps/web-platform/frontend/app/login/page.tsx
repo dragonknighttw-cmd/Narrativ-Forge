@@ -77,7 +77,7 @@ export default function LoginPage() {
       } else if (message === "Supabase Auth is temporarily unavailable") {
         setError("Supabase Auth ကို backend က ချိတ်ဆက်မရပါ။ ခဏနေရင် ပြန်ကြိုးစားပါ။");
       } else {
-        setError("Backend session ဖန်တီးမရပါ။ API URL, CORS နဲ့ backend logs ကို စစ်ဆေးရန်လိုပါတယ်။");
+        setError(`Backend session မဖန်တီးမရပါ။ အကြောင်းရင်း: ${message}`);
       }
     } finally {
       setBusy(false);

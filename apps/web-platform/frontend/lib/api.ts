@@ -12,10 +12,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
   });
   if (!response.ok) {
-    let message = "Request failed";
+    let message = `Request failed (HTTP ${response.status})`;
     try {
       const body = await response.json();
-      message = typeof body.detail === "string" ? body.detail : body.detail?.message ?? message;
+      message = typeof body.detail === "string" ? body.detail : body.detail?.message ?? JSON.stringify(body);
     } catch {}
     throw new Error(message);
   }

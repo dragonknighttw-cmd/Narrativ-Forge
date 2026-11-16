@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { api } from "../../lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -89,7 +91,41 @@ export default function LoginPage() {
       <h1>Production workspace</h1>
       <p className="muted">Invite-only access. Authentication is managed by Supabase; app sessions use an httpOnly cookie.</p>
       <label className="field">Email<input required type="email" autoComplete="username" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} /></label>
-      <label className="field">Password<input required autoComplete="current-password" placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} /></label>
+      <div className="field">
+        <label htmlFor="login-password">Password</label>
+        <div style={{ position: "relative", display: "flex", alignItems: "center", width: "100%" }}>
+          <input
+            id="login-password"
+            required
+            autoComplete="current-password"
+            placeholder="Password"
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            style={{ width: "100%", paddingRight: "2.5rem" }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(prev => !prev)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            style={{
+              position: "absolute",
+              right: "0.75rem",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              padding: "0.25rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "inherit",
+              opacity: 0.7
+            }}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
+      </div>
       {error && <div className="error" role="alert">{error}</div>}
       <button className="primary" type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
     </form>

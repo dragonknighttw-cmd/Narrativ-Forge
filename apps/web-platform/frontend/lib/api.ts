@@ -1,5 +1,8 @@
-const configuredBase = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
-export const apiBase = configuredBase ?? (process.env.NODE_ENV === "production" ? "https://narrativ-forge.onrender.com/api/v1" : "http://localhost:8001/api/v1");
+const rawBase = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/+$/, "");
+const sanitizedBase = rawBase.replace("narrativ-forge-api.onrender.com", "narrativ-forge.onrender.com");
+export const apiBase = (sanitizedBase && sanitizedBase !== "https://narrativ-forge-api.onrender.com/api/v1")
+  ? sanitizedBase
+  : (process.env.NODE_ENV === "production" ? "https://narrativ-forge.onrender.com/api/v1" : (sanitizedBase || "http://localhost:8001/api/v1"));
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!apiBase) throw new Error("Backend API configuration is missing.");

@@ -18,8 +18,8 @@ export default function LoginPage() {
     setError("");
     setBusy(true);
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "");
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "https://xrhlefglqwquhvpoevsg.supabase.co").replace(/\/+$/, "");
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_INLd5Okf76u-oATKOpPQcQ_bPjPlhFr";
       if (!supabaseUrl || !supabaseKey) {
         // The legacy password endpoint is allowed only in disposable local E2E builds.
         // The explicit flag and loopback API check prevent this fallback from targeting production.

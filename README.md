@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/narrativforge/Narrativ-Forge/main/docs/assets/narrativ-forge-banner.svg" alt="Narrativ Forge — AI-Powered Creative Studio" width="100%" /></p>
+
 # 🎬 Narrativ Forge
 > **Autonomous AI Multimedia Narrative Studio & Generative Production Engine**
 

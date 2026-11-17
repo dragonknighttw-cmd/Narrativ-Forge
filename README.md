@@ -69,7 +69,7 @@ Equipped with free-first tiered LLMs, multilingual speech generation (including 
 cd apps/web-platform/backend
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.lock
 uvicorn app.main:app --reload --port 8000
 
 # 2. Frontend Studio

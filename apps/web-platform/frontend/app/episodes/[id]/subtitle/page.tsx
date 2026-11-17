@@ -14,8 +14,9 @@ const STYLE_PRESETS = [
   { id: "black_pill", name: "Classic Box", color: "#ffffff", textShadow: "none", bg: "rgba(0,0,0,0.75)" },
 ];
 
-export default function SubtitleStudioPage({ params }: { params: { id: string } }) {
-  const episodeId = params.id;
+export default function SubtitleStudioPage() {
+  const { id } = useParams<{ id: string }>();
+  const episodeId = id || "";
   const [episode, setEpisode] = useState<Episode | null>(null);
   const [subtitle, setSubtitle] = useState<Subtitle | null>(null);
   const [preset, setPreset] = useState("burmese_default");

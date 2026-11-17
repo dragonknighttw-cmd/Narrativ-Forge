@@ -1,8 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500">
-<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#080b18"/><stop offset="1" stop-color="#111827"/></linearGradient><linearGradient id="accent"><stop stop-color="#a78bfa"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs>
-<rect width="1500" height="500" fill="url(#bg)"/>
-<rect x="120" y="150" width="8" height="200" rx="4" fill="url(#accent)"/>
-<text x="175" y="255" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="700">Narrativ Forge</text>
-<text x="180" y="320" fill="#cbd5e1" font-family="Arial, Helvetica, sans-serif" font-size="32" letter-spacing="2">AI CREATIVE STUDIO</text>
-<circle cx="1370" cy="100" r="170" fill="#6366f1" opacity=".08"/><circle cx="1450" cy="430" r="210" fill="#06b6d4" opacity=".06"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="600" viewBox="0 0 1600 600">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#070518"/><stop offset=".55" stop-color="#030817"/><stop offset="1" stop-color="#071b3d"/></linearGradient>
+ <linearGradient id="neon" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c026d3"/><stop offset=".52" stop-color="#6366f1"/><stop offset="1" stop-color="#06b6d4"/></linearGradient>
+ <filter id="glow"><feGaussianBlur stdDeviation="18"/></filter>
+</defs>
+<rect width="1600" height="600" fill="url(#bg)"/>
+<ellipse cx="150" cy="50" rx="320" ry="180" fill="#7c3aed" opacity=".22" filter="url(#glow)"/>
+<ellipse cx="1510" cy="510" rx="300" ry="220" fill="#0284c7" opacity=".2" filter="url(#glow)"/>
+<path d="M0 0H1600V15Q1220 155 960 0Z" fill="#6d28d9" opacity=".28"/>
+<path d="M0 520Q420 650 790 570T1600 560V600H0Z" fill="url(#neon)" opacity=".18"/>
+<!-- film N mark -->
+<g transform="translate(120 175)">
+ <path d="M0 30Q0 0 28 18L190 130V48Q190 10 224 32L245 48V245Q245 280 210 255L55 150V232Q55 270 22 250L0 235Z" fill="url(#neon)"/>
+ <g fill="#080b1c"><rect x="17" y="65" width="13" height="23" rx="4"/><rect x="17" y="105" width="13" height="23" rx="4"/><rect x="17" y="145" width="13" height="23" rx="4"/><rect x="17" y="185" width="13" height="23" rx="4"/></g>
+</g>
+<path d="M420 170V420" stroke="url(#neon)" stroke-width="3" opacity=".9"/>
+<text x="475" y="300" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="104" font-weight="700">Narrativ <tspan fill="url(#neon)">Forge</tspan></text>
+<text x="485" y="365" fill="#dbeafe" font-family="Arial,Helvetica,sans-serif" font-size="34" letter-spacing="10">AI CREATIVE STUDIO</text>
+<path d="M485 405H1110" stroke="url(#neon)" stroke-width="3"/>
+<text x="485" y="470" fill="#e2e8f0" font-family="Arial,Helvetica,sans-serif" font-size="32" letter-spacing="5">IMAGINE  •  CREATE  •  PRODUCE</text>
+<!-- stylized clapperboard -->
+<g transform="translate(1260 125) rotate(-8 130 140)" opacity=".85">
+ <rect x="0" y="65" width="245" height="240" rx="18" fill="#111827" stroke="#2563eb" stroke-width="3"/>
+ <path d="M0 65L20 15Q25 0 42 5L260 60L245 110Z" fill="#1e1b4b" stroke="url(#neon)" stroke-width="4"/>
+ <path d="M45 14L82 24L52 83L15 73ZM118 32L155 42L125 101L88 91ZM191 50L228 60L198 119L161 109Z" fill="#c4b5fd" opacity=".85"/>
+ <circle cx="30" cy="140" r="7" fill="#22d3ee"/><circle cx="30" cy="180" r="7" fill="#a78bfa"/>
+ <path d="M55 150H215M55 190H190M55 230H205" stroke="#64748b" stroke-width="4" opacity=".55"/>
+</g>
+<!-- film ribbon -->
+<path d="M1220 510C1320 400 1430 560 1530 430S1580 320 1530 300" fill="none" stroke="url(#neon)" stroke-width="18" stroke-linecap="round" opacity=".8"/>
+<path d="M1220 510C1320 400 1430 560 1530 430S1580 320 1530 300" fill="none" stroke="#0b1024" stroke-width="5" stroke-dasharray="9 18" opacity=".9"/>
 </svg>

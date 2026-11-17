@@ -1,14 +1,14 @@
 # 🎬 Narrativ Forge
 > **Autonomous AI Multimedia Narrative Studio & Generative Production Engine**
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Python_3.12-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-Database_&_Auth-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com/)
 [![Gemini 2.0](https://img.shields.io/badge/Gemini-2.0_Flash-4285F4?style=flat-square&logo=google)](https://deepmind.google/technologies/gemini/)
 [![Kling AI](https://img.shields.io/badge/Kling_AI-Generative_Video-6366F1?style=flat-square)](https://klingai.com/)
 [![Cloudinary](https://img.shields.io/badge/Cloudinary-Media_CDN-3448C5?style=flat-square&logo=cloudinary)](https://cloudinary.com/)
 [![Render](https://img.shields.io/badge/Render-Backend_Live-46E3B7?style=flat-square&logo=render)](https://narrativ-forge.onrender.com)
-[![Telegram](https://img.shields.io/badge/Telegram_Bot-Topic_#6-26A5E4?style=flat-square&logo=telegram)](https://t.me/)
+[![Telegram](https://img.shields.io/badge/Telegram_Bot-Topic_%236-26A5E4?style=flat-square&logo=telegram)](https://github.com/narrativforge/Narrativ-Forge)
 
 ---
 
@@ -54,7 +54,7 @@ Equipped with free-first tiered LLMs, multilingual speech generation (including 
                                 ▼
 ┌───────────────────────────────────────────────────────────────┐
 │                 Review & Production Deployment                │
-│   • Next.js 15 Production Studio (Web Canvas)                │
+│   • Next.js 16 Production Studio (Web Canvas)                │
 │   • Render FastAPI Backend & Background Celery Workers        │
 │   • Telegram Channel Dispatcher (Topic #6)                    │
 └───────────────────────────────────────────────────────────────┘

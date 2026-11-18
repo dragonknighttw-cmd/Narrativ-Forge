@@ -30,6 +30,15 @@ const sections: { label: string; items: { label: string; href: string; icon: Luc
     { label: "Processing Queue", href: "/processing", icon: Activity },
     { label: "Subtitle Studio", href: "/subtitles", icon: Captions },
   ]},
+  { label: "AI Creative Studio", items: [
+    { label: "Studio Overview", href: "/studio", icon: Sparkles },
+    { label: "Reference Intelligence", href: "/studio/reference", icon: Film },
+    { label: "Raw Footage Hub", href: "/studio/footage", icon: FolderOpen },
+    { label: "AI Creative Director", href: "/studio/director", icon: Clapperboard },
+    { label: "Music & Score Engine", href: "/studio/music", icon: SlidersHorizontal },
+    { label: "Multi-Track Timeline", href: "/studio/timeline", icon: Workflow },
+    { label: "Quality Control (QC)", href: "/studio/qc", icon: ClipboardCheck },
+  ]},
   { label: "Control", items: [
     { label: "Review Center", href: "/review", icon: ClipboardCheck },
     { label: "AI Usage & Limits", href: "/usage", icon: Gauge },

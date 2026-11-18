@@ -383,6 +383,26 @@ export const api = {
     localStorage.removeItem(idempotencyStorageKey);
     return asset;
   },
+
+  // AI Creative Studio Expansion APIs
+  studioOverview: () => request<any>("/creative-studio/overview"),
+  analyzeReference: (data: { title: string; file_url: string; duration_seconds?: number; user_notes?: string }) =>
+    request<any>("/creative-studio/references/analyze", { method: "POST", body: JSON.stringify(data) }),
+  listReferences: () => request<any[]>("/creative-studio/references"),
+  scanFootage: (data: { filename: string; file_url: string; duration_seconds?: number; resolution?: string }) =>
+    request<any>("/creative-studio/footages/scan", { method: "POST", body: JSON.stringify(data) }),
+  listFootages: (highlightsOnly?: boolean) =>
+    request<any[]>(`/creative-studio/footages${highlightsOnly ? "?highlights_only=true" : ""}`),
+  generateConcepts: (data: { episode_title: string; logline: string; target_duration_seconds?: number }) =>
+    request<any[]>("/creative-studio/director/generate-concepts", { method: "POST", body: JSON.stringify(data) }),
+  listConcepts: () => request<any[]>("/creative-studio/director/concepts"),
+  getMusicCatalog: () => request<any[]>("/creative-studio/audio/music-catalog"),
+  getSfxCatalog: () => request<any[]>("/creative-studio/audio/sfx-catalog"),
+  saveTimeline: (data: { title: string; target_aspect_ratio?: string; tracks: any; duration_seconds?: number }) =>
+    request<any>("/creative-studio/timeline/save", { method: "POST", body: JSON.stringify(data) }),
+  getTimeline: (id: string) => request<any>(`/creative-studio/timeline/${id}`),
+  evaluateQC: (data: { timeline_id?: string; tracks: any }) =>
+    request<any>("/creative-studio/qc/evaluate", { method: "POST", body: JSON.stringify(data) }),
 };
 
 export type SubtitleCue = { id?: number; start: number; end: number; text: string };

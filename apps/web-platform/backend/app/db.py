@@ -48,4 +48,5 @@ def init_db() -> None:
         return
     from .models import core  # noqa: F401
     from .models import brain_soul  # noqa: F401
+    from .models import creative_studio  # noqa: F401
     Base.metadata.create_all(bind=engine)

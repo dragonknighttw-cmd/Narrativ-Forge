@@ -461,11 +461,18 @@ def commit_upload(
         db.rollback()
         raise HTTPException(status_code=502, detail="Unable to finalize upload") from exc
 
-    existing = db.query(Asset).filter(
-        Asset.checksum_sha256 == stored.checksum_sha256,
-        Asset.asset_type == session.asset_type,
-        Asset.status != "deleted",
-    ).order_by(Asset.created_at.asc()).first()
+    existing = (
+        db.query(Asset)
+        .join(Episode, Asset.episode_id == Episode.id)
+        .filter(
+            Asset.checksum_sha256 == stored.checksum_sha256,
+            Asset.asset_type == session.asset_type,
+            Asset.status != "deleted",
+            Episode.organization_id == membership.organization_id,
+        )
+        .order_by(Asset.created_at.asc())
+        .first()
+    )
 
     if existing:
         if existing.episode_id == session.episode_id:

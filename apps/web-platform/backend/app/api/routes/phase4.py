@@ -260,7 +260,8 @@ def accept_invitation(payload: InviteAccept, response: Response, db: Session = D
         response.set_cookie(
             key=settings.session_cookie_name,
             value=issue_session(user.email, membership.role, membership.organization_id),
-            httponly=True, secure=settings.session_cookie_secure, samesite="strict",
+            httponly=True, secure=settings.session_cookie_secure,
+            samesite="none" if settings.is_production else "strict",
             max_age=settings.session_ttl_seconds, path="/",
         )
         return {"authenticated": True, "user": {"id": user.id, "email": user.email, "role": membership.role}}
@@ -317,7 +318,8 @@ def accept_invitation(payload: InviteAccept, response: Response, db: Session = D
     response.set_cookie(
         key=settings.session_cookie_name,
         value=issue_session(user.email, membership.role, membership.organization_id),
-        httponly=True, secure=settings.session_cookie_secure, samesite="strict",
+        httponly=True, secure=settings.session_cookie_secure,
+        samesite="none" if settings.is_production else "strict",
         max_age=settings.session_ttl_seconds, path="/",
     )
     return {"authenticated": True, "user": {"id": user.id, "email": user.email, "role": membership.role}}
@@ -367,7 +369,9 @@ def consume_magic_link(payload: MagicLinkConsume, response: Response, db: Sessio
     db.commit()
     response.set_cookie(
         key=settings.session_cookie_name, value=issue_session(user.email, user.role),
-        httponly=True, secure=settings.session_cookie_secure, samesite="strict", max_age=settings.session_ttl_seconds, path="/",
+        httponly=True, secure=settings.session_cookie_secure,
+        samesite="none" if settings.is_production else "strict",
+        max_age=settings.session_ttl_seconds, path="/",
     )
     return {"authenticated": True, "user": {"id": user.id, "email": user.email, "role": user.role}}
 

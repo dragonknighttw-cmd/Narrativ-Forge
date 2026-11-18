@@ -194,8 +194,11 @@ class ProductionLogCreate(BaseModel):
 
 
 @router.delete("/hooks/{hook_id}", status_code=204)
-def delete_hook(hook_id: str, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(HookLibrary, hook_id)
+def delete_hook(hook_id: str, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+    item = db.query(HookLibrary).filter(
+        HookLibrary.id == hook_id,
+        HookLibrary.organization_id == membership.organization_id,
+    ).first()
     if not item:
         raise HTTPException(status_code=404, detail="Hook not found")
     if item.is_default:
@@ -258,7 +261,15 @@ def update_production_log(log_id: str, payload: ProductionLogUpdate, membership=
 
 @router.delete("/manual-production-logs/{log_id}", status_code=204)
 def delete_production_log(log_id: str, membership=Depends(get_current_membership), _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(ManualProductionLog, log_id)
+    item = (
+        db.query(ManualProductionLog)
+        .outerjoin(Episode, ManualProductionLog.episode_id == Episode.id)
+        .filter(
+            ManualProductionLog.id == log_id,
+            (ManualProductionLog.episode_id.is_(None)) | (Episode.organization_id == membership.organization_id),
+        )
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Production log not found")
     db.delete(item)

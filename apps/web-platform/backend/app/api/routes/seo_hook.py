@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from ...db import get_db
 from ...core.config import settings
+from ..dependencies import get_current_user
 
 log = logging.getLogger("narrativ.seo_hook")
 router = APIRouter(prefix="/brain/seo", tags=["seo-hook"])
@@ -125,6 +126,7 @@ def _fallback_hooks(title: str, genre: str, audience: str) -> tuple[list[dict], 
 def generate_seo_hooks(
     payload: HookRequest,
     db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     """
     Generate 5 SEO hook variants for a story.

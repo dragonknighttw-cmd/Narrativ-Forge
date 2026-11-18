@@ -10,7 +10,7 @@ test("authenticated production flow reaches approved mock export", async ({ page
 
   await page.goto("/login");
   await page.getByLabel("Email").fill(adminEmail);
-  await page.getByLabel("Password").fill(adminPassword);
+  await page.locator("#login-password").fill(adminPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/dashboard/);
 

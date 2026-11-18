@@ -9,7 +9,7 @@ test("Series Bible characters persist after reload and can be removed", async ({
 
   await page.goto("/login");
   await page.getByLabel("Email").fill(email!);
-  await page.getByLabel("Password").fill(password!);
+  await page.locator("#login-password").fill(password!);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/dashboard/);
 

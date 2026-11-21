@@ -60,18 +60,39 @@ class HookUpdate(HookCreate):
     pass
 
 
+def _get_org_id(membership) -> str | None:
+    return getattr(membership, "organization_id", None) or (
+        membership.get("organization_id") if isinstance(membership, dict) else None
+    )
+
+
 @router.get("/hooks")
-def list_hooks(_: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    return [serialize_hook(x) for x in db.query(HookLibrary).order_by(HookLibrary.created_at.desc()).all()]
+def list_hooks(membership=Depends(get_current_membership), db: Session = Depends(get_db)):
+    org_id = _get_org_id(membership)
+    query = db.query(HookLibrary)
+    if org_id:
+        query = query.filter(
+            (HookLibrary.organization_id == org_id) | (HookLibrary.organization_id.is_(None))
+        )
+    return [serialize_hook(x) for x in query.order_by(HookLibrary.created_at.desc()).all()]
 
 
 @router.post("/hooks", status_code=201)
-def create_hook(payload: HookCreate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
+def create_hook(
+    payload: HookCreate,
+    membership=Depends(get_current_membership),
+    _: dict = Depends(require_roles("owner", "editor")),
+    db: Session = Depends(get_db),
+):
     if payload.hook_type not in HOOK_TYPES:
         raise HTTPException(status_code=422, detail="Unsupported hook type")
+    org_id = _get_org_id(membership)
     if payload.is_default:
-        db.query(HookLibrary).update({HookLibrary.is_default: False})
-    item = HookLibrary(**payload.model_dump())
+        filter_q = db.query(HookLibrary)
+        if org_id:
+            filter_q = filter_q.filter(HookLibrary.organization_id == org_id)
+        filter_q.update({HookLibrary.is_default: False})
+    item = HookLibrary(organization_id=org_id, **payload.model_dump())
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -79,14 +100,29 @@ def create_hook(payload: HookCreate, _: dict = Depends(require_roles("owner", "e
 
 
 @router.patch("/hooks/{hook_id}")
-def update_hook(hook_id: str, payload: HookUpdate, _: dict = Depends(require_roles("owner", "editor")), db: Session = Depends(get_db)):
-    item = db.get(HookLibrary, hook_id)
+def update_hook(
+    hook_id: str,
+    payload: HookUpdate,
+    membership=Depends(get_current_membership),
+    _: dict = Depends(require_roles("owner", "editor")),
+    db: Session = Depends(get_db),
+):
+    org_id = _get_org_id(membership)
+    query = db.query(HookLibrary).filter(HookLibrary.id == hook_id)
+    if org_id:
+        query = query.filter(
+            (HookLibrary.organization_id == org_id) | (HookLibrary.organization_id.is_(None))
+        )
+    item = query.first()
     if not item:
         raise HTTPException(status_code=404, detail="Hook not found")
     if payload.hook_type not in HOOK_TYPES:
         raise HTTPException(status_code=422, detail="Unsupported hook type")
     if payload.is_default:
-        db.query(HookLibrary).filter(HookLibrary.id != hook_id).update({HookLibrary.is_default: False})
+        filter_q = db.query(HookLibrary).filter(HookLibrary.id != hook_id)
+        if org_id:
+            filter_q = filter_q.filter(HookLibrary.organization_id == org_id)
+        filter_q.update({HookLibrary.is_default: False})
     for key, value in payload.model_dump().items():
         setattr(item, key, value)
     db.commit()

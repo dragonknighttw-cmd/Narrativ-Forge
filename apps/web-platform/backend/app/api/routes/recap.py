@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict, Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from ...services.recap_engine import (
@@ -10,10 +10,15 @@ from ...services.recap_engine import (
     generate_burmese_recap_script,
     simulate_auto_video_edit,
 )
+from ..dependencies import get_current_membership
 
 logger = logging.getLogger("narrativ.api.recap")
 
-router = APIRouter(prefix="/recap", tags=["Movie Recap & Auto Editing"])
+router = APIRouter(
+    prefix="/recap",
+    tags=["Movie Recap & Auto Editing"],
+    dependencies=[Depends(get_current_membership)],
+)
 
 
 class GenerateScriptRequest(BaseModel):

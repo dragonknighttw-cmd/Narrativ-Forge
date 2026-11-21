@@ -4,16 +4,37 @@ import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { AppShell } from "../../components/app-shell";
 import { api, Episode } from "../../lib/api";
+import {
+  FileText,
+  BookOpen,
+  Film,
+  Clapperboard,
+  Folder,
+  MessageSquare,
+  Search,
+  Send,
+} from "lucide-react";
 
-const studioMappings: Record<string, { title: string; subpath: string; icon: string; desc: string }> = {
-  "script-studio": { title: "Script Studio", subpath: "script", icon: "📝", desc: "Write, generate with Gemini/Groq, and edit Burmese video scripts." },
-  "manga-studio": { title: "Manga & Webtoon AI Studio", subpath: "manga", icon: "📖", desc: "Create 4-Koma, vertical webtoons, anime speech bubbles, and export motion comics." },
-  "video-composer": { title: "Multi-Track Video Composer", subpath: "composer", icon: "🎞️", desc: "Import Runway/Kling AI clips, assemble video tracks, dubbing, BGM auto-ducking, and SFX." },
-  "scene-breakdown": { title: "Scene Breakdown Studio", subpath: "scenes", icon: "🎬", desc: "Visual prompts, B-roll timing, and audio cues per scene." },
-  "assets": { title: "Asset Library", subpath: "assets", icon: "📁", desc: "Audio voiceovers, video cuts, and media attachments for episodes." },
-  "subtitles": { title: "Subtitle Studio", subpath: "subtitle", icon: "💬", desc: "AI Speech-to-Text transcription with Groq Whisper & Cloudflare." },
-  "review": { title: "Review Center", subpath: "review", icon: "🔍", desc: "Editorial approval, QA checklist, and final render sign-off." },
-  "export": { title: "Drive Export", subpath: "export", icon: "🚀", desc: "Package and export finished assets directly to Google Drive." },
+const studioIcons: Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
+  "script-studio": FileText,
+  "manga-studio": BookOpen,
+  "video-composer": Film,
+  "scene-breakdown": Clapperboard,
+  "assets": Folder,
+  "subtitles": MessageSquare,
+  "review": Search,
+  "export": Send,
+};
+
+const studioMappings: Record<string, { title: string; subpath: string; iconKey: string; desc: string }> = {
+  "script-studio": { title: "Script Studio", subpath: "script", iconKey: "script-studio", desc: "Write, generate with Gemini/Groq, and edit Burmese video scripts." },
+  "manga-studio": { title: "Manga & Webtoon AI Studio", subpath: "manga", iconKey: "manga-studio", desc: "Create 4-Koma, vertical webtoons, anime speech bubbles, and export motion comics." },
+  "video-composer": { title: "Multi-Track Video Composer", subpath: "composer", iconKey: "video-composer", desc: "Import Runway/Kling AI clips, assemble video tracks, dubbing, BGM auto-ducking, and SFX." },
+  "scene-breakdown": { title: "Scene Breakdown Studio", subpath: "scenes", iconKey: "scene-breakdown", desc: "Visual prompts, B-roll timing, and audio cues per scene." },
+  "assets": { title: "Asset Library", subpath: "assets", iconKey: "assets", desc: "Audio voiceovers, video cuts, and media attachments for episodes." },
+  "subtitles": { title: "Subtitle Studio", subpath: "subtitle", iconKey: "subtitles", desc: "AI Speech-to-Text transcription with Groq Whisper & Cloudflare." },
+  "review": { title: "Review Center", subpath: "review", iconKey: "review", desc: "Editorial approval, QA checklist, and final render sign-off." },
+  "export": { title: "Drive Export", subpath: "export", iconKey: "export", desc: "Package and export finished assets directly to Google Drive." },
 };
 
 export default function ModulePage({ params }: { params: Promise<{ module: string[] }> }) {
@@ -40,7 +61,14 @@ export default function ModulePage({ params }: { params: Promise<{ module: strin
           <>
             <div className="ds-card" style={{ padding: "26px", border: "1px solid var(--border)", background: "linear-gradient(135deg, rgba(15, 22, 38, 0.95), rgba(22, 32, 52, 0.6))" }}>
               <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                <span style={{ fontSize: "32px", lineHeight: 1 }}>{studio.icon}</span>
+                {(() => {
+                  const Icon = studio ? studioIcons[studio.iconKey] || Clapperboard : Clapperboard;
+                  return (
+                    <div style={{ display: "grid", placeItems: "center", width: "48px", height: "48px", borderRadius: "12px", background: "rgba(56, 189, 248, 0.12)", border: "1px solid rgba(56, 189, 248, 0.25)", color: "#38bdf8", flexShrink: 0 }}>
+                      <Icon size={24} />
+                    </div>
+                  );
+                })()}
                 <div>
                   <div className="eyebrow">PRODUCTION LAUNCHER</div>
                   <h2 style={{ fontSize: "22px", fontWeight: 700, marginTop: "4px", color: "#f8fafc" }}>
@@ -72,7 +100,7 @@ export default function ModulePage({ params }: { params: Promise<{ module: strin
                 </div>
               ) : episodes.length === 0 ? (
                 <div style={{ padding: "40px 20px", textAlign: "center", border: "1px dashed #1e293b", borderRadius: "12px" }}>
-                  <div style={{ fontSize: "28px", marginBottom: "8px" }}>🎬</div>
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: "8px", color: "#38bdf8" }}><Clapperboard size={28} /></div>
                   <h4 style={{ fontSize: "15px", fontWeight: 600, color: "#f8fafc" }}>No Episodes Created Yet</h4>
                   <p style={{ fontSize: "13px", color: "#64748b", marginTop: "4px", maxWidth: "340px", margin: "4px auto 16px" }}>
                     To use {studio.title}, first create an episode or generate a batch from the Episodes manager.

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AppShell } from "../../../components/app-shell";
 import { ErrorState } from "../../../components/domain-forms";
+import { X, Mic, MessageSquareQuote, FileText } from "lucide-react";
 import { api, Season, Series, SeriesBibleCharacter } from "../../../lib/api";
 
 export default function SeriesDetailPage() {
@@ -117,19 +118,19 @@ export default function SeriesDetailPage() {
                 <strong>{char.name}</strong>
                 <span className="pill" style={{ marginLeft: "0.5rem", textTransform: "capitalize", fontSize: "0.75rem" }}>{char.role}</span>
               </div>
-              <button className="text-button" style={{ color: "#ef4444", padding: 0 }} disabled={bibleBusy} onClick={() => void removeCharacter(char.id)}>✕</button>
+              <button className="text-button" style={{ color: "#ef4444", padding: 0, display: "grid", placeItems: "center" }} disabled={bibleBusy} onClick={() => void removeCharacter(char.id)} title="Remove character"><X size={14} /></button>
             </div>
-            <p className="muted burmese-text" style={{ fontSize: "0.85rem", marginTop: "0.5rem", marginBottom: "0.25rem" }}>
-              🎙️ <strong>Tone:</strong> {char.tone}
+            <p className="muted burmese-text" style={{ fontSize: "0.85rem", marginTop: "0.5rem", marginBottom: "0.25rem", display: "flex", alignItems: "center", gap: "6px" }}>
+              <Mic size={14} className="text-sky-400" /> <strong>Tone:</strong> {char.tone}
             </p>
             {char.catchphrase && (
-              <p className="burmese-text" style={{ fontSize: "0.85rem", color: "#6366f1", margin: "0.25rem 0" }}>
-                💬 <em>"{char.catchphrase}"</em>
+              <p className="burmese-text" style={{ fontSize: "0.85rem", color: "#6366f1", margin: "0.25rem 0", display: "flex", alignItems: "center", gap: "6px" }}>
+                <MessageSquareQuote size={14} /> <em>"{char.catchphrase}"</em>
               </p>
             )}
             {char.traits && (
-              <p className="muted burmese-text" style={{ fontSize: "0.8rem", margin: "0.25rem 0 0" }}>
-                📝 {char.traits}
+              <p className="muted burmese-text" style={{ fontSize: "0.8rem", margin: "0.25rem 0 0", display: "flex", alignItems: "center", gap: "6px" }}>
+                <FileText size={14} /> {char.traits}
               </p>
             )}
           </article>

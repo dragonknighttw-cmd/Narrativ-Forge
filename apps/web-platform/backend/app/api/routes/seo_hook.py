@@ -57,7 +57,9 @@ class HookResponse(BaseModel):
 
 def _get_openrouter_key() -> str:
     return (
-        getattr(settings, "OPENROUTER_API_KEY", "")
+        getattr(settings, "openrouter_api_key", "")
+        or getattr(settings, "OPENROUTER_API_KEY", "")
+        or getattr(settings, "admin_openrouter_api_key", "")
         or getattr(settings, "ADMIN_OPENROUTER_API_KEY", "")
         or ""
     )

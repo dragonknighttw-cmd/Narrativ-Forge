@@ -41,12 +41,10 @@ def _slug(value: str) -> str:
 
 
 def ensure_membership(db: Session, user: dict) -> OrganizationMembership:
-    membership = (
-        db.query(OrganizationMembership)
-        .filter(OrganizationMembership.user_id == user["id"])
-        .order_by(OrganizationMembership.created_at)
-        .first()
-    )
+    membership_query = db.query(OrganizationMembership).filter(OrganizationMembership.user_id == user["id"])
+    if user.get("organization_id"):
+        membership_query = membership_query.filter(OrganizationMembership.organization_id == user["organization_id"])
+    membership = membership_query.order_by(OrganizationMembership.created_at).first()
     if membership:
         # Older/bootstrap-created workspaces may predate billing subscription rows.
         # Keep billing reads safe and consistent for every existing membership.

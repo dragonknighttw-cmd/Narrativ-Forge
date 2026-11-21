@@ -410,7 +410,9 @@ export default function RawFootageHubPage() {
                         {s.start_time}s – {s.end_time}s: {s.shot_type}
                       </span>
                       {s.is_highlight && (
-                        <span style={{ fontSize: "10px", color: "#fbbf24", fontWeight: 700 }}>★ Highlight</span>
+                        <span style={{ fontSize: "10px", color: "#fbbf24", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                          <Star size={11} fill="currentColor" /> Highlight
+                        </span>
                       )}
                     </div>
                   ))}

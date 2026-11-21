@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { AppShell } from "../../../../components/app-shell";
 import { ErrorState } from "../../../../components/domain-forms";
+import { Volume2 } from "lucide-react";
 import { api, Episode, Subtitle, SubtitleCue } from "../../../../lib/api";
 import { transcribeVideoWithCloudflare } from "../../../../lib/cloud-whisper";
 
@@ -276,8 +277,8 @@ export default function SubtitleStudioPage() {
                 </div>
 
                 {/* Audio Ducking Indicator */}
-                <div style={{ background: "rgba(0,0,0,0.6)", borderRadius: "6px", padding: "4px 8px", fontSize: "10px", color: "#10b981", display: "flex", justifyContent: "space-between" }}>
-                  <span>🔊 Speech active</span>
+                <div style={{ background: "rgba(0,0,0,0.6)", borderRadius: "6px", padding: "4px 8px", fontSize: "10px", color: "#10b981", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><Volume2 size={12} /> Speech active</span>
                   <span>BGM ducked (-12dB)</span>
                 </div>
               </div>

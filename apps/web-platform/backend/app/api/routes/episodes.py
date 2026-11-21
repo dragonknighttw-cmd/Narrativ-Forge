@@ -172,15 +172,15 @@ class StoryboardGenerateRequest(BaseModel):
 
 def _voiceover_telegram_details(voice: object, file_size_bytes: int, asset_id: object) -> str:
     return (
-        f"🎙️ Voice: {html.escape(str(voice))}\n"
-        f"📊 Size: {file_size_bytes} bytes\n"
-        f"🆔 Asset: <code>{html.escape(str(asset_id))}</code>"
+        f"[VOICE] Voice: {html.escape(str(voice))}\n"
+        f"[SIZE] Size: {file_size_bytes} bytes\n"
+        f"ID: <code>{html.escape(str(asset_id))}</code>"
     )
 
 
 def _storyboard_telegram_details(count: int, aspect_ratio: object) -> str:
     return (
-        f"🎨 Generated {count} {html.escape(str(aspect_ratio))} "
+        f"[STORYBOARD] Generated {count} {html.escape(str(aspect_ratio))} "
         "storyboard visuals via FLUX."
     )
 

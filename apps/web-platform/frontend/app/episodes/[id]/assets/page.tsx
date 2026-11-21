@@ -6,6 +6,8 @@ import { AppShell } from "../../../../components/app-shell";
 import { ErrorState } from "../../../../components/domain-forms";
 import { api, Asset } from "../../../../lib/api";
 
+import { Smartphone, Music, ShieldCheck } from "lucide-react";
+
 export default function AssetLibraryPage() {
   const { id } = useParams<{ id: string }>();
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -40,15 +42,15 @@ export default function AssetLibraryPage() {
       <h2>Production Asset Requirements</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginTop: "0.75rem" }}>
         <div style={{ padding: "0.75rem", borderRadius: "6px", background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
-          <strong style={{ color: "#6366f1" }}>📱 Aspect Ratio: 9:16 Vertical</strong>
+          <strong style={{ color: "#6366f1", display: "inline-flex", alignItems: "center", gap: "6px" }}><Smartphone size={15} /> Aspect Ratio: 9:16 Vertical</strong>
           <p className="muted" style={{ fontSize: "0.85rem", margin: "0.25rem 0 0" }}>1080×1920 or 576×1024 portrait. Horizontal 16:9 will be cropped with pillarboxes.</p>
         </div>
         <div style={{ padding: "0.75rem", borderRadius: "6px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
-          <strong style={{ color: "#10b981" }}>🎵 Audio & BGM: 44.1/48kHz</strong>
+          <strong style={{ color: "#10b981", display: "inline-flex", alignItems: "center", gap: "6px" }}><Music size={15} /> Audio & BGM: 44.1/48kHz</strong>
           <p className="muted" style={{ fontSize: "0.85rem", margin: "0.25rem 0 0" }}>AAC-LC or PCM stereo. Normalization target: -14 to -16 LUFS with speech ducking.</p>
         </div>
         <div style={{ padding: "0.75rem", borderRadius: "6px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
-          <strong style={{ color: "#f59e0b" }}>🛡️ Commercial License Safety</strong>
+          <strong style={{ color: "#f59e0b", display: "inline-flex", alignItems: "center", gap: "6px" }}><ShieldCheck size={15} /> Commercial License Safety</strong>
           <p className="muted" style={{ fontSize: "0.85rem", margin: "0.25rem 0 0" }}>Verify copyright & watermarks before attaching assets to public distribution.</p>
         </div>
       </div>

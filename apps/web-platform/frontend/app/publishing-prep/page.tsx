@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "../../components/app-shell";
 import { ErrorState } from "../../components/domain-forms";
+import { Heart, MessageCircle, Bookmark, Share2, CheckCircle2, Smartphone } from "lucide-react";
 import { api, Episode } from "../../lib/api";
 
 const PLATFORMS = [
@@ -134,10 +135,10 @@ export default function PublishingPreparationPage() {
                 fontSize: "9px",
                 color: "#ef4444",
               }}>
-                <span>❤️</span>
-                <span>💬</span>
-                <span>🔖</span>
-                <span>↗️</span>
+                <span><Heart size={14} /></span>
+                <span><MessageCircle size={14} /></span>
+                <span><Bookmark size={14} /></span>
+                <span><Share2 size={14} /></span>
               </div>
 
               {/* Bottom Caption Area */}
@@ -181,7 +182,7 @@ export default function PublishingPreparationPage() {
                   fontSize: "11px",
                   fontWeight: 600,
                 }}>
-                  ✅ 100% SAFE ZONE<br />
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><CheckCircle2 size={13} /> 100% SAFE ZONE</span><br />
                   <span style={{ fontSize: "10px", color: "#f8fafc" }}>
                     {selectedEpisode?.title ? `"${selectedEpisode.title.slice(0, 25)}..."` : "Subtitles & Hooks appear here"}
                   </span>
@@ -193,7 +194,7 @@ export default function PublishingPreparationPage() {
           {/* Guidelines */}
           <div className="stack-form">
             <div style={{ padding: "1rem", borderRadius: "8px", background: "rgba(99, 102, 241, 0.08)", border: "1px solid rgba(99, 102, 241, 0.2)" }}>
-              <strong style={{ color: "#6366f1" }}>📱 {activePlatform.name} Safe-Zone Rules:</strong>
+              <strong style={{ color: "#6366f1", display: "inline-flex", alignItems: "center", gap: "6px" }}><Smartphone size={15} /> {activePlatform.name} Safe-Zone Rules:</strong>
               <ul style={{ margin: "0.5rem 0 0 1rem", fontSize: "0.85rem", lineHeight: 1.6 }} className="muted">
                 <li>Keep titles below top {activePlatform.topMargin} to avoid status bars.</li>
                 <li>Keep main Burmese text away from the right {activePlatform.rightMargin} to prevent overlap with engagement icons.</li>

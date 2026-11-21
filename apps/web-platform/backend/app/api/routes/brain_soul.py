@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session
 
 from ...db import get_db
 from ...models.brain_soul import BrainSoulContext, BrainSoulSynthesis
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, require_roles
 
 logger = logging.getLogger("narrativ.brain_soul")
 
@@ -105,7 +105,7 @@ def list_context(
 @router.post("/context", status_code=201)
 def upsert_context(
     payload: ContextUpsert,
-    _user=Depends(get_current_user),
+    _user=Depends(require_roles("owner", "editor")),
     db: Session = Depends(get_db),
 ) -> dict:
     """Insert or update a Soul File entry."""
@@ -133,7 +133,7 @@ def upsert_context(
 @router.delete("/context/{key}")
 def delete_context(
     key: str,
-    _user=Depends(get_current_user),
+    _user=Depends(require_roles("owner", "editor")),
     db: Session = Depends(get_db),
 ) -> dict:
     """Delete a Soul File entry by key."""
@@ -176,7 +176,7 @@ def list_syntheses(
 @router.post("/synthesize", status_code=202)
 async def trigger_synthesis(
     payload: SynthesizeRequest,
-    _user=Depends(get_current_user),
+    _user=Depends(require_roles("owner", "editor")),
     db: Session = Depends(get_db),
 ) -> dict:
     """Manually trigger a weekly synthesis of recent story content.

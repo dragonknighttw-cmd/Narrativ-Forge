@@ -106,15 +106,15 @@ async def send_notification(
 ) -> dict[str, Any] | None:
     """Send a standardized notification card to the Narrativ-Forge topic."""
     icon_map = {
-        "SUCCESS": "✅",
-        "INFO": "ℹ️",
-        "WARNING": "⚠️",
-        "ERROR": "🚨",
+        "SUCCESS": "[OK]",
+        "INFO": "[INFO]",
+        "WARNING": "[WARN]",
+        "ERROR": "[ALERT]",
     }
-    status_icon = icon_map.get(status.upper(), "📌")
+    status_icon = icon_map.get(status.upper(), "[NOTICE]")
 
     lines = [
-        f"🎬 <b>[Narrativ-Forge]</b> {status_icon} <b>{html.escape(title)}</b>",
+        f"<b>[Narrativ-Forge]</b> {status_icon} <b>{html.escape(title)}</b>",
         "",
         details,
     ]
@@ -139,40 +139,40 @@ async def send_notification(
 
 async def notify_script_review(script_id: str, title: str, author: str | None = None) -> None:
     """Notify when a new script is ready for review/approval."""
-    details = f"📝 <b>Script:</b> {html.escape(title)}\n"
+    details = f"<b>Script:</b> {html.escape(title)}\n"
     if author:
-        details += f"👤 <b>Author:</b> {html.escape(author)}\n"
-    details += f"🆔 <code>{html.escape(script_id)}</code>"
+        details += f"<b>Author:</b> {html.escape(author)}\n"
+    details += f"ID: <code>{html.escape(script_id)}</code>"
 
     actions = [
-        ("✅ Approve Script", f"nf_script_appr:{script_id}"),
-        ("❌ Reject", f"nf_script_rej:{script_id}"),
+        ("Approve Script", f"nf_script_appr:{script_id}"),
+        ("Reject", f"nf_script_rej:{script_id}"),
     ]
     await send_notification("Script Ready for Review", details, status="INFO", actions=actions)
 
 
 async def notify_video_ready(video_id: str, title: str, preview_url: str | None = None) -> None:
     """Notify when video rendering completes."""
-    details = f"🎞️ <b>Video:</b> {html.escape(title)}\n🆔 <code>{html.escape(video_id)}</code>"
+    details = f"<b>Video:</b> {html.escape(title)}\nID: <code>{html.escape(video_id)}</code>"
     actions: list[tuple[str, str]] = [
-        ("👍 Approve Video", f"nf_video_appr:{video_id}"),
-        ("🔄 Re-render", f"nf_video_rerun:{video_id}"),
+        ("Approve Video", f"nf_video_appr:{video_id}"),
+        ("Re-render", f"nf_video_rerun:{video_id}"),
     ]
     if preview_url:
-        actions.insert(0, ("▶️ Preview", preview_url))
+        actions.insert(0, ("Preview", preview_url))
     await send_notification("Video Render Finished", details, status="SUCCESS", actions=actions)
 
 
 async def notify_export_complete(title: str, gdrive_url: str) -> None:
     """Notify when Google Drive export completes."""
-    details = f"📁 <b>Asset:</b> {html.escape(title)}\n☁️ Google Drive export is complete."
-    actions = [("🔗 Open Google Drive", gdrive_url)]
+    details = f"<b>Asset:</b> {html.escape(title)}\nGoogle Drive export is complete."
+    actions = [("Open Google Drive", gdrive_url)]
     await send_notification("Export Complete", details, status="SUCCESS", actions=actions)
 
 
 async def notify_pipeline_error(stage: str, error_message: str, project_id: str | None = None) -> None:
     """Alert team on pipeline failures."""
-    details = f"⚙️ <b>Stage:</b> {html.escape(stage)}\n❌ <b>Error:</b> {html.escape(error_message)}"
+    details = f"<b>Stage:</b> {html.escape(stage)}\n<b>Error:</b> {html.escape(error_message)}"
     if project_id:
-        details += f"\n🆔 <code>{html.escape(project_id)}</code>"
+        details += f"\nID: <code>{html.escape(project_id)}</code>"
     await send_notification("Pipeline Alert", details, status="ERROR")

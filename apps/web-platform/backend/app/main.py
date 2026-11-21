@@ -57,7 +57,7 @@ async def lifespan(_: "FastAPI"):
         _topic = int(_os.getenv("TELEGRAM_TOPIC_ID", "0")) or None
         if _topic and _os.getenv("TELEGRAM_STARTUP_NOTIFICATION", "").strip().lower() in {"1", "true", "yes", "on"}:
             await send_telegram_message(
-                "🟢 <b>Narrativ Forge Backend</b> is now online and ready!",
+                "[ONLINE] <b>Narrativ Forge Backend</b> is now online and ready!",
                 topic_id=_topic,
             )
     except Exception:
@@ -215,9 +215,9 @@ async def global_exception_handler(request, exc):
                 import os
                 topic_id = int(os.getenv("TELEGRAM_TOPIC_ID", "0")) or None
                 alert = (
-                    "🚨 <b>Narrativ Forge Error</b>\n\n"
-                    f"📍 Path: <code>{html.escape(path[:100])}</code>\n"
-                    f"❌ Error: <code>{error_type}</code>"
+                    "[ALERT] <b>Narrativ Forge Error</b>\n\n"
+                    f"Path: <code>{html.escape(path[:100])}</code>\n"
+                    f"Error: <code>{error_type}</code>"
                 )
                 await send_telegram_message(alert, topic_id=topic_id)
             except Exception:

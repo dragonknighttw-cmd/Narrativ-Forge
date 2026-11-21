@@ -231,7 +231,7 @@ def test_telegram_commands_are_scoped_to_narrativ_forge_topic(monkeypatch, topic
         ))
         assert result["project"] == project_name
         assert sent[-1][1]["topic_id"] == topic_id
-        assert sent[-1][1]["inline_keyboard"][0][0]["text"] == "🎬 Open Flow Dashboard"
+        assert sent[-1][1]["inline_keyboard"][0][0]["text"] == "Open Flow Dashboard"
         assert project_name in sent[-1][0]
         if topic_id != 6 and command == "/ai_status":
             assert "not connected to this Narrativ Forge backend" in sent[-1][0]

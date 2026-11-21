@@ -3,6 +3,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AppShell } from "../../components/app-shell";
 import { apiBase } from "../../lib/api";
+import {
+  Film,
+  Pause,
+  Play,
+  RotateCcw,
+  FileTerminal,
+  Mic,
+  Music,
+  MessageSquare,
+  Zap,
+  CheckCircle2,
+} from "lucide-react";
 
 interface VideoClipItem {
   id: string;
@@ -200,9 +212,15 @@ export default function VideoComposerPage() {
                 onClick={handleCompileTimeline}
                 disabled={isCompiling || clips.length === 0}
                 className="ds-button primary"
-                style={{ fontSize: "12px", padding: "8px 16px" }}
+                style={{ fontSize: "12px", padding: "8px 16px", display: "inline-flex", alignItems: "center", gap: "6px" }}
               >
-                {isCompiling ? "Building render plan…" : isCompiled ? "✅ Compiled Ready!" : "⚡ Compile & Export (FFmpeg)"}
+                {isCompiling ? (
+                  "Building render plan…"
+                ) : isCompiled ? (
+                  <><CheckCircle2 size={14} /> Compiled Ready!</>
+                ) : (
+                  <><Zap size={14} /> Compile & Export (FFmpeg)</>
+                )}
               </button>
             </div>
           </div>
@@ -239,8 +257,8 @@ export default function VideoComposerPage() {
 
               {/* Center Active Clip Visualizer */}
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "36px", marginBottom: "8px" }}>
-                  {isPlaying ? "🎞️" : "⏸️"}
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: "8px" }}>
+                  {isPlaying ? <Film size={36} style={{ color: "#38bdf8" }} /> : <Pause size={36} style={{ color: "#64748b" }} />}
                 </div>
                 <div style={{ fontSize: "13px", fontWeight: 700, color: "#f8fafc" }}>
                   {activeClip ? activeClip.title : "Timeline Idle"}
@@ -266,7 +284,7 @@ export default function VideoComposerPage() {
                     display: "inline-block",
                   }}
                 >
-                  &ldquo;Ikuzo, Titan Unit Zero! ⚔️&rdquo;
+                  &ldquo;Ikuzo, Titan Unit Zero!&rdquo;
                 </div>
               </div>
             </div>
@@ -307,17 +325,17 @@ export default function VideoComposerPage() {
                     onClick={() => setIsPlaying(!isPlaying)}
                     aria-pressed={isPlaying}
                     className="ds-button primary"
-                    style={{ padding: "8px 24px", fontSize: "13px", fontWeight: 700 }}
+                    style={{ padding: "8px 24px", fontSize: "13px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "6px" }}
                   >
-                    {isPlaying ? "⏸️ Pause Playback" : "▶️ Play All Tracks"}
+                    {isPlaying ? <><Pause size={14} /> Pause Playback</> : <><Play size={14} /> Play All Tracks</>}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setIsPlaying(false); setCurrentTime(0.0); }}
                     className="ds-button"
-                    style={{ padding: "8px 16px", fontSize: "13px", backgroundColor: "#1e293b" }}
+                    style={{ padding: "8px 16px", fontSize: "13px", backgroundColor: "#1e293b", display: "inline-flex", alignItems: "center", gap: "6px" }}
                   >
-                    ⏮️ Reset
+                    <RotateCcw size={14} /> Reset
                   </button>
                 </div>
               </div>
@@ -325,8 +343,8 @@ export default function VideoComposerPage() {
               {/* FFmpeg Render Script Display */}
               {ffmpegCommand && (
                 <div style={{ marginTop: "20px", padding: "14px", backgroundColor: "#0b1424", borderRadius: "10px", border: "1px solid #1e293b" }}>
-                  <div style={{ fontSize: "11px", fontWeight: 700, color: "#4ade80", marginBottom: "6px" }}>
-                    📋 FFmpeg 1080x1920 (9:16) Export Command:
+                  <div style={{ fontSize: "11px", fontWeight: 700, color: "#4ade80", marginBottom: "6px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                    <FileTerminal size={14} /> FFmpeg 1080x1920 (9:16) Export Command:
                   </div>
                   <pre style={{ margin: 0, fontSize: "11px", color: "#94a3b8", overflowX: "auto", whiteSpace: "pre-wrap" }}>
                     {ffmpegCommand}
@@ -431,7 +449,7 @@ export default function VideoComposerPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", backgroundColor: "#070b13", padding: "16px", borderRadius: "12px", border: "1px solid #1e293b" }}>
             {/* Track 1: Video Track */}
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ width: "90px", fontSize: "11px", fontWeight: 700, color: "#38bdf8" }}>🎞️ Video Track</div>
+              <div style={{ width: "90px", fontSize: "11px", fontWeight: 700, color: "#38bdf8", display: "inline-flex", alignItems: "center", gap: "4px" }}><Film size={12} /> Video Track</div>
               <div style={{ flex: 1, display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px" }}>
                 {clips.map((c, i) => (
                   <div
@@ -460,7 +478,7 @@ export default function VideoComposerPage() {
 
             {/* Track 2: Dubbing Audio Track */}
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ width: "90px", fontSize: "11px", fontWeight: 700, color: "#a855f7" }}>🎙️ Dubbing Voice</div>
+              <div style={{ width: "90px", fontSize: "11px", fontWeight: 700, color: "#a855f7", display: "inline-flex", alignItems: "center", gap: "4px" }}><Mic size={12} /> Dubbing Voice</div>
               <div style={{ flex: 1, display: "flex", gap: "8px" }}>
                 <div style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", backgroundColor: "rgba(168, 85, 247, 0.15)", border: "1px dashed #a855f7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: "11px", color: "#e9d5ff" }}>Voice Binding: <b>Shinji Kazama (ja-JP-KeitaNeural) & Lead Actor</b></span>
@@ -471,7 +489,7 @@ export default function VideoComposerPage() {
 
             {/* Track 3: BGM Track */}
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ width: "90px", fontSize: "11px", fontWeight: 700, color: "#22c55e" }}>🎵 Music (BGM)</div>
+              <div style={{ width: "90px", fontSize: "11px", fontWeight: 700, color: "#22c55e", display: "inline-flex", alignItems: "center", gap: "4px" }}><Music size={12} /> Music (BGM)</div>
               <div style={{ flex: 1, display: "flex", gap: "8px" }}>
                 <div style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", backgroundColor: "rgba(34, 197, 94, 0.15)", border: "1px solid rgba(34, 197, 94, 0.4)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: "11px", color: "#bbf7d0" }}>Track: <b>anime_epic_orchestral_bgm.mp3</b></span>
@@ -482,7 +500,7 @@ export default function VideoComposerPage() {
 
             {/* Track 4: Dynamic Subtitle Track */}
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ width: "90px", fontSize: "11px", fontWeight: 700, color: "#fbbf24" }}>💬 Subtitles</div>
+              <div style={{ width: "90px", fontSize: "11px", fontWeight: 700, color: "#fbbf24", display: "inline-flex", alignItems: "center", gap: "4px" }}><MessageSquare size={12} /> Subtitles</div>
               <div style={{ flex: 1, display: "flex", gap: "8px" }}>
                 <div style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", backgroundColor: "rgba(251, 191, 36, 0.15)", border: "1px solid rgba(251, 191, 36, 0.4)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: "11px", color: "#fef08a" }}>Style: <b>Anime Pop Kinetic Typography (ASS/SRT)</b></span>

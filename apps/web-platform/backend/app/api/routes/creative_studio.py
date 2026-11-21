@@ -58,16 +58,41 @@ class TimelineSaveRequest(BaseModel):
 
 
 # ==========================================
+# Helpers
+# ==========================================
+
+def _get_org_id(membership: Any) -> Optional[str]:
+    if isinstance(membership, dict):
+        return membership.get("organization_id")
+    return getattr(membership, "organization_id", None)
+
+
+# ==========================================
 # Overview Stats
 # ==========================================
 
 @router.get("/overview")
-def get_studio_overview(db: Session = Depends(get_db)):
+def get_studio_overview(
+    membership=Depends(get_current_membership),
+    db: Session = Depends(get_db),
+):
     """Summary metrics of the AI Creative Production Studio."""
-    ref_count = db.query(ReferenceVideo).count()
-    footage_count = db.query(RawFootage).count()
-    concept_count = db.query(CreativeDirectorConcept).count()
-    timeline_count = db.query(TimelineProject).count()
+    org_id = _get_org_id(membership)
+    ref_q = db.query(ReferenceVideo)
+    footage_q = db.query(RawFootage)
+    concept_q = db.query(CreativeDirectorConcept)
+    timeline_q = db.query(TimelineProject)
+
+    if org_id:
+        ref_q = ref_q.filter(ReferenceVideo.organization_id == org_id)
+        footage_q = footage_q.filter(RawFootage.organization_id == org_id)
+        concept_q = concept_q.filter(CreativeDirectorConcept.organization_id == org_id)
+        timeline_q = timeline_q.filter(TimelineProject.organization_id == org_id)
+
+    ref_count = ref_q.count()
+    footage_count = footage_q.count()
+    concept_count = concept_q.count()
+    timeline_count = timeline_q.count()
 
     return {
         "status": "online",
@@ -111,7 +136,7 @@ def analyze_reference_video(
     )
 
     ref = ReferenceVideo(
-        organization_id=membership.organization_id if hasattr(membership, "organization_id") else None,
+        organization_id=_get_org_id(membership),
         title=payload.title,
         file_url=payload.file_url,
         duration_seconds=payload.duration_seconds,
@@ -136,9 +161,16 @@ def analyze_reference_video(
 
 
 @router.get("/references")
-def list_reference_videos(db: Session = Depends(get_db)):
+def list_reference_videos(
+    membership=Depends(get_current_membership),
+    db: Session = Depends(get_db),
+):
     """List all registered reference videos with their extracted style profiles."""
-    refs = db.query(ReferenceVideo).order_by(ReferenceVideo.created_at.desc()).all()
+    query = db.query(ReferenceVideo)
+    org_id = _get_org_id(membership)
+    if org_id:
+        query = query.filter(ReferenceVideo.organization_id == org_id)
+    refs = query.order_by(ReferenceVideo.created_at.desc()).all()
     results = []
     for r in refs:
         results.append({
@@ -174,7 +206,7 @@ def scan_raw_footage(
     )
 
     footage = RawFootage(
-        organization_id=membership.organization_id if hasattr(membership, "organization_id") else None,
+        organization_id=_get_org_id(membership),
         filename=payload.filename,
         file_url=payload.file_url,
         duration_seconds=payload.duration_seconds,
@@ -203,10 +235,14 @@ def scan_raw_footage(
 @router.get("/footages")
 def list_raw_footages(
     highlights_only: bool = Query(default=False),
+    membership=Depends(get_current_membership),
     db: Session = Depends(get_db),
 ):
     """List raw footages with optional filter for AI-selected highlights."""
     query = db.query(RawFootage)
+    org_id = _get_org_id(membership)
+    if org_id:
+        query = query.filter(RawFootage.organization_id == org_id)
     if highlights_only:
         query = query.filter(RawFootage.selected_highlight == True)  # noqa: E712
     footages = query.order_by(RawFootage.created_at.desc()).all()
@@ -250,7 +286,7 @@ def generate_concepts(
     created = []
     for c in concepts_data:
         concept = CreativeDirectorConcept(
-            organization_id=membership.organization_id if hasattr(membership, "organization_id") else None,
+            organization_id=_get_org_id(membership),
             concept_type=c["concept_type"],
             title=c["title"],
             logline=c["logline"],
@@ -275,9 +311,16 @@ def generate_concepts(
 
 
 @router.get("/director/concepts")
-def list_concepts(db: Session = Depends(get_db)):
+def list_concepts(
+    membership=Depends(get_current_membership),
+    db: Session = Depends(get_db),
+):
     """List all AI Creative Director concepts."""
-    concepts = db.query(CreativeDirectorConcept).order_by(CreativeDirectorConcept.created_at.desc()).all()
+    query = db.query(CreativeDirectorConcept)
+    org_id = _get_org_id(membership)
+    if org_id:
+        query = query.filter(CreativeDirectorConcept.organization_id == org_id)
+    concepts = query.order_by(CreativeDirectorConcept.created_at.desc()).all()
     results = []
     for c in concepts:
         results.append({
@@ -324,7 +367,7 @@ def save_timeline_project(
 ):
     """Module 7: Persist or update multi-track visual timeline representation."""
     timeline = TimelineProject(
-        organization_id=membership.organization_id if hasattr(membership, "organization_id") else None,
+        organization_id=_get_org_id(membership),
         title=payload.title,
         target_aspect_ratio=payload.target_aspect_ratio,
         tracks_json=json.dumps(payload.tracks),
@@ -346,9 +389,17 @@ def save_timeline_project(
 
 
 @router.get("/timeline/{timeline_id}")
-def get_timeline_project(timeline_id: str, db: Session = Depends(get_db)):
+def get_timeline_project(
+    timeline_id: str,
+    membership=Depends(get_current_membership),
+    db: Session = Depends(get_db),
+):
     """Fetch multi-track timeline by ID."""
-    timeline = db.query(TimelineProject).filter(TimelineProject.id == timeline_id).first()
+    query = db.query(TimelineProject).filter(TimelineProject.id == timeline_id)
+    org_id = _get_org_id(membership)
+    if org_id:
+        query = query.filter(TimelineProject.organization_id == org_id)
+    timeline = query.first()
     if not timeline:
         raise HTTPException(status_code=404, detail="Timeline project not found")
 

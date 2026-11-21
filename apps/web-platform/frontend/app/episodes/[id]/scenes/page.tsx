@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { AppShell } from "../../../../components/app-shell";
 import { ErrorState } from "../../../../components/domain-forms";
 import { WaveformTimeline } from "../../../../components/WaveformTimeline";
+import { Zap } from "lucide-react";
 import { api, Scene } from "../../../../lib/api";
 
 export default function SceneBreakdownPage() {
@@ -68,8 +69,9 @@ export default function SceneBreakdownPage() {
           <span style={{ fontSize: "0.875rem", padding: "0.25rem 0.75rem", borderRadius: "9999px", background: totalDuration >= 150 && totalDuration <= 210 ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)", color: totalDuration >= 150 && totalDuration <= 210 ? "#10b981" : "#f59e0b", fontWeight: 600 }}>
             Total: {totalDuration}s / 180s target
           </span>
-          <button onClick={autoBreakdownFromScript} disabled={busy}>
-            {busy ? "Analyzing…" : "⚡ Auto-Breakdown from Script"}
+          <button onClick={autoBreakdownFromScript} disabled={busy} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <Zap size={14} />
+            {busy ? "Analyzing…" : "Auto-Breakdown from Script"}
           </button>
         </div>
       </div>
@@ -91,7 +93,7 @@ export default function SceneBreakdownPage() {
     </section>
     <section className="card">
       <div className="eyebrow">SCENE SEQUENCE ({scenes.length} scenes)</div>
-      {scenes.length === 0 ? <div className="empty-state">No scenes yet. Click "⚡ Auto-Breakdown from Script" or add manually above.</div> : <div className="list">
+      {scenes.length === 0 ? <div className="empty-state">No scenes yet. Click "Auto-Breakdown from Script" or add manually above.</div> : <div className="list">
         {scenes.map(scene => (
           <article className="list-card" key={scene.id}>
             <div>

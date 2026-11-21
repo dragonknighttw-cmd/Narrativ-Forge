@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { Play, Pause, RotateCcw, Music, Mic, X } from "lucide-react";
 import { Scene } from "../lib/api";
 
 interface WaveformTimelineProps {
@@ -159,7 +160,15 @@ export function WaveformTimeline({
               gap: "0.35rem"
             }}
           >
-            {isPlaying ? "⏸ Pause" : "▶ Preview Scrubber"}
+            {isPlaying ? (
+              <>
+                <Pause size={14} /> Pause
+              </>
+            ) : (
+              <>
+                <Play size={14} /> Preview Scrubber
+              </>
+            )}
           </button>
           <button
             onClick={() => { setPlayhead(0); setIsPlaying(false); }}
@@ -170,20 +179,27 @@ export function WaveformTimeline({
               padding: "0.35rem 0.65rem",
               borderRadius: "8px",
               cursor: "pointer",
-              fontSize: "0.8rem"
+              fontSize: "0.8rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.35rem"
             }}
           >
-            ⏮ Reset
+            <RotateCcw size={13} /> Reset
           </button>
           <span style={{ fontFamily: "monospace", fontSize: "0.85rem", color: "#38bdf8", fontWeight: 700 }}>
             {formatTime(playhead)} / {formatTime(totalDuration)}
           </span>
         </div>
 
-        <div style={{ display: "flex", gap: "0.5rem", fontSize: "0.75rem", color: "#94a3b8" }}>
-          <span>🎵 <strong>Track 1:</strong> Scene Cuts</span>
+        <div style={{ display: "flex", gap: "0.75rem", fontSize: "0.75rem", color: "#94a3b8", alignItems: "center" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+            <Music size={13} style={{ color: "#38bdf8" }} /> <strong>Track 1:</strong> Scene Cuts
+          </span>
           <span>•</span>
-          <span>🎙️ <strong>Track 2:</strong> Web Audio Waveform</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+            <Mic size={13} style={{ color: "#a855f7" }} /> <strong>Track 2:</strong> Web Audio Waveform
+          </span>
         </div>
       </div>
 
@@ -318,10 +334,13 @@ export function WaveformTimeline({
                       color: "#94a3b8",
                       border: "none",
                       cursor: "pointer",
-                      fontSize: "0.75rem"
+                      fontSize: "0.75rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.25rem"
                     }}
                   >
-                    ✕ Close
+                    <X size={12} /> Close
                   </button>
                 </div>
               </>

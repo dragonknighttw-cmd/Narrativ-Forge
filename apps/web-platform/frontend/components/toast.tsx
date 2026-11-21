@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from "lucide-react";
 
 export type ToastType = "success" | "error" | "info" | "warning";
 
@@ -84,25 +85,25 @@ function ToastCard({ toast, onClose }: { toast: ToastItem; onClose: () => void }
       bg: "#061812",
       border: "1px solid rgba(16, 185, 129, 0.35)",
       color: "#34d399",
-      icon: "✓",
+      icon: <CheckCircle2 size={16} />,
     },
     error: {
       bg: "#1c0910",
       border: "1px solid rgba(244, 63, 94, 0.35)",
       color: "#fb7185",
-      icon: "✕",
+      icon: <AlertCircle size={16} />,
     },
     warning: {
       bg: "#1c1407",
       border: "1px solid rgba(245, 158, 11, 0.35)",
       color: "#fbbf24",
-      icon: "⚠️",
+      icon: <AlertTriangle size={16} />,
     },
     info: {
       bg: "#0b1424",
       border: "1px solid rgba(56, 189, 248, 0.35)",
       color: "#38bdf8",
-      icon: "ℹ",
+      icon: <Info size={16} />,
     },
   }[toast.type];
 
@@ -139,13 +140,14 @@ function ToastCard({ toast, onClose }: { toast: ToastItem; onClose: () => void }
           background: "transparent",
           border: "none",
           color: "#94a3b8",
-          fontSize: "14px",
           cursor: "pointer",
-          padding: "0 4px",
-          lineHeight: 1,
+          padding: "2px",
+          display: "grid",
+          placeItems: "center",
         }}
+        title="Dismiss toast"
       >
-        ×
+        <X size={14} />
       </button>
     </div>
   );

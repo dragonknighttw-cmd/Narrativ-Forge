@@ -293,7 +293,7 @@ export default function DashboardPage() {
             <small>Active episodes in workspace pipeline</small>
           </article>
           <article className="dashboard-metric-card">
-            <span className="dashboard-metric-icon" style={{ color: "#d8ff4f" }}>✳</span>
+            <span className="dashboard-metric-icon" style={{ color: "#d8ff4f", display: "inline-flex", alignItems: "center" }}><Sparkles size={16} /></span>
             <span className="dashboard-metric-label">AI ENGINES</span>
             <strong style={{ color: "#d8ff4f" }}>
               {usageLoading ? "…" : `${activeProviders} / 6`}

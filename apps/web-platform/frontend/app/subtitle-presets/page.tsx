@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Check } from "lucide-react";
 import { AppShell } from "../../components/app-shell";
 
 const presets = [
@@ -48,7 +49,7 @@ export default function SubtitlePresetsPage() {
             aria-pressed={selected === preset.id}
             onClick={() => setSelected(preset.id)}
           >
-            <span className="subtitle-preset-check" aria-hidden="true">{selected === preset.id ? "✓" : " "}</span>
+            <span className="subtitle-preset-check" aria-hidden="true" style={{ display: "inline-grid", placeItems: "center" }}>{selected === preset.id ? <Check size={14} /> : null}</span>
             <span className="eyebrow">{preset.id === "burmese_default" ? "STANDARD" : "COMPACT"}</span>
             <strong>{preset.name}</strong>
             <span className="subtitle-preset-tone">{preset.tone}</span>

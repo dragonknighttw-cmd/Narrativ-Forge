@@ -3,6 +3,18 @@
 import React, { useState, useRef } from "react";
 import { AppShell } from "../../components/app-shell";
 import { api, apiBase, ManualPersonaPack } from "../../lib/api";
+import {
+  Upload,
+  Palette,
+  Film,
+  Users,
+  Zap,
+  Clapperboard,
+  Volume2,
+  Camera,
+  Clock,
+  Loader2,
+} from "lucide-react";
 
 interface PanelData {
   panel_index: number;
@@ -71,12 +83,12 @@ export default function MangaStudioPage() {
           return combined;
         });
         setImportedPersona(newlyImported[0]);
-        setImportNotice(`✅ Imported ${result.imported}; skipped ${result.skipped} existing pack(s).`);
+        setImportNotice(`Imported ${result.imported}; skipped ${result.skipped} existing pack(s).`);
       } catch (error) {
-        setImportNotice(`❌ ${error instanceof Error ? error.message : "Could not import the selected pack."}`);
+        setImportNotice(`${error instanceof Error ? error.message : "Could not import the selected pack."}`);
       }
     } else {
-      setImportNotice("❌ No valid persona JSON files found");
+      setImportNotice("No valid persona JSON files found");
     }
     setTimeout(() => setImportNotice(null), 5000);
 
@@ -249,9 +261,12 @@ export default function MangaStudioPage() {
                   backgroundColor: "#3b0764",
                   border: "1px solid #a855f7",
                   color: "#e9d5ff",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
                 }}
               >
-                📥 Bulk Import Personas (.json)
+                <Upload size={14} /> Bulk Import Personas (.json)
               </button>
               <button
                 type="button"
@@ -262,18 +277,21 @@ export default function MangaStudioPage() {
                   padding: "8px 14px",
                   backgroundColor: monochromeMode ? "#f8fafc" : "#1e293b",
                   color: monochromeMode ? "#0f172a" : "#f8fafc",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
                 }}
               >
-                {monochromeMode ? "⬛ B&W Halftone: ON" : "🎨 Color Mode"}
+                <Palette size={14} /> {monochromeMode ? "B&W Halftone: ON" : "Color Mode"}
               </button>
               <button
                 type="button"
                 onClick={handleExportMotionComic}
                 disabled={loading}
                 className="ds-button primary"
-                style={{ fontSize: "12px", padding: "8px 16px" }}
+                style={{ fontSize: "12px", padding: "8px 16px", display: "inline-flex", alignItems: "center", gap: "6px" }}
               >
-                {motionComicExported ? "✅ Motion Comic Exported!" : "🎬 Export Motion Comic (Shorts)"}
+                <Film size={14} /> {motionComicExported ? "Motion Comic Exported" : "Export Motion Comic (Shorts)"}
               </button>
             </div>
           </div>
@@ -285,7 +303,7 @@ export default function MangaStudioPage() {
           {castLibrary.length > 0 && !importNotice && (
             <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
               <div style={{ fontSize: "11px", color: "#c084fc", display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>🎭 <strong>Active Cast:</strong> {importedPersona?.actor_name || importedPersona?.actor_id}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Users size={14} /> <strong>Active Cast:</strong> {importedPersona?.actor_name || importedPersona?.actor_id}</span>
                 <span style={{ color: "#94a3b8" }}>| Voice: {importedPersona?.voice_binding?.voice_id}</span>
                 <span style={{ fontSize: "10px", backgroundColor: "rgba(168, 85, 247, 0.2)", padding: "2px 6px", borderRadius: "4px" }}>
                   AuraCraft Pack ({castLibrary.length} Persona{castLibrary.length > 1 ? "s" : ""} Loaded)
@@ -384,9 +402,9 @@ export default function MangaStudioPage() {
               onClick={handleGenerate}
               disabled={loading}
               className="ds-button primary"
-              style={{ padding: "8px 20px", fontSize: "13px" }}
+              style={{ padding: "8px 20px", fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "6px" }}
             >
-              {loading ? "Generating Storyboard..." : "⚡ Generate Manga Storyboard"}
+              <Zap size={14} /> {loading ? "Generating Storyboard..." : "Generate Manga Storyboard"}
             </button>
           </div>
         </div>
@@ -452,8 +470,8 @@ export default function MangaStudioPage() {
                       loading="lazy"
                     />
                   ) : (
-                    <div style={{ padding: "16px", textAlign: "center" }}>
-                      <div style={{ fontSize: "28px", marginBottom: "8px" }}>🎬</div>
+                    <div style={{ padding: "16px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div style={{ marginBottom: "8px", color: "#38bdf8" }}><Clapperboard size={28} /></div>
                       <div style={{ fontSize: "12px", color: "#cbd5e1", maxWidth: "240px", fontStyle: "italic" }}>
                         &ldquo;{panel.visual_prompt}&rdquo;
                       </div>
@@ -505,7 +523,7 @@ export default function MangaStudioPage() {
                           }}
                           title="Generate & Listen Voice"
                         >
-                          {activeVoiceBubbleId === b.id ? "⏳" : "🔊"}
+                          {activeVoiceBubbleId === b.id ? <Loader2 size={12} className="animate-spin inline" /> : <Volume2 size={12} className="inline" />}
                         </button>
                       </div>
                       {b.text}
@@ -538,9 +556,9 @@ export default function MangaStudioPage() {
 
                 {/* Camera Cue Footer */}
                 {panel.camera_cue && (
-                  <div style={{ marginTop: "10px", display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#64748b" }}>
-                    <span>🎥 Camera: <b style={{ color: "#38bdf8" }}>{panel.camera_cue.action}</b></span>
-                    <span>⏱️ Duration: <b style={{ color: "#a855f7" }}>{panel.camera_cue.duration_seconds}s</b></span>
+                  <div style={{ marginTop: "10px", display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#64748b", alignItems: "center" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><Camera size={13} style={{ color: "#38bdf8" }} /> Camera: <b style={{ color: "#38bdf8" }}>{panel.camera_cue.action}</b></span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><Clock size={13} style={{ color: "#a855f7" }} /> Duration: <b style={{ color: "#a855f7" }}>{panel.camera_cue.duration_seconds}s</b></span>
                   </div>
                 )}
               </div>

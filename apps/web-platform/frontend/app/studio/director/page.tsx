@@ -15,6 +15,7 @@ import {
   Zap,
   Heart,
   Music,
+  Clock,
 } from "lucide-react";
 
 interface ConceptItem {
@@ -315,11 +316,11 @@ export default function CreativeDirectorPage() {
                 </div>
 
                 <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <div style={{ fontSize: "11.5px", color: "#64748b" }}>
-                    ⏱ Pacing: <span style={{ color: "#f1f5f9" }}>{c.pacing_profile}</span>
+                  <div style={{ fontSize: "11.5px", color: "#64748b", display: "flex", alignItems: "center", gap: "5px" }}>
+                    <Clock size={12} /> Pacing: <span style={{ color: "#f1f5f9" }}>{c.pacing_profile}</span>
                   </div>
-                  <div style={{ fontSize: "11.5px", color: "#64748b" }}>
-                    🎵 Score: <span style={{ color: "#38bdf8" }}>{c.recommended_bgm_genre}</span>
+                  <div style={{ fontSize: "11.5px", color: "#64748b", display: "flex", alignItems: "center", gap: "5px" }}>
+                    <Music size={12} className="text-cyan-400" /> Score: <span style={{ color: "#38bdf8" }}>{c.recommended_bgm_genre}</span>
                   </div>
                 </div>
               </div>

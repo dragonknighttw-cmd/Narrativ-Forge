@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { AppShell } from "../../../../components/app-shell";
 import { ErrorState } from "../../../../components/domain-forms";
 
+import { CheckCircle2 } from "lucide-react";
+
 const CHECKS = ["video_watched", "audio_checked", "subtitle_timing_checked", "thumbnail_present"] as const;
 
 export default function ReviewCenterPage() {
@@ -109,7 +111,7 @@ export default function ReviewCenterPage() {
 
       {thumbnailData?.approved ? (
         <div className="success" style={{ marginTop: "12px" }}>
-          <strong>✓ Thumbnail Approved</strong>
+          <strong style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><CheckCircle2 size={16} /> Thumbnail Approved</strong>
           <p className="muted">Thumbnail ရွေးချယ်အတည်ပြုပြီးပါပြီ။ Checklist တွင် အလိုအလျောက် မှတ်သားထားပါသည်။</p>
         </div>
       ) : null}

@@ -69,7 +69,7 @@ def _dispatch_quota_alert(project: str, provider: str, reason: str):
             if not token or not chat_id:
                 return
             msg = (
-                f"⚠️ <b>[AI Quota Exhaustion Alert]</b>\n\n"
+                f"<b>[AI Quota Exhaustion Alert]</b>\n\n"
                 f"• <b>Project:</b> {html.escape(project)}\n"
                 f"• <b>Provider:</b> <code>{html.escape(provider.upper())}</code>\n"
                 f"• <b>Reason:</b> {html.escape(reason)}\n"

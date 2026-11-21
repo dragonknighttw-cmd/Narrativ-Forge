@@ -112,6 +112,7 @@ def test_thumbnail_endpoints_api(db_session):
     db_session.add(episode)
     db_session.commit()
 
+    original_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[get_db] = lambda: db_session
     app.dependency_overrides[get_current_user] = lambda: {"id": user.id, "email": user.email, "role": "owner", "organization_id": org.id}
     app.dependency_overrides[get_current_membership] = lambda: membership
@@ -147,3 +148,4 @@ def test_thumbnail_endpoints_api(db_session):
         assert resp_after.json()["approved"]["status"] == "approved"
     finally:
         app.dependency_overrides.clear()
+        app.dependency_overrides.update(original_overrides)

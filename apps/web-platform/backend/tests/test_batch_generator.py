@@ -91,6 +91,7 @@ def test_api_batch_generate_preview_and_commit(db_session):
     db_session.add(membership)
     db_session.commit()
 
+    original_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[get_db] = lambda: db_session
     app.dependency_overrides[get_current_user] = lambda: {"id": user.id, "email": user.email, "role": "owner", "organization_id": org.id}
     app.dependency_overrides[get_current_membership] = lambda: membership
@@ -120,4 +121,5 @@ def test_api_batch_generate_preview_and_commit(db_session):
         assert data_comm["series"]["title"].startswith("AI နည်းပညာနှင့် မြန်မာနိုင်ငံ")
     finally:
         app.dependency_overrides.clear()
+        app.dependency_overrides.update(original_overrides)
 

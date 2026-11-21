@@ -96,6 +96,7 @@ def test_video_composer_api_routes():
 
 def test_manga_and_video_composer_authorized_routes():
     """The public route guard must not prevent a valid editor workspace flow."""
+    original_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[get_current_membership] = lambda: SimpleNamespace(organization_id="test-org")
     app.dependency_overrides[get_current_user] = lambda: {"id": "user-1", "role": "editor", "organization_id": "test-org"}
     try:
@@ -120,3 +121,4 @@ def test_manga_and_video_composer_authorized_routes():
         assert imported.json()["clip"]["provider"] == "kling_ai"
     finally:
         app.dependency_overrides.clear()
+        app.dependency_overrides.update(original_overrides)

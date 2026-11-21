@@ -77,6 +77,7 @@ def test_rag_endpoints_api(db_session):
     db_session.add(idea)
     db_session.commit()
 
+    original_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[get_db] = lambda: db_session
     app.dependency_overrides[get_current_user] = lambda: {"id": user.id, "email": user.email, "role": "owner", "organization_id": org.id}
     app.dependency_overrides[get_current_membership] = lambda: membership
@@ -100,3 +101,4 @@ def test_rag_endpoints_api(db_session):
         assert data["results"][0]["id"] == idea.id
     finally:
         app.dependency_overrides.clear()
+        app.dependency_overrides.update(original_overrides)

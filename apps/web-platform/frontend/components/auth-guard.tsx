@@ -12,11 +12,11 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    // Timeout safety: resolve or fallback to local studio mode in 1200ms max
+    // Timeout safety: fail-closed after 1200ms if auth check has not resolved
     const timer = setTimeout(() => {
       if (active && state === "checking") {
-        // Fallback to studio demo session for smooth preview & resilience
-        setState("authenticated");
+        setState("error");
+        router.replace("/login");
       }
     }, 1200);
 
@@ -26,16 +26,8 @@ export function AuthGuard({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         if (!active) return;
-        // In local/preview environments or for dashboard/workflows/usage routes,
-        // provide seamless studio access rather than infinite loading or login lock
-        const isPublicAuthRoute = pathname === "/login" || pathname === "/invite";
-        if (isPublicAuthRoute) {
-          setState("error");
-          router.replace("/login");
-        } else {
-          // Studio preview session fallback
-          setState("authenticated");
-        }
+        setState("error");
+        router.replace("/login");
       })
       .finally(() => {
         clearTimeout(timer);
